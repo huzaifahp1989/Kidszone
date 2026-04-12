@@ -1,107 +1,124 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { LogOut, Menu, X } from 'lucide-react';
+import { LogOut, Menu, X, Home, Gamepad2, Trophy, BookOpen, Gift, Heart } from 'lucide-react';
 
 interface NavbarUser {
   name: string;
   points: number;
   level: string;
+  badges?: number;
 }
 
 interface NavbarProps {
   username?: string;
   points?: number;
   level?: string;
+  badges?: number;
   onLogout?: () => void | Promise<void>;
   user?: NavbarUser | null;
 }
 
-export const Navbar: React.FC<NavbarProps> = ({ username, points, level, onLogout, user }) => {
+export const Navbar: React.FC<NavbarProps> = ({ username, points, level, badges, onLogout, user }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const displayUsername = username || user?.name;
   const displayPoints = points !== undefined ? points : user?.points;
   const displayLevel = level || user?.level;
+  const displayBadges = badges !== undefined ? badges : user?.badges;
 
+  const navItems = [
+    { href: '/', label: 'Home', icon: Home },
+    { href: '/quiz', label: 'Daily Quiz', icon: BookOpen },
+    { href: '/games', label: 'Games', icon: Gamepad2 },
+    { href: '/pledge', label: 'Pledge', icon: Heart },
+    { href: '/leaderboard', label: 'Leaderboard', icon: Trophy },
+    { href: '/rewards', label: 'Rewards', icon: Gift },
+  ];
 
   return (
-    <nav className="bg-gradient-to-r from-islamic-blue to-islamic-green text-white p-4 shadow-lg sticky top-0 z-50">
-      <div className="max-w-6xl mx-auto">
-        <div className="flex justify-between items-center">
+    <nav className="sticky top-0 z-50 bg-white/80 backdrop-blur-xl border-b border-[#e5c9a3]/30">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex justify-between items-center h-16">
           {/* Logo */}
-          <Link href="/" className="flex items-center gap-2">
-            <span className="text-2xl">📚</span>
-            <h1 className="text-xl font-bold">Islamic Kids</h1>
+          <Link href="/" className="flex items-center gap-2 group">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#14b8a6] to-[#0d9488] flex items-center justify-center shadow-lg group-hover:shadow-xl group-hover:scale-105 transition-all">
+              <span className="text-xl">🌙</span>
+            </div>
+            <div className="hidden sm:block">
+              <h1 className="text-xl font-bold bg-gradient-to-r from-[#0d9488] to-[#ff6b6b] bg-clip-text text-transparent">
+                Kids Zone
+              </h1>
+              <p className="text-[10px] text-[#a1633a] -mt-1 font-medium">Islamic Learning</p>
+            </div>
           </Link>
 
           {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center gap-8">
-            <Link 
-              href="/" 
-              className="text-white hover:text-white/80 font-medium transition"
-            >
-              Home
-            </Link>
-            <Link 
-              href="/leaderboard" 
-              className="text-white hover:text-white/80 font-medium transition"
-            >
-              Leaderboard
-            </Link>
+          <div className="hidden lg:flex items-center gap-1">
+            {navItems.map((item) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-[#6a422d] hover:bg-[#f0fdfa] hover:text-[#0d9488] font-semibold text-sm transition-all"
+              >
+                <item.icon size={16} />
+                {item.label}
+              </Link>
+            ))}
           </div>
-          
+
           {/* Desktop User Actions */}
-          <div className="hidden md:flex flex-col items-end gap-2">
-            <div className="flex items-center gap-6">
-              {displayUsername ? (
-                <>
-                  <div className="text-sm text-right">
-                    <p className="font-semibold">{displayUsername}</p>
-                    <p className="text-xs opacity-90">{displayLevel || 'Beginner'}</p>
+          <div className="hidden md:flex items-center gap-3">
+            {displayUsername ? (
+              <>
+                <div className="flex items-center gap-2 bg-gradient-to-r from-[#fff5f5] to-[#f0fdfa] px-4 py-2 rounded-xl border border-[#e5c9a3]/30">
+                  <div className="text-right">
+                    <p className="text-sm font-bold text-[#6a422d]">{displayUsername}</p>
+                    <p className="text-xs text-[#a1633a]">{displayLevel || 'Beginner'}</p>
                   </div>
-                  
-                  {displayPoints !== undefined && (
-                    <div className="bg-white bg-opacity-20 px-3 py-2 rounded-lg">
-                      <p className="text-sm">⭐ {displayPoints} pts</p>
-                    </div>
-                  )}
-                  
-                  {onLogout && (
-                    <button
-                      onClick={async (e) => {
-                        e.preventDefault();
-                        console.log('Desktop logout clicked');
-                        if (onLogout) await onLogout();
-                      }}
-                      className="flex items-center gap-2 bg-red-500 hover:bg-red-600 px-4 py-2 rounded-lg transition active:scale-95"
-                    >
-                      <LogOut size={18} />
-                      <span className="text-sm">Logout</span>
-                    </button>
-                  )}
-                </>
-              ) : (
-                <div className="flex items-center gap-3">
-                  <Link
-                    href="/signin"
-                    className="bg-white/0 border border-white/70 text-white font-semibold px-4 py-2 rounded-lg hover:bg-white/10 transition"
-                  >
-                    Sign In
-                  </Link>
-                  <Link
-                    href="/signup"
-                    className="bg-white text-islamic-blue font-semibold px-4 py-2 rounded-lg hover:bg-opacity-90 transition"
-                  >
-                    Sign Up
-                  </Link>
                 </div>
-              )}
-            </div>
+                
+                <div className="flex gap-2">
+                  <div className="bg-gradient-to-br from-[#fbbf24] to-[#f59e0b] text-white px-3 py-2 rounded-xl shadow-md">
+                    <p className="text-xs font-bold">⭐ {displayPoints || 0}</p>
+                  </div>
+                  <div className="bg-gradient-to-br from-[#14b8a6] to-[#0d9488] text-white px-3 py-2 rounded-xl shadow-md">
+                    <p className="text-xs font-bold">🏆 {displayBadges || 0}</p>
+                  </div>
+                </div>
+                
+                {onLogout && (
+                  <button
+                    onClick={async (e) => {
+                      e.preventDefault();
+                      if (onLogout) await onLogout();
+                    }}
+                    className="p-2 text-[#ff6b6b] hover:bg-[#fff5f5] rounded-xl transition"
+                  >
+                    <LogOut size={20} />
+                  </button>
+                )}
+              </>
+            ) : (
+              <div className="flex items-center gap-2">
+                <Link
+                  href="/signin"
+                  className="px-4 py-2 text-[#6a422d] font-semibold hover:bg-[#f9f0e6] rounded-xl transition"
+                >
+                  Sign In
+                </Link>
+                <Link
+                  href="/signup"
+                  className="px-4 py-2 bg-gradient-to-r from-[#14b8a6] to-[#0d9488] text-white font-semibold rounded-xl shadow-md hover:shadow-lg transition"
+                >
+                  Join Free
+                </Link>
+              </div>
+            )}
           </div>
 
           {/* Mobile Menu Button */}
-          <button 
-            className="md:hidden p-2 hover:bg-white/10 rounded-lg transition"
+          <button
+            className="lg:hidden p-2 text-[#6a422d] hover:bg-[#f9f0e6] rounded-xl transition"
             onClick={() => setIsMenuOpen(!isMenuOpen)}
           >
             {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
@@ -110,75 +127,69 @@ export const Navbar: React.FC<NavbarProps> = ({ username, points, level, onLogou
 
         {/* Mobile Menu */}
         {isMenuOpen && (
-          <div className="md:hidden mt-4 pt-4 border-t border-white/20 space-y-4 animate-fadeIn">
-            <div className="flex flex-col gap-3">
-              <Link 
-                href="/" 
-                className="text-white hover:bg-white/10 px-3 py-2 rounded-lg transition"
-                onClick={() => setIsMenuOpen(false)}
-              >
-                Home
-              </Link>
-              <Link 
-                href="/leaderboard" 
-                className="text-white hover:bg-white/10 px-3 py-2 rounded-lg transition"
-                onClick={() => setIsMenuOpen(false)}
-              >
-                Leaderboard
-              </Link>
-            </div>
-
-            {/* Mobile User Stats & Actions */}
-            <div className="pt-4 border-t border-white/20">
-              {displayUsername ? (
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between bg-white/10 p-3 rounded-lg">
-                    <div>
-                      <p className="font-semibold">{displayUsername}</p>
-                      <p className="text-xs opacity-90">{displayLevel || 'Beginner'}</p>
-                    </div>
-                    {displayPoints !== undefined && (
-                      <div className="bg-white/20 px-3 py-1 rounded-lg">
-                        <p className="text-sm">⭐ {displayPoints} pts</p>
+          <div className="lg:hidden py-4 border-t border-[#e5c9a3]/30">
+            <div className="flex flex-col gap-2">
+              {navItems.map((item) => (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className="flex items-center gap-3 px-4 py-3 rounded-xl text-[#6a422d] hover:bg-[#f0fdfa] hover:text-[#0d9488] font-semibold transition"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  <item.icon size={20} />
+                  {item.label}
+                </Link>
+              ))}
+              
+              <div className="mt-4 pt-4 border-t border-[#e5c9a3]/30">
+                {displayUsername ? (
+                  <div className="space-y-3 px-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="font-bold text-[#6a422d]">{displayUsername}</p>
+                        <p className="text-sm text-[#a1633a]">{displayLevel || 'Beginner'}</p>
                       </div>
+                      <div className="flex gap-2">
+                        <span className="text-sm font-bold text-[#f59e0b]">⭐ {displayPoints || 0}</span>
+                        <span className="text-sm font-bold text-[#0d9488]">🏆 {displayBadges || 0}</span>
+                      </div>
+                    </div>
+                    
+                    {onLogout && (
+                      <button
+                        onClick={async (e) => {
+                          e.preventDefault();
+                          if (onLogout) {
+                            await onLogout();
+                            setIsMenuOpen(false);
+                          }
+                        }}
+                        className="w-full flex items-center justify-center gap-2 bg-[#fff5f5] text-[#ff6b6b] font-semibold px-4 py-3 rounded-xl transition"
+                      >
+                        <LogOut size={18} />
+                        Sign Out
+                      </button>
                     )}
                   </div>
-                  
-                  {onLogout && (
-                    <button
-                      onClick={async (e) => {
-                        e.preventDefault();
-                        console.log('Mobile logout clicked');
-                        if (onLogout) {
-                          await onLogout();
-                          setIsMenuOpen(false);
-                        }
-                      }}
-                      className="w-full flex items-center justify-center gap-2 bg-red-500 hover:bg-red-600 px-4 py-2 rounded-lg transition active:scale-95"
+                ) : (
+                  <div className="flex flex-col gap-2 px-4">
+                    <Link
+                      href="/signin"
+                      onClick={() => setIsMenuOpen(false)}
+                      className="w-full text-center py-3 text-[#6a422d] font-semibold hover:bg-[#f9f0e6] rounded-xl transition"
                     >
-                      <LogOut size={18} />
-                      <span className="text-sm">Logout</span>
-                    </button>
-                  )}
-                </div>
-              ) : (
-                <div className="flex flex-col gap-3">
-                  <Link
-                    href="/signin"
-                    onClick={() => setIsMenuOpen(false)}
-                    className="w-full text-center bg-white/0 border border-white/70 text-white font-semibold px-4 py-2 rounded-lg hover:bg-white/10 transition"
-                  >
-                    Sign In
-                  </Link>
-                  <Link
-                    href="/signup"
-                    onClick={() => setIsMenuOpen(false)}
-                    className="w-full text-center bg-white text-islamic-blue font-semibold px-4 py-2 rounded-lg hover:bg-opacity-90 transition"
-                  >
-                    Sign Up
-                  </Link>
-                </div>
-              )}
+                      Sign In
+                    </Link>
+                    <Link
+                      href="/signup"
+                      onClick={() => setIsMenuOpen(false)}
+                      className="w-full text-center py-3 bg-gradient-to-r from-[#14b8a6] to-[#0d9488] text-white font-semibold rounded-xl transition"
+                    >
+                      Join Free
+                    </Link>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         )}

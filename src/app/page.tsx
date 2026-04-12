@@ -2,11 +2,11 @@
 
 import React, { useMemo } from 'react';
 import Link from 'next/link';
-import { NavCard, StatsCard } from '@/components';
 import { useAuth } from '@/lib/auth-context';
+import { BookOpen, Gamepad2, Heart, Trophy, Sparkles, Star, Target, Zap } from 'lucide-react';
 
 export default function Home() {
-  const { profile, loading } = useAuth();
+  const { profile } = useAuth();
   const user = useMemo(() => {
     const extras = (profile as unknown as { streak?: number; total_days?: number; totalDays?: number }) || {};
     return {
@@ -23,218 +23,218 @@ export default function Home() {
     return Math.max(2, Math.min(100, pct));
   }, [user.points]);
 
-  const questCards = [
+  const quickActions = [
     {
-      title: 'Play & Earn',
-      desc: 'Finish one game and collect a badge.',
-      href: '/games',
-      icon: '🎮',
-      accent: 'from-blue-50 to-blue-100 border-blue-200',
-    },
-    {
-      title: 'Quiz of the Day',
-      desc: 'Answer 5 questions to keep your streak.',
       href: '/quiz',
-      icon: '🧠',
-      accent: 'from-sky-50 to-sky-100 border-sky-200',
+      icon: BookOpen,
+      title: 'Daily Quiz',
+      description: 'Test your knowledge',
+      color: 'from-[#14b8a6] to-[#0d9488]',
+      bgColor: 'bg-[#f0fdfa]',
     },
     {
-      title: 'New Surah Fact',
-      desc: 'Learn a quick fact from the Qur’an section.',
-      href: '/quran',
-      icon: '📖',
-      accent: 'from-amber-50 to-amber-100 border-amber-200',
-    },
-  ];
-
-  const learningTracks = [
-    {
-      title: 'Qur’an Journey',
-      desc: 'Short surahs, meanings, and gentle stories.',
-      href: '/quran',
-      icon: '🌙',
-      tone: 'from-cyan-50 to-sky-100 border-sky-200',
-      tag: 'Great for ages 6-10',
-    },
-    {
-      title: 'Hadith in Action',
-      desc: 'See how Sunnah guides real-life moments.',
-      href: '/hadith',
-      icon: '🧭',
-      tone: 'from-sky-50 to-sky-100 border-sky-200',
-      tag: 'Try 1 scenario today',
-    },
-    {
-      title: 'Games Arcade',
-      desc: 'Word hunts, decision quests, and timelines.',
       href: '/games',
-      icon: '⚡',
-      tone: 'from-indigo-50 to-indigo-100 border-indigo-200',
-      tag: 'Earn bonus points',
+      icon: Gamepad2,
+      title: 'Play Games',
+      description: 'Learn while having fun',
+      color: 'from-[#fbbf24] to-[#f59e0b]',
+      bgColor: 'bg-[#fffbeb]',
     },
     {
-      title: 'Rewards & Badges',
-      desc: 'See what you unlocked and what is next.',
-      href: '/rewards',
-      icon: '🏅',
-      tone: 'from-rose-50 to-rose-100 border-rose-200',
-      tag: 'Claim your prize',
+      href: '/pledge',
+      icon: Heart,
+      title: 'Durood Pledge',
+      description: 'Track your dhikr',
+      color: 'from-[#ff6b6b] to-[#ff4757]',
+      bgColor: 'bg-[#fff5f5]',
     },
     {
-      title: 'Multiplayer Arena',
-      desc: 'Challenge friends in real-time quizzes.',
-      href: '/multiplayer',
-      icon: '🏰',
-      tone: 'from-purple-50 to-purple-100 border-purple-200',
-      tag: 'New!',
+      href: '/leaderboard',
+      icon: Trophy,
+      title: 'Leaderboard',
+      description: 'See top learners',
+      color: 'from-[#8b5cf6] to-[#6366f1]',
+      bgColor: 'bg-[#eef2ff]',
     },
   ];
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-b from-islamic-light to-white flex items-center justify-center">
-        <div className="text-center">
-          <div className="text-4xl mb-4">📚</div>
-          <p className="text-gray-600 font-semibold">Loading...</p>
-        </div>
-      </div>
-    );
-  }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[#e8f3ff] via-white to-[#f0f9ff]">
-      <div className="max-w-6xl mx-auto px-4 py-10 space-y-10">
-        {/* Hero */}
-        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-islamic-blue to-islamic-green text-white shadow-xl">
-          <div className="absolute -left-10 -top-10 h-32 w-32 rounded-full bg-white/15 blur-3xl" />
-          <div className="absolute right-6 top-6 text-5xl opacity-70">⭐</div>
-          <div className="relative flex flex-col md:flex-row items-center md:items-end justify-between gap-6 px-6 py-8 md:px-8 md:py-10">
-            <div>
-              <p className="text-sm uppercase tracking-wide text-white/80">As-salamu alaykum</p>
-              <h1 className="text-3xl md:text-4xl font-bold islamic-shadow">{user.username}, ready to learn?</h1>
-              <p className="text-white/90 mt-2 max-w-xl">Pick a quest, play a game, and climb to Young Scholar. Short, joyful, and parent-approved.</p>
-              <div className="mt-6 flex flex-wrap gap-3">
-                <Link href="/quiz" className="bg-white text-islamic-blue font-semibold px-4 py-2 rounded-xl shadow-sm hover:bg-white/90 transition">Take today&apos;s quiz</Link>
-                <Link href="/games" className="bg-white/10 border border-white/30 text-white font-semibold px-4 py-2 rounded-xl hover:bg-white/20 transition">Jump into games</Link>
+    <div className="min-h-screen bg-[#fdf8f3] pattern-islamic">
+      <div className="max-w-6xl mx-auto px-4 py-8 space-y-8">
+        
+        {/* Hero Section */}
+        <section className="relative overflow-hidden rounded-3xl bg-white shadow-xl border border-[#e5c9a3]/30">
+          <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-[#14b8a6]/10 to-transparent rounded-full -translate-y-1/2 translate-x-1/2"></div>
+          <div className="absolute bottom-0 left-0 w-48 h-48 bg-gradient-to-tr from-[#fbbf24]/10 to-transparent rounded-full translate-y-1/2 -translate-x-1/2"></div>
+          
+          <div className="relative px-6 py-10 md:px-10 md:py-12">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+              <div className="space-y-4">
+                <div className="inline-flex items-center gap-2 px-4 py-2 bg-[#f0fdfa] rounded-full border border-[#14b8a6]/20">
+                  <Sparkles size={16} className="text-[#14b8a6]" />
+                  <span className="text-sm font-semibold text-[#0d9488]">Assalamu Alaikum!</span>
+                </div>
+                
+                <h1 className="text-3xl md:text-5xl font-bold text-[#6a422d]">
+                  Welcome back,{' '}
+                  <span className="text-gradient-warm">{user.username}</span>
+                </h1>
+                
+                <p className="text-[#a1633a] text-lg max-w-lg">
+                  Continue your Islamic learning journey. Every step brings you closer to knowledge and rewards.
+                </p>
+                
+                <div className="flex flex-wrap gap-3 pt-2">
+                  <Link
+                    href="/quiz"
+                    className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-[#14b8a6] to-[#0d9488] text-white font-bold rounded-xl shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all"
+                  >
+                    <BookOpen size={20} />
+                    Start Daily Quiz
+                  </Link>
+                  
+                  <Link
+                    href="/games"
+                    className="inline-flex items-center gap-2 px-6 py-3 bg-white text-[#6a422d] font-bold rounded-xl border-2 border-[#e5c9a3] hover:bg-[#f9f0e6] transition-all"
+                  >
+                    <Gamepad2 size={20} />
+                    Play Games
+                  </Link>
+                </div>
               </div>
-            </div>
-            <div className="bg-white/15 rounded-2xl px-5 py-4 text-sm text-white/90 backdrop-blur">
-              <p className="font-semibold mb-1">Current level</p>
-              <p className="text-2xl font-bold">{user.level}</p>
-              <p className="text-white/80">{user.points} pts • {user.streak || 'No'} day streak</p>
-            </div>
-          </div>
-        </div>
-
-        {/* Stats */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <StatsCard label="Total Points" value={user.points} icon="⭐" color="blue" />
-          <StatsCard label="Level" value={user.level} icon="🏆" color="green" />
-          <StatsCard label="Current Streak" value={`${user.streak || 0} days`} icon="🔥" color="yellow" />
-          <StatsCard label="Days Learning" value={user.totalDaysLearned || 0} icon="📅" color="purple" />
-        </div>
-
-        {/* Progress bar */}
-        <div className="bg-white rounded-2xl p-6 shadow-lg border border-slate-100">
-          <div className="flex items-center justify-between mb-3 text-sm text-slate-700">
-            <span>Path to Young Scholar</span>
-            <span className="font-semibold">{user.points} / 500 pts</span>
-          </div>
-          <div className="w-full bg-slate-200 rounded-full h-4 overflow-hidden">
-            <div
-              className="bg-gradient-to-r from-islamic-green to-islamic-blue h-full transition-all duration-500"
-              style={{ width: `${progressPercent}%` }}
-            />
-          </div>
-          <p className="text-xs text-slate-500 mt-2">Earn points by finishing a game, a quiz, and one learning track each day.</p>
-        </div>
-
-        {/* Today’s quests */}
-        <section className="space-y-4">
-          <div className="flex items-center gap-3">
-            <span className="text-2xl">🚀</span>
-            <h3 className="text-2xl font-bold text-islamic-dark">Today&apos;s kid-friendly quests</h3>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {questCards.map(card => (
-              <Link
-                key={card.title}
-                href={card.href}
-                className={`group relative overflow-hidden rounded-2xl border ${card.accent} p-5 shadow-sm hover:shadow-xl transition`}
-              >
-                <div className="absolute -right-6 -top-6 h-16 w-16 rounded-full bg-white/40 blur-2xl" />
-                <div className="text-4xl mb-3">{card.icon}</div>
-                <p className="text-lg font-semibold text-islamic-dark">{card.title}</p>
-                <p className="text-sm text-slate-600 mt-1">{card.desc}</p>
-                <div className="mt-3 text-sm font-semibold text-islamic-blue group-hover:translate-x-1 transition">Start now →</div>
-              </Link>
-            ))}
-          </div>
-        </section>
-
-        {/* Learning tracks */}
-        <section className="space-y-4">
-          <div className="flex items-center gap-3">
-            <span className="text-2xl">🛤️</span>
-            <h3 className="text-2xl font-bold text-islamic-dark">Pick a learning track</h3>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-            {learningTracks.map(track => (
-              <Link
-                key={track.title}
-                href={track.href}
-                className={`group relative overflow-hidden rounded-2xl border ${track.tone} p-6 shadow-sm hover:shadow-xl transition`}
-              >
-                <div className="absolute -left-8 -top-8 h-24 w-24 rounded-full bg-white/30 blur-3xl" />
-                <div className="flex items-start gap-4">
-                  <div className="text-4xl">{track.icon}</div>
-                  <div className="space-y-2">
-                    <p className="text-xl font-semibold text-islamic-dark">{track.title}</p>
-                    <p className="text-sm text-slate-600">{track.desc}</p>
-                    <span className="inline-flex items-center gap-2 bg-white/70 text-xs font-semibold text-slate-700 px-3 py-1 rounded-full group-hover:bg-white">
-                      {track.tag}
-                    </span>
+              
+              <div className="flex-shrink-0">
+                <div className="relative">
+                  <div className="w-32 h-32 md:w-40 md:h-40 rounded-2xl bg-gradient-to-br from-[#fbbf24] to-[#f59e0b] flex items-center justify-center shadow-xl rotate-3">
+                    <span className="text-6xl md:text-7xl">🌟</span>
+                  </div>
+                  <div className="absolute -bottom-3 -right-3 w-20 h-20 rounded-xl bg-gradient-to-br from-[#14b8a6] to-[#0d9488] flex items-center justify-center shadow-lg -rotate-6">
+                    <span className="text-3xl">📿</span>
                   </div>
                 </div>
-              </Link>
-            ))}
+              </div>
+            </div>
           </div>
         </section>
 
-        {/* Spotlight games */}
-        <section className="space-y-4">
-          <div className="flex items-center gap-3">
-            <span className="text-2xl">🎯</span>
-            <h3 className="text-2xl font-bold text-islamic-dark">Mini-games spotlight</h3>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <NavCard
-              href="/games"
-              icon="🧩"
-              title="Word & Story Hunts"
-              description="Find words in Seerah and Qur’an grids, then answer follow-ups."
-              color="blue"
-            />
-            <NavCard
-              href="/games"
-              icon="🛡️"
-              title="Decisions & Scenarios"
-              description="Pick what a Sahabi would do or solve wudu fixes to earn bonus points."
-              color="green"
-            />
+        {/* Stats Row */}
+        <section className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {[
+            { icon: Star, label: 'Points', value: user.points, color: 'text-[#f59e0b]', bg: 'bg-[#fffbeb]' },
+            { icon: Target, label: 'Level', value: user.level, color: 'text-[#14b8a6]', bg: 'bg-[#f0fdfa]' },
+            { icon: Zap, label: 'Streak', value: `${user.streak || 0} days`, color: 'text-[#ff6b6b]', bg: 'bg-[#fff5f5]' },
+            { icon: Trophy, label: 'Days Learning', value: user.totalDaysLearned || 0, color: 'text-[#8b5cf6]', bg: 'bg-[#eef2ff]' },
+          ].map((stat, idx) => (
+            <div
+              key={idx}
+              className={`${stat.bg} rounded-2xl p-5 border border-[#e5c9a3]/20 hover:shadow-md transition-shadow`}
+            >
+              <div className="flex items-center gap-3">
+                <div className={`p-2 rounded-xl bg-white ${stat.color}`}>
+                  <stat.icon size={20} />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold text-[#6a422d]">{stat.value}</p>
+                  <p className="text-sm text-[#a1633a]">{stat.label}</p>
+                </div>
+              </div>
+            </div>
+          ))}
+        </section>
 
+        {/* Progress Section */}
+        <section className="bg-white rounded-2xl p-6 shadow-lg border border-[#e5c9a3]/20">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#8b5cf6] to-[#6366f1] flex items-center justify-center">
+                <Target size={20} className="text-white" />
+              </div>
+              <div>
+                <h3 className="font-bold text-[#6a422d]">Journey to Young Scholar</h3>
+                <p className="text-sm text-[#a1633a]">Keep learning to level up!</p>
+              </div>
+            </div>
+            <span className="text-sm font-bold text-[#14b8a6]">{user.points} / 500 ⭐</span>
+          </div>
+          
+          <div className="h-4 bg-[#f9f0e6] rounded-full overflow-hidden">
+            <div
+              className="h-full bg-gradient-to-r from-[#14b8a6] via-[#fbbf24] to-[#ff6b6b] rounded-full transition-all duration-1000"
+              style={{ width: `${progressPercent}%` }}
+            ></div>
           </div>
         </section>
 
-        {/* Family callout */}
-        <div className="rounded-2xl border border-orange-200 bg-gradient-to-r from-orange-50 to-amber-100 p-6 shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-          <div>
-            <p className="text-sm font-semibold text-orange-700">Family Challenge</p>
-            <h4 className="text-xl font-bold text-islamic-dark mt-1">Learn together for 15 minutes tonight.</h4>
-            <p className="text-sm text-slate-700 mt-1">Pick any track, then let a parent ask you one question from the quiz. Share what you loved most.</p>
+        {/* Quick Actions */}
+        <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {quickActions.map((action, idx) => (
+            <Link
+              key={idx}
+              href={action.href}
+              className={`${action.bgColor} group rounded-2xl p-5 border border-[#e5c9a3]/20 hover:shadow-lg transition-all hover:-translate-y-1`}
+            >
+              <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${action.color} flex items-center justify-center shadow-md group-hover:scale-110 transition-transform`}>
+                <action.icon size={24} className="text-white" />
+              </div>
+              <h3 className="mt-4 font-bold text-[#6a422d]">{action.title}</h3>
+              <p className="text-sm text-[#a1633a]">{action.description}</p>
+            </Link>
+          ))}
+        </section>
+
+        {/* Featured Section */}
+        <section className="grid md:grid-cols-2 gap-6">
+          <div className="bg-gradient-to-br from-[#14b8a6] to-[#0d9488] rounded-2xl p-6 text-white">
+            <div className="flex items-start justify-between">
+              <div>
+                <span className="inline-block px-3 py-1 bg-white/20 rounded-full text-xs font-semibold mb-3">Daily Challenge</span>
+                <h3 className="text-xl font-bold mb-2">Complete Today&apos;s Quiz</h3>
+                <p className="text-white/80 text-sm mb-4">Answer all questions correctly to earn bonus points and climb the leaderboard!</p>
+                <Link
+                  href="/quiz"
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-white text-[#0d9488] font-bold rounded-xl hover:bg-white/90 transition"
+                >
+                  Start Now →
+                </Link>
+              </div>
+              <span className="text-5xl">🎯</span>
+            </div>
           </div>
-          <Link href="/leaderboard" className="bg-white text-orange-700 font-semibold px-4 py-2 rounded-xl shadow hover:shadow-md transition">See leaderboard</Link>
-        </div>
+          
+          <div className="bg-gradient-to-br from-[#fbbf24] to-[#f59e0b] rounded-2xl p-6 text-white">
+            <div className="flex items-start justify-between">
+              <div>
+                <span className="inline-block px-3 py-1 bg-white/20 rounded-full text-xs font-semibold mb-3">New Games</span>
+                <h3 className="text-xl font-bold mb-2">Explore Word Hunts</h3>
+                <p className="text-white/80 text-sm mb-4">Find Islamic words in our new Seerah and Quran themed puzzles. Fun for all ages!</p>
+                <Link
+                  href="/games"
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-white text-[#d97706] font-bold rounded-xl hover:bg-white/90 transition"
+                >
+                  Play Now →
+                </Link>
+              </div>
+              <span className="text-5xl">🎮</span>
+            </div>
+          </div>
+        </section>
+
+        {/* Tip Card */}
+        <section className="bg-[#f0fdfa] rounded-2xl p-6 border border-[#14b8a6]/20">
+          <div className="flex items-start gap-4">
+            <div className="w-12 h-12 rounded-xl bg-[#14b8a6] flex items-center justify-center flex-shrink-0">
+              <span className="text-2xl">💡</span>
+            </div>
+            <div>
+              <h4 className="font-bold text-[#0d9488] mb-1">Learning Tip</h4>
+              <p className="text-[#115e59]">
+                Try to learn something new about Islam every day, even if it&apos;s just one verse or one hadith. 
+                Consistency is the key to building lasting knowledge. May Allah bless your journey!
+              </p>
+            </div>
+          </div>
+        </section>
+
       </div>
     </div>
   );

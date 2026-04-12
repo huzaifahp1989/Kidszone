@@ -1,558 +1,471 @@
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { quizzes } from '@/data/quizzes';
+import Link from 'next/link';
 import { Button, Modal } from '@/components';
-import { CheckCircle, XCircle } from 'lucide-react';
+import { CheckCircle, Calendar, Trophy, ArrowLeft, Sparkles } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/lib/auth-context';
-import { awardPoints as awardPointsRpc } from '@/lib/points-service';
 
-// Seeded random number generator for daily quiz rotation
-const seededRandom = (seed: number) => {
-  let x = Math.sin(seed++) * 10000;
-  return x - Math.floor(x);
-};
-
-const shuffleArray = <T,>(array: T[], seed: number): T[] => {
-  const shuffled = [...array];
-  for (let i = shuffled.length - 1; i > 0; i--) {
-    const j = Math.floor(seededRandom(seed + i) * (i + 1));
-    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-  }
-  return shuffled;
-};
+type QuizMode = 'daily' | null;
 
 export default function QuizPage() {
-  const [category, setCategory] = useState<'Seerah' | 'Hadith' | 'Prophets' | 'Quran Stories' | 'Akhlaq' | ''>('');
-  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-  const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
-  const [showResult, setShowResult] = useState(false);
-  const [score, setScore] = useState(0);
-  const [answeredCount, setAnsweredCount] = useState(0);
-  const [quizStarted, setQuizStarted] = useState(false);
-  const [quizComplete, setQuizComplete] = useState(false);
-  const [showExplanation, setShowExplanation] = useState(false);
-  const [resultToast, setResultToast] = useState<string | null>(null);
-  const [hasAwarded, setHasAwarded] = useState(false);
-  const [practiceMode, setPracticeMode] = useState(false);
-  const [completedQuizzes, setCompletedQuizzes] = useState<string[]>([]);
-  const { user, profile, refreshProfile, updateLocalProfile } = useAuth();
+  const { user, profile, refreshProfile } = useAuth();
+  const [mounted, setMounted] = useState(false);
 
-  // Get daily seed based on current date
-  const dailySeed = useMemo(() => {
-    const today = new Date();
-    return today.getFullYear() * 10000 + (today.getMonth() + 1) * 100 + today.getDate();
+  useEffect(() => {
+    setMounted(true);
   }, []);
 
-  // Select 5 random questions from category based on daily seed
-  const filteredQuestions = quizzes.filter(q => q.category === category);
+  const [mode, setMode] = useState<QuizMode>(null);
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+  const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
+  const [score, setScore] = useState(0);
+  const [quizComplete, setQuizComplete] = useState(false);
+  const [resultToast, setResultToast] = useState<string | null>(null);
+
+  const [dailyQuiz, setDailyQuiz] = useState<any>(null);
+  const [dailyStatus, setDailyStatus] = useState<'loading' | 'ready' | 'completed' | 'error'>('loading');
+  const [dailyAnswers, setDailyAnswers] = useState<Record<string, number>>({});
+  const [startTime, setStartTime] = useState<number>(0);
+  const [dailyResult, setDailyResult] = useState<any>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [todayDate, setTodayDate] = useState<string>('');
+
+  useEffect(() => {
+    setTodayDate(new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' }));
+  }, []);
+
+  useEffect(() => {
+    async function fetchDailyStatus() {
+      try {
+        setDailyStatus('loading');
+        const res = await fetch('/api/quiz/daily');
+        if (!res.ok) {
+          if (res.status === 404) {
+            setDailyStatus('error');
+            return;
+          }
+          throw new Error('Failed to fetch daily quiz');
+        }
+        const quizData = await res.json();
+        setDailyQuiz(quizData);
+
+        if (user?.id) {
+          const { data: attempt } = await supabase
+            .from('quiz_attempts')
+            .select('id, score')
+            .eq('quiz_id', quizData.quizId)
+            .eq('user_id', user.id)
+            .single();
+          if (attempt) {
+            setDailyStatus('completed');
+            setDailyResult({ score: attempt.score });
+            return;
+          }
+        }
+        setDailyStatus('ready');
+      } catch (err) {
+        console.error('Error fetching daily quiz:', err);
+        setDailyStatus('error');
+      }
+    }
+    fetchDailyStatus();
+  }, [user?.id]);
+
   const currentQuestions = useMemo(() => {
-    if (!category) return [];
-    const shuffled = shuffleArray(filteredQuestions, dailySeed + category.charCodeAt(0));
-    return shuffled.slice(0, 5); // Only take 5 questions
-  }, [category, dailySeed, filteredQuestions]);
-  
+    if (mode === 'daily') {
+      return dailyQuiz?.questions || [];
+    }
+    return [];
+  }, [mode, dailyQuiz]);
+
   const currentQuestion = currentQuestions[currentQuestionIndex];
 
-  const handleSelectAnswer = (answerIndex: number) => {
-    setSelectedAnswer(answerIndex);
-    setShowResult(true);
-    setShowExplanation(true);
+  const startDailyQuiz = () => {
+    setMode('daily');
+    setStartTime(Date.now());
+    setCurrentQuestionIndex(0);
+    setDailyAnswers({});
+    setQuizComplete(false);
+    setSelectedAnswer(null);
+  };
 
-    if (answerIndex === currentQuestion.correctAnswer) {
-      setScore(score + 2); // 2 points per correct answer
-    }
-    setAnsweredCount(answeredCount + 1);
+  const handleAnswerSelect = (index: number) => {
+    setSelectedAnswer(index);
   };
 
   const handleNext = () => {
+    if (selectedAnswer === null) return;
+    setDailyAnswers(prev => ({
+      ...prev,
+      [currentQuestion.id]: selectedAnswer
+    }));
+
     if (currentQuestionIndex < currentQuestions.length - 1) {
-      setCurrentQuestionIndex(currentQuestionIndex + 1);
+      setCurrentQuestionIndex(prev => prev + 1);
       setSelectedAnswer(null);
-      setShowResult(false);
-      setShowExplanation(false);
     } else {
-      setQuizComplete(true);
+      finishQuiz();
     }
   };
 
-  const handleStartQuiz = (cat: 'Seerah' | 'Hadith' | 'Prophets' | 'Quran Stories' | 'Akhlaq') => {
-    setCategory(cat);
-    setQuizStarted(true);
-    setCurrentQuestionIndex(0);
-    setSelectedAnswer(null);
-    setShowResult(false);
-    setScore(0);
-    setAnsweredCount(0);
-    setQuizComplete(false);
-    setHasAwarded(false);
-    setResultToast(null);
-  };
+  const finishQuiz = async () => {
+    setQuizComplete(true);
+    setIsSubmitting(true);
+    const endTime = Date.now();
+    const duration = Math.floor((endTime - startTime) / 1000);
 
-  const handleResetQuiz = () => {
-    setQuizStarted(false);
-    setCategory('');
-    setCurrentQuestionIndex(0);
-    setSelectedAnswer(null);
-    setShowResult(false);
-    setScore(0);
-    setAnsweredCount(0);
-    setQuizComplete(false);
-    setHasAwarded(false);
-    setPracticeMode(false);
-    setResultToast(null);
-  };
+    const finalAnswers: Record<string, number> = {
+      ...dailyAnswers,
+      [String(currentQuestion.id)]: Number(selectedAnswer)
+    };
 
-  // Load completed quizzes for this user
-  useEffect(() => {
-    const loadCompletedQuizzes = async () => {
+    try {
       if (!user?.id) {
-        setCompletedQuizzes([]);
-        return;
-      }
-      try {
-        const { data, error } = await supabase
-          .from('quiz_progress')
-          .select('category')
-          .eq('uid', user.id);
-        
-        if (error) {
-          console.error('Error loading completed quizzes:', error?.message || error);
-          setResultToast('⚠️ Could not load completed quizzes. Please re-sign in.');
-        } else {
-          setCompletedQuizzes(data?.map(q => q.category) || []);
+        const questions = (dailyQuiz?.questions || []) as any[];
+        let computed = 0;
+        for (const q of questions) {
+          const a = finalAnswers[String(q.id)];
+          if (typeof a === 'number' && a === q.correctAnswer) computed += 1;
         }
-      } catch (err) {
-        console.error('Error fetching quiz_progress:', (err as any)?.message || err);
-        setResultToast('⚠️ Network issue loading quizzes. Please try again.');
-      }
-    };
-
-    loadCompletedQuizzes();
-  }, [user?.id]);
-
-  // Award points to the signed-in user when the quiz finishes
-  useEffect(() => {
-    if (!quizComplete || !user?.id || score <= 0 || hasAwarded) {
-      console.log('[quiz] Skip award:', { quizComplete, userId: user?.id, score, hasAwarded });
-      return;
-    }
-
-    let cancelled = false;
-    (async () => {
-      console.log('[quiz] Awarding points for user via award_points:', user.id, 'score:', score);
-
-      const result = await awardPointsRpc(score);
-
-      if (cancelled) return;
-
-      setHasAwarded(true);
-
-      if (!result.success) {
-        const today = result.today_points ?? 0;
-        const limit = result.daily_limit ?? 100;
-        setResultToast(`⚠️ Daily points limit reached (${today}/${limit}). Practice mode active!`);
+        setDailyResult({ score: computed, pointsAwarded: 0, guest: true });
+        setDailyStatus('completed');
+        setResultToast('Sign in to enter competitions and earn points.');
         return;
       }
 
-      const pointsAwarded = result.points_awarded || score;
-      const today = result.today_points ?? pointsAwarded;
-      const limit = result.daily_limit ?? 100;
-      let toastMsg = `⭐ +${pointsAwarded} points! (${today}/${limit} today)`;
+      const res = await fetch('/api/quiz/daily/submit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: user?.id,
+          quizId: dailyQuiz.quizId,
+          answers: finalAnswers,
+          durationSeconds: duration
+        })
+      });
 
-      setResultToast(toastMsg);
-
-      // Optimistic update
-      if (result.total_points !== undefined) {
-        updateLocalProfile({
-          points: result.total_points,
-          todayPoints: result.today_points,
-          weeklyPoints: result.weekly_points,
-          monthlyPoints: result.monthly_points
-        });
-      }
-
-      const { error: markError } = await supabase
-        .rpc('mark_quiz_completed', {
-          uid: user.id,
-          category: category,
-          score_val: score,
-        });
-
-      if (markError) {
-        console.error('[quiz] Error marking completion:', markError);
+      const data = await res.json();
+      if (data.success) {
+        setDailyResult(data);
+        setDailyStatus('completed');
+        refreshProfile();
       } else {
-        setCompletedQuizzes(prev => [...new Set([...prev, category])]);
+        setResultToast(data.error || 'Submission failed');
       }
+    } catch (err) {
+      console.error('Submission error:', err);
+      setResultToast('Network error submitting quiz');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
-      // Background refresh to ensure consistency
-      refreshProfile();
-    })();
+  const resetPage = () => {
+    setMode(null);
+    setDailyResult(null);
+    setQuizComplete(false);
+    setResultToast(null);
+    setCurrentQuestionIndex(0);
+    setSelectedAnswer(null);
+  };
 
-    return () => {
-      cancelled = true;
-    };
-  }, [quizComplete, user?.id, score, hasAwarded, refreshProfile, category, updateLocalProfile]);
+  if (!mounted) {
+    return (
+      <div className="min-h-[70vh] flex items-center justify-center bg-[#fdf8f3]">
+        <div className="text-[#a1633a]">Loading...</div>
+      </div>
+    );
+  }
 
-  return (
-    <div className="min-h-screen bg-gradient-to-b from-islamic-light to-white py-8 px-4">
-      <div className="max-w-2xl mx-auto">
-        {/* Page Title */}
-        <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-islamic-dark mb-2 islamic-shadow">
-            📝 Islamic Knowledge Quizzes
-          </h1>
-          <p className="text-lg text-gray-600 mb-2">
-            Test your Islamic knowledge and earn points!
-          </p>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
-            <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-3 border border-blue-200">
-              <div className="text-2xl font-bold text-blue-600">{profile?.badges || 0}</div>
-              <div className="text-xs text-blue-700 font-semibold">🏆 Badges</div>
-              <div className="text-xs text-gray-600">(1 per 250 pts)</div>
+  if (!mode) {
+    const dailyCtaLabel =
+      dailyStatus === 'loading'
+        ? 'Loading...'
+        : dailyStatus === 'completed'
+          ? 'Completed Today'
+          : dailyStatus === 'error'
+            ? 'Unavailable'
+            : user?.id
+              ? 'Start Daily Quiz'
+              : 'Sign in to Play';
+
+    return (
+      <div className="min-h-screen bg-[#fdf8f3] pattern-islamic">
+        <div className="max-w-4xl mx-auto px-4 py-8 space-y-8">
+          {/* Header */}
+          <div className="text-center space-y-4">
+            <div className="inline-flex items-center gap-2 px-4 py-2 bg-[#f0fdfa] rounded-full border border-[#14b8a6]/20">
+              <Sparkles size={16} className="text-[#14b8a6]" />
+              <span className="text-sm font-semibold text-[#0d9488]">Daily Challenge</span>
             </div>
-            <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg p-3 border border-purple-200">
-              <div className="text-2xl font-bold text-purple-600">{profile?.points || 0}</div>
-              <div className="text-xs text-purple-700 font-semibold">⭐ Total Points</div>
-              <div className="text-xs text-gray-600">All-time</div>
+            <h1 className="text-4xl md:text-5xl font-bold text-[#6a422d]">
+              Today's Quiz
+            </h1>
+            <p className="text-[#a1633a] text-lg">
+              Test your Islamic knowledge and earn points!
+            </p>
+          </div>
+
+          {/* Daily Quiz Card */}
+          <div className="bg-white rounded-2xl shadow-lg border border-[#e5c9a3]/30 overflow-hidden">
+            <div className="bg-gradient-to-r from-[#14b8a6] to-[#0d9488] p-6 text-white">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <div className="w-14 h-14 rounded-xl bg-white/20 flex items-center justify-center">
+                    <Trophy size={28} className="text-white" />
+                  </div>
+                  <div>
+                    <h2 className="text-2xl font-bold">Daily Competition Quiz</h2>
+                    <div className="flex items-center gap-2 mt-1 text-white/80">
+                      <Calendar size={16} />
+                      <span>{todayDate}</span>
+                    </div>
+                  </div>
+                </div>
+                <span className="text-5xl">🏆</span>
+              </div>
             </div>
-          </div>
-          <div className="bg-gradient-to-r from-blue-50 to-sky-50 border-2 border-islamic-blue rounded-lg p-4 mt-4">
-            <p className="text-sm font-semibold text-islamic-dark mb-1">
-              🎯 Points System: 2 points per correct answer | 5 questions per quiz = 10 points max
-            </p>
-            <p className="text-sm text-gray-700">
-              ⭐ Daily Points: Earn up to 100 points per day (resets at midnight)
-            </p>
-            <p className="text-xs text-gray-600 mt-2">
-              🏆 Questions change daily! Play unlimited quizzes and earn 1 badge per 250 points.
-            </p>
-          </div>
-          
-          {/* Daily Limit Rules */}
-          <div className="bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-400 rounded-lg p-4 mt-4">
-            <div className="flex items-start gap-3">
-              <div className="text-2xl">📊</div>
-              <div className="flex-1">
-                <p className="text-sm font-bold text-green-800 mb-2">Daily Points Limit Rules</p>
-                <ul className="text-sm text-gray-700 space-y-1">
-                  <li>✅ <strong>Play unlimited quizzes</strong> - no restrictions on how many you can take!</li>
-                  <li>⭐ <strong>Earn up to 100 points per day</strong> - 2 points per correct answer (5 questions/quiz)</li>
-                  <li>🔄 <strong>Questions change daily</strong> - new random questions every day!</li>
-                  <li>🕛 <strong>Resets at midnight</strong> - come back tomorrow to earn 100 more points</li>
+
+            <div className="p-6 space-y-6">
+              {/* Status Badge */}
+              {dailyStatus === 'completed' && (
+                <div className="inline-flex items-center gap-2 bg-green-50 text-green-700 px-4 py-2 rounded-xl border border-green-200 font-semibold">
+                  <CheckCircle size={18} />
+                  Completed - Score: {dailyResult?.score ?? 0}
+                </div>
+              )}
+
+              {dailyStatus === 'error' && (
+                <div className="inline-flex items-center gap-2 bg-red-50 text-red-700 px-4 py-2 rounded-xl border border-red-200 font-semibold">
+                  Quiz temporarily unavailable
+                </div>
+              )}
+
+              {/* Description */}
+              <div className="space-y-3 text-[#6a422d]">
+                <p className="text-lg">
+                  Answer all questions correctly to earn bonus points and climb the leaderboard!
+                </p>
+                <ul className="space-y-2 text-[#a1633a]">
+                  <li className="flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-[#14b8a6]"></span>
+                    5 Islamic knowledge questions
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-[#fbbf24]"></span>
+                    Earn points for correct answers
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-[#ff6b6b]"></span>
+                    Compete with other learners
+                  </li>
                 </ul>
+              </div>
+
+              {/* CTA Button */}
+              <div className="flex flex-col sm:flex-row gap-3">
+                <button
+                  onClick={startDailyQuiz}
+                  disabled={dailyStatus !== 'ready'}
+                  className={`flex-1 py-4 px-6 rounded-xl font-bold text-lg transition-all ${
+                    dailyStatus === 'ready'
+                      ? 'bg-gradient-to-r from-[#14b8a6] to-[#0d9488] text-white shadow-lg hover:shadow-xl hover:-translate-y-0.5'
+                      : dailyStatus === 'completed'
+                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                        : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                  }`}
+                >
+                  {dailyCtaLabel}
+                </button>
+
+                {!user?.id && dailyStatus === 'ready' && (
+                  <Link
+                    href="/signin?next=%2Fquiz"
+                    className="py-4 px-6 rounded-xl font-bold text-lg bg-white text-[#14b8a6] border-2 border-[#14b8a6] hover:bg-[#f0fdfa] transition-all text-center"
+                  >
+                    Sign In to Earn Points
+                  </Link>
+                )}
+              </div>
+
+              {!user?.id && dailyStatus === 'ready' && (
+                <p className="text-sm text-[#a1633a] text-center">
+                  You can take the quiz as a guest, but sign in to save your progress and compete!
+                </p>
+              )}
+            </div>
+          </div>
+
+          {/* Stats */}
+          <div className="grid grid-cols-3 gap-4">
+            {[
+              { label: 'Your Score', value: dailyResult?.score ?? '-', icon: '🎯' },
+              { label: 'Questions', value: '5', icon: '❓' },
+              { label: 'Time Limit', value: 'None', icon: '⏱️' },
+            ].map((stat, idx) => (
+              <div key={idx} className="bg-white rounded-xl p-4 text-center border border-[#e5c9a3]/20 shadow-sm">
+                <span className="text-2xl">{stat.icon}</span>
+                <p className="text-2xl font-bold text-[#6a422d] mt-1">{stat.value}</p>
+                <p className="text-sm text-[#a1633a]">{stat.label}</p>
+              </div>
+            ))}
+          </div>
+
+          {/* Tip */}
+          <div className="bg-[#fffbeb] rounded-xl p-5 border border-[#fbbf24]/30">
+            <div className="flex items-start gap-3">
+              <span className="text-2xl">💡</span>
+              <div>
+                <h4 className="font-bold text-[#b45309] mb-1">Quiz Tip</h4>
+                <p className="text-[#92400e] text-sm">
+                  Read each question carefully. Take your time - there's no rush! 
+                  Remember, the goal is to learn, not just to score points.
+                </p>
               </div>
             </div>
           </div>
         </div>
+      </div>
+    );
+  }
 
-        {!quizStarted ? (
-          <div>
-            {/* Category Selection */}
-            <div className="space-y-4">
-              <h2 className="text-2xl font-bold text-islamic-dark text-center mb-6">
-                Choose a Category
-              </h2>
-
-              <div className="grid gap-4">
-                {/* Seerah */}
-                <button
-                  onClick={() => handleStartQuiz('Seerah')}
-                  className={`p-6 border-4 border-sky-300 rounded-xl hover:shadow-lg transition ${
-                    completedQuizzes.includes('Seerah')
-                      ? 'bg-sky-50 hover:bg-sky-100'
-                      : 'bg-sky-50 hover:bg-sky-100'
-                  }`}
-                >
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <div className="text-4xl mb-2">🕌</div>
-                      <h3 className="text-2xl font-bold text-sky-700 mb-2">Seerah</h3>
-                      <p className="text-gray-700 mb-2">Life of Prophet Muhammad ﷺ</p>
-                      <p className="text-sm text-gray-600">5 questions • 2 points each (10 pts)</p>
-                    </div>
-                    {completedQuizzes.includes('Seerah') && (
-                      <div className="flex flex-col items-center">
-                        <CheckCircle className="text-sky-600 w-8 h-8" />
-                        <span className="text-xs text-sky-600 font-bold mt-1">Done</span>
-                      </div>
-                    )}
-                  </div>
-                </button>
-
-                {/* Hadith */}
-                <button
-                  onClick={() => handleStartQuiz('Hadith')}
-                  className={`p-6 border-4 border-yellow-300 rounded-xl hover:shadow-lg transition ${
-                    completedQuizzes.includes('Hadith')
-                      ? 'bg-yellow-50 hover:bg-yellow-100'
-                      : 'bg-yellow-50 hover:bg-yellow-100'
-                  }`}
-                >
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <div className="text-4xl mb-2">📖</div>
-                      <h3 className="text-2xl font-bold text-yellow-700 mb-2">Hadith</h3>
-                      <p className="text-gray-700 mb-2">Sayings of the Prophet ﷺ</p>
-                      <p className="text-sm text-gray-600">5 questions • 2 points each (10 pts)</p>
-                    </div>
-                    {completedQuizzes.includes('Hadith') && (
-                      <div className="flex flex-col items-center">
-                        <CheckCircle className="text-green-600 w-8 h-8" />
-                        <span className="text-xs text-green-600 font-bold mt-1">Done</span>
-                      </div>
-                    )}
-                  </div>
-                </button>
-
-                {/* Prophets */}
-                <button
-                  onClick={() => handleStartQuiz('Prophets')}
-                  className={`p-6 border-4 border-purple-300 rounded-xl hover:shadow-lg transition ${
-                    completedQuizzes.includes('Prophets')
-                      ? 'bg-purple-50 hover:bg-purple-100'
-                      : 'bg-purple-50 hover:bg-purple-100'
-                  }`}
-                >
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <div className="text-4xl mb-2">⭐</div>
-                      <h3 className="text-2xl font-bold text-purple-700 mb-2">Prophets / Ambiya</h3>
-                      <p className="text-gray-700 mb-2">Stories of the Prophets</p>
-                      <p className="text-sm text-gray-600">5 questions • 2 points each (10 pts)</p>
-                    </div>
-                    {completedQuizzes.includes('Prophets') && (
-                      <div className="flex flex-col items-center">
-                        <CheckCircle className="text-green-600 w-8 h-8" />
-                        <span className="text-xs text-green-600 font-bold mt-1">Done</span>
-                      </div>
-                    )}
-                  </div>
-                </button>
-
-                {/* Quran Stories */}
-                <button
-                  onClick={() => handleStartQuiz('Quran Stories')}
-                  className={`p-6 border-4 border-blue-300 rounded-xl hover:shadow-lg transition ${
-                    completedQuizzes.includes('Quran Stories')
-                      ? 'bg-blue-50 hover:bg-blue-100'
-                      : 'bg-blue-50 hover:bg-blue-100'
-                  }`}
-                >
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <div className="text-4xl mb-2">📕</div>
-                      <h3 className="text-2xl font-bold text-blue-700 mb-2">Qur'an Stories</h3>
-                      <p className="text-gray-700 mb-2">Stories from the Qur'an</p>
-                      <p className="text-sm text-gray-600">5 questions • 2 points each (10 pts)</p>
-                    </div>
-                    {completedQuizzes.includes('Quran Stories') && (
-                      <div className="flex flex-col items-center">
-                        <CheckCircle className="text-green-600 w-8 h-8" />
-                        <span className="text-xs text-green-600 font-bold mt-1">Done</span>
-                      </div>
-                    )}
-                  </div>
-                </button>
-
-                {/* Akhlaq */}
-                <button
-                  onClick={() => handleStartQuiz('Akhlaq')}
-                  className={`p-6 border-4 border-pink-300 rounded-xl hover:shadow-lg transition ${
-                    completedQuizzes.includes('Akhlaq')
-                      ? 'bg-pink-50 hover:bg-pink-100'
-                      : 'bg-pink-50 hover:bg-pink-100'
-                  }`}
-                >
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <div className="text-4xl mb-2">💖</div>
-                      <h3 className="text-2xl font-bold text-pink-700 mb-2">Akhlaq</h3>
-                      <p className="text-gray-700 mb-2">Islamic Manners & Character</p>
-                      <p className="text-sm text-gray-600">5 questions • 2 points each (10 pts)</p>
-                    </div>
-                    {completedQuizzes.includes('Akhlaq') && (
-                      <div className="flex flex-col items-center">
-                        <CheckCircle className="text-green-600 w-8 h-8" />
-                        <span className="text-xs text-green-600 font-bold mt-1">Done</span>
-                      </div>
-                    )}
-                  </div>
-                </button>
-              </div>
-
-              {/* Quiz Info */}
-              <div className="bg-blue-50 border-l-4 border-islamic-blue p-6 rounded-lg mt-8">
-                <h4 className="font-bold text-islamic-blue mb-3">ℹ️ How it Works</h4>
-                <ul className="space-y-2 text-gray-700">
-                  <li>✓ Each quiz has 10 questions from the selected category</li>
-                  <li>✓ Each correct answer earns you 1 point (10 points maximum per quiz)</li>
-                  <li>✓ You can take multiple quizzes up to the daily limit of 100 points</li>
-                  <li>✓ Wrong answers show you the correct answer with explanation</li>
-                  <li>✓ Play unlimited times to practice your knowledge! 📚</li>
-                  <li>✓ Reach 1000 monthly points to earn a special badge! 🏆</li>
-                </ul>
-              </div>
-            </div>
+  // Quiz Interface
+  return (
+    <div className="min-h-screen bg-[#fdf8f3] py-8 px-4">
+      <div className="max-w-2xl mx-auto">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-6">
+          <button
+            onClick={resetPage}
+            className="flex items-center gap-2 text-[#6a422d] hover:text-[#14b8a6] font-semibold transition"
+          >
+            <ArrowLeft size={20} />
+            Exit
+          </button>
+          <div className="text-sm font-semibold text-[#a1633a]">
+            Question {currentQuestionIndex + 1} of {currentQuestions.length}
           </div>
-        ) : quizComplete ? (
-          <div className="space-y-6">
-            {/* Quiz Complete */}
-            <div className="bg-gradient-to-r from-green-400 to-islamic-green text-white p-8 rounded-2xl text-center">
-              <div className="text-6xl mb-4">🎉</div>
-              <h2 className="text-4xl font-bold mb-4">Quiz Complete!</h2>
-              <p className="text-xl mb-6">Great job, student!</p>
-            </div>
+        </div>
 
-            {/* Score Display */}
-            <div className="bg-white border-4 border-islamic-blue p-8 rounded-2xl text-center">
-              <p className="text-sm text-gray-600 mb-2">Your Score</p>
-              <div className="text-6xl font-bold text-islamic-blue mb-4">{score}</div>
-              <p className="text-lg text-gray-600">Points Earned!</p>
-            </div>
-
-            {resultToast && (
-              <div className="rounded-lg bg-blue-50 border border-blue-200 p-3 text-center text-blue-700 font-semibold">
-                {resultToast}
-              </div>
-            )}
-
-            {/* Results Breakdown */}
-            <div className="bg-gray-50 p-6 rounded-lg">
-              <h3 className="font-bold text-islamic-dark mb-4">Results:</h3>
-              <div className="space-y-2">
-                <p className="text-gray-700">
-                  <strong>Category:</strong> {category}
-                </p>
-                <p className="text-gray-700">
-                  <strong>Questions:</strong> {answeredCount} / {currentQuestions.length}
-                </p>
-                <p className="text-gray-700">
-                  <strong>Points Earned:</strong> {score} points
-                </p>
-              </div>
-            </div>
-
-            {/* Encouragement */}
-            <div className="bg-purple-50 border-l-4 border-purple-500 p-6 rounded-lg">
-              <h4 className="font-bold text-purple-700 mb-2">👏 Excellent Work!</h4>
-              <p className="text-gray-700 mb-4">
-                You've completed the {category} quiz. Your points have been added to your total score!
-              </p>
-              {score >= 8 && (
-                <p className="text-gray-700 font-semibold text-yellow-600">
-                  🌟 Great score! Keep learning and earning points towards your 1000 monthly badge!
-                </p>
-              )}
-            </div>
-
-            {/* Action Buttons */}
-            <div className="flex flex-col gap-3">
-              <Button variant="primary" size="lg" className="w-full" onClick={handleResetQuiz}>
-                🏠 Back to Home
-              </Button>
-              <Button variant="secondary" size="lg" className="w-full" onClick={handleResetQuiz}>
-                📚 Try Another Quiz
-              </Button>
-              <Button variant="success" size="lg" className="w-full" onClick={handleResetQuiz}>
-                🔁 Play Again
-              </Button>
-              {practiceMode && (
-                <div className="text-center text-sm text-gray-600">
-                  You can practice unlimited times; points award once daily.
-                </div>
-              )}
-            </div>
-          </div>
-        ) : (
-          <div className="space-y-6">
-            {/* Progress */}
-            <div className="bg-white p-4 rounded-lg">
-              <div className="flex justify-between mb-2">
-                <span className="font-semibold text-islamic-dark">
-                  Question {currentQuestionIndex + 1} of {currentQuestions.length}
-                </span>
-                <span className="font-semibold text-islamic-green">⭐ {score} Points</span>
-              </div>
-              <div className="w-full bg-gray-300 rounded-full h-3 overflow-hidden">
-                <div
-                  className="bg-islamic-blue h-full transition-all duration-300"
-                  style={{
-                    width: `${((currentQuestionIndex + 1) / currentQuestions.length) * 100}%`,
-                  }}
-                ></div>
-              </div>
+        {!quizComplete ? (
+          <div className="bg-white rounded-2xl shadow-lg border border-[#e5c9a3]/30 p-6 sm:p-8">
+            {/* Progress Bar */}
+            <div className="w-full bg-[#f9f0e6] h-3 rounded-full mb-8 overflow-hidden">
+              <div
+                className="bg-gradient-to-r from-[#14b8a6] to-[#fbbf24] h-full rounded-full transition-all duration-500"
+                style={{ width: `${((currentQuestionIndex + 1) / currentQuestions.length) * 100}%` }}
+              />
             </div>
 
             {/* Question */}
-            <div className="bg-gradient-to-r from-islamic-blue to-islamic-green text-white p-8 rounded-2xl">
-              <h2 className="text-2xl font-bold mb-6">{currentQuestion.question}</h2>
-              <p className="text-sm opacity-90">Category: {currentQuestion.category}</p>
-            </div>
+            <h2 className="text-xl sm:text-2xl font-bold text-[#6a422d] mb-8 leading-relaxed">
+              {currentQuestion?.question_text || currentQuestion?.question}
+            </h2>
 
             {/* Options */}
-
             <div className="space-y-3">
-              {currentQuestion.options.map((option, index) => (
-                <button
-                  key={index}
-                  onClick={() => !showResult && handleSelectAnswer(index)}
-                  disabled={showResult}
-                  className={`w-full p-4 text-left text-lg font-semibold rounded-lg border-2 transition ${
-                    selectedAnswer === index
-                      ? index === currentQuestion.correctAnswer
-                        ? 'border-green-500 bg-green-100 text-green-800'
-                        : 'border-red-500 bg-red-100 text-red-800'
-                      : showResult && index === currentQuestion.correctAnswer
-                      ? 'border-green-500 bg-green-100 text-green-800'
-                      : 'border-gray-300 hover:border-islamic-blue'
-                  } ${showResult ? 'cursor-default' : 'cursor-pointer'}`}
-                >
-                  <div className="flex items-center gap-3">
-                    {showResult && selectedAnswer === index && index === currentQuestion.correctAnswer && (
-                      <CheckCircle className="text-green-600" size={24} />
-                    )}
-                    {showResult && selectedAnswer === index && index !== currentQuestion.correctAnswer && (
-                      <XCircle className="text-red-600" size={24} />
-                    )}
-                    {showResult && index === currentQuestion.correctAnswer && selectedAnswer !== index && (
-                      <CheckCircle className="text-green-600" size={24} />
-                    )}
-                    <span>{option}</span>
-                  </div>
-                </button>
-              ))}
+              {(currentQuestion?.options || []).map((option: string, idx: number) => {
+                const isSelected = selectedAnswer === idx;
+
+                return (
+                  <button
+                    key={idx}
+                    onClick={() => handleAnswerSelect(idx)}
+                    className={`w-full p-4 sm:p-5 text-left rounded-xl border-2 transition-all text-base font-semibold ${
+                      isSelected
+                        ? 'border-[#14b8a6] bg-[#f0fdfa] text-[#0d9488]'
+                        : 'border-[#e5c9a3]/50 bg-white text-[#6a422d] hover:border-[#14b8a6]/50 hover:bg-[#f9f0e6]'
+                    }`}
+                  >
+                    <div className="flex items-start gap-4">
+                      <div
+                        className={`w-10 h-10 rounded-xl border-2 flex items-center justify-center text-sm font-bold shrink-0 ${
+                          isSelected
+                            ? 'border-[#14b8a6] bg-[#14b8a6] text-white'
+                            : 'border-[#e5c9a3] text-[#a1633a]'
+                        }`}
+                      >
+                        {String.fromCharCode(65 + idx)}
+                      </div>
+                      <div className="pt-2">{option}</div>
+                    </div>
+                  </button>
+                );
+              })}
             </div>
 
-            {/* Explanation */}
-            {showExplanation && (
-              <div className="bg-blue-50 border-l-4 border-islamic-blue p-6 rounded-lg">
-                <h4 className="font-bold text-islamic-blue mb-2">📖 Explanation</h4>
-                <p className="text-gray-800">{currentQuestion.explanation}</p>
-                {selectedAnswer === currentQuestion.correctAnswer && (
-                  <p className="mt-3 text-green-700 font-semibold">✓ Correct!</p>
-                )}
-                {selectedAnswer !== currentQuestion.correctAnswer && (
-                  <p className="mt-3 text-red-700 font-semibold">
-                    The correct answer is: <strong>{currentQuestion.options[currentQuestion.correctAnswer]}</strong>
-                  </p>
-                )}
-              </div>
-            )}
-
             {/* Next Button */}
-            {showResult && (
-              <Button
+            <div className="mt-8 pt-6 border-t border-[#e5c9a3]/30">
+              <button
                 onClick={handleNext}
-                variant="success"
-                size="lg"
-                className="w-full"
+                disabled={selectedAnswer === null}
+                className={`w-full py-4 rounded-xl font-bold text-lg transition-all ${
+                  selectedAnswer !== null
+                    ? 'bg-gradient-to-r from-[#14b8a6] to-[#0d9488] text-white shadow-lg hover:shadow-xl'
+                    : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                }`}
               >
-                {currentQuestionIndex < currentQuestions.length - 1
-                  ? '➡️ Next Question'
-                  : '✓ Finish Quiz'}
-              </Button>
+                {currentQuestionIndex === currentQuestions.length - 1 ? 'Finish Quiz' : 'Next Question'}
+              </button>
+            </div>
+          </div>
+        ) : (
+          // Quiz Complete View
+          <div className="bg-white rounded-2xl shadow-lg border border-[#e5c9a3]/30 p-8 text-center">
+            {isSubmitting ? (
+              <div className="py-12">
+                <div className="animate-spin text-4xl mb-4">🔄</div>
+                <p className="text-[#6a422d]">Submitting your answers...</p>
+              </div>
+            ) : (
+              <>
+                <div className="w-24 h-24 bg-gradient-to-br from-[#fbbf24] to-[#f59e0b] rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg">
+                  <Trophy size={48} className="text-white" />
+                </div>
+                <h2 className="text-3xl font-bold text-[#6a422d] mb-2">Quiz Completed!</h2>
+                <p className="text-[#a1633a] mb-6">MashaAllah! You finished the daily quiz.</p>
+
+                <div className="space-y-4 mb-8">
+                  <div className="bg-[#f0fdfa] rounded-xl p-4">
+                    <p className="text-sm text-[#0d9488] font-semibold uppercase tracking-wide">Your Score</p>
+                    <p className="text-4xl font-bold text-[#14b8a6]">{dailyResult?.score} / {currentQuestions.length}</p>
+                  </div>
+
+                  {dailyResult?.streak > 0 && (
+                    <div className="inline-flex items-center gap-2 bg-orange-50 text-orange-700 px-4 py-2 rounded-xl border border-orange-200 font-semibold">
+                      🔥 {dailyResult.streak} Day Streak!
+                    </div>
+                  )}
+
+                  {dailyResult?.awardedPoints > 0 ? (
+                    <p className="text-[#14b8a6] font-bold text-lg">+{dailyResult.awardedPoints} Points Added! ⭐</p>
+                  ) : dailyResult?.guest ? (
+                    <div className="bg-[#fffbeb] rounded-xl p-4 border border-[#fbbf24]/30">
+                      <p className="text-[#b45309] font-semibold">Sign in to earn points and compete!</p>
+                      <Link href="/signin" className="inline-block mt-2 text-[#14b8a6] font-bold hover:underline">
+                        Create an account →
+                      </Link>
+                    </div>
+                  ) : (
+                    <p className="text-[#a1633a]">Daily limit reached or learning mode</p>
+                  )}
+                </div>
+
+                {resultToast && (
+                  <div className="mb-6 p-4 bg-blue-50 text-blue-700 rounded-xl text-sm">
+                    {resultToast}
+                  </div>
+                )}
+
+                <button
+                  onClick={resetPage}
+                  className="w-full py-4 bg-gradient-to-r from-[#14b8a6] to-[#0d9488] text-white font-bold rounded-xl shadow-lg hover:shadow-xl transition-all"
+                >
+                  Return to Quiz Menu
+                </button>
+              </>
             )}
           </div>
         )}
