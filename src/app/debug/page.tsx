@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/lib/auth-context';
+import { placeWordsOnGrid, WordSearchConfig, Difficulty } from '@/data/games';
 
 export default function DebugPage() {
   const { user } = useAuth();
@@ -10,6 +11,42 @@ export default function DebugPage() {
   const [dbStatus, setDbStatus] = useState<any>(null);
 
   const addLog = (msg: string) => setLogs(prev => [...prev, `${new Date().toISOString().slice(11, 19)} ${msg}`]);
+
+  const testWordSearch = () => {
+    addLog('Testing Word Search Logic...');
+    const difficulties: Difficulty[] = ['easy', 'medium', 'hard'];
+    
+    // Mock config
+    const config: WordSearchConfig = {
+      wordPool: ['ALLAH', 'MUHAMMAD', 'ISLAM', 'QURAN', 'SALAH', 'ZAKAH', 'SAWM', 'IMAN', 'IHSAN', 'TAQWA', 'SABR', 'SHUKR', 'HALAL', 'HARAM', 'SUNNAH', 'HADITH', 'KAABA', 'MECCA', 'MEDINA'],
+      count: 10,
+      minSize: 8,
+      maxSize: 12
+    };
+
+    difficulties.forEach(diff => {
+      let successCount = 0;
+      const runs = 20;
+      let totalTargets = 0;
+      
+      for(let i=0; i<runs; i++) {
+        try {
+          const result = placeWordsOnGrid(config, diff);
+          if (result.targets.length > 0) {
+            successCount++;
+            totalTargets += result.targets.length;
+          }
+        } catch (e: any) {
+            addLog(`❌ Error in ${diff}: ${e.message}`);
+        }
+      }
+      
+      addLog(`Difficulty: ${diff.toUpperCase()}`);
+      addLog(`  Runs: ${runs}`);
+      addLog(`  Success Rate: ${(successCount/runs)*100}%`);
+      addLog(`  Avg Targets: ${(totalTargets/runs).toFixed(1)}`);
+    });
+  };
 
   const runDiagnostics = async () => {
     setLogs([]);
@@ -60,9 +97,15 @@ export default function DebugPage() {
       <h1 className="text-xl font-bold mb-4">Debug Console</h1>
       <button 
         onClick={runDiagnostics}
-        className="bg-blue-600 text-white px-4 py-2 rounded mb-4 hover:bg-blue-700"
+        className="bg-blue-600 text-white px-4 py-2 rounded mb-4 hover:bg-blue-700 mr-2"
       >
         Run Diagnostics
+      </button>
+      <button 
+        onClick={testWordSearch}
+        className="bg-green-600 text-white px-4 py-2 rounded mb-4 hover:bg-green-700"
+      >
+        Test Word Search
       </button>
       
       <div className="bg-gray-100 p-4 rounded border border-gray-300 min-h-[300px]">

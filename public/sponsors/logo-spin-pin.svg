@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300">
+  <!-- Dark Background Circle -->
+  <circle cx="200" cy="150" r="140" fill="#0f172a" />
+  
+  <!-- Neon Concentric Arcs -->
+  <!-- Outer Yellow Arcs -->
+  <path d="M 200,20 A 130,130 0 0 1 310,90" fill="none" stroke="#facc15" stroke-width="3" stroke-linecap="round" />
+  <path d="M 200,280 A 130,130 0 0 1 90,210" fill="none" stroke="#facc15" stroke-width="3" stroke-linecap="round" />
+  
+  <!-- Middle Green Arcs -->
+  <path d="M 90,90 A 110,110 0 0 1 200,40" fill="none" stroke="#4ade80" stroke-width="3" stroke-linecap="round" stroke-dasharray="20 15" />
+  <path d="M 310,210 A 110,110 0 0 1 200,260" fill="none" stroke="#4ade80" stroke-width="3" stroke-linecap="round" stroke-dasharray="20 15" />
+  
+  <!-- Inner Purple Arcs -->
+  <path d="M 200,60 A 90,90 0 1 0 200,240 A 90,90 0 1 0 200,60" fill="none" stroke="#d946ef" stroke-width="2" stroke-dasharray="10 10" opacity="0.8" />
+
+  <!-- Main Logo Rectangles -->
+  <!-- Left Yellow Box -->
+  <rect x="40" y="110" width="160" height="80" fill="#facc15" stroke="#0f172a" stroke-width="4" />
+  <!-- Right Pink Box -->
+  <rect x="200" y="110" width="160" height="80" fill="#ec4899" stroke="#0f172a" stroke-width="4" />
+
+  <!-- Main Text -->
+  <text x="120" y="165" font-family="Arial, sans-serif" font-weight="900" font-size="60" text-anchor="middle" fill="#0f172a">SPIN</text>
+  <text x="280" y="165" font-family="Arial, sans-serif" font-weight="900" font-size="60" text-anchor="middle" fill="#0f172a">PIN</text>
+
+  <!-- Bottom Text Bar -->
+  <rect x="40" y="195" width="320" height="30" fill="#0f172a" />
+  
+  <!-- Subtext -->
+  <text x="200" y="215" font-family="Arial, sans-serif" font-weight="bold" font-size="16" text-anchor="middle" letter-spacing="2">
+    <tspan fill="#d946ef">SKATING</tspan>
+    <tspan fill="#4ade80"> • </tspan>
+    <tspan fill="#4ade80">BOWLING</tspan>
+    <tspan fill="#facc15"> • </tspan>
+    <tspan fill="#facc15">GAMING</tspan>
+  </text>
+  
+  <!-- Bottom Decorative Line -->
+  <line x1="60" y1="225" x2="340" y2="225" stroke="#facc15" stroke-width="2" />
+</svg>

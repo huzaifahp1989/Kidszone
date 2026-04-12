@@ -8,6 +8,7 @@ CREATE TABLE IF NOT EXISTS public.users (
   email TEXT UNIQUE,
   name TEXT,
   age INTEGER,
+  madrasahName TEXT,
   role TEXT DEFAULT 'kid',
   points INTEGER DEFAULT 0,
   weeklyPoints INTEGER DEFAULT 0,

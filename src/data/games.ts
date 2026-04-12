@@ -29,6 +29,109 @@ export interface WordSearchConfig {
   };
 }
 
+type WordPlacement = {
+  word: string;
+  start: [number, number];
+  end: [number, number];
+  reversed: boolean;
+  diagonal: boolean;
+};
+
+export type WordSearchData = {
+  grid: string[][];
+  placements: WordPlacement[];
+  targets: string[];
+};
+
+const randomInt = (min: number, max: number) => Math.floor(Math.random() * (max - min + 1)) + min;
+const shuffle = <T,>(arr: T[]) => {
+  const copy = [...arr];
+  for (let i = copy.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [copy[i], copy[j]] = [copy[j], copy[i]];
+  }
+  return copy;
+};
+
+const orientations: Array<[number, number]> = [
+  [1, 0],
+  [0, 1],
+  [-1, 0],
+  [0, -1],
+  [1, 1],
+  [1, -1],
+  [-1, 1],
+  [-1, -1],
+];
+
+export const placeWordsOnGrid = (
+  config: WordSearchConfig,
+  difficulty: Difficulty,
+): WordSearchData => {
+  const settings = {
+    easy: { size: 8, directions: [[0, 1], [1, 0]], allowReverse: false, count: 5 },
+    medium: { size: 10, directions: [[0, 1], [1, 0], [1, 1], [-1, 1]], allowReverse: false, count: 8 },
+    hard: { size: 12, directions: orientations, allowReverse: true, count: 12 },
+  };
+
+  const { size, directions, allowReverse, count } = settings[difficulty];
+  const gridSize = size;
+  const grid = Array.from({ length: gridSize }, () => Array.from({ length: gridSize }, () => ''));
+  const placements: WordPlacement[] = [];
+
+  const tryPlace = (word: string) => {
+    const reversed = allowReverse && Math.random() > 0.5;
+    const letters = reversed ? [...word].reverse() : [...word];
+    const availableDirs = shuffle(directions);
+    for (const dir of availableDirs) {
+      for (let attempt = 0; attempt < 50; attempt += 1) {
+        const row = randomInt(0, gridSize - 1);
+        const col = randomInt(0, gridSize - 1);
+        const endRow = row + dir[0] * (letters.length - 1);
+        const endCol = col + dir[1] * (letters.length - 1);
+        if (endRow < 0 || endRow >= gridSize || endCol < 0 || endCol >= gridSize) continue;
+        let collision = false;
+        for (let i = 0; i < letters.length; i += 1) {
+          const r = row + dir[0] * i;
+          const c = col + dir[1] * i;
+          const cell = grid[r][c];
+          if (cell && cell !== letters[i]) {
+            collision = true;
+            break;
+          }
+        }
+        if (!collision) {
+          for (let i = 0; i < letters.length; i += 1) {
+            const r = row + dir[0] * i;
+            const c = col + dir[1] * i;
+            grid[r][c] = letters[i];
+          }
+          placements.push({
+            word,
+            start: [row, col],
+            end: [endRow, endCol],
+            reversed,
+            diagonal: dir[0] !== 0 && dir[1] !== 0,
+          });
+          return true;
+        }
+      }
+    }
+    return false;
+  };
+
+  const targets = shuffle(config.wordPool).slice(0, count);
+  targets.forEach(w => tryPlace(w));
+  for (let r = 0; r < gridSize; r += 1) {
+    for (let c = 0; c < gridSize; c += 1) {
+      if (!grid[r][c]) {
+        grid[r][c] = String.fromCharCode(65 + randomInt(0, 25));
+      }
+    }
+  }
+  return { grid, placements, targets };
+};
+
 export interface HangmanWord {
   word: string;
   hint: string;
@@ -60,7 +163,6 @@ export const hangmanTopics: HangmanConfig = {
       { word: 'SALAH', hint: 'The five daily prayers.' },
       { word: 'ZAKAT', hint: 'Giving charity to the poor.' },
       { word: 'SAWM', hint: 'Fasting during the month of Ramadan.' },
-      { word: 'HAJJ', hint: 'Pilgrimage to the House of Allah.' },
     ],
     'Quran': [
       { word: 'FATIHA', hint: 'The opening chapter of the Quran.' },
@@ -74,8 +176,6 @@ export const hangmanTopics: HangmanConfig = {
       { word: 'MAKKAH', hint: 'Birthplace of the Prophet (PBUH).' },
       { word: 'MADINAH', hint: 'City where the Prophet (PBUH) migrated to.' },
       { word: 'JERUSALEM', hint: 'Location of Masjid Al-Aqsa.' },
-      { word: 'ARAFAT', hint: 'Key plain visited during Hajj.' },
-      { word: 'MINA', hint: 'Place of tent city during Hajj.' },
       { word: 'CAVEHIRA', hint: 'Where the first revelation was received.' },
     ],
     'Values': [
@@ -86,7 +186,69 @@ export const hangmanTopics: HangmanConfig = {
       { word: 'ADAB', hint: 'Good manners and etiquette.' },
       { word: 'AMANAH', hint: 'Trustworthiness and honesty.' },
     ],
+    'Ramadan': [
+      { word: 'SUHOOR', hint: 'Pre-dawn meal.' },
+      { word: 'IFTAR', hint: 'Meal to break the fast.' },
+      { word: 'TARAWEEH', hint: 'Special night prayers.' },
+      { word: 'ITIKAF', hint: 'Seclusion in the mosque.' },
+      { word: 'RAYYAN', hint: 'Gate of Jannah for those who fast.' },
+      { word: 'QADR', hint: 'The Night of Power.' },
+      { word: 'ZAKAT', hint: 'Charity given to the poor.' },
+      { word: 'EID', hint: 'Celebration after Ramadan.' },
+    ],
   }
+};
+
+export const ramadanWordSearch: WordSearchConfig = {
+  wordPool: [
+    'RAMADAN',
+    'FASTING',
+    'SUHOOR',
+    'IFTAR',
+    'TARAWEEH',
+    'QURAN',
+    'LAYLATULQADR',
+    'ZAKAT',
+    'EID',
+    'MASJID',
+    'DUA',
+    'DHIKR',
+    'TAQWA',
+    'SADAQAH',
+    'DATES',
+    'WATER',
+  ],
+  count: 8,
+  minSize: 10,
+  maxSize: 14,
+  conceptual: {
+    choices: [
+      {
+        id: 'r-concept-1',
+        prompt: 'What is the purpose of fasting in Ramadan?',
+        points: 4,
+        options: [
+          { id: 'rc1', text: 'To attain Taqwa (God-consciousness)' },
+          { id: 'rc2', text: 'To lose weight' },
+          { id: 'rc3', text: 'To save money on food' },
+          { id: 'rc4', text: 'To suffer hunger' },
+        ],
+        correctOptionId: 'rc1',
+      },
+      {
+        id: 'r-concept-2',
+        prompt: 'Which night is better than 1000 months?',
+        points: 4,
+        options: [
+          { id: 'rd1', text: 'Laylatul Qadr' },
+          { id: 'rd2', text: 'Laylatul Baraat' },
+          { id: 'rd3', text: 'Eid Night' },
+          { id: 'rd4', text: 'Friday Night' },
+        ],
+        correctOptionId: 'rd1',
+      },
+    ],
+  },
 };
 
 export const seerahWordSearch: WordSearchConfig = {
@@ -679,7 +841,6 @@ export const islamicCalendarPool = [
   { id: 'hijri-year', prompt: 'How many months are in the Islamic (Hijri) year?', correct: '12 months', options: ['12 months', '13 months', '10 months', '11 months'] },
   { id: 'ramadan-month', prompt: 'Ramadan is the ___ month of the Islamic calendar', correct: '9th month', options: ['9th month', '3rd month', '7th month', '12th month'] },
   { id: 'rajab', prompt: 'Rajab is one of the sacred months in which fighting is ___', correct: 'Forbidden', options: ['Forbidden', 'Encouraged', 'Allowed', 'Delayed'] },
-  { id: 'dhul-hijjah', prompt: 'In which month does the Hajj pilgrimage occur?', correct: 'Dhul-Hijjah', options: ['Dhul-Hijjah', 'Dhul-Qadah', 'Shawwal', 'Rabi\' al-Awwal'] },
   { id: 'lunar-days', prompt: 'The Islamic year is shorter than solar year by approximately ___ days', correct: '11 days', options: ['11 days', '5 days', '15 days', '20 days'] },
 ];
 

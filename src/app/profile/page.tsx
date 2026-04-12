@@ -15,6 +15,23 @@ export default function ProfilePage() {
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [userPoints, setUserPoints] = useState<any>(null);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const msg = new URLSearchParams(window.location.search).get('message');
+    if (msg) setMessage(msg);
+  }, []);
+
+  useEffect(() => {
+    async function fetchPoints() {
+       if (user?.id) {
+         const { data } = await supabase.from('users_points').select('*').eq('user_id', user.id).single();
+         if (data) setUserPoints(data);
+       }
+    }
+    fetchPoints();
+  }, [user?.id, profile]);
 
   useEffect(() => {
     if (profile) {
@@ -50,8 +67,13 @@ export default function ProfilePage() {
     if (!user?.id) return;
     setError(null);
     setMessage(null);
-    if (!name.trim()) {
-      setError('Please enter your name.');
+    const trimmedName = name.trim();
+    if (!trimmedName) {
+      setError('Please enter your full name.');
+      return;
+    }
+    if (trimmedName.length < 2) {
+      setError('Name must be at least 2 characters.');
       return;
     }
     if (age === '' || Number.isNaN(age)) {
@@ -61,10 +83,15 @@ export default function ProfilePage() {
     setSaving(true);
     try {
       console.log('Updating profile:', { name, age, uid: user.id });
+      const { error: metaErr } = await supabase.auth.updateUser({ data: { name: trimmedName } });
+      if (metaErr) {
+        console.warn('Could not update auth metadata name:', metaErr.message);
+      }
+
       const { data, error } = await supabase
         .from('users')
         .update({
-          name,
+          name: trimmedName,
           age: Number(age),
         })
         .eq('uid', user.id);
@@ -139,7 +166,7 @@ user?.email ??
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-1">Name</label>
+            <label className="block text-sm font-medium mb-1">Full name</label>
             <input
               type="text"
               value={name}
@@ -162,18 +189,22 @@ user?.email ??
             />
           </div>
 
-          <div className="grid grid-cols-3 gap-4 pt-2">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-2">
             <div className="text-center rounded-lg bg-blue-50 p-3">
               <div className="text-xs text-gray-600">Total Points</div>
-              <div className="text-xl font-bold text-islamic-blue">{profile?.points ?? 0}</div>
+              <div className="text-xl font-bold text-islamic-blue">{userPoints?.total_points ?? profile?.points ?? 0}</div>
             </div>
             <div className="text-center rounded-lg bg-green-50 p-3">
               <div className="text-xs text-gray-600">Daily Points</div>
-              <div className="text-xl font-bold text-islamic-green">{profile?.todayPoints ?? 0}/100</div>
+              <div className="text-xl font-bold text-islamic-green">{userPoints?.today_points ?? profile?.todayPoints ?? 0}/100</div>
             </div>
             <div className="text-center rounded-lg bg-yellow-50 p-3">
               <div className="text-xs text-gray-600">Badges</div>
-              <div className="text-xl font-bold text-yellow-600">🏆 {profile?.badges ?? 0}</div>
+              <div className="text-xl font-bold text-yellow-600">🏆 {userPoints?.badges ?? profile?.badges ?? 0}</div>
+            </div>
+             <div className="text-center rounded-lg bg-purple-50 p-3">
+              <div className="text-xs text-gray-600">Level</div>
+              <div className="text-xl font-bold text-purple-600">⭐ {userPoints?.level ?? 1}</div>
             </div>
           </div>
 

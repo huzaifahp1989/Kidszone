@@ -41,6 +41,9 @@ export interface AwardPointsResponse {
   today_points?: number
   weekly_points?: number
   monthly_points?: number
+  badges?: number
+  level?: number
+  badges_earned_now?: number
   daily_limit?: number
 }
 
@@ -50,6 +53,8 @@ export interface UserPoints {
   weekly_points: number
   monthly_points: number
   today_points: number
+  badges: number
+  level: number
   last_earned_date: string
 }
 
@@ -216,8 +221,13 @@ export async function awardPoints(
     const total = (existingRow?.total_points ?? 0) + pointsToAward
     const weekly = (existingRow?.weekly_points ?? 0) + pointsToAward
     const monthly = (existingRow?.monthly_points ?? 0) + pointsToAward
+    
+    // Calculate badges and level
+    const badges = Math.floor(total / 100)
+    const level = 1 + Math.floor(badges / 5)
+    const badgesEarnedNow = badges - Math.floor((existingRow?.total_points ?? 0) / 100)
 
-    console.log('[awardPoints] Fallback: upserting with:', { user_id: user.id, total, weekly, monthly, today: newDailyTotal })
+    console.log('[awardPoints] Fallback: upserting with:', { user_id: user.id, total, weekly, monthly, today: newDailyTotal, badges, level })
 
     const { error: upsertErr } = await supabase
       .from('users_points')
@@ -227,6 +237,8 @@ export async function awardPoints(
         weekly_points: weekly,
         monthly_points: monthly,
         today_points: newDailyTotal,
+        badges: badges,
+        level: level,
         last_earned_date: todayStr,
       })
 
@@ -257,6 +269,9 @@ export async function awardPoints(
       today_points: newDailyTotal,
       weekly_points: weekly,
       monthly_points: monthly,
+      badges: badges,
+      level: level,
+      badges_earned_now: badgesEarnedNow,
       daily_limit: dailyLimit,
     }
   } catch (error) {

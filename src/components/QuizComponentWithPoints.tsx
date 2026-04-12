@@ -5,7 +5,7 @@
 
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { awardPoints, checkDailyAllowance, getUserPoints } from '@/lib/points-service'
 
 export function QuizComponent({ quizId, questions }: any) {
@@ -17,6 +17,7 @@ export function QuizComponent({ quizId, questions }: any) {
   const [userPoints, setUserPoints] = useState<any>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [timeLeft, setTimeLeft] = useState(30) // 30 seconds per question
 
   // Load user's current points on mount
   useEffect(() => {
@@ -30,30 +31,14 @@ export function QuizComponent({ quizId, questions }: any) {
     loadUserData()
   }, [])
 
-  // Handle answer selection
-  const handleAnswer = (isCorrect: boolean) => {
-    if (isCorrect) {
-      setScore(score + 1)
-    }
-
-    if (currentQuestion < questions.length - 1) {
-      setCurrentQuestion(currentQuestion + 1)
-    } else {
-      // Quiz is complete
-      setIsComplete(true)
-      handleQuizComplete()
-    }
-  }
-
-  // Handle quiz completion - award points
-  const handleQuizComplete = async () => {
+  const handleQuizComplete = useCallback(async (finalScore: number) => {
     setLoading(true)
     setError(null)
 
     try {
       // Calculate points based on score
       // Example: 80% score = 20 points, 60% score = 10 points
-      const percentage = (score / questions.length) * 100
+      const percentage = (finalScore / questions.length) * 100
       const pointsToAward =
         percentage >= 80
           ? 20
@@ -81,14 +66,65 @@ export function QuizComponent({ quizId, questions }: any) {
     } finally {
       setLoading(false)
     }
-  }
+  }, [questions.length])
+
+  const handleAnswer = useCallback((isCorrect: boolean) => {
+    if (currentQuestion < questions.length - 1) {
+      if (isCorrect) setScore((prev) => prev + 1)
+      setCurrentQuestion((prev) => prev + 1)
+      return
+    }
+
+    setIsComplete(true)
+    setScore((prev) => {
+      const next = isCorrect ? prev + 1 : prev
+      handleQuizComplete(next)
+      return next
+    })
+  }, [currentQuestion, questions.length, handleQuizComplete])
+
+  // Timer logic
+  useEffect(() => {
+    if (isComplete) return
+    
+    setTimeLeft(30) // Reset timer for new question
+    
+    const timer = setInterval(() => {
+      setTimeLeft((prev) => {
+        if (prev <= 1) {
+          clearInterval(timer)
+          handleAnswer(false) // Time's up!
+          return 0
+        }
+        return prev - 1
+      })
+    }, 1000)
+    
+    return () => clearInterval(timer)
+  }, [currentQuestion, isComplete, handleAnswer])
 
   // Show quiz in progress
   if (!isComplete) {
     return (
       <div className="quiz-container">
         <div className="quiz-header">
-          <h2>{questions[currentQuestion]?.question}</h2>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <h2>{questions[currentQuestion]?.question}</h2>
+            <div className={`timer ${timeLeft < 10 ? 'urgent' : ''}`} style={{ 
+              fontWeight: 'bold', 
+              color: timeLeft < 10 ? 'red' : 'inherit',
+              border: '2px solid',
+              borderColor: timeLeft < 10 ? 'red' : '#ccc',
+              borderRadius: '50%',
+              width: '40px',
+              height: '40px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}>
+              {timeLeft}
+            </div>
+          </div>
           <p className="progress">
             Question {currentQuestion + 1} of {questions.length}
           </p>
@@ -150,22 +186,30 @@ export function QuizComponent({ quizId, questions }: any) {
             <>
               <h3>✨ Points Awarded! ✨</h3>
               <p className="points-earned">+{pointsAwarded.points_awarded} points</p>
+              
+              {pointsAwarded.badges_earned_now > 0 && (
+                 <div className="badge-notification" style={{ backgroundColor: '#fff3cd', padding: '10px', borderRadius: '8px', margin: '10px 0', border: '1px solid #ffeeba', color: '#856404' }}>
+                    <h4>🏆 New Badge Earned!</h4>
+                    <p>You've earned {pointsAwarded.badges_earned_now} new badge(s)!</p>
+                 </div>
+              )}
+              
               <div className="points-breakdown">
                 <div>
                   <p className="label">Total Points</p>
                   <p className="value">{pointsAwarded.total_points}</p>
                 </div>
                 <div>
+                  <p className="label">Badges</p>
+                  <p className="value">🏆 {pointsAwarded.badges ?? 0}</p>
+                </div>
+                <div>
+                  <p className="label">Level</p>
+                  <p className="value">⭐ {pointsAwarded.level ?? 1}</p>
+                </div>
+                <div>
                   <p className="label">Today</p>
                   <p className="value">{pointsAwarded.today_points}/100</p>
-                </div>
-                <div>
-                  <p className="label">Weekly</p>
-                  <p className="value">{pointsAwarded.weekly_points}</p>
-                </div>
-                <div>
-                  <p className="label">Monthly</p>
-                  <p className="value">{pointsAwarded.monthly_points}</p>
                 </div>
               </div>
             </>
@@ -189,12 +233,12 @@ export function QuizComponent({ quizId, questions }: any) {
               <p className="stat-value">{userPoints.total_points}</p>
             </div>
             <div className="stat">
-              <p className="stat-label">Weekly Points</p>
-              <p className="stat-value">{userPoints.weekly_points}</p>
+              <p className="stat-label">Badges</p>
+              <p className="stat-value">🏆 {userPoints.badges ?? 0}</p>
             </div>
             <div className="stat">
-              <p className="stat-label">Monthly Points</p>
-              <p className="stat-value">{userPoints.monthly_points}</p>
+              <p className="stat-label">Level</p>
+              <p className="stat-value">⭐ {userPoints.level ?? 1}</p>
             </div>
             <div className="stat">
               <p className="stat-label">Today's Earning</p>
@@ -507,7 +551,7 @@ export function QuizComponent({ quizId, questions }: any) {
  *         { text: "Shahada", isCorrect: true },
  *         { text: "Salah", isCorrect: false },
  *         { text: "Zakat", isCorrect: false },
- *         { text: "Hajj", isCorrect: false }
+ *         { text: "Sawm", isCorrect: false }
  *       ]
  *     },
  *     // More questions...

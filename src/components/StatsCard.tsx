@@ -16,10 +16,10 @@ const colorClasses = {
 
 export const StatsCard: React.FC<StatsCardProps> = ({ label, value, icon, color }) => {
   return (
-    <div className={`${colorClasses[color]} rounded-xl p-6 text-center`}>
-      <div className="text-4xl mb-3">{icon}</div>
-      <p className="text-sm font-semibold mb-2">{label}</p>
-      <p className="text-3xl font-bold">{value}</p>
+    <div className={`${colorClasses[color]} rounded-3xl p-6 text-center shadow-kids transform hover:scale-105 transition-transform duration-200 border-2 border-white/50`}>
+      <div className="text-5xl mb-3 filter drop-shadow-sm">{icon}</div>
+      <p className="text-base font-bold mb-2 opacity-80">{label}</p>
+      <p className="text-4xl font-black">{value}</p>
     </div>
   );
 };

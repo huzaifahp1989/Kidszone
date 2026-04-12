@@ -20,7 +20,8 @@ export const getNextLevelPoints = (points: number): { next: string; remaining: n
   return { next: 'Max Level', remaining: 0 };
 };
 
-export const formatDate = (date: string | Date): string => {
+export const formatDate = (date?: string | Date | null): string => {
+  if (!date) return '-';
   const d = new Date(date);
   return d.toLocaleDateString('en-US', {
     year: 'numeric',

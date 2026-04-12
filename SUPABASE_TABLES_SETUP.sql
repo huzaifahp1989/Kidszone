@@ -20,6 +20,7 @@ CREATE TABLE IF NOT EXISTS users (
   name TEXT NOT NULL,
   age INTEGER CHECK (age >= 5 AND age <= 14),
   guardianEmail TEXT,
+  madrasahName TEXT,
   points INTEGER DEFAULT 0 CHECK (points >= 0),
   weeklyPoints INTEGER DEFAULT 0 CHECK (weeklyPoints >= 0),
   monthlyPoints INTEGER DEFAULT 0 CHECK (monthlyPoints >= 0),

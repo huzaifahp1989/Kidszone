@@ -5,6 +5,8 @@ export interface KidProfile {
   email: string;
   name: string;
   age: number;
+  madrasahName?: string;
+  contactNumber?: string;
   role: 'kid' | 'guardian' | 'admin';
   points: number;
   weeklyPoints: number;
@@ -13,6 +15,9 @@ export interface KidProfile {
   dailyLimit?: number;
   badges: number;
   level: string;
+  streak?: number;
+  lastStreakUpdate?: string;
+  isFlagged?: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -30,6 +35,8 @@ function mapUser(row: any, pointsRow?: any): KidProfile {
     email: row.email,
     name: row.name,
     age: row.age,
+    madrasahName: row.madrasahName ?? row.madrasahname ?? row.madrasah_name,
+    contactNumber: row.contactNumber ?? row.contactnumber ?? row.contact_number,
     role: row.role,
     points: totalPoints,
     weeklyPoints,
@@ -38,6 +45,9 @@ function mapUser(row: any, pointsRow?: any): KidProfile {
     dailyLimit,
     badges: row.badges ?? 0,
     level: row.level ?? 'Beginner',
+    streak: row.streak ?? 0,
+    lastStreakUpdate: row.last_streak_update,
+    isFlagged: row.is_flagged ?? false,
     createdAt: row.createdAt ?? row.createdat ?? '',
     updatedAt: row.updatedAt ?? row.updatedat ?? '',
   };

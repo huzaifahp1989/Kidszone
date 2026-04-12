@@ -1,1144 +1,1021 @@
-// Quiz questions data - 5 Categories with 30 questions each (150 total)
-// Each quiz shows 5 random questions based on daily seed
-// Each correct answer = 2 points, so 10 points per quiz
-// Daily limit: 100 points max | Questions change every day
-
-  export const quizzes = [
-    // SEERAH - 30 Questions (Refreshed)
-    { id: 'seerah-1', question: 'Who was the first person to accept Islam after Khadijah (RA)?', options: ['Ali ibn Abi Talib', 'Abu Bakr as-Siddiq', 'Zayd ibn Harithah', 'Uthman ibn Affan'], correctAnswer: 0, explanation: 'Ali ibn Abi Talib (RA) was the first child to accept Islam after Khadijah (RA).', category: 'Seerah', difficulty: 'Seerah', points: 2 },
-    { id: 'seerah-2', question: 'What was the Prophet’s ﷺ age when he received the first revelation?', options: ['35', '38', '40', '42'], correctAnswer: 2, explanation: 'He was 40 years old when Jibreel came in the Cave of Hira.', category: 'Seerah', difficulty: 'Seerah', points: 2 },
-    { id: 'seerah-3', question: 'Which tribe was the Prophet ﷺ born into?', options: ['Banu Hashim', 'Banu Tamim', 'Banu Aws', 'Banu Khazraj'], correctAnswer: 0, explanation: 'He was born into Banu Hashim of Quraysh.', category: 'Seerah', difficulty: 'Seerah', points: 2 },
-    { id: 'seerah-4', question: 'Who was the wet nurse (foster mother) of the Prophet ﷺ?', options: ['Halimah as-Sa’diyyah', 'Asiyah', 'Fatimah bint Asad', 'Umm Ayman'], correctAnswer: 0, explanation: 'Halimah as-Sa’diyyah cared for him in the desert of Banu Sa’d.', category: 'Seerah', difficulty: 'Seerah', points: 2 },
-    { id: 'seerah-5', question: 'Where did the first revelation occur?', options: ['Mount Uhud', 'Cave of Hira', 'Mount Arafat', 'Masjid al-Haram'], correctAnswer: 1, explanation: 'The first revelation was in the Cave of Hira on Jabal al-Nour.', category: 'Seerah', difficulty: 'Seerah', points: 2 },
-    { id: 'seerah-6', question: 'What was the year of the Prophet’s birth known as?', options: ['Year of Joy', 'Year of Sorrow', 'Year of the Elephant', 'Year of Peace'], correctAnswer: 2, explanation: 'He was born in the Year of the Elephant when Abraha attempted to destroy the Ka’bah.', category: 'Seerah', difficulty: 'Seerah', points: 2 },
-    { id: 'seerah-7', question: 'Who accompanied the Prophet ﷺ in the Cave of Thawr during Hijrah?', options: ['Umar', 'Uthman', 'Abu Bakr', 'Ali'], correctAnswer: 2, explanation: 'Abu Bakr as-Siddiq (RA) was his companion in the cave.', category: 'Seerah', difficulty: 'Seerah', points: 2 },
-    { id: 'seerah-8', question: 'Which battle is called the first major battle in Islam?', options: ['Uhud', 'Khaybar', 'Badr', 'Hunayn'], correctAnswer: 2, explanation: 'The Battle of Badr in 2 AH was the first major battle.', category: 'Seerah', difficulty: 'Seerah', points: 2 },
-    { id: 'seerah-9', question: 'Who was the leader of Quraysh at the Treaty of Hudaybiyyah negotiations?', options: ['Abu Sufyan', 'Suhayl ibn Amr', 'Khalid ibn Walid', 'Ikrimah'], correctAnswer: 1, explanation: 'Suhayl ibn Amr negotiated on behalf of Quraysh.', category: 'Seerah', difficulty: 'Seerah', points: 2 },
-    { id: 'seerah-10', question: 'Which masjid did the Prophet ﷺ build first upon arriving near Madinah?', options: ['Masjid Quba', 'Masjid Nabawi', 'Masjid al-Aqsa', 'Masjid Khandaq'], correctAnswer: 0, explanation: 'Masjid Quba was built first before entering Madinah.', category: 'Seerah', difficulty: 'Seerah', points: 2 },
-    { id: 'seerah-11', question: 'Who was known as “As-Siddiq” for believing the Isra’ and Mi’raj immediately?', options: ['Uthman', 'Abu Bakr', 'Ali', 'Umar'], correctAnswer: 1, explanation: 'Abu Bakr (RA) was called As-Siddiq for affirming the truth instantly.', category: 'Seerah', difficulty: 'Seerah', points: 2 },
-    { id: 'seerah-12', question: 'Which battle introduced the use of the trench strategy?', options: ['Badr', 'Uhud', 'Khaybar', 'Khandaq'], correctAnswer: 3, explanation: 'Salman al-Farisi suggested the trench at the Battle of Khandaq (Ahzab).', category: 'Seerah', difficulty: 'Seerah', points: 2 },
-    { id: 'seerah-13', question: 'Who was the Prophet’s ﷺ cousin that slept in his bed on the night of Hijrah?', options: ['Ja’far', 'Ali ibn Abi Talib', 'Ibn Abbas', 'Zubayr'], correctAnswer: 1, explanation: 'Ali (RA) stayed in the bed to protect the Prophet ﷺ and return trusts.', category: 'Seerah', difficulty: 'Seerah', points: 2 },
-    { id: 'seerah-14', question: 'Which battle is called “the Day of Criterion” (Yawm al-Furqan)?', options: ['Uhud', 'Badr', 'Khaybar', 'Tabuk'], correctAnswer: 1, explanation: 'Badr is called Yawm al-Furqan because truth was distinguished from falsehood.', category: 'Seerah', difficulty: 'Seerah', points: 2 },
-    { id: 'seerah-15', question: 'Who carried the Prophet ﷺ’s banner at Khaybar?', options: ['Abu Bakr', 'Umar', 'Ali ibn Abi Talib', 'Talha'], correctAnswer: 2, explanation: 'The banner was given to Ali (RA) who achieved victory.', category: 'Seerah', difficulty: 'Seerah', points: 2 },
-    { id: 'seerah-16', question: 'Which companion served the Prophet ﷺ for 10 years and reported his perfect character?', options: ['Anas ibn Malik', 'Abu Hurairah', 'Ibn Mas’ud', 'Abdullah ibn Umar'], correctAnswer: 0, explanation: 'Anas ibn Malik (RA) served him and said he never heard harsh words.', category: 'Seerah', difficulty: 'Seerah', points: 2 },
-    { id: 'seerah-17', question: 'What was the last sermon delivered on?', options: ['Mount Uhud', 'Arafat', 'Muzdalifah', 'Mina'], correctAnswer: 1, explanation: 'The Farewell Sermon was delivered on the Plain of Arafat in Hajj.', category: 'Seerah', difficulty: 'Seerah', points: 2 },
-    { id: 'seerah-18', question: 'Which Surah was revealed fully at once according to many scholars?', options: ['Surah Yusuf', 'Surah Maryam', 'Surah Fatihah', 'Surah An’am'], correctAnswer: 3, explanation: 'Surah Al-An’am is reported to have descended at once with 70,000 angels.', category: 'Seerah', difficulty: 'Seerah', points: 2 },
-    { id: 'seerah-19', question: 'Who was the scribe of the Prophet ﷺ noted for writing revelation?', options: ['Zayd ibn Thabit', 'Abu Hurairah', 'Khalid ibn Walid', 'Mu’awiyah'], correctAnswer: 0, explanation: 'Zayd ibn Thabit (RA) wrote many revelations and later led Quran compilation.', category: 'Seerah', difficulty: 'Seerah', points: 2 },
-    { id: 'seerah-20', question: 'Where did the Prophet ﷺ migrate from and to?', options: ['Taif to Makkah', 'Makkah to Madinah', 'Madinah to Makkah', 'Madinah to Taif'], correctAnswer: 1, explanation: 'Hijrah was from Makkah to Madinah in 622 CE.', category: 'Seerah', difficulty: 'Seerah', points: 2 },
-    { id: 'seerah-21', question: 'What title was given to Hamza ibn Abdul-Muttalib (RA)?', options: ['Sword of Allah', 'Lion of Allah', 'Trustworthy', 'Farooq'], correctAnswer: 1, explanation: 'Hamza was known as Asadullah (Lion of Allah).', category: 'Seerah', difficulty: 'Seerah', points: 2 },
-    { id: 'seerah-22', question: 'Which treaty was seen as a “clear victory” despite appearing one-sided?', options: ['Treaty of Aqaba', 'Treaty of Hudaybiyyah', 'Treaty of Taif', 'Treaty of Najran'], correctAnswer: 1, explanation: 'Hudaybiyyah opened the door for Islam’s spread; Quran called it a clear victory.', category: 'Seerah', difficulty: 'Seerah', points: 2 },
-    { id: 'seerah-23', question: 'Who was the Prophet’s ﷺ mother?', options: ['Aminah bint Wahb', 'Fatimah bint Asad', 'Safiyyah bint Abd al-Muttalib', 'Halimah bint Abi Dhuayb'], correctAnswer: 0, explanation: 'His mother was Aminah bint Wahb.', category: 'Seerah', difficulty: 'Seerah', points: 2 },
-    { id: 'seerah-24', question: 'Where is the Prophet ﷺ buried?', options: ['Jannat al-Baqi', 'Masjid Quba', 'In Arafat', 'In his room next to Masjid Nabawi'], correctAnswer: 3, explanation: 'He is buried in the hujrah (room) of Aisha adjacent to Masjid Nabawi.', category: 'Seerah', difficulty: 'Seerah', points: 2 },
-    { id: 'seerah-25', question: 'Which companion embraced Islam after intending to kill the Prophet ﷺ?', options: ['Umar ibn al-Khattab', 'Khalid ibn Walid', 'Ikrimah ibn Abi Jahl', 'Safwan ibn Umayyah'], correctAnswer: 0, explanation: 'Umar set out to harm the Prophet ﷺ but embraced Islam after hearing Quran.', category: 'Seerah', difficulty: 'Seerah', points: 2 },
-    { id: 'seerah-26', question: 'Who was the nursemaid that traveled with the Prophet ﷺ in childhood?', options: ['Halimah', 'Barakah (Umm Ayman)', 'Asiyah', 'Asmā bint Abu Bakr'], correctAnswer: 1, explanation: 'Barakah (Umm Ayman) cared for him after his mother’s passing.', category: 'Seerah', difficulty: 'Seerah', points: 2 },
-    { id: 'seerah-27', question: 'What event is known as Isra’ and Mi’raj?', options: ['Migration to Abyssinia', 'Night journey and ascension', 'Treaty signing', 'Battle victory'], correctAnswer: 1, explanation: 'Isra’ was the night journey to Jerusalem; Mi’raj the ascension to the heavens.', category: 'Seerah', difficulty: 'Seerah', points: 2 },
-    { id: 'seerah-28', question: 'Which Surah was revealed after the Farewell Hajj indicating completion of religion?', options: ['Surah Nasr', 'Surah Maidah 5:3', 'Surah Kahf', 'Surah Ikhlas'], correctAnswer: 1, explanation: 'Maidah 5:3 was revealed indicating the perfection of the religion.', category: 'Seerah', difficulty: 'Seerah', points: 2 },
-    { id: 'seerah-29', question: 'Who was known as “Dhun-Nurayn” (Owner of Two Lights)?', options: ['Ali', 'Uthman', 'Talha', 'Zubayr'], correctAnswer: 1, explanation: 'Uthman married two daughters of the Prophet ﷺ (Ruqayyah then Umm Kulthum).', category: 'Seerah', difficulty: 'Seerah', points: 2 },
-    { id: 'seerah-30', question: 'What was the Prophet’s ﷺ favorite fast besides Ramadan?', options: ['Mondays only', 'Fridays only', 'Mondays and Thursdays', 'Only 10th of Muharram'], correctAnswer: 2, explanation: 'He loved fasting Mondays and Thursdays; also the 13th-15th lunar days.', category: 'Seerah', difficulty: 'Seerah', points: 2 },
-
-    // HADITH - 30 Questions (Refreshed)
-    { id: 'hadith-1', question: '“Actions are judged by intentions” is narrated by which companion?', options: ['Umar ibn al-Khattab', 'Abu Hurairah', 'Aisha', 'Ibn Abbas'], correctAnswer: 0, explanation: 'This foundational hadith is from Umar ibn al-Khattab (RA).', category: 'Hadith', difficulty: 'Hadith', points: 2 },
-    { id: 'hadith-2', question: 'Which book is considered most authentic after the Quran?', options: ['Sunan Abu Dawud', 'Sahih Muslim', 'Sahih Bukhari', 'Muwatta Malik'], correctAnswer: 2, explanation: 'Sahih Bukhari is widely regarded as the most authentic.', category: 'Hadith', difficulty: 'Hadith', points: 2 },
-    { id: 'hadith-3', question: '“The strong one controls anger” appears in which collections?', options: ['Bukhari & Muslim', 'Nasa’i', 'Ibn Majah', 'Ahmad only'], correctAnswer: 0, explanation: 'It is narrated in both Bukhari and Muslim.', category: 'Hadith', difficulty: 'Hadith', points: 2 },
-    { id: 'hadith-4', question: 'Who narrated the most hadith among companions?', options: ['Ibn Umar', 'Abu Hurairah', 'Anas ibn Malik', 'Aisha'], correctAnswer: 1, explanation: 'Abu Hurairah (RA) narrated over 5000 hadith.', category: 'Hadith', difficulty: 'Hadith', points: 2 },
-    { id: 'hadith-5', question: '“Modesty is part of faith” is found in:', options: ['Sahih Muslim', 'Sunan Ibn Majah', 'Sunan Tirmidhi', 'Musnad Ahmad'], correctAnswer: 0, explanation: 'The hadith on modesty is in Sahih Muslim.', category: 'Hadith', difficulty: 'Hadith', points: 2 },
-    { id: 'hadith-6', question: 'Hadith Qudsi means:', options: ['Word from Allah, meaning from Prophet', 'Meaning from Allah, wording from Prophet', 'Word and meaning from Prophet', 'Narrated by angels only'], correctAnswer: 1, explanation: 'In Hadith Qudsi the meaning is from Allah; wording from the Prophet ﷺ.', category: 'Hadith', difficulty: 'Hadith', points: 2 },
-    { id: 'hadith-7', question: 'The Six Books (Kutub as-Sittah) include:', options: ['Bukhari, Muslim, Abu Dawud, Tirmidhi, Nasa’i, Ibn Majah', 'Bukhari, Muslim, Malik, Ahmad, Tirmidhi, Nasa’i', 'Only Bukhari & Muslim', 'Bukhari, Muslim, Muwatta, Musnad, Nasa’i, Ibn Majah'], correctAnswer: 0, explanation: 'These six are the primary Sunni hadith collections.', category: 'Hadith', difficulty: 'Hadith', points: 2 },
-    { id: 'hadith-8', question: 'Who is the greatest female narrator of hadith?', options: ['Khadijah', 'Aisha', 'Hafsa', 'Asma bint Abi Bakr'], correctAnswer: 1, explanation: 'Aisha (RA) narrated over 2000 hadith.', category: 'Hadith', difficulty: 'Hadith', points: 2 },
-    { id: 'hadith-9', question: '“Speak good or remain silent” teaches:', options: ['Public speaking', 'Guarding the tongue', 'Writing skills', 'Silence always'], correctAnswer: 1, explanation: 'It emphasizes controlling speech to good words.', category: 'Hadith', difficulty: 'Hadith', points: 2 },
-    { id: 'hadith-10', question: 'Hadith Mawdu’ means:', options: ['Authentic', 'Weak', 'Fabricated', 'Hassan'], correctAnswer: 2, explanation: 'Mawdu’ is a fabricated hadith.', category: 'Hadith', difficulty: 'Hadith', points: 2 },
-    { id: 'hadith-11', question: 'Which scholar compiled “Riyadh as-Saliheen”?', options: ['Imam Nawawi', 'Imam Bukhari', 'Imam Muslim', 'Imam Ahmad'], correctAnswer: 0, explanation: 'Imam Nawawi authored Riyadh as-Saliheen.', category: 'Hadith', difficulty: 'Hadith', points: 2 },
-    { id: 'hadith-12', question: '“The best of you are those who learn the Quran and teach it” was narrated by:', options: ['Uthman', 'Ali', 'Ibn Mas’ud', 'Abu Hurairah'], correctAnswer: 0, explanation: 'The hadith is narrated from Uthman ibn Affan (RA).', category: 'Hadith', difficulty: 'Hadith', points: 2 },
-    { id: 'hadith-13', question: 'Which collection is known as Muwatta?', options: ['Imam Malik’s', 'Imam Shafi’i’s', 'Imam Ahmad’s', 'Imam Abu Dawud’s'], correctAnswer: 0, explanation: 'Muwatta is compiled by Imam Malik.', category: 'Hadith', difficulty: 'Hadith', points: 2 },
-    { id: 'hadith-14', question: '“Make things easy and do not make them difficult” highlights:', options: ['Strictness', 'Leniency in teaching', 'Avoiding learning', 'Physical strength'], correctAnswer: 1, explanation: 'The Prophet ﷺ encouraged ease and gentleness.', category: 'Hadith', difficulty: 'Hadith', points: 2 },
-    { id: 'hadith-15', question: 'Who compiled Musnad Ahmad?', options: ['Imam Ahmad ibn Hanbal', 'Imam Bukhari', 'Imam Muslim', 'Imam Abu Dawud'], correctAnswer: 0, explanation: 'Musnad Ahmad is arranged by companion chains.', category: 'Hadith', difficulty: 'Hadith', points: 2 },
-    { id: 'hadith-16', question: '“Paradise lies under the feet of mothers” teaches:', options: ['Traveling', 'Serving parents', 'Hajj rules', 'None'], correctAnswer: 1, explanation: 'It emphasizes honoring mothers.', category: 'Hadith', difficulty: 'Hadith', points: 2 },
-    { id: 'hadith-17', question: 'What is “Isnad”?', options: ['Text of hadith', 'Chain of narrators', 'Explanation', 'Book cover'], correctAnswer: 1, explanation: 'Isnad is the chain through which the hadith is transmitted.', category: 'Hadith', difficulty: 'Hadith', points: 2 },
-    { id: 'hadith-18', question: '“Allah is gentle and loves gentleness” means:', options: ['Be harsh', 'Be balanced', 'Practice gentleness', 'Avoid mercy'], correctAnswer: 2, explanation: 'The hadith encourages gentleness in conduct.', category: 'Hadith', difficulty: 'Hadith', points: 2 },
-    { id: 'hadith-19', question: 'Hadith Hasan means:', options: ['Perfect', 'Weak', 'Good/acceptable', 'Fabricated'], correctAnswer: 2, explanation: 'Hasan is a good hadith slightly below Sahih.', category: 'Hadith', difficulty: 'Hadith', points: 2 },
-    { id: 'hadith-20', question: '“Consistent small deeds are most beloved” was narrated by:', options: ['Aisha', 'Fatimah', 'Hafsa', 'Asma'], correctAnswer: 0, explanation: 'Aisha (RA) narrated this hadith.', category: 'Hadith', difficulty: 'Hadith', points: 2 },
-    { id: 'hadith-21', question: 'Which hadith book is arranged by topics of fiqh in Malik’s methodology?', options: ['Sunan Abu Dawud', 'Muwatta', 'Sunan Nasa’i', 'Sunan Ibn Majah'], correctAnswer: 1, explanation: 'Muwatta follows a fiqh topical arrangement.', category: 'Hadith', difficulty: 'Hadith', points: 2 },
-    { id: 'hadith-22', question: '“The believer does not slander, curse, or speak obscenely” is in:', options: ['Tirmidhi', 'Bukhari', 'Muslim', 'Ibn Majah'], correctAnswer: 0, explanation: 'It is reported in Sunan at-Tirmidhi.', category: 'Hadith', difficulty: 'Hadith', points: 2 },
-    { id: 'hadith-23', question: 'Which companion was famed for fiqh fatwas?', options: ['Abu Hurairah', 'Ibn Abbas', 'Ibn Umar', 'Zayd ibn Thabit'], correctAnswer: 1, explanation: 'Ibn Abbas (RA) was among the foremost jurists.', category: 'Hadith', difficulty: 'Hadith', points: 2 },
-    { id: 'hadith-24', question: '“None of you truly believes until he loves for his brother what he loves for himself” is about:', options: ['Charity', 'Brotherhood and empathy', 'Prayer', 'Fasting'], correctAnswer: 1, explanation: 'It emphasizes empathy and sincere goodwill.', category: 'Hadith', difficulty: 'Hadith', points: 2 },
-    { id: 'hadith-25', question: 'Which hadith collection was authored by Imam an-Nasa’i?', options: ['Al-Mujtaba (As-Sunan As-Sughra)', 'Al-Musnad', 'Al-Mustadrak', 'Al-Muwatta'], correctAnswer: 0, explanation: 'As-Sunan As-Sughra is a key collection by Imam an-Nasa’i.', category: 'Hadith', difficulty: 'Hadith', points: 2 },
-    { id: 'hadith-26', question: 'What does “Sahih” mean regarding hadith?', options: ['Weak', 'Authentic', 'Good', 'Fabricated'], correctAnswer: 1, explanation: 'Sahih indicates rigorously authentic narrations.', category: 'Hadith', difficulty: 'Hadith', points: 2 },
-    { id: 'hadith-27', question: '“Whoever believes in Allah and the Last Day should honor the guest” highlights:', options: ['Hospitality', 'Silence', 'Travel', 'Fasting'], correctAnswer: 0, explanation: 'It stresses honoring guests as part of faith.', category: 'Hadith', difficulty: 'Hadith', points: 2 },
-    { id: 'hadith-28', question: 'Which collection focuses on legal hadith and is part of Sihah Sittah?', options: ['Sunan Abu Dawud', 'Sunan Darimi', 'Musnad Shafi’i', 'Sunan Bayhaqi'], correctAnswer: 0, explanation: 'Sunan Abu Dawud emphasizes legal rulings.', category: 'Hadith', difficulty: 'Hadith', points: 2 },
-    { id: 'hadith-29', question: '“Help your brother whether oppressor or oppressed” means:', options: ['Support oppression', 'Stop him from oppressing', 'Ignore him', 'Only help family'], correctAnswer: 1, explanation: 'We help an oppressor by preventing his oppression.', category: 'Hadith', difficulty: 'Hadith', points: 2 },
-    { id: 'hadith-30', question: 'Which companion narrated Hadith Jibril (about Islam, Iman, Ihsan)?', options: ['Umar', 'Uthman', 'Ali', 'Anas'], correctAnswer: 0, explanation: 'Umar (RA) narrated the famous Hadith Jibril.', category: 'Hadith', difficulty: 'Hadith', points: 2 },
-
-    // PROPHETS - 30 Questions (Refreshed)
-    { id: 'prophets-1', question: 'Which prophet built the Ark by Allah’s command?', options: ['Ibrahim', 'Nuh', 'Yunus', 'Musa'], correctAnswer: 1, explanation: 'Prophet Nuh built the Ark to save the believers.', category: 'Prophets', difficulty: 'Prophets', points: 2 },
-    { id: 'prophets-2', question: 'Who spoke to Allah directly on Mount Sinai?', options: ['Isa', 'Musa', 'Dawud', 'Sulayman'], correctAnswer: 1, explanation: 'Musa (AS) spoke directly to Allah and received the Torah.', category: 'Prophets', difficulty: 'Prophets', points: 2 },
-    { id: 'prophets-3', question: 'Which prophet was swallowed by a great fish?', options: ['Yunus', 'Yusuf', 'Lut', 'Zakariya'], correctAnswer: 0, explanation: 'Prophet Yunus was swallowed after leaving his people prematurely.', category: 'Prophets', difficulty: 'Prophets', points: 2 },
-    { id: 'prophets-4', question: 'Who interpreted dreams for the king of Egypt?', options: ['Ishaq', 'Ismail', 'Yusuf', 'Idris'], correctAnswer: 2, explanation: 'Prophet Yusuf interpreted the king’s dream and saved Egypt.', category: 'Prophets', difficulty: 'Prophets', points: 2 },
-    { id: 'prophets-5', question: 'Which prophet split the sea by Allah’s permission?', options: ['Isa', 'Musa', 'Muhammad ﷺ', 'Ibrahim'], correctAnswer: 1, explanation: 'Prophet Musa split the sea to escape Pharaoh.', category: 'Prophets', difficulty: 'Prophets', points: 2 },
-    { id: 'prophets-6', question: 'Who rebuilt the Ka’bah with his son?', options: ['Adam', 'Nuh', 'Ibrahim', 'Ayub'], correctAnswer: 2, explanation: 'Ibrahim rebuilt the Ka’bah with Ismail.', category: 'Prophets', difficulty: 'Prophets', points: 2 },
-    { id: 'prophets-7', question: 'Which prophet ruled over jinn and birds?', options: ['Dawud', 'Sulayman', 'Idris', 'Shuayb'], correctAnswer: 1, explanation: 'Allah granted Sulayman command over jinn, wind, and birds.', category: 'Prophets', difficulty: 'Prophets', points: 2 },
-    { id: 'prophets-8', question: 'Who was tested with severe illness yet remained patient?', options: ['Ayyub', 'Hud', 'Saleh', 'Ilyas'], correctAnswer: 0, explanation: 'Prophet Ayyub showed exemplary patience.', category: 'Prophets', difficulty: 'Prophets', points: 2 },
-    { id: 'prophets-9', question: 'Which prophet was born without a father?', options: ['Adam', 'Isa', 'Idris', 'Yahya'], correctAnswer: 1, explanation: 'Prophet Isa was born miraculously to Maryam.', category: 'Prophets', difficulty: 'Prophets', points: 2 },
-    { id: 'prophets-10', question: 'Who was thrown into the fire but Allah made it cool?', options: ['Ibrahim', 'Lut', 'Yunus', 'Shuayb'], correctAnswer: 0, explanation: 'Prophet Ibrahim was saved from the fire by Allah’s command.', category: 'Prophets', difficulty: 'Prophets', points: 2 },
-    { id: 'prophets-11', question: 'Which prophet received the Psalms (Zabur)?', options: ['Musa', 'Isa', 'Dawud', 'Yusha’'], correctAnswer: 2, explanation: 'Prophet Dawud received the Zabur.', category: 'Prophets', difficulty: 'Prophets', points: 2 },
-    { id: 'prophets-12', question: 'Who led the Israelites after Musa into the Holy Land?', options: ['Harun', 'Yusha ibn Nun', 'Kalib', 'Talut'], correctAnswer: 1, explanation: 'Yusha ibn Nun succeeded Musa in leading the believers.', category: 'Prophets', difficulty: 'Prophets', points: 2 },
-    { id: 'prophets-13', question: 'Which prophet’s people were the Aad?', options: ['Hud', 'Salih', 'Shuayb', 'Nuh'], correctAnswer: 0, explanation: 'Prophet Hud was sent to the people of Aad.', category: 'Prophets', difficulty: 'Prophets', points: 2 },
-    { id: 'prophets-14', question: 'Which prophet’s people were destroyed by a thunderous blast?', options: ['Lut', 'Hud', 'Salih', 'Ibrahim'], correctAnswer: 2, explanation: 'The people of Thamud (Salih) were destroyed by a blast.', category: 'Prophets', difficulty: 'Prophets', points: 2 },
-    { id: 'prophets-15', question: 'Who was the father of Prophet Yusuf?', options: ['Ishaq', 'Ya’qub', 'Ismail', 'Ibrahim'], correctAnswer: 1, explanation: 'Prophet Ya’qub (Jacob) was Yusuf’s father.', category: 'Prophets', difficulty: 'Prophets', points: 2 },
-    { id: 'prophets-16', question: 'Which prophet debated the tyrant king Nimrod?', options: ['Nuh', 'Ibrahim', 'Idris', 'Hud'], correctAnswer: 1, explanation: 'Ibrahim debated Nimrod about Allah’s power.', category: 'Prophets', difficulty: 'Prophets', points: 2 },
-    { id: 'prophets-17', question: 'Who was given the Injeel?', options: ['Musa', 'Isa', 'Dawud', 'Harun'], correctAnswer: 1, explanation: 'Prophet Isa was given the Injeel (Gospel).', category: 'Prophets', difficulty: 'Prophets', points: 2 },
-    { id: 'prophets-18', question: 'Which prophet was raised to the heavens alive?', options: ['Isa', 'Idris', 'Both Isa and Idris', 'Ilyas only'], correctAnswer: 2, explanation: 'Both Isa and Idris were raised by Allah.', category: 'Prophets', difficulty: 'Prophets', points: 2 },
-    { id: 'prophets-19', question: 'Who was known for softening iron by Allah’s will?', options: ['Sulayman', 'Dawud', 'Musa', 'Ibrahim'], correctAnswer: 1, explanation: 'Prophet Dawud was granted this miracle.', category: 'Prophets', difficulty: 'Prophets', points: 2 },
-    { id: 'prophets-20', question: 'Which prophet spoke from the cradle?', options: ['Isa', 'Yahya', 'Zakariya', 'Ismail'], correctAnswer: 0, explanation: 'Prophet Isa spoke as an infant defending his mother.', category: 'Prophets', difficulty: 'Prophets', points: 2 },
-    { id: 'prophets-21', question: 'Who was swallowed by the earth for arrogance?', options: ['Haman', 'Qarun', 'Fir’awn', 'Samaritan'], correctAnswer: 1, explanation: 'Qarun was swallowed by the earth; his story is in Quran.', category: 'Prophets', difficulty: 'Prophets', points: 2 },
-    { id: 'prophets-22', question: 'Which prophet was given the staff that turned into a snake?', options: ['Ibrahim', 'Musa', 'Isa', 'Harun'], correctAnswer: 1, explanation: 'Prophet Musa’s staff was a miracle from Allah.', category: 'Prophets', difficulty: 'Prophets', points: 2 },
-    { id: 'prophets-23', question: 'Who was the wife of Ibrahim tested by kings?', options: ['Sarah', 'Hajar', 'Asiyah', 'Maryam'], correctAnswer: 0, explanation: 'Sarah (RA) faced trials with unjust kings.', category: 'Prophets', difficulty: 'Prophets', points: 2 },
-    { id: 'prophets-24', question: 'Which prophet’s mother placed him in a basket on the river?', options: ['Ismail', 'Musa', 'Isa', 'Yusuf'], correctAnswer: 1, explanation: 'Musa’s mother placed him in the Nile by Allah’s inspiration.', category: 'Prophets', difficulty: 'Prophets', points: 2 },
-    { id: 'prophets-25', question: 'Who are called Ulul-Azm (prophets of steadfast resolve)?', options: ['Nuh, Ibrahim, Musa, Isa, Muhammad ﷺ', 'Adam, Idris, Isa, Musa, Dawud', 'Ismail, Ishaq, Yaqub, Yusuf, Ayub', 'Lut, Shuaib, Hud, Salih, Ilyas'], correctAnswer: 0, explanation: 'These five are Ulul-Azm prophets.', category: 'Prophets', difficulty: 'Prophets', points: 2 },
-    { id: 'prophets-26', question: 'Which prophet was sent to the people of Madyan?', options: ['Shuayb', 'Hud', 'Lut', 'Salih'], correctAnswer: 0, explanation: 'Prophet Shuayb called Madyan to honesty and fair trade.', category: 'Prophets', difficulty: 'Prophets', points: 2 },
-    { id: 'prophets-27', question: 'Who will return near the end of times to defeat Dajjal?', options: ['Musa', 'Isa', 'Ibrahim', 'Idris'], correctAnswer: 1, explanation: 'Prophet Isa will return and defeat the false messiah.', category: 'Prophets', difficulty: 'Prophets', points: 2 },
-    { id: 'prophets-28', question: 'Which prophet was given the miracle of the she-camel?', options: ['Hud', 'Salih', 'Lut', 'Shuayb'], correctAnswer: 1, explanation: 'Prophet Salih’s people were given the she-camel as a sign.', category: 'Prophets', difficulty: 'Prophets', points: 2 },
-    { id: 'prophets-29', question: 'Who is known as Israel?', options: ['Ishaq', 'Ismail', 'Ya’qub', 'Yusuf'], correctAnswer: 2, explanation: 'Prophet Ya’qub is also known as Israel.', category: 'Prophets', difficulty: 'Prophets', points: 2 },
-    { id: 'prophets-30', question: 'Which prophet’s son was nearly sacrificed as a test?', options: ['Yusuf', 'Ismail', 'Ishaq', 'Yahya'], correctAnswer: 1, explanation: 'Prophet Ibrahim was tested to sacrifice Ismail (per majority view).', category: 'Prophets', difficulty: 'Prophets', points: 2 },
-
-    // QURAN STORIES - 30 Questions (Refreshed)
-    { id: 'quran-1', question: 'Which Surah narrates the detailed story of Prophet Yusuf?', options: ['Surah Yusuf', 'Surah Maryam', 'Surah Anbiya', 'Surah Qasas'], correctAnswer: 0, explanation: 'Surah Yusuf tells his story in full.', category: 'Quran Stories', difficulty: 'Quran Stories', points: 2 },
-    { id: 'quran-2', question: 'The People of the Cave story is in:', options: ['Surah Kahf', 'Surah Rahman', 'Surah Waqiah', 'Surah Mulk'], correctAnswer: 0, explanation: 'Surah Al-Kahf contains Ashab al-Kahf.', category: 'Quran Stories', difficulty: 'Quran Stories', points: 2 },
-    { id: 'quran-3', question: 'Dhul-Qarnayn is mentioned in which Surah?', options: ['Surah Maryam', 'Surah Kahf', 'Surah Yusuf', 'Surah Hud'], correctAnswer: 1, explanation: 'His journeys and the wall against Gog and Magog are in Surah Kahf.', category: 'Quran Stories', difficulty: 'Quran Stories', points: 2 },
-    { id: 'quran-4', question: 'Which Surah tells of the cow Bani Israel were commanded to slaughter?', options: ['Surah Baqarah', 'Surah Maidah', 'Surah Nisa', 'Surah An’am'], correctAnswer: 0, explanation: 'The Surah takes its name from this story.', category: 'Quran Stories', difficulty: 'Quran Stories', points: 2 },
-    { id: 'quran-5', question: 'Which Surah details Maryam and the birth of Isa?', options: ['Surah Maryam', 'Surah Anbiya', 'Surah Qalam', 'Surah Jinn'], correctAnswer: 0, explanation: 'Surah Maryam covers her story and Isa’s birth.', category: 'Quran Stories', difficulty: 'Quran Stories', points: 2 },
-    { id: 'quran-6', question: 'The man with two gardens parable is in:', options: ['Surah Rahman', 'Surah Kahf', 'Surah Furqan', 'Surah Naml'], correctAnswer: 1, explanation: 'It warns against arrogance and ingratitude.', category: 'Quran Stories', difficulty: 'Quran Stories', points: 2 },
-    { id: 'quran-7', question: 'Qarun (Korah) and his wealth are mentioned in:', options: ['Surah Qasas', 'Surah Najm', 'Surah Dukhan', 'Surah Takwir'], correctAnswer: 0, explanation: 'Qasas narrates his arrogance and downfall.', category: 'Quran Stories', difficulty: 'Quran Stories', points: 2 },
-    { id: 'quran-8', question: 'The People of the Elephant incident is in:', options: ['Surah Fil', 'Surah Maun', 'Surah Quraish', 'Surah Kafirun'], correctAnswer: 0, explanation: 'Surah Fil recounts Abraha’s failed attack.', category: 'Quran Stories', difficulty: 'Quran Stories', points: 2 },
-    { id: 'quran-9', question: 'Talut and Jalut story appears in:', options: ['Surah Baqarah', 'Surah Anfal', 'Surah Ta-Ha', 'Surah Maryam'], correctAnswer: 0, explanation: 'Surah Baqarah narrates Talut’s army and Dawud defeating Jalut.', category: 'Quran Stories', difficulty: 'Quran Stories', points: 2 },
-    { id: 'quran-10', question: 'Which Surah is named after a prophet and fully about his story?', options: ['Surah Hud', 'Surah Yusuf', 'Surah Nuh', 'All of these'], correctAnswer: 3, explanation: 'Several Surahs like Yusuf, Hud, Nuh are named and themed after prophets.', category: 'Quran Stories', difficulty: 'Quran Stories', points: 2 },
-    { id: 'quran-11', question: 'Story of the Sabbath breakers is mentioned in:', options: ['Surah A’raf', 'Surah Baqarah', 'Surah Maidah', 'All of these'], correctAnswer: 3, explanation: 'Their story is referenced in multiple Surahs.', category: 'Quran Stories', difficulty: 'Quran Stories', points: 2 },
-    { id: 'quran-12', question: 'Which Surah narrates the Queen of Sheba and Sulayman?', options: ['Surah Naml', 'Surah Saba', 'Both Naml and Saba', 'Surah Furqan'], correctAnswer: 2, explanation: 'Her story appears in both Naml and Saba.', category: 'Quran Stories', difficulty: 'Quran Stories', points: 2 },
-    { id: 'quran-13', question: 'Luqman’s advice to his son is found in:', options: ['Surah Luqman', 'Surah Rum', 'Surah Ankabut', 'Surah Qaf'], correctAnswer: 0, explanation: 'Surah Luqman details his wise counsel.', category: 'Quran Stories', difficulty: 'Quran Stories', points: 2 },
-    { id: 'quran-14', question: 'Which Surah mentions the hoopoe bird speaking to Sulayman?', options: ['Surah Naml', 'Surah Kahf', 'Surah Hashr', 'Surah Nasr'], correctAnswer: 0, explanation: 'The hoopoe brings news of Sheba in Surah Naml.', category: 'Quran Stories', difficulty: 'Quran Stories', points: 2 },
-    { id: 'quran-15', question: 'The sleepers of the cave slept for how long (approx.)?', options: ['50 years', '100 years', '300+ years', '700 years'], correctAnswer: 2, explanation: 'They slept about 300 lunar years as mentioned in Surah Kahf.', category: 'Quran Stories', difficulty: 'Quran Stories', points: 2 },
-    { id: 'quran-16', question: 'Which Surah recounts Musa meeting Khidr?', options: ['Surah Kahf', 'Surah Taha', 'Surah Qasas', 'Surah Yunus'], correctAnswer: 0, explanation: 'Their journey is in Surah Kahf.', category: 'Quran Stories', difficulty: 'Quran Stories', points: 2 },
-    { id: 'quran-17', question: 'The story of Ibrahim debating the king who claimed to give life and death is in:', options: ['Surah Baqarah', 'Surah Nisa', 'Surah Yasin', 'Surah Rahman'], correctAnswer: 0, explanation: 'Ibrahim’s debate with Nimrod is in Surah Baqarah.', category: 'Quran Stories', difficulty: 'Quran Stories', points: 2 },
-    { id: 'quran-18', question: 'Which Surah mentions the incident of Ifk (slander against Aisha)?', options: ['Surah Nur', 'Surah Ahzab', 'Surah Hujurat', 'Surah Mumtahina'], correctAnswer: 0, explanation: 'Surah Nur cleared Aisha (RA) from slander.', category: 'Quran Stories', difficulty: 'Quran Stories', points: 2 },
-    { id: 'quran-19', question: 'Story of Musa and the magicians is primarily in:', options: ['Surah Taha', 'Surah Shu’ara', 'Surah A’raf', 'All of these'], correctAnswer: 3, explanation: 'Multiple Surahs recount this event.', category: 'Quran Stories', difficulty: 'Quran Stories', points: 2 },
-    { id: 'quran-20', question: 'Which Surah begins with the story of Maryam’s family (Imran)?', options: ['Surah Ali Imran', 'Surah Nisa', 'Surah Maidah', 'Surah Anfal'], correctAnswer: 0, explanation: 'Surah Ali Imran speaks of Maryam’s family and Zakariya.', category: 'Quran Stories', difficulty: 'Quran Stories', points: 2 },
-    { id: 'quran-21', question: 'The story of the two sons of Adam is in:', options: ['Surah Maidah', 'Surah Anam', 'Surah Yunus', 'Surah Ankabut'], correctAnswer: 0, explanation: 'The story of Habil and Qabil is in Surah Maidah.', category: 'Quran Stories', difficulty: 'Quran Stories', points: 2 },
-    { id: 'quran-22', question: 'Which Surah narrates the ant warning its colony?', options: ['Surah Naml', 'Surah Nahl', 'Surah Fil', 'Surah Hashr'], correctAnswer: 0, explanation: 'Surah Naml includes the speech of the ant to avoid Sulayman’s army.', category: 'Quran Stories', difficulty: 'Quran Stories', points: 2 },
-    { id: 'quran-23', question: 'Story of the youths who destroyed idols is linked to which prophet?', options: ['Ibrahim', 'Musa', 'Isa', 'Lut'], correctAnswer: 0, explanation: 'Ibrahim broke the idols to show their falsehood.', category: 'Quran Stories', difficulty: 'Quran Stories', points: 2 },
-    { id: 'quran-24', question: 'Which Surah mentions the man who passed a ruined town and was revived after 100 years (Uzayr view)?', options: ['Surah Baqarah', 'Surah Kahf', 'Surah Rum', 'Surah Sajdah'], correctAnswer: 0, explanation: 'Surah Baqarah narrates this lesson about resurrection.', category: 'Quran Stories', difficulty: 'Quran Stories', points: 2 },
-    { id: 'quran-25', question: 'Where is the dialogue between Ibrahim and his father about idols found?', options: ['Surah Maryam', 'Surah Shu’ara', 'Surah Anbiya', 'All of these'], correctAnswer: 3, explanation: 'It appears in multiple Surahs including Maryam and Anbiya.', category: 'Quran Stories', difficulty: 'Quran Stories', points: 2 },
-    { id: 'quran-26', question: 'Which Surah tells of the she-camel sign to Thamud?', options: ['Surah Shams', 'Surah Qamar', 'Surah A’raf', 'All of these'], correctAnswer: 3, explanation: 'Several Surahs mention the she-camel given to Salih’s people.', category: 'Quran Stories', difficulty: 'Quran Stories', points: 2 },
-    { id: 'quran-27', question: 'Which Surah highlights the story of the man with knowledge of the Book helping Sulayman bring the throne?', options: ['Surah Naml', 'Surah Saba', 'Surah Zukhruf', 'Surah Yaseen'], correctAnswer: 0, explanation: 'Surah Naml narrates the transport of Bilqis’s throne.', category: 'Quran Stories', difficulty: 'Quran Stories', points: 2 },
-    { id: 'quran-28', question: 'The story of Prophet Nuh’s flood is referenced in:', options: ['Surah Hud', 'Surah Qamar', 'Surah Nuh', 'All of these'], correctAnswer: 3, explanation: 'Multiple Surahs recount Nuh’s message and the flood.', category: 'Quran Stories', difficulty: 'Quran Stories', points: 2 },
-    { id: 'quran-29', question: 'Which Surah contains the story of Musa and the righteous servant (Khidr)?', options: ['Surah Kahf', 'Surah Taha', 'Surah A’raf', 'Surah Taubah'], correctAnswer: 0, explanation: 'Surah Kahf contains this journey.', category: 'Quran Stories', difficulty: 'Quran Stories', points: 2 },
-    { id: 'quran-30', question: 'Which Surah is named after and focused on Prophet Nuh’s call?', options: ['Surah Nuh', 'Surah Yunus', 'Surah Hud', 'Surah Ibrahim'], correctAnswer: 0, explanation: 'Surah Nuh covers his long call to his people.', category: 'Quran Stories', difficulty: 'Quran Stories', points: 2 },
-
-    // AKHLAQ - 30 Questions (Refreshed)
-    { id: 'akhlaq-1', question: 'What does “Ikhlas” mean?', options: ['Patience', 'Sincerity', 'Gratitude', 'Justice'], correctAnswer: 1, explanation: 'Ikhlas is sincerity—doing deeds purely for Allah.', category: 'Akhlaq', difficulty: 'Akhlaq', points: 2 },
-    { id: 'akhlaq-2', question: 'Which deeds are most beloved to Allah?', options: ['Longest prayer only', 'Consistent small deeds', 'Loud charity', 'Harsh speech'], correctAnswer: 1, explanation: 'Regular small deeds are most beloved.', category: 'Akhlaq', difficulty: 'Akhlaq', points: 2 },
-    { id: 'akhlaq-3', question: 'How should a believer handle anger?', options: ['Shout', 'Remain silent and seek refuge', 'Break things', 'Leave prayer'], correctAnswer: 1, explanation: 'The Prophet ﷺ advised silence and seeking refuge with Allah.', category: 'Akhlaq', difficulty: 'Akhlaq', points: 2 },
-    { id: 'akhlaq-4', question: 'What is heavier on the Scale on Judgment Day?', options: ['Wealth', 'Good character', 'Appearance', 'Lineage'], correctAnswer: 1, explanation: 'Good character is among the heaviest deeds.', category: 'Akhlaq', difficulty: 'Akhlaq', points: 2 },
-    { id: 'akhlaq-5', question: 'What greeting should be given when entering a home?', options: ['Hello', 'Assalamu Alaikum', 'Good day', 'Peace only to friends'], correctAnswer: 1, explanation: 'Allah commands offering Salam when entering homes.', category: 'Akhlaq', difficulty: 'Akhlaq', points: 2 },
-    { id: 'akhlaq-6', question: 'Removing harm from the road is considered:', options: ['No reward', 'Minor act', 'A charity (Sadaqah)', 'Only civic duty'], correctAnswer: 2, explanation: 'It is a form of Sadaqah in Islam.', category: 'Akhlaq', difficulty: 'Akhlaq', points: 2 },
-    { id: 'akhlaq-7', question: 'How should a Muslim speak?', options: ['Harshly', 'Kindly and truthfully', 'Mockingly', 'Constantly loudly'], correctAnswer: 1, explanation: 'We are taught to speak kindly and truthfully.', category: 'Akhlaq', difficulty: 'Akhlaq', points: 2 },
-    { id: 'akhlaq-8', question: 'True richness is:', options: ['Lots of gold', 'Large house', 'Contentment of heart', 'Fame'], correctAnswer: 2, explanation: 'True richness is contentment (ghina an-nafs).', category: 'Akhlaq', difficulty: 'Akhlaq', points: 2 },
-    { id: 'akhlaq-9', question: 'What is the best deed after belief?', options: ['Being kind to parents', 'Travel', 'Debate', 'Silence'], correctAnswer: 0, explanation: 'Kindness to parents ranks among the greatest deeds.', category: 'Akhlaq', difficulty: 'Akhlaq', points: 2 },
-    { id: 'akhlaq-10', question: 'What is “Ihsan”?', options: ['Justice only', 'Excellence in worship', 'Leniency always', 'Silence'], correctAnswer: 1, explanation: 'Ihsan is worshipping Allah as if you see Him.', category: 'Akhlaq', difficulty: 'Akhlaq', points: 2 },
-    { id: 'akhlaq-11', question: 'How should we respond to a gift?', options: ['Reject it', 'Show gratitude', 'Hide it', 'Complain'], correctAnswer: 1, explanation: 'Gratitude and du’a for the giver are encouraged.', category: 'Akhlaq', difficulty: 'Akhlaq', points: 2 },
-    { id: 'akhlaq-12', question: 'What is “Tawakkul”?', options: ['Giving up effort', 'Trusting Allah after effort', 'Only planning', 'Ignoring causes'], correctAnswer: 1, explanation: 'Tawakkul combines effort with trust in Allah.', category: 'Akhlaq', difficulty: 'Akhlaq', points: 2 },
-    { id: 'akhlaq-13', question: 'What should be avoided in speech?', options: ['Truth', 'Hurtful and false words', 'Gratitude', 'Kind reminders'], correctAnswer: 1, explanation: 'Avoid lies, backbiting, and hurtful speech.', category: 'Akhlaq', difficulty: 'Akhlaq', points: 2 },
-    { id: 'akhlaq-14', question: 'What cures envy (hasad)?', options: ['Competing in dunya', 'Contentment and du’a for others', 'Boasting', 'Ignoring it'], correctAnswer: 1, explanation: 'Contentment and praying for others help cure envy.', category: 'Akhlaq', difficulty: 'Akhlaq', points: 2 },
-    { id: 'akhlaq-15', question: 'How should neighbors be treated?', options: ['Ignored', 'With kindness and respect', 'With suspicion', 'Only on Eid'], correctAnswer: 1, explanation: 'The Prophet ﷺ emphasized neighborly rights.', category: 'Akhlaq', difficulty: 'Akhlaq', points: 2 },
-    { id: 'akhlaq-16', question: 'What is “Taqwa”?', options: ['Fear of people', 'God-consciousness', 'Laziness', 'Showing off'], correctAnswer: 1, explanation: 'Taqwa is being mindful of Allah in all actions.', category: 'Akhlaq', difficulty: 'Akhlaq', points: 2 },
-    { id: 'akhlaq-17', question: 'What should be said after making a mistake?', options: ['Blame others', 'Astaghfirullah', 'Deny it', 'Stay silent'], correctAnswer: 1, explanation: 'Seeking forgiveness is the prophetic way.', category: 'Akhlaq', difficulty: 'Akhlaq', points: 2 },
-    { id: 'akhlaq-18', question: 'What is “Sabr”?', options: ['Anger', 'Patience and perseverance', 'Haste', 'Complaining'], correctAnswer: 1, explanation: 'Sabr is patience, a central virtue in Islam.', category: 'Akhlaq', difficulty: 'Akhlaq', points: 2 },
-    { id: 'akhlaq-19', question: 'How should we give charity?', options: ['To be seen', 'Secretly if possible', 'Only publicly', 'Never'], correctAnswer: 1, explanation: 'Secret charity is highly rewarded and sincere.', category: 'Akhlaq', difficulty: 'Akhlaq', points: 2 },
-    { id: 'akhlaq-20', question: 'What is “Ghiba” (backbiting)?', options: ['False accusation', 'Mentioning your brother with what he dislikes even if true', 'Open advice', 'A compliment'], correctAnswer: 1, explanation: 'Ghiba is speaking ill truthfully behind someone’s back.', category: 'Akhlaq', difficulty: 'Akhlaq', points: 2 },
-    { id: 'akhlaq-21', question: 'What is “Namimah”?', options: ['Prayer', 'Tale-bearing to cause discord', 'Charity', 'Fasting'], correctAnswer: 1, explanation: 'Namimah is carrying tales to create conflict.', category: 'Akhlaq', difficulty: 'Akhlaq', points: 2 },
-    { id: 'akhlaq-22', question: 'How should we respond to Salaam?', options: ['Ignore', 'Reply with equal or better greeting', 'Delay it', 'Whisper'], correctAnswer: 1, explanation: 'Reply with the same or better per Quran 4:86.', category: 'Akhlaq', difficulty: 'Akhlaq', points: 2 },
-    { id: 'akhlaq-23', question: 'What is the best provision for the Hereafter?', options: ['Wealth', 'Taqwa', 'Titles', 'Followers'], correctAnswer: 1, explanation: '“The best provision is Taqwa” (Quran 2:197).', category: 'Akhlaq', difficulty: 'Akhlaq', points: 2 },
-    { id: 'akhlaq-24', question: 'How should one walk, per Quran and Sunnah?', options: ['Arrogantly', 'With humility and calmness', 'Running always', 'Never smiling'], correctAnswer: 1, explanation: 'Walk humbly; Allah dislikes arrogance (Quran 31:18).', category: 'Akhlaq', difficulty: 'Akhlaq', points: 2 },
-    { id: 'akhlaq-25', question: 'What is “Amanah”?', options: ['Trustworthiness', 'Anger', 'Sorrow', 'Silence'], correctAnswer: 0, explanation: 'Amanah is fulfilling trusts and responsibilities.', category: 'Akhlaq', difficulty: 'Akhlaq', points: 2 },
-    { id: 'akhlaq-26', question: 'How to treat guests?', options: ['Ignore them', 'Honor them', 'Delay serving', 'Argue'], correctAnswer: 1, explanation: '“Honor the guest” is part of faith (hadith).', category: 'Akhlaq', difficulty: 'Akhlaq', points: 2 },
-    { id: 'akhlaq-27', question: 'What is “Qana’ah”?', options: ['Haste', 'Contentment with what Allah provides', 'Greed', 'Anger'], correctAnswer: 1, explanation: 'Qana’ah is contentment and reduces envy.', category: 'Akhlaq', difficulty: 'Akhlaq', points: 2 },
-    { id: 'akhlaq-28', question: 'What should one do before entering another’s room/house?', options: ['Walk in', 'Knock/seek permission and greet', 'Shout', 'Open cabinets'], correctAnswer: 1, explanation: 'Islam requires permission and Salam before entry.', category: 'Akhlaq', difficulty: 'Akhlaq', points: 2 },
-    { id: 'akhlaq-29', question: 'How to reconcile between people?', options: ['Spread rumors', 'Make honest peace and du’a', 'Take sides unjustly', 'Ignore'], correctAnswer: 1, explanation: 'Reconciling is rewarded; even limited “white lies” to mend ties are allowed.', category: 'Akhlaq', difficulty: 'Akhlaq', points: 2 },
-    { id: 'akhlaq-30', question: 'What is “Birr al-walidayn”?', options: ['Visiting friends', 'Kindness and dutifulness to parents', 'Charity only', 'Silence'], correctAnswer: 1, explanation: 'Birr al-walidayn means honoring and serving parents with excellence.', category: 'Akhlaq', difficulty: 'Akhlaq', points: 2 },
-    {
-      id: 'seerah-14',
-      question: 'Who was given the title "Saifullah" (Sword of Allah)?',
-      options: ['Abu Bakr (RA)', 'Umar (RA)', 'Ali (RA)', 'Khalid ibn al-Walid (RA)'],
-      correctAnswer: 3,
-      explanation: 'Khalid ibn al-Walid (RA) was given the title "Saifullah" (Sword of Allah) by the Prophet ﷺ.',
-      category: 'Seerah',
-      difficulty: 'Seerah',
-      points: 2
-    },
+export const quizzes = [
+  // QURAN
   {
-    id: 'seerah-15',
-    question: 'How many years did the Prophet ﷺ live in Madinah?',
-    options: ['8 years', '10 years', '12 years', '13 years'],
-    correctAnswer: 1,
-    explanation: 'The Prophet ﷺ lived in Madinah for 10 years after the Hijrah until his passing.',
-    category: 'Seerah',
-    difficulty: 'Seerah',
-    points: 2
-  },
-  {
-    id: 'seerah-16',
-    question: 'What was the name of the Prophet\'s ﷺ camel during Hijrah?',
-    options: ['Al-Qaswa', 'Al-Adba', 'Duldul', 'Al-Aisha'],
-    correctAnswer: 0,
-    explanation: 'Al-Qaswa was the name of the Prophet\'s beloved camel that he rode during the Hijrah.',
-    category: 'Seerah',
-    difficulty: 'Seerah',
-    points: 2
-  },
-  {
-    id: 'seerah-17',
-    question: 'Who carried the Muslim flag at the Battle of Khaybar?',
-    options: ['Abu Bakr', 'Umar ibn al-Khattab', 'Ali ibn Abi Talib', 'Uthman ibn Affan'],
+    id: 'quran-1',
+    question: 'What is the primary purpose of the Quran as described in Surah Al-Baqarah (2:2)?',
+    options: ['To tell stories of the past', 'To provide scientific facts', 'A guidance for those conscious of Allah (Muttaqin)', 'To explain history of Arabs'],
     correctAnswer: 2,
-    explanation: 'Ali ibn Abi Talib (RA) was given the flag at Khaybar and was victorious with Allah\'s help.',
-    category: 'Seerah',
-    difficulty: 'Seerah',
-    points: 2
+    explanation: 'The Quran describes itself as "Guidance for the Muttaqin" (those who have Taqwa).',
+    category: 'Quran',
+    difficulty: 'Medium',
+    points: 10
   },
   {
-    id: 'seerah-18',
-    question: 'How many times did the Prophet ﷺ perform Hajj?',
-    options: ['Once', 'Twice', 'Three times', 'Four times'],
-    correctAnswer: 0,
-    explanation: 'The Prophet ﷺ performed Hajj once in his lifetime, known as the Farewell Pilgrimage in 10 AH.',
-    category: 'Seerah',
-    difficulty: 'Seerah',
-    points: 2
-  },
-  {
-    id: 'seerah-19',
-    question: 'Who was the milk mother (foster mother) of Prophet Muhammad ﷺ?',
-    options: ['Khadijah', 'Halima as-Sa\'diyyah', 'Fatimah', 'Asma bint Abi Bakr'],
-    correctAnswer: 1,
-    explanation: 'Halima as-Sa\'diyyah (RA) was the Prophet\'s foster mother who nursed him in the desert.',
-    category: 'Seerah',
-    difficulty: 'Seerah',
-    points: 2
-  },
-  {
-    id: 'seerah-20',
-    question: 'What was the name of the treaty signed with the Quraysh?',
-    options: ['Treaty of Aqaba', 'Treaty of Hudaybiyyah', 'Treaty of Taif', 'Treaty of Badr'],
-    correctAnswer: 1,
-    explanation: 'The Treaty of Hudaybiyyah was signed in 6 AH and was called a "clear victory" by Allah.',
-    category: 'Seerah',
-    difficulty: 'Seerah',
-    points: 2
-  },
-  {
-    id: 'seerah-21',
-    question: 'Which Surah was revealed entirely in one night?',
-    options: ['Surah al-Fatiha', 'Surah al-Ikhlas', 'Surah al-Qadr', 'Surah al-Mulk'],
+    id: 'quran-2',
+    question: 'Which Surah is referred to as equivalent to one-third of the Quran?',
+    options: ['Surah Al-Fatiha', 'Surah Al-Mulk', 'Surah Al-Ikhlas', 'Surah Ya-Sin'],
     correctAnswer: 2,
-    explanation: 'Surah al-Qadr speaks about the Night of Power when the Quran began to be revealed.',
-    category: 'Seerah',
-    difficulty: 'Seerah',
-    points: 2
+    explanation: 'The Prophet ﷺ described Surah Al-Ikhlas as being equal to one-third of the Quran due to its pure focus on Tawheed.',
+    category: 'Quran',
+    difficulty: 'Medium',
+    points: 10
   },
   {
-    id: 'seerah-22',
-    question: 'Who was the uncle of the Prophet ﷺ who protected him but never accepted Islam?',
-    options: ['Abbas', 'Abu Lahab', 'Abu Talib', 'Hamza'],
+    id: 'quran-3',
+    question: 'What distinguishes Makki Surahs from Madani Surahs generally?',
+    options: ['Makki are longer', 'Madani focus on Tawheed and Hereafter', 'Makki focus on Tawheed and Hereafter', 'Madani were revealed before Hijrah'],
     correctAnswer: 2,
-    explanation: 'Abu Talib protected the Prophet ﷺ throughout his life but passed away without accepting Islam.',
-    category: 'Seerah',
-    difficulty: 'Seerah',
-    points: 2
+    explanation: 'Makki Surahs (revealed in Makkah) primarily focus on faith (Tawheed), the Hereafter, and prophetic stories.',
+    category: 'Quran',
+    difficulty: 'Medium',
+    points: 10
   },
   {
-    id: 'seerah-23',
-    question: 'How many children did Prophet Muhammad ﷺ have?',
-    options: ['5', '7', '9', '11'],
+    id: 'quran-4',
+    question: 'What does the word "Taqwa" most accurately mean?',
+    options: ['Fear of punishment only', 'Consciousness of Allah that protects from sin', 'Seclusion in the mosque', 'Fasting every Monday'],
     correctAnswer: 1,
-    explanation: 'The Prophet ﷺ had 7 children: 3 sons (Qasim, Abdullah, Ibrahim) and 4 daughters (Zainab, Ruqayyah, Umm Kulthum, Fatimah).',
-    category: 'Seerah',
-    difficulty: 'Seerah',
-    points: 2
+    explanation: 'Taqwa is the consciousness of Allah that inspires a person to do good and avoid forbidden acts.',
+    category: 'Quran',
+    difficulty: 'Medium',
+    points: 10
   },
   {
-    id: 'seerah-24',
-    question: 'What miracle occurred when the Prophet ﷺ was born?',
-    options: ['Palace of Kisra shook', 'It rained heavily', 'Stars fell', 'Angels appeared'],
+    id: 'quran-5',
+    question: 'In which Surah is Ayatul Kursi (The Verse of the Throne) located?',
+    options: ['Surah Ali \'Imran', 'Surah Al-Baqarah', 'Surah An-Nisa', 'Surah Al-Ma\'idah'],
+    correctAnswer: 1,
+    explanation: 'Ayatul Kursi is verse 255 of Surah Al-Baqarah, the longest Surah in the Quran.',
+    category: 'Quran',
+    difficulty: 'Medium',
+    points: 10
+  },
+
+  // HADITH
+  {
+    id: 'hadith-1',
+    question: 'According to the famous Hadith of Jibril, what is the definition of "Ihsan"?',
+    options: ['To pray five times a day', 'To fast Ramadan perfectly', 'To worship Allah as if you see Him', 'To give charity secretly'],
+    correctAnswer: 2,
+    explanation: 'Ihsan is to worship Allah as if you see Him, and if you do not see Him, He sees you.',
+    category: 'Hadith',
+    difficulty: 'Medium',
+    points: 10
+  },
+  {
+    id: 'hadith-2',
+    question: 'The Prophet ﷺ said, "Actions are judged by..." (Bukhari & Muslim). Complete the Hadith.',
+    options: ['Their results', 'The effort put in', 'Intentions (Niyyah)', 'The wealth spent'],
+    correctAnswer: 2,
+    explanation: 'This famous hadith emphasizes that the value of deeds depends on the intention behind them.',
+    category: 'Hadith',
+    difficulty: 'Medium',
+    points: 10
+  },
+  {
+    id: 'hadith-3',
+    question: 'Which of the following is NOT one of the Five Pillars of Islam mentioned in the Hadith?',
+    options: ['Shahada (Testimony of Faith)', 'Salah (Prayer)', 'Jihad (Striving)', 'Zakat (Charity)'],
+    correctAnswer: 2,
+    explanation: 'While Jihad is a pinnacle of Islam, it is not listed as one of the Five Pillars (Arkan al-Islam).',
+    category: 'Hadith',
+    difficulty: 'Medium',
+    points: 10
+  },
+  {
+    id: 'hadith-4',
+    question: 'The Prophet ﷺ said, "None of you truly believes until..."',
+    options: ['He prays all night', 'He loves for his brother what he loves for himself', 'He memorizes the Quran', 'He gives all his wealth'],
+    correctAnswer: 1,
+    explanation: 'True faith requires desiring the same good for others that one desires for oneself.',
+    category: 'Hadith',
+    difficulty: 'Medium',
+    points: 10
+  },
+  {
+    id: 'hadith-5',
+    question: 'What is the status of a "Sahih" Hadith?',
+    options: ['Weak chain of narrators', 'Fabricated text', 'Authentically attributed to the Prophet ﷺ', 'Good but has a weak narrator'],
+    correctAnswer: 2,
+    explanation: 'Sahih means authentic; it fulfills all conditions of reliability in its chain and text.',
+    category: 'Hadith',
+    difficulty: 'Medium',
+    points: 10
+  },
+
+  // SEERAH
+  {
+    id: 'seerah-1',
+    question: 'What major event took place in the "Year of Sorrow" (\'Am al-Huzn)?',
+    options: ['The Battle of Badr', 'The conquest of Makkah', 'The deaths of Khadijah (RA) and Abu Talib', 'The Isra and Mi\'raj'],
+    correctAnswer: 2,
+    explanation: 'The Year of Sorrow marked the deaths of the Prophet\'s beloved wife Khadijah and his protecting uncle Abu Talib.',
+    category: 'Seerah',
+    difficulty: 'Medium',
+    points: 10
+  },
+  {
+    id: 'seerah-2',
+    question: 'During the Hijrah, who accompanied the Prophet ﷺ in the Cave of Thawr?',
+    options: ['Ali ibn Abi Talib (RA)', 'Umar ibn al-Khattab (RA)', 'Abu Bakr as-Siddiq (RA)', 'Uthman ibn Affan (RA)'],
+    correctAnswer: 2,
+    explanation: 'Abu Bakr (RA) was the Prophet\'s companion in the cave during the migration to Madinah.',
+    category: 'Seerah',
+    difficulty: 'Medium',
+    points: 10
+  },
+  {
+    id: 'seerah-3',
+    question: 'What was the outcome of the Treaty of Hudaybiyyah?',
+    options: ['Immediate war with Quraysh', 'A 10-year peace truce allowing Islam to spread', 'Muslims entered Makkah that same year', 'The Prophet ﷺ returned to Madinah defeated'],
+    correctAnswer: 1,
+    explanation: 'The treaty established a 10-year truce, which allowed Islam to spread rapidly across Arabia.',
+    category: 'Seerah',
+    difficulty: 'Medium',
+    points: 10
+  },
+  {
+    id: 'seerah-4',
+    question: 'In the Battle of Badr, what was the approximate ratio of Muslims to the Quraysh army?',
+    options: ['313 vs 1000', '1000 vs 313', '3000 vs 10000', 'Equal numbers'],
     correctAnswer: 0,
-    explanation: 'When the Prophet ﷺ was born, the palace of the Persian king Kisra shook and its arches cracked.',
+    explanation: 'The Muslims numbered around 313, while the Quraysh army was approximately 1000 strong.',
     category: 'Seerah',
-    difficulty: 'Seerah',
-    points: 2
+    difficulty: 'Medium',
+    points: 10
   },
   {
-    id: 'seerah-25',
-    question: 'Who was the first person to be martyred in Islam?',
-    options: ['Hamza', 'Sumayy ah bint Khayyat', 'Yasir', 'Ammar ibn Yasir'],
+    id: 'seerah-5',
+    question: 'Upon conquering Makkah, what did the Prophet ﷺ say to the Quraysh?',
+    options: ['"I will take revenge for the past."', '"You are all my prisoners."', '"Go, for you are free."', '"Pay a heavy tax."'],
+    correctAnswer: 2,
+    explanation: 'He showed unmatched mercy by forgiving his former enemies, saying "Go, for you are free" (Antum al-Tulaqa).',
+    category: 'Seerah',
+    difficulty: 'Medium',
+    points: 10
+  },
+
+  // RAMADAN
+  {
+    id: 'ramadan-1',
+    question: 'What is the specific purpose of fasting mentioned in the Quran (2:183)?',
+    options: ['To lose weight', 'To feel the hunger of the poor', 'To attain Taqwa (God-consciousness)', 'To save food'],
+    correctAnswer: 2,
+    explanation: 'Allah says fasting is prescribed "so that you may become righteous/conscious of Allah (Taqwa)."',
+    category: 'Ramadan',
+    difficulty: 'Medium',
+    points: 10
+  },
+  {
+    id: 'ramadan-2',
+    question: 'Which night in Ramadan is described as "better than a thousand months"?',
+    options: ['The first night', 'The 15th of Sha\'ban', 'Laylat al-Qadr', 'The night of Eid'],
+    correctAnswer: 2,
+    explanation: 'Laylat al-Qadr (The Night of Decree) is better than a thousand months of worship.',
+    category: 'Ramadan',
+    difficulty: 'Medium',
+    points: 10
+  },
+  {
+    id: 'ramadan-3',
+    question: 'What is the ruling on eating or drinking intentionally during the fasting hours?',
+    options: ['It is disliked but valid', 'It breaks the fast and requires makeup (Qada)', 'It is allowed if hungry', 'It breaks the fast only if seen by others'],
     correctAnswer: 1,
-    explanation: 'Sumayyah bint Khayyat (RA) was the first martyr in Islam, killed by Abu Jahl for her faith.',
-    category: 'Seerah',
-    difficulty: 'Seerah',
-    points: 2
+    explanation: 'Intentional eating or drinking invalidates the fast, and the day must be made up.',
+    category: 'Ramadan',
+    difficulty: 'Medium',
+    points: 10
   },
   {
-    id: 'seerah-26',
-    question: 'What was the name of the first battle in Islam?',
-    options: ['Battle of Uhud', 'Battle of Badr', 'Battle of Khandaq', 'Battle of Khaybar'],
+    id: 'ramadan-4',
+    question: 'What is "Suhoor"?',
+    options: ['The meal to break the fast at sunset', 'The pre-dawn meal before fasting begins', 'The special night prayer', 'The charity given at Eid'],
     correctAnswer: 1,
-    explanation: 'The Battle of Badr in 2 AH was the first major battle in Islam where Allah gave Muslims victory.',
-    category: 'Seerah',
-    difficulty: 'Seerah',
-    points: 2
+    explanation: 'Suhoor is the blessed meal eaten before dawn (Fajr) to prepare for the fast.',
+    category: 'Ramadan',
+    difficulty: 'Medium',
+    points: 10
   },
   {
-    id: 'seerah-27',
-    question: 'Who was granted the title "Dhun-Nurayn" (Possessor of Two Lights)?',
-    options: ['Ali', 'Abu Bakr', 'Umar', 'Uthman'],
+    id: 'ramadan-5',
+    question: 'Which of these acts is highly recommended (Sunnah) to hasten at sunset?',
+    options: ['Delaying Iftar to be sure', 'Praying Maghrib before eating anything', 'Breaking the fast (Iftar) immediately', 'Sleeping before eating'],
+    correctAnswer: 2,
+    explanation: 'The Prophet ﷺ encouraged hastening the breaking of the fast as soon as the sun sets.',
+    category: 'Ramadan',
+    difficulty: 'Medium',
+    points: 10
+  },
+
+  // AKHLAQ
+  {
+    id: 'akhlaq-1',
+    question: 'The Prophet ﷺ said, "The heaviest thing in the scales of the believer on the Day of Judgment is..."',
+    options: ['Long prayers', 'Excessive fasting', 'Good Character (Husn al-Khuluq)', 'Giving gold in charity'],
+    correctAnswer: 2,
+    explanation: 'Good character weighs heavily in the scales of deeds.',
+    category: 'Akhlaq',
+    difficulty: 'Medium',
+    points: 10
+  },
+  {
+    id: 'akhlaq-2',
+    question: 'How does the Quran describe the correct behavior towards parents in old age (17:23)?',
+    options: ['Put them in a home', 'Do not say to them "Uff" nor repel them', 'Give them money but live separately', 'Obey them only if they are Muslim'],
+    correctAnswer: 1,
+    explanation: 'The Quran commands kindness to parents, forbidding even a sign of irritation like saying "Uff".',
+    category: 'Akhlaq',
+    difficulty: 'Medium',
+    points: 10
+  },
+  {
+    id: 'akhlaq-3',
+    question: 'What is the Islamic ruling on "Ghibah" (backbiting)?',
+    options: ['Permitted if it is true', 'Likened to eating the flesh of one\'s dead brother', 'Allowed if the person is not present', 'Disliked but not sinful'],
+    correctAnswer: 1,
+    explanation: 'The Quran (49:12) compares backbiting to eating the flesh of one\'s dead brother, emphasizing its severity.',
+    category: 'Akhlaq',
+    difficulty: 'Medium',
+    points: 10
+  },
+  {
+    id: 'akhlaq-4',
+    question: 'The Prophet ﷺ said: "He who does not show mercy to our young nor honor our elders is..."',
+    options: ['"Not from us."', '"Still a good Muslim."', '"Just lacking manners."', '"Forgiven."'],
+    correctAnswer: 0,
+    explanation: 'This Hadith highlights the importance of compassion for the young and respect for the elderly.',
+    category: 'Akhlaq',
+    difficulty: 'Medium',
+    points: 10
+  },
+  {
+    id: 'akhlaq-5',
+    question: 'What is the cure for pride (Kibr) according to Islamic teachings?',
+    options: ['Humility (Tawade)', 'Gaining more power', 'Isolation', 'Wearing simple clothes only'],
+    correctAnswer: 0,
+    explanation: 'Humility is the opposite of pride. The Prophet ﷺ said no one with an atom of pride will enter Paradise.',
+    category: 'Akhlaq',
+    difficulty: 'Medium',
+    points: 10
+  },
+
+  // HAJJ
+  {
+    id: 'hajj-1',
+    question: 'What is Hajj?',
+    options: ['A special charity', 'A pilgrimage to Makkah done at a specific time', 'A daily prayer', 'A type of fasting'],
+    correctAnswer: 1,
+    explanation: 'Hajj is the pilgrimage to Makkah that Muslims perform during Dhul Hijjah if they are able.',
+    category: 'Hajj',
+    difficulty: 'Easy',
+    points: 10
+  },
+  {
+    id: 'hajj-2',
+    question: 'In which Islamic month does Hajj take place?',
+    options: ['Ramadan', 'Dhul Hijjah', 'Muharram', 'Rajab'],
+    correctAnswer: 1,
+    explanation: 'Hajj is performed in the month of Dhul Hijjah.',
+    category: 'Hajj',
+    difficulty: 'Easy',
+    points: 10
+  },
+  {
+    id: 'hajj-3',
+    question: 'What is the Ka‘bah?',
+    options: ['A mountain in Madinah', 'The holy house in Makkah Muslims face in prayer', 'A special water well', 'A kind of prayer mat'],
+    correctAnswer: 1,
+    explanation: 'The Ka‘bah is the holy house in Makkah. Muslims face it when they pray.',
+    category: 'Hajj',
+    difficulty: 'Easy',
+    points: 10
+  },
+  {
+    id: 'hajj-4',
+    question: 'What do pilgrims wear called when starting Hajj or Umrah?',
+    options: ['Ihram', 'Jubbah', 'Kufiyah', 'Sunnah'],
+    correctAnswer: 0,
+    explanation: 'Ihram is the special state and clothing pilgrims enter for Hajj or Umrah.',
+    category: 'Hajj',
+    difficulty: 'Medium',
+    points: 10
+  },
+  {
+    id: 'hajj-5',
+    question: 'What is Tawaf?',
+    options: ['Walking seven times around the Ka‘bah', 'Throwing stones at pillars', 'Standing on a mountain', 'Praying extra night prayer'],
+    correctAnswer: 0,
+    explanation: 'Tawaf is circling the Ka‘bah seven times as an act of worship.',
+    category: 'Hajj',
+    difficulty: 'Medium',
+    points: 10
+  },
+  {
+    id: 'hajj-6',
+    question: 'What is Sa‘i?',
+    options: ['Running between Safa and Marwah', 'Fasting on Eid day', 'Reading a long dua', 'Giving Zakah in Makkah'],
+    correctAnswer: 0,
+    explanation: 'Sa‘i is walking (and sometimes jogging) between the hills of Safa and Marwah.',
+    category: 'Hajj',
+    difficulty: 'Medium',
+    points: 10
+  },
+  {
+    id: 'hajj-7',
+    question: 'Which day is called “the Day of Arafah”?',
+    options: ['1st of Dhul Hijjah', '8th of Dhul Hijjah', '9th of Dhul Hijjah', '10th of Dhul Hijjah'],
+    correctAnswer: 2,
+    explanation: 'The Day of Arafah is the 9th of Dhul Hijjah.',
+    category: 'Hajj',
+    difficulty: 'Medium',
+    points: 10
+  },
+  {
+    id: 'hajj-8',
+    question: 'Eid al-Adha is celebrated during which event?',
+    options: ['Hajj season', 'The first day of Ramadan', 'The night of Isra and Mi‘raj', 'The Islamic New Year'],
+    correctAnswer: 0,
+    explanation: 'Eid al-Adha happens during Hajj season in Dhul Hijjah.',
+    category: 'Hajj',
+    difficulty: 'Easy',
+    points: 10
+  },
+
+  // SUNNAH
+  {
+    id: 'sunnah-1',
+    question: 'Which of the following is a Sunnah of eating?',
+    options: ['Eating while standing', 'Eating with the left hand', 'Eating with the right hand and from what is in front of you', 'Blowing on hot food'],
+    correctAnswer: 2,
+    explanation: 'The Prophet ﷺ taught a boy: "Mention Allah\'s name, eat with your right hand, and eat from what is next to you."',
+    category: 'Sunnah',
+    difficulty: 'Medium',
+    points: 10
+  },
+  {
+    id: 'sunnah-2',
+    question: 'What is the difference between a Fard act and a Sunnah act?',
+    options: ['They are exactly the same', 'Fard is optional', 'Sunnah is mandatory', 'Fard is obligatory and punished if neglected, Sunnah is recommended and rewarded if done'],
     correctAnswer: 3,
-    explanation: 'Uthman ibn Affan (RA) was called Dhun-Nurayn because he married two daughters of the Prophet ﷺ.',
-    category: 'Seerah',
-    difficulty: 'Seerah',
-    points: 2
+    explanation: 'Fard is mandatory (e.g., 5 daily prayers), while Sunnah is the practice of the Prophet ﷺ which brings extra reward.',
+    category: 'Sunnah',
+    difficulty: 'Medium',
+    points: 10
   },
   {
-    id: 'seerah-28',
-    question: 'Which companion was known as "Al-Farooq" (The Criterion)?',
-    options: ['Abu Bakr', 'Umar ibn al-Khattab', 'Uthman', 'Ali'],
-    correctAnswer: 1,
-    explanation: 'Umar ibn al-Khattab (RA) was called Al-Farooq because of his ability to distinguish truth from falsehood.',
-    category: 'Seerah',
-    difficulty: 'Seerah',
-    points: 2
-  },
-  {
-    id: 'seerah-29',
-    question: 'What was the name of the mountain where the Prophet ﷺ received revelation?',
-    options: ['Mount Sinai', 'Mount Uhud', 'Jabal an-Nour (Cave of Hira)', 'Mount Arafat'],
+    id: 'sunnah-3',
+    question: 'What should a Muslim say when entering their home?',
+    options: ['Nothing if no one is there', '"Hello"', 'The Salam (Assalamu Alaikum)', '"I\'m home"'],
     correctAnswer: 2,
-    explanation: 'The Cave of Hira on Jabal an-Nour (Mountain of Light) is where the Prophet ﷺ received the first revelation.',
-    category: 'Seerah',
-    difficulty: 'Seerah',
-    points: 2
+    explanation: 'It is Sunnah to say Salam when entering, even if the house is empty, invoking peace on the household.',
+    category: 'Sunnah',
+    difficulty: 'Medium',
+    points: 10
   },
   {
-    id: 'seerah-30',
-    question: 'In which month did the Muslims conquer Makkah?',
-    options: ['Ramadan', 'Shawwal', 'Dhul-Hijjah', 'Muharram'],
+    id: 'sunnah-4',
+    question: 'Which of these is a "Sunnah Mu\'akkadah" (Emphasized Sunnah) prayer?',
+    options: ['The 2 rak\'ahs before Fajr', 'The 4 rak\'ahs before Asr', 'Tahiyatul Masjid', 'Taraweeh'],
     correctAnswer: 0,
-    explanation: 'The conquest of Makkah occurred in Ramadan of the 8th year after Hijrah.',
-    category: 'Seerah',
-    difficulty: 'Seerah',
-    points: 2
+    explanation: 'The 2 Sunnah rak\'ahs before Fajr are the most emphasized of the regular Sunnah prayers.',
+    category: 'Sunnah',
+    difficulty: 'Medium',
+    points: 10
+  },
+  {
+    id: 'sunnah-5',
+    question: 'The Prophet ﷺ said about the Siwak (toothstick): "It is a purification for the mouth and..."',
+    options: ['"A way to whiten teeth."', '"Pleasing to the Lord."', '"A cure for headache."', '"Good for digestion."'],
+    correctAnswer: 1,
+    explanation: 'The Siwak is pleasing to Allah (Mardhatun lir-Rabb) and maintains oral hygiene.',
+    category: 'Sunnah',
+    difficulty: 'Medium',
+    points: 10
   },
 
-  // HADITH - Additional 20 Questions (11-30)
+  // Additional Quran Quizzes
   {
-    id: 'hadith-11',
-    question: 'Who compiled Sahih Muslim?',
-    options: ['Imam Bukhari', 'Imam Muslim', 'Imam Ahmad', 'Imam Malik'],
+    id: 'quran-6',
+    question: 'How many Surahs are there in the Quran?',
+    options: ['100', '114', '120', '150'],
     correctAnswer: 1,
-    explanation: 'Imam Muslim ibn al-Hajjaj compiled Sahih Muslim, one of the two most authentic hadith collections.',
-    category: 'Hadith',
-    difficulty: 'Hadith',
-    points: 2
+    explanation: 'The Quran consists of 114 Surahs, divided into 30 Juz (parts).',
+    category: 'Quran',
+    difficulty: 'Easy',
+    points: 10
   },
   {
-    id: 'hadith-12',
-    question: '"The best of you are those who learn the Quran and teach it" was narrated by:',
-    options: ['Uthman', 'Ali', 'Abu Hurairah', 'Aisha'],
-    correctAnswer: 0,
-    explanation: 'This hadith about the virtue of learning and teaching Quran was narrated by Uthman ibn Affan (RA).',
-    category: 'Hadith',
-    difficulty: 'Hadith',
-    points: 2
-  },
-  {
-    id: 'hadith-13',
-    question: 'What are the Six Books of Hadith collectively called?',
-    options: ['Kutub as-Sittah', 'Sahih Sitta', 'Hadith al-Arba\'in', 'Musnad as-Sittah'],
-    correctAnswer: 0,
-    explanation: 'The Six Books of Hadith (Bukhari, Muslim, Abu Dawud, Tirmidhi, Nasa\'i, Ibn Majah) are called Kutub as-Sittah.',
-    category: 'Hadith',
-    difficulty: 'Hadith',
-    points: 2
-  },
-  {
-    id: 'hadith-14',
-    question: '"The strong person is not the one who can overpower others" - this hadith teaches about:',
-    options: ['Physical strength', 'Controlling anger', 'Fighting skills', 'Leadership'],
+    id: 'quran-7',
+    question: 'What is the meaning of "Al-Quran" in Arabic?',
+    options: ['The Book', 'The Recitation', 'The Guidance', 'The Light'],
     correctAnswer: 1,
-    explanation: 'This hadith teaches that true strength is controlling one\'s anger, not physical power.',
-    category: 'Hadith',
-    difficulty: 'Hadith',
-    points: 2
+    explanation: 'Al-Quran literally means "The Recitation" - something to be recited and preserved.',
+    category: 'Quran',
+    difficulty: 'Easy',
+    points: 10
   },
   {
-    id: 'hadith-15',
-    question: 'Which companion\'s mother was praised by the Prophet ﷺ as going to Paradise?',
-    options: ['Mother of Abu Hurairah', 'Mother of Anas', 'Mother of Abu Bakr', 'Mother of Umar'],
+    id: 'quran-8',
+    question: 'Which Surah is known as "The Opening" and is recited in every prayer?',
+    options: ['Surah Al-Baqarah', 'Surah Al-Fatiha', 'Surah Al-Ikhlas', 'Surah An-Nas'],
     correctAnswer: 1,
-    explanation: 'Umm Sulaim, the mother of Anas ibn Malik, was praised by the Prophet ﷺ and given glad tidings of Paradise.',
-    category: 'Hadith',
-    difficulty: 'Hadith',
-    points: 2
+    explanation: 'Surah Al-Fatiha (The Opening) is the first Surah and is recited in every unit of prayer.',
+    category: 'Quran',
+    difficulty: 'Easy',
+    points: 10
   },
   {
-    id: 'hadith-16',
-    question: '"Make things easy and do not make them difficult" - this hadith emphasizes:',
-    options: ['Leniency in teaching', 'Being lazy', 'Avoiding hardship', 'Taking shortcuts'],
-    correctAnswer: 0,
-    explanation: 'This hadith teaches us to make religion easy for people and not to burden them unnecessarily.',
-    category: 'Hadith',
-    difficulty: 'Hadith',
-    points: 2
-  },
-  {
-    id: 'hadith-17',
-    question: 'What is a Hadith Hasan?',
-    options: ['Beautiful narration', 'Good/acceptable hadith', 'Weak hadith', 'Fabricated hadith'],
+    id: 'quran-9',
+    question: 'What does the Quran say about itself in Surah Al-Hijr (15:9)?',
+    options: ['It will be forgotten', 'It will be preserved', 'It will be changed', 'It will be lost'],
     correctAnswer: 1,
-    explanation: 'Hadith Hasan means a "good" or "acceptable" hadith that is slightly below Sahih in authenticity.',
-    category: 'Hadith',
-    difficulty: 'Hadith',
-    points: 2
+    explanation: 'Allah promises to preserve the Quran: "Indeed, it is We who sent down the Qur\'an and indeed, We will be its guardian."',
+    category: 'Quran',
+    difficulty: 'Medium',
+    points: 10
   },
   {
-    id: 'hadith-18',
-    question: '"The believer does not slander, curse, or speak in an obscene manner" is found in:',
-    options: ['Bukhari', 'Tirmidhi', 'Muslim', 'Abu Dawud'],
-    correctAnswer: 1,
-    explanation: 'This hadith about good character is found in Sunan at-Tirmidhi.',
-    category: 'Hadith',
-    difficulty: 'Hadith',
-    points: 2
-  },
-  {
-    id: 'hadith-19',
-    question: 'Who is considered the greatest female narrator of hadith?',
-    options: ['Khadijah', 'Aisha bint Abi Bakr', 'Fatimah', 'Hafsa'],
-    correctAnswer: 1,
-    explanation: 'Aisha (RA) narrated over 2,000 hadiths and is the greatest female narrator in Islam.',
-    category: 'Hadith',
-    difficulty: 'Hadith',
-    points: 2
-  },
-  {
-    id: 'hadith-20',
-    question: '"The most beloved deed to Allah is the one done regularly, even if it is small" was narrated by:',
-    options: ['Aisha', 'Abu Hurairah', 'Ibn Umar', 'Anas'],
-    correctAnswer: 0,
-    explanation: 'This hadith about consistency in deeds was narrated by Aisha (RA).',
-    category: 'Hadith',
-    difficulty: 'Hadith',
-    points: 2
-  },
-  {
-    id: 'hadith-21',
-    question: 'Which scholar compiled "Riyadh as-Saliheen"?',
-    options: ['Imam Nawawi', 'Imam Bukhari', 'Imam Muslim', 'Imam Ahmad'],
-    correctAnswer: 0,
-    explanation: 'Imam Nawawi compiled "Riyadh as-Saliheen" (The Gardens of the Righteous), a famous hadith collection.',
-    category: 'Hadith',
-    difficulty: 'Hadith',
-    points: 2
-  },
-  {
-    id: 'hadith-22',
-    question: '"Paradise lies under the feet of mothers" teaches us about:',
-    options: ['Respecting mothers', 'Women in Paradise', 'Traveling to Paradise', 'Prostration'],
-    correctAnswer: 0,
-    explanation: 'This hadith emphasizes the high status of mothers and the importance of respecting and serving them.',
-    category: 'Hadith',
-    difficulty: 'Hadith',
-    points: 2
-  },
-  {
-    id: 'hadith-23',
-    question: 'What is the meaning of "Isnad" in hadith science?',
-    options: ['The text of hadith', 'The chain of narrators', 'The explanation', 'The collection'],
-    correctAnswer: 1,
-    explanation: 'Isnad refers to the chain of narrators who transmitted the hadith from one generation to another.',
-    category: 'Hadith',
-    difficulty: 'Hadith',
-    points: 2
-  },
-  {
-    id: 'hadith-24',
-    question: '"Whoever believes in Allah and the Last Day should speak good or remain silent" emphasizes:',
-    options: ['Prayer', 'Controlling speech', 'Fasting', 'Charity'],
-    correctAnswer: 1,
-    explanation: 'This hadith teaches us to guard our tongue and only speak what is good or beneficial.',
-    category: 'Hadith',
-    difficulty: 'Hadith',
-    points: 2
-  },
-  {
-    id: 'hadith-25',
-    question: 'How many hadith are in Sahih Bukhari (without repetitions)?',
-    options: ['Around 2,000', 'Around 2,600', 'Around 5,000', 'Around 7,000'],
-    correctAnswer: 1,
-    explanation: 'Sahih Bukhari contains around 2,600 hadith without repetitions (7,563 with repetitions).',
-    category: 'Hadith',
-    difficulty: 'Hadith',
-    points: 2
-  },
-  {
-    id: 'hadith-26',
-    question: '"The most beloved names to Allah are Abdullah and Abdur-Rahman" means:',
-    options: ['These are prophets\' names', 'Names showing servitude to Allah', 'Arabic names only', 'Family names'],
-    correctAnswer: 1,
-    explanation: 'These names mean "servant of Allah" and "servant of the Most Merciful", showing complete submission to Allah.',
-    category: 'Hadith',
-    difficulty: 'Hadith',
-    points: 2
-  },
-  {
-    id: 'hadith-27',
-    question: 'What is a "Mawdu" hadith?',
-    options: ['Authentic hadith', 'Weak hadith', 'Fabricated/forged hadith', 'Rare hadith'],
+    id: 'quran-10',
+    question: 'Which Surah was revealed completely at one time?',
+    options: ['Surah Al-Baqarah', 'Surah Al-Fatiha', 'Surah Al-Ikhlas', 'Surah Al-Kawthar'],
     correctAnswer: 2,
-    explanation: 'Mawdu hadith means a fabricated or forged hadith that was falsely attributed to the Prophet ﷺ.',
-    category: 'Hadith',
-    difficulty: 'Hadith',
-    points: 2
-  },
-  {
-    id: 'hadith-28',
-    question: '"None of you believes until he loves for his brother what he loves for himself" teaches:',
-    options: ['Family love', 'Selfishness', 'Brotherhood and caring for others', 'Competition'],
-    correctAnswer: 2,
-    explanation: 'This hadith teaches us to wish good for others just as we wish good for ourselves.',
-    category: 'Hadith',
-    difficulty: 'Hadith',
-    points: 2
-  },
-  {
-    id: 'hadith-29',
-    question: 'Who compiled "Musnad Ahmad"?',
-    options: ['Imam Bukhari', 'Imam Ahmad ibn Hanbal', 'Imam Shafi\'i', 'Imam Malik'],
-    correctAnswer: 1,
-    explanation: 'Imam Ahmad ibn Hanbal compiled the Musnad, containing over 27,000 hadith narrations.',
-    category: 'Hadith',
-    difficulty: 'Hadith',
-    points: 2
-  },
-  {
-    id: 'hadith-30',
-    question: '"Verily, with hardship comes ease" is found in:',
-    options: ['Hadith Qudsi', 'Surah Ash-Sharh', 'Sahih Bukhari', 'Sunan Tirmidhi'],
-    correctAnswer: 1,
-    explanation: 'This beautiful verse is from Surah Ash-Sharh (94:5-6) in the Quran, repeated twice for emphasis.',
-    category: 'Hadith',
-    difficulty: 'Hadith',
-    points: 2
+    explanation: 'Surah Al-Ikhlas was revealed completely at once, unlike other Surahs which were revealed gradually.',
+    category: 'Quran',
+    difficulty: 'Medium',
+    points: 10
   },
 
-  // PROPHETS - Additional 20 Questions (11-30)
+  // Additional Hadith Quizzes
   {
-    id: 'prophets-11',
-    question: 'Which prophet could talk to animals?',
-    options: ['Prophet Musa', 'Prophet Isa', 'Prophet Sulayman', 'Prophet Yunus'],
+    id: 'hadith-6',
+    question: 'What is the first Hadith in Sahih Bukhari?',
+    options: ['About intentions', 'About knowledge', 'About actions', 'About faith'],
     correctAnswer: 2,
-    explanation: 'Prophet Sulayman (Solomon) was given the ability to understand and speak to animals and jinn.',
-    category: 'Prophets',
-    difficulty: 'Prophets',
-    points: 2
+    explanation: 'The first Hadith in Sahih Bukhari is: "Actions are but by intention."',
+    category: 'Hadith',
+    difficulty: 'Medium',
+    points: 10
   },
   {
-    id: 'prophets-12',
-    question: 'Who was the father of Prophet Ibrahim?',
-    options: ['Azar', 'Imran', 'Zakariya', 'Lut'],
-    correctAnswer: 0,
-    explanation: 'Azar (also known as Tarakh) was the father of Prophet Ibrahim and was an idol maker.',
-    category: 'Prophets',
-    difficulty: 'Prophets',
-    points: 2
-  },
-  {
-    id: 'prophets-13',
-    question: 'Which prophet was swallowed by a whale?',
-    options: ['Prophet Yunus', 'Prophet Musa', 'Prophet Nuh', 'Prophet Isa'],
-    correctAnswer: 0,
-    explanation: 'Prophet Yunus (Jonah) was swallowed by a large fish/whale after leaving his people.',
-    category: 'Prophets',
-    difficulty: 'Prophets',
-    points: 2
-  },
-  {
-    id: 'prophets-14',
-    question: 'Who built the Ka\'bah?',
-    options: ['Prophet Muhammad ﷺ', 'Prophet Ibrahim and Ismail', 'Prophet Adam', 'Angels'],
-    correctAnswer: 1,
-    explanation: 'Prophet Ibrahim and his son Ismail rebuilt the Ka\'bah as commanded by Allah.',
-    category: 'Prophets',
-    difficulty: 'Prophets',
-    points: 2
-  },
-  {
-    id: 'prophets-15',
-    question: 'Which prophet was known for his patience during severe trials?',
-    options: ['Prophet Ayyub', 'Prophet Yusuf', 'Prophet Musa', 'Prophet Isa'],
-    correctAnswer: 0,
-    explanation: 'Prophet Ayyub (Job) is known for his immense patience during years of illness and hardship.',
-    category: 'Prophets',
-    difficulty: 'Prophets',
-    points: 2
-  },
-  {
-    id: 'prophets-16',
-    question: 'Who was the prophet that interpreted dreams?',
-    options: ['Prophet Yusuf', 'Prophet Daud', 'Prophet Sulayman', 'Prophet Yunus'],
-    correctAnswer: 0,
-    explanation: 'Prophet Yusuf (Joseph) was gifted with the ability to interpret dreams accurately.',
-    category: 'Prophets',
-    difficulty: 'Prophets',
-    points: 2
-  },
-  {
-    id: 'prophets-17',
-    question: 'Which prophet was raised in the palace of Pharaoh?',
-    options: ['Prophet Harun', 'Prophet Musa', 'Prophet Yusuf', 'Prophet Isa'],
-    correctAnswer: 1,
-    explanation: 'Prophet Musa (Moses) was raised in the palace of Pharaoh after being found in the river.',
-    category: 'Prophets',
-    difficulty: 'Prophets',
-    points: 2
-  },
-  {
-    id: 'prophets-18',
-    question: 'Who was the twin brother of Prophet Musa?',
-    options: ['Prophet Harun', 'Prophet Yusha', 'Prophet Shuaib', 'Prophet Yusuf'],
-    correctAnswer: 0,
-    explanation: 'Prophet Harun (Aaron) was the brother of Prophet Musa and helped him in his mission.',
-    category: 'Prophets',
-    difficulty: 'Prophets',
-    points: 2
-  },
-  {
-    id: 'prophets-19',
-    question: 'Which prophet\'s people were destroyed by a loud cry (Sayhah)?',
-    options: ['People of Nuh', 'People of Salih', 'People of Lut', 'People of Hud'],
-    correctAnswer: 1,
-    explanation: 'The people of Prophet Salih (the Thamud) were destroyed by a loud blast/cry from the sky.',
-    category: 'Prophets',
-    difficulty: 'Prophets',
-    points: 2
-  },
-  {
-    id: 'prophets-20',
-    question: 'Who was the prophet that married a woman from the people of Madyan?',
-    options: ['Prophet Ibrahim', 'Prophet Musa', 'Prophet Yusuf', 'Prophet Muhammad ﷺ'],
-    correctAnswer: 1,
-    explanation: 'Prophet Musa married Safura, the daughter of Prophet Shuaib from Madyan.',
-    category: 'Prophets',
-    difficulty: 'Prophets',
-    points: 2
-  },
-  {
-    id: 'prophets-21',
-    question: 'Which prophet was given the Zabur (Psalms)?',
-    options: ['Prophet Musa', 'Prophet Isa', 'Prophet Daud', 'Prophet Sulayman'],
+    id: 'hadith-7',
+    question: 'The Prophet ﷺ said: "The best of you are those who..."',
+    options: ['Are richest', 'Learn the Quran', 'Are best in character', 'Pray the most'],
     correctAnswer: 2,
-    explanation: 'Prophet Daud (David) was given the Zabur (Psalms) as a scripture from Allah.',
-    category: 'Prophets',
-    difficulty: 'Prophets',
-    points: 2
+    explanation: 'The Prophet ﷺ said: "The best of you are those who are best in character (akhlaq)."',
+    category: 'Hadith',
+    difficulty: 'Medium',
+    points: 10
   },
   {
-    id: 'prophets-22',
-    question: 'Who was sent to the people of \'Ad?',
-    options: ['Prophet Hud', 'Prophet Salih', 'Prophet Lut', 'Prophet Nuh'],
-    correctAnswer: 0,
-    explanation: 'Prophet Hud was sent to the people of \'Ad who were destroyed by a furious wind.',
-    category: 'Prophets',
-    difficulty: 'Prophets',
-    points: 2
+    id: 'hadith-8',
+    question: 'What is the status of Hadith Qudsi?',
+    options: ['Fabricated', 'The words of the Prophet ﷺ', 'The words of Allah expressed in the Prophet\'s words', 'Weak narrations'],
+    correctAnswer: 2,
+    explanation: 'Hadith Qudsi are divine revelations expressed in the Prophet\'s own words, not part of the Quran.',
+    category: 'Hadith',
+    difficulty: 'Hard',
+    points: 10
   },
   {
-    id: 'prophets-23',
-    question: 'Which prophet was born without a father?',
-    options: ['Prophet Adam', 'Prophet Isa', 'Prophet Yahya', 'Prophet Idris'],
+    id: 'hadith-9',
+    question: 'The Prophet ﷺ said: "Whoever believes in Allah and the Last Day..."',
+    options: ['Should not harm others', 'Should speak good or remain silent', 'Should help the poor', 'Should fast often'],
     correctAnswer: 1,
-    explanation: 'Prophet Isa (Jesus) was born miraculously to Maryam without a father.',
-    category: 'Prophets',
-    difficulty: 'Prophets',
-    points: 2
+    explanation: 'The Hadith states: "Whoever believes in Allah and the Last Day should speak good or remain silent."',
+    category: 'Hadith',
+    difficulty: 'Medium',
+    points: 10
   },
   {
-    id: 'prophets-24',
-    question: 'Who was the grandfather of Prophet Yusuf?',
-    options: ['Prophet Ishaq', 'Prophet Ismail', 'Prophet Ibrahim', 'Prophet Ya\'qub'],
-    correctAnswer: 0,
-    explanation: 'Prophet Ishaq (Isaac) was the father of Ya\'qub and grandfather of Yusuf.',
-    category: 'Prophets',
-    difficulty: 'Prophets',
-    points: 2
-  },
-  {
-    id: 'prophets-25',
-    question: 'Which prophet lived for 950 years?',
-    options: ['Prophet Adam', 'Prophet Nuh', 'Prophet Idris', 'Prophet Ibrahim'],
+    id: 'hadith-10',
+    question: 'What is the meaning of "Sunnah" in relation to Hadith?',
+    options: ['The Quran', 'The Prophet\'s sayings and actions', 'Islamic law', 'Prayer times'],
     correctAnswer: 1,
-    explanation: 'Prophet Nuh (Noah) lived for 950 years and called his people to Allah for centuries.',
-    category: 'Prophets',
-    difficulty: 'Prophets',
-    points: 2
+    explanation: 'Sunnah refers to the Prophet Muhammad\'s ﷺ sayings, actions, and approvals that guide Muslims.',
+    category: 'Hadith',
+    difficulty: 'Easy',
+    points: 10
   },
+
+  // Additional Seerah Quizzes
   {
-    id: 'prophets-26',
-    question: 'Who was the mother of Prophet Isa?',
-    options: ['Maryam bint Imran', 'Asiya', 'Khadijah', 'Hajar'],
-    correctAnswer: 0,
-    explanation: 'Maryam (Mary) bint Imran was the mother of Prophet Isa and one of the greatest women in Islam.',
-    category: 'Prophets',
-    difficulty: 'Prophets',
-    points: 2
-  },
-  {
-    id: 'prophets-27',
-    question: 'Which prophet\'s wife was turned into a pillar of salt?',
-    options: ['Wife of Nuh', 'Wife of Lut', 'Wife of Ibrahim', 'Wife of Musa'],
-    correctAnswer: 1,
-    explanation: 'The wife of Prophet Lut disobeyed and looked back at the destruction, turning into a pillar of salt.',
-    category: 'Prophets',
-    difficulty: 'Prophets',
-    points: 2
-  },
-  {
-    id: 'prophets-28',
-    question: 'Who was the father-in-law of Prophet Musa?',
-    options: ['Prophet Shuaib', 'Prophet Harun', 'Prophet Yusha', 'Prophet Ilyas'],
-    correctAnswer: 0,
-    explanation: 'Prophet Shuaib was the father-in-law of Prophet Musa and also a prophet of Allah.',
-    category: 'Prophets',
-    difficulty: 'Prophets',
-    points: 2
-  },
-  {
-    id: 'prophets-29',
-    question: 'Which prophet was taken up to the heavens alive?',
-    options: ['Prophet Muhammad ﷺ', 'Prophet Isa', 'Prophet Idris', 'All of the above'],
+    id: 'seerah-6',
+    question: 'At what age did the Prophet ﷺ receive his first revelation?',
+    options: ['25 years old', '30 years old', '35 years old', '40 years old'],
     correctAnswer: 3,
-    explanation: 'Prophet Muhammad ﷺ during Mi\'raj, Prophet Isa before crucifixion, and Prophet Idris were all raised to the heavens.',
-    category: 'Prophets',
-    difficulty: 'Prophets',
-    points: 2
+    explanation: 'The Prophet ﷺ was 40 years old when Angel Jibril brought the first revelation in Cave Hira.',
+    category: 'Seerah',
+    difficulty: 'Easy',
+    points: 10
   },
   {
-    id: 'prophets-30',
-    question: 'Who was commanded to sacrifice his son but was given a ram instead?',
-    options: ['Prophet Nuh', 'Prophet Ibrahim', 'Prophet Zakariya', 'Prophet Ya\'qub'],
+    id: 'seerah-7',
+    question: 'What was the name of the Prophet\'s ﷺ mother?',
+    options: ['Khadijah', 'Aminah', 'Fatimah', 'Aishah'],
     correctAnswer: 1,
-    explanation: 'Prophet Ibrahim was tested by Allah to sacrifice his son, and Allah provided a ram instead.',
-    category: 'Prophets',
-    difficulty: 'Prophets',
-    points: 2
+    explanation: 'The Prophet\'s mother was Aminah bint Wahb, who passed away when he was 6 years old.',
+    category: 'Seerah',
+    difficulty: 'Easy',
+    points: 10
+  },
+  {
+    id: 'seerah-8',
+    question: 'Who was the first person to accept Islam after Khadijah?',
+    options: ['Abu Bakr', 'Ali', 'Umar', 'Uthman'],
+    correctAnswer: 1,
+    explanation: 'Ali ibn Abi Talib was the first male to accept Islam at the age of 10.',
+    category: 'Seerah',
+    difficulty: 'Medium',
+    points: 10
+  },
+  {
+    id: 'seerah-9',
+    question: 'What was the Hijrah (migration) from Makkah to Madinah?',
+    options: ['A military campaign', 'The beginning of the Islamic calendar', 'Both A and B', 'Neither'],
+    correctAnswer: 2,
+    explanation: 'The Hijrah was both a migration and marks the beginning of the Islamic calendar (AH - After Hijrah).',
+    category: 'Seerah',
+    difficulty: 'Medium',
+    points: 10
+  },
+  {
+    id: 'seerah-10',
+    question: 'What was the first mosque built by the Prophet ﷺ?',
+    options: ['Masjid al-Haram', 'Masjid al-Nabawi', 'Masjid Quba', 'Masjid al-Aqsa'],
+    correctAnswer: 2,
+    explanation: 'Masjid Quba was the first mosque built by the Prophet ﷺ upon arriving in Madinah.',
+    category: 'Seerah',
+    difficulty: 'Medium',
+    points: 10
   },
 
-  // QURAN STORIES - Additional 20 Questions (11-30)
+  // Additional Ramadan Quizzes
+  {
+    id: 'ramadan-6',
+    question: 'What is the Arabic word for breaking the fast?',
+    options: ['Suhoor', 'Iftar', 'Taraweeh', 'Qiyam'],
+    correctAnswer: 1,
+    explanation: 'Iftar is the meal that breaks the daily fast at sunset during Ramadan.',
+    category: 'Ramadan',
+    difficulty: 'Easy',
+    points: 10
+  },
+  {
+    id: 'ramadan-7',
+    question: 'How many days does Ramadan last?',
+    options: ['28 days', '29 days', '30 days', 'It varies'],
+    correctAnswer: 3,
+    explanation: 'Ramadan lasts either 29 or 30 days, depending on the lunar calendar and moon sighting.',
+    category: 'Ramadan',
+    difficulty: 'Easy',
+    points: 10
+  },
+  {
+    id: 'ramadan-8',
+    question: 'What is Taraweeh prayer?',
+    options: ['Morning prayer', 'Special Ramadan night prayer', 'Eid prayer', 'Funeral prayer'],
+    correctAnswer: 1,
+    explanation: 'Taraweeh is a special night prayer performed in Ramadan after Isha prayer.',
+    category: 'Ramadan',
+    difficulty: 'Easy',
+    points: 10
+  },
+  {
+    id: 'ramadan-9',
+    question: 'What is the reward for fasting Ramadan with faith and seeking Allah\'s pleasure?',
+    options: ['Double reward', 'Forgiveness of all sins', 'Entry to Paradise', 'All previous sins forgiven'],
+    correctAnswer: 3,
+    explanation: 'The Prophet ﷺ said: "Whoever fasts Ramadan with faith and seeking Allah\'s pleasure, all his previous sins will be forgiven."',
+    category: 'Ramadan',
+    difficulty: 'Medium',
+    points: 10
+  },
+  {
+    id: 'ramadan-10',
+    question: 'What is the ruling on smoking during Ramadan?',
+    options: ['Permitted', 'Disliked but not breaking fast', 'Breaks the fast', 'Only breaks fast if inhaled'],
+    correctAnswer: 2,
+    explanation: 'Smoking invalidates the fast as it introduces substance into the body through inhalation.',
+    category: 'Ramadan',
+    difficulty: 'Medium',
+    points: 10
+  },
+
+  // Additional Akhlaq Quizzes
+  {
+    id: 'akhlaq-6',
+    question: 'What does Islam teach about telling the truth?',
+    options: ['Only when convenient', 'Always, even if it hurts', 'Never to enemies', 'Only to Muslims'],
+    correctAnswer: 1,
+    explanation: 'Islam commands Muslims to be truthful at all times, as lying is a major sin.',
+    category: 'Akhlaq',
+    difficulty: 'Easy',
+    points: 10
+  },
+  {
+    id: 'akhlaq-7',
+    question: 'The Prophet ﷺ said: "The believer is..."',
+    options: ['Always right', 'Easy to anger', 'Not harmed by suspicion', 'Quick to judge'],
+    correctAnswer: 2,
+    explanation: 'The Prophet ﷺ said: "The believer is not stung twice from the same hole" - meaning not harmed by suspicion.',
+    category: 'Akhlaq',
+    difficulty: 'Medium',
+    points: 10
+  },
+  {
+    id: 'akhlaq-8',
+    question: 'What is the Islamic ruling on jealousy (Hasad)?',
+    options: ['Permitted in small amounts', 'A major sin that eats good deeds', 'Only bad if acted upon', 'Not mentioned in Islam'],
+    correctAnswer: 1,
+    explanation: 'Jealousy is a major sin that destroys good deeds like fire destroys wood.',
+    category: 'Akhlaq',
+    difficulty: 'Medium',
+    points: 10
+  },
+  {
+    id: 'akhlaq-9',
+    question: 'How should Muslims greet each other?',
+    options: ['With a handshake only', 'With "Assalamu Alaikum"', 'With "Hello"', 'With a bow'],
+    correctAnswer: 1,
+    explanation: 'The Islamic greeting is "Assalamu Alaikum" (Peace be upon you), and the response is "Wa Alaikum Assalam".',
+    category: 'Akhlaq',
+    difficulty: 'Easy',
+    points: 10
+  },
+  {
+    id: 'akhlaq-10',
+    question: 'What is the reward for patience (Sabr) according to the Quran?',
+    options: ['No reward mentioned', 'Double reward', 'Reward without measure', 'Only in Paradise'],
+    correctAnswer: 2,
+    explanation: 'Allah says in the Quran: "And give good tidings to the patient who, when disaster strikes them, say, \'Indeed we belong to Allah and to Him we shall return.\' Those are the ones upon whom are blessings from their Lord and mercy. And it is those who are the [rightly] guided." (2:155-157)',
+    category: 'Akhlaq',
+    difficulty: 'Medium',
+    points: 10
+  },
+
+  // Additional Sunnah Quizzes
+  {
+    id: 'sunnah-6',
+    question: 'What is the Sunnah way to wear clothes?',
+    options: ['Wear them below the ankles', 'Wear them above the ankles', 'It doesn\'t matter', 'Wear them tightly'],
+    correctAnswer: 1,
+    explanation: 'The Prophet ﷺ said: "What is below the ankles is in the Fire" - referring to men wearing clothes below the ankles out of pride.',
+    category: 'Sunnah',
+    difficulty: 'Medium',
+    points: 10
+  },
+  {
+    id: 'sunnah-7',
+    question: 'What should Muslims say before eating?',
+    options: ['Nothing', '"Bismillah"', '"Alhamdulillah"', '"Allahu Akbar"'],
+    correctAnswer: 1,
+    explanation: 'It is Sunnah to say "Bismillah" (In the name of Allah) before eating.',
+    category: 'Sunnah',
+    difficulty: 'Easy',
+    points: 10
+  },
+  {
+    id: 'sunnah-8',
+    question: 'What is the Sunnah of sleeping?',
+    options: ['Sleep on the right side', 'Sleep on the stomach', 'Sleep on the back', 'Sleep on the left side'],
+    correctAnswer: 0,
+    explanation: 'The Prophet ﷺ recommended sleeping on the right side, placing the right hand under the cheek.',
+    category: 'Sunnah',
+    difficulty: 'Medium',
+    points: 10
+  },
+  {
+    id: 'sunnah-9',
+    question: 'What is the ruling on following the Sunnah?',
+    options: ['Optional', 'Mandatory', 'Recommended for reward', 'Only for scholars'],
+    correctAnswer: 2,
+    explanation: 'Following the Sunnah is recommended and brings extra reward, though not obligatory like Fard acts.',
+    category: 'Sunnah',
+    difficulty: 'Easy',
+    points: 10
+  },
+  {
+    id: 'sunnah-10',
+    question: 'The Prophet ﷺ said about smiling: "Your smile for your brother is..."',
+    options: ['Nothing', '"A charity"', '"Just manners"', '"Only for family"'],
+    correctAnswer: 1,
+    explanation: 'The Prophet ﷺ said: "Your smile for your brother is a charity" - spreading kindness through simple actions.',
+    category: 'Sunnah',
+    difficulty: 'Medium',
+    points: 10
+  },
+
+  // NEW ADDITIONAL QUIZZES - ACCURATE ISLAMIC KNOWLEDGE FOR KIDS
+
+  // More Quran Questions
   {
     id: 'quran-11',
-    question: 'Which Surah tells the story of the elephant army?',
-    options: ['Surah al-Fil', 'Surah al-Nas', 'Surah al-Falaq', 'Surah Quraysh'],
-    correctAnswer: 0,
-    explanation: 'Surah al-Fil describes how Allah protected the Ka\'bah from Abraha\'s elephant army.',
-    category: 'Quran Stories',
-    difficulty: 'Quran Stories',
-    points: 2
+    question: 'Which Surah begins with the letters "Alif, Lam, Mim"?',
+    options: ['Surah Al-Baqarah', 'Surah Al-Imran', 'Surah Al-Fatiha', 'Surah An-Nisa'],
+    correctAnswer: 1,
+    explanation: 'Surah Al-Imran (Chapter 3) begins with "Alif, Lam, Mim" - these are among the mysterious letters (Muqatta\'at) at the start of some Surahs.',
+    category: 'Quran',
+    difficulty: 'Medium',
+    points: 10
   },
   {
     id: 'quran-12',
-    question: 'In which Surah is the story of the Sabbath-breakers mentioned?',
-    options: ['Surah al-Baqarah', 'Surah al-A\'raf', 'Surah al-Ma\'idah', 'All of these'],
-    correctAnswer: 3,
-    explanation: 'The story of the Jews who broke the Sabbath law is mentioned in multiple Surahs including Baqarah and A\'raf.',
-    category: 'Quran Stories',
-    difficulty: 'Quran Stories',
-    points: 2
+    question: 'What is the name of the chapter that talks about the story of Prophet Yusuf (Joseph)?',
+    options: ['Surah Maryam', 'Surah Yusuf', 'Surah Hud', 'Surah Ibrahim'],
+    correctAnswer: 1,
+    explanation: 'Surah Yusuf (Chapter 12) tells the beautiful story of Prophet Yusuf and his brothers.',
+    category: 'Quran',
+    difficulty: 'Easy',
+    points: 10
   },
   {
     id: 'quran-13',
-    question: 'What is the name of the Surah that contains the story of Mary (Maryam)?',
-    options: ['Surah Maryam', 'Surah Al-Imran', 'Surah An-Nisa', 'Both A and B'],
-    correctAnswer: 3,
-    explanation: 'The story of Maryam is detailed in both Surah Maryam (Chapter 19) and Surah Al-Imran (Chapter 3).',
-    category: 'Quran Stories',
-    difficulty: 'Quran Stories',
-    points: 2
+    question: 'How many times is Prophet Muhammad mentioned by name in the Quran?',
+    options: ['4 times', '5 times', '6 times', '7 times'],
+    correctAnswer: 0,
+    explanation: 'The Prophet Muhammad is mentioned by name 4 times in the Quran (3:144, 33:40, 47:2, 48:29).',
+    category: 'Quran',
+    difficulty: 'Hard',
+    points: 10
   },
   {
     id: 'quran-14',
-    question: 'Which Surah mentions the story of the cow that Bani Israel was commanded to slaughter?',
-    options: ['Surah al-Baqarah', 'Surah al-An\'am', 'Surah al-Ma\'idah', 'Surah al-A\'raf'],
-    correctAnswer: 0,
-    explanation: 'Surah al-Baqarah (The Cow) gets its name from this story where Bani Israel was commanded to sacrifice a cow.',
-    category: 'Quran Stories',
-    difficulty: 'Quran Stories',
-    points: 2
+    question: 'Which Surah is known as "The Light" (An-Nur)?',
+    options: ['Surah Al-Furqan', 'Surah An-Nur', 'Surah Ash-Shams', 'Surah Al-Ma\'arij'],
+    correctAnswer: 1,
+    explanation: 'Surah An-Nur (Chapter 24) is called "The Light" and contains many rulings about modesty and social conduct.',
+    category: 'Quran',
+    difficulty: 'Medium',
+    points: 10
   },
   {
     id: 'quran-15',
-    question: 'The story of the two sons of Adam is in which Surah?',
-    options: ['Surah al-Baqarah', 'Surah al-Ma\'idah', 'Surah al-A\'raf', 'Surah Yusuf'],
+    question: 'What does "Bismillah" mean?',
+    options: ['Praise be to Allah', 'In the name of Allah', 'Allahu Akbar', 'Peace be upon you'],
     correctAnswer: 1,
-    explanation: 'The story of Cain and Abel (Qabil and Habil) is mentioned in Surah al-Ma\'idah.',
-    category: 'Quran Stories',
-    difficulty: 'Quran Stories',
-    points: 2
-  },
-  {
-    id: 'quran-16',
-    question: 'Which Surah tells about the seven sleepers in the cave?',
-    options: ['Surah al-Kahf', 'Surah al-Furqan', 'Surah Maryam', 'Surah Ya-Sin'],
-    correctAnswer: 0,
-    explanation: 'Surah al-Kahf (The Cave) tells the story of the young men who slept in a cave for many years.',
-    category: 'Quran Stories',
-    difficulty: 'Quran Stories',
-    points: 2
-  },
-  {
-    id: 'quran-17',
-    question: 'The story of Dhul-Qarnayn (the two-horned one) appears in:',
-    options: ['Surah al-Kahf', 'Surah al-Anbiya', 'Surah al-Furqan', 'Surah ar-Ra\'d'],
-    correctAnswer: 0,
-    explanation: 'The story of Dhul-Qarnayn, who built a wall against Gog and Magog, is in Surah al-Kahf.',
-    category: 'Quran Stories',
-    difficulty: 'Quran Stories',
-    points: 2
-  },
-  {
-    id: 'quran-18',
-    question: 'Which Surah is named after a prophet and his story?',
-    options: ['Surah Ibrahim', 'Surah Yusuf', 'Surah Nuh', 'All of these'],
-    correctAnswer: 3,
-    explanation: 'Several Surahs are named after prophets including Ibrahim, Yusuf, Nuh, Hud, and Yunus.',
-    category: 'Quran Stories',
-    difficulty: 'Quran Stories',
-    points: 2
-  },
-  {
-    id: 'quran-19',
-    question: 'The story of the man who passed by a town in ruins is in which Surah?',
-    options: ['Surah al-Baqarah', 'Surah al-Kahf', 'Surah al-Ma\'idah', 'Surah Yusuf'],
-    correctAnswer: 0,
-    explanation: 'In Surah al-Baqarah, Allah mentions a man (possibly Uzayr) who passed by a destroyed town and was made to sleep for 100 years.',
-    category: 'Quran Stories',
-    difficulty: 'Quran Stories',
-    points: 2
-  },
-  {
-    id: 'quran-20',
-    question: 'Which Surah mentions the story of the man with two gardens?',
-    options: ['Surah al-Kahf', 'Surah al-Baqarah', 'Surah Luqman', 'Surah al-Furqan'],
-    correctAnswer: 0,
-    explanation: 'Surah al-Kahf tells the parable of a man with two gardens who became arrogant and lost everything.',
-    category: 'Quran Stories',
-    difficulty: 'Quran Stories',
-    points: 2
-  },
-  {
-    id: 'quran-21',
-    question: 'The story of Talut (Saul) and Jalut (Goliath) is mentioned in:',
-    options: ['Surah al-Baqarah', 'Surah al-Ma\'idah', 'Surah al-A\'raf', 'Surah al-Anfal'],
-    correctAnswer: 0,
-    explanation: 'Surah al-Baqarah tells the story of King Talut and how Daud defeated the giant Jalut.',
-    category: 'Quran Stories',
-    difficulty: 'Quran Stories',
-    points: 2
-  },
-  {
-    id: 'quran-22',
-    question: 'Which Surah tells the story of Prophet Yusuf in most detail?',
-    options: ['Surah Yusuf', 'Surah al-Baqarah', 'Surah al-An\'am', 'Surah al-A\'raf'],
-    correctAnswer: 0,
-    explanation: 'Surah Yusuf (Chapter 12) is the only Surah that tells a complete story from beginning to end.',
-    category: 'Quran Stories',
-    difficulty: 'Quran Stories',
-    points: 2
-  },
-  {
-    id: 'quran-23',
-    question: 'The story of the Queen of Sheba (Bilqis) is found in:',
-    options: ['Surah al-Naml', 'Surah Saba', 'Surah al-Anbiya', 'Both A and B'],
-    correctAnswer: 3,
-    explanation: 'The story of Queen Bilqis and Prophet Sulayman is mentioned in both Surah al-Naml and Surah Saba.',
-    category: 'Quran Stories',
-    difficulty: 'Quran Stories',
-    points: 2
-  },
-  {
-    id: 'quran-24',
-    question: 'Which Surah mentions the story of the wife of Pharaoh (Asiya)?',
-    options: ['Surah al-Qasas', 'Surah Tahrim', 'Surah Maryam', 'Surah al-Baqarah'],
-    correctAnswer: 1,
-    explanation: 'Surah Tahrim mentions Asiya, the believing wife of Pharaoh, as an example for believers.',
-    category: 'Quran Stories',
-    difficulty: 'Quran Stories',
-    points: 2
-  },
-  {
-    id: 'quran-25',
-    question: 'The story of the hoopoe bird appears in which Surah?',
-    options: ['Surah al-Naml', 'Surah al-Fil', 'Surah al-Anbiya', 'Surah Qaf'],
-    correctAnswer: 0,
-    explanation: 'In Surah al-Naml, a hoopoe bird brings news to Prophet Sulayman about the Queen of Sheba.',
-    category: 'Quran Stories',
-    difficulty: 'Quran Stories',
-    points: 2
-  },
-  {
-    id: 'quran-26',
-    question: 'Which Surah mentions the story of Luqman and his advice to his son?',
-    options: ['Surah Luqman', 'Surah al-Ahzab', 'Surah Saba', 'Surah Fatir'],
-    correctAnswer: 0,
-    explanation: 'Surah Luqman (Chapter 31) contains the wise advice that Luqman gave to his son.',
-    category: 'Quran Stories',
-    difficulty: 'Quran Stories',
-    points: 2
-  },
-  {
-    id: 'quran-27',
-    question: 'The story of Prophet Musa splitting the sea is in which Surah?',
-    options: ['Surah al-Baqarah', 'Surah ash-Shu\'ara', 'Surah Ta-Ha', 'All of these'],
-    correctAnswer: 3,
-    explanation: 'The story of Musa parting the Red Sea is mentioned in multiple Surahs including Baqarah, Shu\'ara, and Ta-Ha.',
-    category: 'Quran Stories',
-    difficulty: 'Quran Stories',
-    points: 2
-  },
-  {
-    id: 'quran-28',
-    question: 'Which Surah tells about the ants that warned each other about Sulayman\'s army?',
-    options: ['Surah al-Naml', 'Surah al-Ankabut', 'Surah al-Nahl', 'Surah Saba'],
-    correctAnswer: 0,
-    explanation: 'Surah al-Naml (The Ant) tells how an ant warned other ants about Prophet Sulayman\'s army approaching.',
-    category: 'Quran Stories',
-    difficulty: 'Quran Stories',
-    points: 2
-  },
-  {
-    id: 'quran-29',
-    question: 'The story of the Battle of Badr is mentioned in:',
-    options: ['Surah al-Anfal', 'Surah at-Tawbah', 'Surah Al-Imran', 'Both A and C'],
-    correctAnswer: 3,
-    explanation: 'The Battle of Badr is mentioned in both Surah al-Anfal (The Spoils of War) and Surah Al-Imran.',
-    category: 'Quran Stories',
-    difficulty: 'Quran Stories',
-    points: 2
-  },
-  {
-    id: 'quran-30',
-    question: 'Which Surah tells about the incident of Ifk (false accusation against Aisha)?',
-    options: ['Surah al-Nur', 'Surah al-Ahzab', 'Surah al-Ma\'idah', 'Surah at-Tahrim'],
-    correctAnswer: 0,
-    explanation: 'Surah al-Nur mentions the incident of Ifk where Aisha (RA) was falsely accused and her innocence was declared by Allah.',
-    category: 'Quran Stories',
-    difficulty: 'Quran Stories',
-    points: 2
+    explanation: '"Bismillah" means "In the name of Allah, the Most Gracious, the Most Merciful" and is said before many actions.',
+    category: 'Quran',
+    difficulty: 'Easy',
+    points: 10
   },
 
-  // AKHLAQ - Additional 20 Questions (11-30)
+  // More Hadith Questions
+  {
+    id: 'hadith-11',
+    question: 'The Prophet ﷺ said: "The strong believer is better and more beloved to Allah than..."',
+    options: ['The weak believer', 'The rich believer', 'The praying believer', 'The fasting believer'],
+    correctAnswer: 0,
+    explanation: 'The Prophet ﷺ said: "The strong believer is better and more beloved to Allah than the weak believer." Strength here refers to faith and character.',
+    category: 'Hadith',
+    difficulty: 'Medium',
+    points: 10
+  },
+  {
+    id: 'hadith-12',
+    question: 'What did the Prophet ﷺ say about seeking knowledge?',
+    options: ['"Seek knowledge from cradle to grave"', '"Knowledge is only for scholars"', '"Learning stops after youth"', '"Books are better than teachers"'],
+    correctAnswer: 0,
+    explanation: 'The Prophet ﷺ said: "Seek knowledge from the cradle to the grave" - emphasizing lifelong learning.',
+    category: 'Hadith',
+    difficulty: 'Medium',
+    points: 10
+  },
+  {
+    id: 'hadith-13',
+    question: 'The Prophet ﷺ said: "None of you will believe until..."',
+    options: ['He memorizes the whole Quran', 'He loves for his brother what he loves for himself', 'He gives all his wealth', 'He prays all night'],
+    correctAnswer: 1,
+    explanation: 'Complete faith requires loving for others what you love for yourself - this is the essence of brotherhood in Islam.',
+    category: 'Hadith',
+    difficulty: 'Medium',
+    points: 10
+  },
+  {
+    id: 'hadith-14',
+    question: 'What is the reward for visiting a sick Muslim?',
+    options: ['No special reward', 'Like picking dates from Paradise', 'Only if you bring medicine', 'Only for family members'],
+    correctAnswer: 1,
+    explanation: 'The Prophet ﷺ said: "Whoever visits a sick person, he is plunging into mercy until he sits down, and when he sits down, he is immersed in it."',
+    category: 'Hadith',
+    difficulty: 'Medium',
+    points: 10
+  },
+  {
+    id: 'hadith-15',
+    question: 'The Prophet ﷺ said about cleanliness: "Cleanliness is..."',
+    options: ['Optional', '"Half of faith"', '"Only for prayer"', '"Just good manners"'],
+    correctAnswer: 1,
+    explanation: 'The Prophet ﷺ said: "Cleanliness is half of faith" - emphasizing the importance of physical and spiritual purity.',
+    category: 'Hadith',
+    difficulty: 'Easy',
+    points: 10
+  },
+
+  // More Seerah Questions
+  {
+    id: 'seerah-11',
+    question: 'What was the name of the Prophet\'s ﷺ grandfather?',
+    options: ['Abdul Muttalib', 'Abu Talib', 'Abdullah', 'Hashim'],
+    correctAnswer: 0,
+    explanation: 'The Prophet\'s grandfather was Abdul Muttalib, who was the guardian of the Kaaba and a respected leader.',
+    category: 'Seerah',
+    difficulty: 'Medium',
+    points: 10
+  },
+  {
+    id: 'seerah-12',
+    question: 'How many years did the Prophet ﷺ live in Makkah after receiving revelation?',
+    options: ['5 years', '10 years', '13 years', '20 years'],
+    correctAnswer: 2,
+    explanation: 'The Prophet ﷺ spent 13 years in Makkah calling people to Islam before migrating to Madinah.',
+    category: 'Seerah',
+    difficulty: 'Medium',
+    points: 10
+  },
+  {
+    id: 'seerah-13',
+    question: 'What was the first battle fought by the Muslims?',
+    options: ['Battle of Uhud', 'Battle of Badr', 'Battle of Khandaq', 'Battle of Hunayn'],
+    correctAnswer: 1,
+    explanation: 'The Battle of Badr was the first major battle between Muslims and Quraysh, fought in 624 CE.',
+    category: 'Seerah',
+    difficulty: 'Easy',
+    points: 10
+  },
+  {
+    id: 'seerah-14',
+    question: 'Who was the first Mu\'azzin (caller to prayer) in Islam?',
+    options: ['Bilal ibn Rabah', 'Abu Bakr', 'Umar', 'Ali'],
+    correctAnswer: 0,
+    explanation: 'Bilal ibn Rabah was the first Mu\'azzin, chosen by the Prophet ﷺ for his beautiful voice.',
+    category: 'Seerah',
+    difficulty: 'Easy',
+    points: 10
+  },
+  {
+    id: 'seerah-15',
+    question: 'What miracle happened during the digging of the trench (Khandaq)?',
+    options: ['Water appeared', 'A rock split', 'Food multiplied', 'The enemy surrendered'],
+    correctAnswer: 1,
+    explanation: 'During the Battle of Khandaq, the Prophet ﷺ struck a rock with his pickaxe, causing it to split and produce sparks that lit the way for the Muslims.',
+    category: 'Seerah',
+    difficulty: 'Medium',
+    points: 10
+  },
+
+  // More Ramadan Questions
+  {
+    id: 'ramadan-11',
+    question: 'What is the meaning of "Ramadan"?',
+    options: ['The month of fasting', 'The burning month', 'The blessed month', 'The holy month'],
+    correctAnswer: 1,
+    explanation: 'Ramadan comes from the Arabic word "ramad" meaning intense heat, referring to the heat of fasting and spiritual burning of sins.',
+    category: 'Ramadan',
+    difficulty: 'Medium',
+    points: 10
+  },
+  {
+    id: 'ramadan-12',
+    question: 'Which prayer becomes obligatory during Ramadan?',
+    options: ['Dhuhr', 'Taraweeh', 'Tahajjud', 'Istikharah'],
+    correctAnswer: 1,
+    explanation: 'Taraweeh prayer becomes Sunnah Mu\'akkadah (emphasized Sunnah) during Ramadan.',
+    category: 'Ramadan',
+    difficulty: 'Easy',
+    points: 10
+  },
+  {
+    id: 'ramadan-13',
+    question: 'What is "I\'tikaf"?',
+    options: ['Special Ramadan food', 'Staying in the mosque for worship', 'Night prayer', 'Charity giving'],
+    correctAnswer: 1,
+    explanation: 'I\'tikaf is the spiritual retreat where Muslims stay in the mosque for the last 10 days of Ramadan, focusing on worship.',
+    category: 'Ramadan',
+    difficulty: 'Medium',
+    points: 10
+  },
+  {
+    id: 'ramadan-14',
+    question: 'When should Muslims start fasting for Ramadan?',
+    options: ['When they see the moon', 'On the 1st of the month', 'When the Imam announces it', 'When they feel ready'],
+    correctAnswer: 0,
+    explanation: 'Fasting begins when the crescent moon is sighted, following the Islamic lunar calendar.',
+    category: 'Ramadan',
+    difficulty: 'Easy',
+    points: 10
+  },
+  {
+    id: 'ramadan-15',
+    question: 'What is the reward for fasting one day in Ramadan?',
+    options: ['10 rewards', '70 rewards', '100 rewards', 'Infinite rewards'],
+    correctAnswer: 1,
+    explanation: 'The Prophet ﷺ said: "Whoever fasts one day for Allah\'s sake, Allah will keep his face away from the Fire by a distance of seventy years."',
+    category: 'Ramadan',
+    difficulty: 'Medium',
+    points: 10
+  },
+
+  // More Akhlaq Questions
   {
     id: 'akhlaq-11',
-    question: 'What is the best form of charity (Sadaqah)?',
-    options: ['Money', 'A smile', 'Food', 'Clothes'],
+    question: 'What does Islam teach about forgiveness?',
+    options: ['Forgive only small mistakes', 'Forgive those who repent', 'Never forgive enemies', 'Forgive only family'],
     correctAnswer: 1,
-    explanation: 'The Prophet ﷺ said that even a smile in your brother\'s face is charity.',
+    explanation: 'Allah loves those who forgive others, and forgiveness is a noble character trait in Islam.',
     category: 'Akhlaq',
-    difficulty: 'Akhlaq',
-    points: 2
+    difficulty: 'Easy',
+    points: 10
   },
   {
     id: 'akhlaq-12',
-    question: 'What does "Sabr" mean?',
-    options: ['Anger', 'Patience', 'Happiness', 'Sadness'],
+    question: 'The Prophet ﷺ said: "Do not be angry..."',
+    options: ['At all', '"And Paradise is yours"', '"With your family"', '"At small things"'],
     correctAnswer: 1,
-    explanation: 'Sabr means patience and perseverance in the face of difficulties, a highly praised quality in Islam.',
+    explanation: 'The Prophet ﷺ said: "Do not be angry, and Paradise is yours" - controlling anger leads to Paradise.',
     category: 'Akhlaq',
-    difficulty: 'Akhlaq',
-    points: 2
+    difficulty: 'Medium',
+    points: 10
   },
   {
     id: 'akhlaq-13',
-    question: 'Which quality did the Prophet ﷺ have the most perfect form of?',
-    options: ['Wealth', 'Power', 'Good character (Akhlaq)', 'Knowledge'],
-    correctAnswer: 2,
-    explanation: 'Allah described the Prophet ﷺ as having the most perfect character: "You are of a great moral character" (Quran 68:4).',
+    question: 'What is the Islamic ruling on gossip?',
+    options: ['Allowed if true', 'Major sin', 'Only if not harmful', 'Permitted among friends'],
+    correctAnswer: 1,
+    explanation: 'Gossip and backbiting are major sins in Islam, destroying good deeds and community harmony.',
     category: 'Akhlaq',
-    difficulty: 'Akhlaq',
-    points: 2
+    difficulty: 'Easy',
+    points: 10
   },
   {
     id: 'akhlaq-14',
-    question: 'What is the best deed after believing in Allah?',
-    options: ['Fasting', 'Being kind to parents', 'Charity', 'Jihad'],
+    question: 'How should Muslims treat neighbors?',
+    options: ['Ignore them', 'Be kind and helpful', 'Only greet them', 'Give them charity only'],
     correctAnswer: 1,
-    explanation: 'The Prophet ﷺ said that being kind and dutiful to parents is among the best deeds after believing in Allah.',
+    explanation: 'Islam emphasizes excellent treatment of neighbors, with the closest neighbors having the most rights.',
     category: 'Akhlaq',
-    difficulty: 'Akhlaq',
-    points: 2
+    difficulty: 'Easy',
+    points: 10
   },
   {
     id: 'akhlaq-15',
-    question: 'What is "Ihsan"?',
-    options: ['Excellence in worship', 'Giving charity', 'Praying on time', 'Reading Quran'],
-    correctAnswer: 0,
-    explanation: 'Ihsan means excellence in worship - to worship Allah as if you see Him, and if you don\'t see Him, He sees you.',
-    category: 'Akhlaq',
-    difficulty: 'Akhlaq',
-    points: 2
-  },
-  {
-    id: 'akhlaq-16',
-    question: 'What should you do when someone does good to you?',
-    options: ['Ignore it', 'Do good back', 'Boast about it', 'Forget it'],
+    question: 'What is the reward for helping others?',
+    options: ['No special reward', '"Like giving charity"', '"Better than prayer"', '"Only in this world"'],
     correctAnswer: 1,
-    explanation: 'Islam teaches us to reciprocate good treatment and to be grateful to those who are kind to us.',
+    explanation: 'Helping others is like giving charity, and charity extinguishes sins like water extinguishes fire.',
     category: 'Akhlaq',
-    difficulty: 'Akhlaq',
-    points: 2
+    difficulty: 'Medium',
+    points: 10
   },
+
+  // More Sunnah Questions
   {
-    id: 'akhlaq-17',
-    question: 'What is "Tawakkul"?',
-    options: ['Worrying', 'Trusting in Allah', 'Being lazy', 'Complaining'],
+    id: 'sunnah-11',
+    question: 'What is the Sunnah way to drink water?',
+    options: ['Drink while standing', 'Drink in three breaths', 'Drink quickly', 'Drink from any cup'],
     correctAnswer: 1,
-    explanation: 'Tawakkul means putting your complete trust in Allah after taking the necessary actions.',
-    category: 'Akhlaq',
-    difficulty: 'Akhlaq',
-    points: 2
+    explanation: 'The Prophet ﷺ said: "Do not drink water in one breath, but in three breaths."',
+    category: 'Sunnah',
+    difficulty: 'Medium',
+    points: 10
   },
   {
-    id: 'akhlaq-18',
-    question: 'What did the Prophet ﷺ say about being moderate?',
-    options: ['Be extreme', 'Be balanced', 'Be lazy', 'Be strict only'],
+    id: 'sunnah-12',
+    question: 'What should Muslims say after sneezing?',
+    options: ['Nothing', '"Alhamdulillah"', '"Yarhamukallah"', '"Bless you"'],
     correctAnswer: 1,
-    explanation: 'The Prophet ﷺ taught moderation in all matters and warned against extremism.',
-    category: 'Akhlaq',
-    difficulty: 'Akhlaq',
-    points: 2
+    explanation: 'When someone sneezes, say "Alhamdulillah" (Praise be to Allah), and the response is "Yarhamukallah" (May Allah have mercy on you).',
+    category: 'Sunnah',
+    difficulty: 'Easy',
+    points: 10
   },
   {
-    id: 'akhlaq-19',
-    question: 'What is "Hayaa"?',
-    options: ['Arrogance', 'Modesty/Shyness', 'Anger', 'Envy'],
+    id: 'sunnah-13',
+    question: 'The Prophet ﷺ recommended eating with how many fingers?',
+    options: ['One finger', 'Three fingers', 'Five fingers', 'Whole hand'],
     correctAnswer: 1,
-    explanation: 'Hayaa means modesty, shyness, and having a sense of shame that prevents one from doing wrong.',
-    category: 'Akhlaq',
-    difficulty: 'Akhlaq',
-    points: 2
+    explanation: 'The Prophet ﷺ said: "Eat with three fingers, for that is the Sunnah."',
+    category: 'Sunnah',
+    difficulty: 'Medium',
+    points: 10
   },
   {
-    id: 'akhlaq-20',
-    question: 'What should you say when you make a mistake?',
-    options: ['Blame others', 'Say "Astaghfirullah"', 'Get angry', 'Deny it'],
+    id: 'sunnah-14',
+    question: 'What is the Sunnah of wearing shoes?',
+    options: ['Wear them on any foot first', 'Start with the right foot', 'Start with the left foot', 'No specific way'],
     correctAnswer: 1,
-    explanation: 'Saying "Astaghfirullah" (I seek Allah\'s forgiveness) shows we acknowledge our mistakes and seek Allah\'s pardon.',
-    category: 'Akhlaq',
-    difficulty: 'Akhlaq',
-    points: 2
+    explanation: 'It is Sunnah to wear shoes, rings, and clothes starting with the right side.',
+    category: 'Sunnah',
+    difficulty: 'Easy',
+    points: 10
   },
   {
-    id: 'akhlaq-21',
-    question: 'What is the reward for those who control their anger?',
-    options: ['Nothing special', 'Great reward from Allah', 'Punishment', 'Weakness'],
+    id: 'sunnah-15',
+    question: 'The Prophet ﷺ said about the Quran: "The best of you are those who..."',
+    options: ['Memorize it', 'Learn it and teach it', 'Read it quickly', 'Own many copies'],
     correctAnswer: 1,
-    explanation: 'The Prophet ﷺ said that controlling anger is a sign of strength and brings great reward.',
-    category: 'Akhlaq',
-    difficulty: 'Akhlaq',
-    points: 2
-  },
-  {
-    id: 'akhlaq-22',
-    question: 'What should we do with our blessings?',
-    options: ['Hide them', 'Be grateful', 'Waste them', 'Show off'],
-    correctAnswer: 1,
-    explanation: 'Islam teaches us to be grateful (Shukr) for Allah\'s blessings and to use them wisely.',
-    category: 'Akhlaq',
-    difficulty: 'Akhlaq',
-    points: 2
-  },
-  {
-    id: 'akhlaq-23',
-    question: 'What is the best way to treat neighbors?',
-    options: ['Ignore them', 'With kindness', 'With suspicion', 'Avoid them'],
-    correctAnswer: 1,
-    explanation: 'The Prophet ﷺ emphasized the rights of neighbors and treating them with kindness and respect.',
-    category: 'Akhlaq',
-    difficulty: 'Akhlaq',
-    points: 2
-  },
-  {
-    id: 'akhlaq-24',
-    question: 'What is "Taqwa"?',
-    options: ['Fear of people', 'God-consciousness', 'Laziness', 'Showing off'],
-    correctAnswer: 1,
-    explanation: 'Taqwa means being conscious of Allah and avoiding His displeasure in all our actions.',
-    category: 'Akhlaq',
-    difficulty: 'Akhlaq',
-    points: 2
-  },
-  {
-    id: 'akhlaq-25',
-    question: 'How should we speak?',
-    options: ['Loudly always', 'Gently and kindly', 'Harshly', 'Never'],
-    correctAnswer: 1,
-    explanation: 'The Quran commands us to speak in a gentle and kind manner (Quran 17:53).',
-    category: 'Akhlaq',
-    difficulty: 'Akhlaq',
-    points: 2
-  },
-  {
-    id: 'akhlaq-26',
-    question: 'What is the cure for envy (Hasad)?',
-    options: ['Being content', 'Competing', 'Complaining', 'Boasting'],
-    correctAnswer: 0,
-    explanation: 'Being content with what Allah has given us and being happy for others helps cure envy.',
-    category: 'Akhlaq',
-    difficulty: 'Akhlaq',
-    points: 2
-  },
-  {
-    id: 'akhlaq-27',
-    question: 'What should we do when we enter someone\'s house?',
-    options: ['Barge in', 'Ask permission', 'Shout', 'Open everything'],
-    correctAnswer: 1,
-    explanation: 'Islam teaches us to seek permission before entering someone\'s house and to greet them with Salam.',
-    category: 'Akhlaq',
-    difficulty: 'Akhlaq',
-    points: 2
-  },
-  {
-    id: 'akhlaq-28',
-    question: 'What is "Adab"?',
-    options: ['Bad manners', 'Good manners', 'Punishment', 'Reward'],
-    correctAnswer: 1,
-    explanation: 'Adab means good manners, etiquette, and proper behavior in Islam.',
-    category: 'Akhlaq',
-    difficulty: 'Akhlaq',
-    points: 2
-  },
-  {
-    id: 'akhlaq-29',
-    question: 'What should we do when we receive a gift?',
-    options: ['Reject it', 'Be ungrateful', 'Thank the giver', 'Hide it'],
-    correctAnswer: 2,
-    explanation: 'We should thank the person who gives us a gift and show gratitude for their kindness.',
-    category: 'Akhlaq',
-    difficulty: 'Akhlaq',
-    points: 2
-  },
-  {
-    id: 'akhlaq-30',
-    question: 'What is the best provision for the Hereafter?',
-    options: ['Money', 'Taqwa (God-consciousness)', 'Gold', 'Property'],
-    correctAnswer: 1,
-    explanation: 'Allah says in the Quran: "And take provision, but indeed, the best provision is Taqwa" (Quran 2:197).',
-    category: 'Akhlaq',
-    difficulty: 'Akhlaq',
-    points: 2
+    explanation: 'The Prophet ﷺ said: "The best of you are those who learn the Quran and teach it."',
+    category: 'Sunnah',
+    difficulty: 'Medium',
+    points: 10
   }
 ];

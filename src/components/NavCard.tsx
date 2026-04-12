@@ -28,12 +28,12 @@ export const NavCard: React.FC<NavCardProps> = ({
   comingSoon = false
 }) => {
   const content = (
-    <div className={`${colorClasses[color]} border-4 rounded-2xl p-6 transition-all duration-300 hover:shadow-2xl hover:scale-105 cursor-pointer h-full`}>
-      <div className="text-5xl mb-4">{icon}</div>
+    <div className={`${colorClasses[color]} border-4 rounded-3xl p-6 transition-all duration-300 shadow-kids hover:shadow-kids-hover hover:-translate-y-1 cursor-pointer h-full`}>
+      <div className="text-6xl mb-4 filter drop-shadow-sm">{icon}</div>
       <h3 className="text-2xl font-bold text-islamic-dark mb-2">{title}</h3>
-      <p className="text-sm text-gray-700">{description}</p>
+      <p className="text-lg text-gray-700 font-medium">{description}</p>
       {comingSoon && (
-        <div className="mt-4 inline-block bg-gray-400 text-white px-3 py-1 rounded-full text-xs font-semibold">
+        <div className="mt-4 inline-block bg-gray-400 text-white px-3 py-1 rounded-full text-xs font-bold">
           Coming Soon
         </div>
       )}

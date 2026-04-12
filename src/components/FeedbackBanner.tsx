@@ -65,30 +65,18 @@ export function FeedbackBanner() {
   return (
     <>
       {/* Notice Banner */}
-      <div className="bg-blue-50 border-b border-blue-200 py-3 px-4">
-        <div className="max-w-6xl mx-auto">
-          <p className="text-sm text-blue-900 text-center">
-            ℹ️ <strong>Notice:</strong> The games and quizzes are currently in test mode, so your points may reset during this period. 
-            <button
-              onClick={() => setShowFeedback(!showFeedback)}
-              className="text-blue-700 underline hover:text-blue-900 font-semibold ml-1"
-            >
-              Please send us your feedback—your help will make the experience better for everyone!
-            </button>
+      <div className="bg-indigo-600 border-b border-indigo-700 py-3 px-4 shadow-md">
+        <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-center gap-2 text-center md:text-left">
+          <div className="hidden md:block w-1 h-1 bg-indigo-400 rounded-full mx-2"></div>
+          <p className="text-indigo-100 text-sm">
+            Check here or our <a href="https://whatsapp.com/channel/0029Va92vStJUM2e613x5B3E" target="_blank" rel="noopener noreferrer" className="text-white underline font-bold hover:text-yellow-300 transition">WhatsApp channel</a> every Friday to see the winners!
           </p>
-        </div>
-      </div>
-
-      {/* Competition Link (below notice) */}
-      <div className="py-2 px-4">
-        <div className="max-w-6xl mx-auto flex justify-center">
-          <a
-            href="https://imediackids.com/competition"
-            className="bg-gradient-to-r from-islamic-blue to-islamic-green text-white px-4 py-2 rounded-full text-sm md:text-base font-bold hover:opacity-90 transition shadow-sm w-full md:w-auto whitespace-normal break-words text-center"
-            title="Kids Live Competition"
+          <button
+            onClick={() => setShowFeedback(!showFeedback)}
+            className="text-xs text-indigo-200 hover:text-white underline ml-2 md:ml-4"
           >
-            🎉 Live Competition: Take part now and win a Chromebook, tablet, vouchers & gifts — Ends Feb 2026
-          </a>
+            (Feedback)
+          </button>
         </div>
       </div>
 

@@ -2,19 +2,16 @@
 
 import React, { createContext, useContext, useEffect, useMemo, useState, useCallback } from 'react';
 import { ensureUserProfile } from '@/lib/user-profile';
-
-// Lazy import supabase to avoid SSR issues
-const getSupabase = () => {
-  // This will only be called on the client
-  const { supabase } = require('@/lib/supabase');
-  return supabase;
-};
+import { supabase } from '@/lib/supabase';
+import { mobileAuthHelper } from '@/lib/mobile-auth';
 
 type KidProfile = {
   uid: string;
   role: 'kid' | 'admin' | string;
   name: string;
   age: number;
+  madrasahName?: string;
+  contactNumber?: string;
   email: string;
   points: number;
   weeklyPoints?: number;
@@ -23,6 +20,9 @@ type KidProfile = {
   dailyLimit?: number;
   badges?: number;
   level: string;
+  streak?: number;
+  lastStreakUpdate?: string;
+  isFlagged?: boolean;
 };
 
 interface AuthContextValue {
@@ -45,24 +45,54 @@ const AuthContext = createContext<AuthContextValue>({
 
 const DAILY_LIMIT = 100;
 
+const isPlaceholderName = (name: string | null | undefined): boolean => {
+  if (!name) return true;
+  const t = name.trim();
+  if (!t) return true;
+  return /^learner\b/i.test(t);
+};
+
+const getBestName = async (currentName: string | undefined | null, email: string | undefined | null) => {
+  const { data: authData } = await supabase.auth.getUser();
+  const meta = (authData?.user?.user_metadata as any) || {};
+  const metaName = meta?.name || meta?.full_name || meta?.fullName || '';
+  const best =
+    (typeof metaName === 'string' && metaName.trim()) ? metaName.trim() :
+    (typeof email === 'string' && email.includes('@')) ? email.split('@')[0] :
+    '';
+  if (!currentName || isPlaceholderName(currentName)) {
+    return best || 'Friend';
+  }
+  return currentName;
+};
+
 const mapProfile = (userRow: any, pointsRow?: any): KidProfile => {
   const todayPoints = pointsRow?.today_points ?? 0;
   const points = pointsRow?.total_points ?? userRow.points ?? 0;
   const weeklyPoints = pointsRow?.weekly_points ?? userRow.weeklyPoints ?? userRow.weeklypoints ?? 0;
   const monthlyPoints = pointsRow?.monthly_points ?? userRow.monthlyPoints ?? userRow.monthlypoints ?? 0;
+  // Prioritize badges/level from pointsRow (users_points), fall back to userRow (users)
+  const badges = pointsRow?.badges ?? userRow.badges ?? 0;
+  const level = pointsRow?.level ? `Level ${pointsRow.level}` : (userRow.level || 'Beginner');
+
   return {
     uid: userRow.uid,
     role: userRow.role,
     name: userRow.name,
     age: userRow.age,
+    madrasahName: userRow.madrasahName ?? userRow.madrasahname ?? userRow.madrasah_name,
+    contactNumber: userRow.contactNumber ?? userRow.contactnumber ?? userRow.contact_number,
     email: userRow.email,
     points,
     weeklyPoints,
     monthlyPoints,
     todayPoints,
     dailyLimit: DAILY_LIMIT,
-    badges: userRow.badges || 0,
-    level: userRow.level,
+    badges,
+    level,
+    streak: userRow.streak || 0,
+    lastStreakUpdate: userRow.last_streak_update,
+    isFlagged: userRow.is_flagged || false,
   };
 };
 
@@ -75,7 +105,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const refreshProfile = useCallback(async () => {
     if (!user) return;
     
-    const supabase = getSupabase();
     console.log('Manually refreshing profile for:', user.id);
     const { data, error } = await supabase
       .from('users')
@@ -88,7 +117,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } else if (data) {
       const { data: pointsRow, error: pointsError } = await supabase
         .from('users_points')
-        .select('total_points, weekly_points, monthly_points, today_points')
+        .select('total_points, weekly_points, monthly_points, today_points, badges, level')
         .eq('user_id', user.id)
         .maybeSingle();
 
@@ -97,8 +126,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       const mapped = mapProfile(data, pointsRow);
-      console.log('Profile refreshed:', mapped);
-      setProfile(mapped);
+      const finalName = await getBestName(mapped.name, mapped.email);
+      if (finalName !== mapped.name && finalName && !isPlaceholderName(finalName)) {
+        const { error: updateErr } = await supabase.from('users').update({ name: finalName }).eq('uid', user.id);
+        if (updateErr) {}
+      }
+      setProfile({ ...mapped, name: finalName });
     } else {
       console.log('No profile data found for user; ensuring default profile');
       const created = await ensureUserProfile(user.id);
@@ -112,7 +145,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (refetched) {
           const { data: pointsRow, error: pointsError } = await supabase
             .from('users_points')
-            .select('total_points, weekly_points, monthly_points, today_points')
+            .select('total_points, weekly_points, monthly_points, today_points, badges, level')
             .eq('user_id', user.id)
             .maybeSingle();
 
@@ -139,30 +172,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const initAuth = async () => {
       try {
-        const supabase = getSupabase();
         // First, try to get existing session
         const { data: sessionData, error: sessionErr } = await supabase.auth.getSession();
         
-        if (sessionErr) {
-          console.error('Session check error:', sessionErr);
-          // If refresh token is invalid, force a clean logout
-          if (sessionErr.message && (
-              sessionErr.message.includes('Refresh Token Not Found') || 
-              sessionErr.message.includes('Invalid Refresh Token')
-          )) {
-            console.log('Detected invalid refresh token, forcing cleanup...');
-            await supabase.auth.signOut();
-            setUser(null);
+        const sessionUser = sessionData.session?.user;
+        const isInvalidRefresh =
+          !!sessionErr?.message &&
+          (sessionErr.message.includes('Refresh Token Not Found') || sessionErr.message.includes('Invalid Refresh Token'));
+
+        if (isMounted && sessionUser) {
+          setUser({ id: sessionUser.id, email: sessionUser.email });
+          setLoading(false);
+          return;
+        }
+
+        if (isInvalidRefresh) {
+          await new Promise((r) => setTimeout(r, 200));
+          const { data: retryData } = await supabase.auth.getSession();
+          const retryUser = retryData.session?.user;
+          if (isMounted && retryUser) {
+            setUser({ id: retryUser.id, email: retryUser.email });
             setLoading(false);
             return;
           }
-        }
-        
-        if (isMounted && sessionData.session?.user) {
-          console.log('Found existing session:', sessionData.session.user.id);
-          setUser({ id: sessionData.session.user.id, email: sessionData.session.user.email });
-          setLoading(false);
-          return;
         }
 
         // No session; stay signed out. UI can prompt to sign in.
@@ -181,13 +213,78 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     initAuth();
 
     // Also listen for auth changes
-    const supabase = getSupabase();
     const { data: authListener } = supabase.auth.onAuthStateChange(async (event: any, session: any) => {
       console.log('Auth event:', event, 'Session:', session?.user?.id);
       if (isMounted) {
         const u = session?.user ? { id: session.user.id, email: session.user.email } : null;
         console.log('Auth state changed:', u?.id);
         setUser(u);
+        
+        // If user signed in, ensure profile is loaded
+        if (u && event === 'SIGNED_IN') {
+          console.log('User signed in, loading profile...');
+          try {
+            const { data, error } = await supabase
+              .from('users')
+              .select('*')
+              .eq('uid', u.id)
+              .maybeSingle();
+            
+            if (error) {
+              console.error('Profile load error on sign in:', error);
+              // Try to create profile if it doesn't exist
+              const created = await ensureUserProfile(u.id);
+              if (created) {
+                const { data: newData } = await supabase
+                  .from('users')
+                  .select('*')
+                  .eq('uid', u.id)
+                  .maybeSingle();
+                if (newData) {
+                  const { data: pointsRow, error: pointsError } = await supabase
+                    .from('users_points')
+                    .select('total_points, weekly_points, monthly_points, today_points, badges, level')
+                    .eq('user_id', u.id)
+                    .maybeSingle();
+                  
+                  if (pointsError) {
+                    console.warn('users_points fetch error on sign in:', pointsError.message);
+                  }
+                  
+                  const mapped = mapProfile(newData, pointsRow);
+                  const finalName = await getBestName(mapped.name, mapped.email);
+                  if (finalName !== mapped.name && finalName && !isPlaceholderName(finalName)) {
+                    const { error: updateErr } = await supabase.from('users').update({ name: finalName }).eq('uid', u.id);
+                    if (updateErr) {}
+                  }
+                  setProfile({ ...mapped, name: finalName });
+                }
+              }
+            } else if (data) {
+              const { data: pointsRow, error: pointsError } = await supabase
+                .from('users_points')
+                .select('total_points, weekly_points, monthly_points, today_points, badges, level')
+                .eq('user_id', u.id)
+                .maybeSingle();
+              
+              if (pointsError) {
+                console.warn('users_points fetch error on sign in:', pointsError.message);
+              }
+              
+              const mapped = mapProfile(data, pointsRow);
+              const finalName = await getBestName(mapped.name, mapped.email);
+              if (finalName !== mapped.name && finalName && !isPlaceholderName(finalName)) {
+                const { error: updateErr } = await supabase.from('users').update({ name: finalName }).eq('uid', u.id);
+                if (updateErr) {}
+              }
+              setProfile({ ...mapped, name: finalName });
+            }
+          } catch (err) {
+            console.error('Error loading profile on sign in:', err);
+          }
+        } else if (!u && event === 'SIGNED_OUT') {
+          setProfile(null);
+        }
       }
     });
 
@@ -218,7 +315,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (!user) return;
     
-    const supabase = getSupabase();
     console.log('Setting up real-time subscription for user:', user.id);
     const channel = supabase
       .channel(`user-profile-${user.id}`)
@@ -267,37 +363,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       try {
         console.log('Logging out...');
         
-        // 1. Force clear local storage first (most important)
-        if (typeof window !== 'undefined') {
-          try {
-            const keys = Object.keys(window.localStorage);
-            for (const k of keys) {
-              if (k.startsWith('supabase') || k.startsWith('sb-')) {
-                window.localStorage.removeItem(k);
-              }
-            }
-          } catch (e) { console.error('LocalStorage cleanup error', e); }
+        // Use mobile-optimized sign out
+        const result = await mobileAuthHelper.signOutWithMobileSupport();
+        
+        if (!result.success) {
+          console.warn('Sign out had issues, but continuing:', result.error);
         }
 
-        // 2. Clear state
+        // Clear state
         setUser(null);
         setProfile(null);
 
-        // 3. Try to notify Supabase (but don't block/fail on it)
-        try {
-           const supabase = getSupabase();
-           await supabase.auth.signOut();
-        } catch (e) {
-           console.warn('Supabase signOut failed, ignoring:', e);
-        }
-
-        // 4. Redirect
+        // Redirect
         if (typeof window !== 'undefined') {
           window.location.replace('/signin');
         }
       } catch (err) {
         console.error('Logout exception:', err);
-        // Fallback redirect
+        // Fallback: clear storage manually and redirect
+        mobileAuthHelper.clearAllStorage();
+        setUser(null);
+        setProfile(null);
+        
         if (typeof window !== 'undefined') {
           window.location.replace('/signin');
         }

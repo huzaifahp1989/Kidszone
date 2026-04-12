@@ -1,5 +1,15 @@
 import { supabase } from './supabase';
 
+function isPlaceholderName(name: string | null | undefined): boolean {
+  if (!name) return true;
+  const trimmed = name.trim();
+  if (!trimmed) return true;
+  if (/^learner\b/i.test(trimmed)) return true;
+  if (/^user[-_][a-z0-9]+$/i.test(trimmed)) return true;
+  if (/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{4}-[0-9a-f]{12}$/i.test(trimmed)) return true;
+  return false;
+}
+
 /**
  * Ensure user profile exists in Supabase. 
  * Creates a profile if missing. For clients, email comes from the insert itself.
@@ -8,10 +18,26 @@ export async function ensureUserProfile(uid: string): Promise<boolean> {
   try {
     console.log('[ensureUserProfile] Ensure for UID:', uid);
 
+    const { data: authData, error: authErr } = await supabase.auth.getUser();
+    if (authErr) {
+      console.warn('[ensureUserProfile] Could not read auth user:', authErr.message);
+    }
+    const authUser = authData?.user;
+    const preferredName =
+      (authUser?.user_metadata as any)?.name ||
+      (authUser?.user_metadata as any)?.full_name ||
+      (authUser?.user_metadata as any)?.fullName ||
+      '';
+    const derivedName =
+      typeof preferredName === 'string' && preferredName.trim()
+        ? preferredName.trim()
+        : (authUser?.email ? authUser.email.split('@')[0] : 'Friend');
+    const derivedEmail = authUser?.email ?? `user-${uid.slice(0, 8)}@local`;
+
     // Avoid resetting points: only insert if missing
     const { data: existing, error: readErr } = await supabase
       .from('users')
-      .select('uid')
+      .select('uid,name,email')
       .eq('uid', uid)
       .maybeSingle();
 
@@ -21,6 +47,15 @@ export async function ensureUserProfile(uid: string): Promise<boolean> {
     }
 
     if (existing?.uid) {
+      if (isPlaceholderName(existing.name) && derivedName && !isPlaceholderName(derivedName)) {
+        const { error: updateErr } = await supabase
+          .from('users')
+          .update({ name: derivedName, email: existing.email || derivedEmail })
+          .eq('uid', uid);
+        if (updateErr) {
+          console.warn('[ensureUserProfile] Could not upgrade placeholder name:', updateErr.message);
+        }
+      }
       return true;
     }
 
@@ -29,9 +64,10 @@ export async function ensureUserProfile(uid: string): Promise<boolean> {
       .upsert({
         uid,
         role: 'kid',
-        name: `Learner ${uid.slice(0, 8)}`,
+        name: derivedName,
         age: 10,
-        email: `user-${uid.slice(0, 8)}@local`,
+        madrasahname: '',
+        email: derivedEmail,
         points: 0,
         weeklypoints: 0,
         monthlypoints: 0,
