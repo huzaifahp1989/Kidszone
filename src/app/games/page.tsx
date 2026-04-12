@@ -16,7 +16,6 @@ import {
   hiddenChallenges,
   hangmanTopics,
   quranWordSearch,
-  ramadanWordSearch,
   sahabahDecisionScenarios,
   sahabahTimeline,
   seerahWordSearch,
@@ -33,7 +32,6 @@ import { BookOpen, Puzzle, Heart, Star, Trophy, Sparkles, ArrowLeft, Target } fr
 type GameId =
   | 'word-search-seerah'
   | 'word-search-quran'
-  | 'word-search-ramadan'
   | 'hadith-match'
   | 'hadith-scenario'
   | 'wudu-fixer'
@@ -100,7 +98,6 @@ const gameCatalog: { id: GameId; title: string; description: string; icon: strin
   { id: 'quran-context', title: 'Quran Context Quiz', description: 'Understand the context of Ayats', icon: '✨', color: 'from-[#fbbf24] to-[#f59e0b]', link: '/quran-quiz' },
   { id: 'word-search-seerah', title: 'Word Search – Seerah', description: 'Find Seerah words in the grid', icon: '🕌', color: 'from-[#14b8a6] to-[#0d9488]' },
   { id: 'word-search-quran', title: 'Word Search – Quran', description: 'Find Quran words in the grid', icon: '📜', color: 'from-[#8b5cf6] to-[#6366f1]' },
-  { id: 'word-search-ramadan', title: 'Word Search – Ramadan', description: 'Find Ramadan words in the grid', icon: '🌙', color: 'from-[#fbbf24] to-[#f59e0b]' },
   { id: 'hadith-match', title: 'Hadith Match', description: 'Match hadith meanings to actions', icon: '🤝', color: 'from-[#14b8a6] to-[#0d9488]' },
   { id: 'hadith-scenario', title: 'Hadith Scenarios', description: 'Pick the best hadith for each scenario', icon: '🧭', color: 'from-[#8b5cf6] to-[#6366f1]' },
   { id: 'wudu-fixer', title: 'Wudu Fixer', description: 'Spot and fix wudu mistakes', icon: '💧', color: 'from-[#3b82f6] to-[#2563eb]' },
