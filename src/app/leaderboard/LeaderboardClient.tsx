@@ -2,6 +2,7 @@
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useAuth } from '@/lib/auth-context';
+import { supabase } from '@/lib/supabase';
 import { Trophy, RefreshCw, Crown, Medal, Award, Sparkles, Star } from 'lucide-react';
 
 type Entry = {
@@ -23,28 +24,6 @@ export default function LeaderboardClient() {
   const { profile } = useAuth();
   const fetchAbortRef = useRef<AbortController | null>(null);
 
-  const cacheKey = useMemo(() => `leaderboard_${activeTab}`, [activeTab]);
-
-  const readCache = useCallback(() => {
-    if (typeof window === 'undefined') return null;
-    try {
-      const raw = window.sessionStorage.getItem(cacheKey);
-      if (!raw) return null;
-      const parsed = JSON.parse(raw);
-      if (!Array.isArray(parsed?.entries)) return null;
-      return { entries: parsed.entries as Entry[], lastWinner: (parsed.lastWinner ?? null) as Entry | null };
-    } catch {
-      return null;
-    }
-  }, [cacheKey]);
-
-  const writeCache = useCallback((nextEntries: Entry[], nextWinner: Entry | null) => {
-    if (typeof window === 'undefined') return;
-    try {
-      window.sessionStorage.setItem(cacheKey, JSON.stringify({ ts: Date.now(), entries: nextEntries, lastWinner: nextWinner }));
-    } catch {}
-  }, [cacheKey]);
-
   const loadLeaderboard = useCallback(async (opts?: { soft?: boolean }) => {
     if (!opts?.soft) setLoading(true);
     try {
@@ -52,7 +31,7 @@ export default function LeaderboardClient() {
       const controller = new AbortController();
       fetchAbortRef.current = controller;
 
-      const res = await fetch(`/api/leaderboard/public?tab=${activeTab}`, { cache: 'no-store', signal: controller.signal });
+      const res = await fetch(`/api/leaderboard/public?tab=${activeTab}&t=${Date.now()}`, { cache: 'no-store', signal: controller.signal });
       const json = await res.json();
 
       if (!res.ok || !Array.isArray(json.entries)) return;
@@ -60,26 +39,31 @@ export default function LeaderboardClient() {
       const list = json.entries as Entry[];
       setEntries(list);
       setLastWinner(json.lastWinner ?? null);
-      writeCache(list, json.lastWinner ?? null);
     } catch (err) {
       const isAbort = (err as any)?.name === 'AbortError';
       if (!isAbort) console.error('Leaderboard load error:', err);
     } finally {
       if (!opts?.soft) setLoading(false);
     }
-  }, [activeTab, writeCache]);
+  }, [activeTab]);
 
   useEffect(() => {
-    const cached = readCache();
-    if (cached?.entries?.length) {
-      setEntries(cached.entries);
-      setLastWinner(cached.lastWinner ?? null);
-      setLoading(false);
-      loadLeaderboard({ soft: true });
-    } else {
-      loadLeaderboard();
-    }
-  }, [loadLeaderboard, readCache]);
+    loadLeaderboard();
+  }, [loadLeaderboard]);
+
+  // Real-time subscription to refresh when points change
+  useEffect(() => {
+    const channel = supabase
+      .channel('leaderboard-updates')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'users_points' }, () => {
+        loadLeaderboard({ soft: true });
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [loadLeaderboard]);
 
   const handleRefresh = async () => {
     setRefreshing(true);
@@ -88,17 +72,14 @@ export default function LeaderboardClient() {
   };
 
   const leaderboardData = useMemo(() => {
-    const field = activeTab === 'weekly' ? 'weeklyPoints' : 'monthlyPoints';
-    return [...entries]
-      .sort((a, b) => (b[field] ?? 0) - (a[field] ?? 0))
-      .map((e, idx) => ({
-        rank: idx + 1,
-        username: e.name,
-        level: e.level,
-        points: activeTab === 'weekly' ? (e.weeklyPoints ?? 0) : (e.monthlyPoints ?? 0),
-        uid: e.uid,
-        badges: e.badges ?? 0,
-      }));
+    return entries.map((e, idx) => ({
+      rank: idx + 1,
+      username: e.name,
+      level: e.level,
+      points: activeTab === 'weekly' ? (e.weeklyPoints ?? 0) : (e.monthlyPoints ?? 0),
+      uid: e.uid,
+      badges: e.badges ?? 0,
+    }));
   }, [entries, activeTab]);
 
   const getRankIcon = (rank: number) => {

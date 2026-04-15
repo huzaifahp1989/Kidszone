@@ -16,28 +16,39 @@ export async function GET(req: Request) {
   try {
     const url = new URL(req.url);
     const tab = (url.searchParams.get('tab') || 'monthly').toLowerCase();
-    const orderField = tab === 'monthly' ? 'monthly_points' : 'weekly_points';
+    const isMonthly = tab === 'monthly';
+    
+    // Order by the appropriate field based on tab
+    const orderField = isMonthly ? 'monthly_points' : 'weekly_points';
 
     const { data, error } = await supabaseAdmin
       .from('users_points')
-      .select('user_id,total_points,weekly_points,monthly_points,badges,level,users(name)')
-      .gt(orderField, 0)
+      .select('user_id,total_points,weekly_points,monthly_points,badges,level,users(name,points,weeklypoints,monthlypoints)')
+      .gt(orderField, 0)  // Only get users with points in this period
       .order(orderField, { ascending: false, nullsFirst: false })
-      .limit(50);
+      .limit(100);
 
     if (error) {
+      console.error('Leaderboard API error:', error);
       return NextResponse.json({ entries: [], lastWinner: null, error: error.message }, { status: 500 });
     }
 
     const entries = (data || []).map((row: any) => {
       const displayName = sanitizeName(row.users?.name, row.user_id);
+      const totalPoints = Number(row.total_points ?? row.users?.points ?? 0);
+      const weeklyPoints = Number(row.weekly_points ?? row.users?.weeklypoints ?? 0);
+      const monthlyPoints = Number(row.monthly_points ?? row.users?.monthlypoints ?? 0);
+      
+      // Use the appropriate points for display
+      const displayPoints = isMonthly ? monthlyPoints : weeklyPoints;
+
       return {
         uid: row.user_id,
         name: displayName,
         level: row.level ?? 1,
-        points: row.total_points ?? 0,
-        weeklyPoints: row.weekly_points ?? 0,
-        monthlyPoints: row.monthly_points ?? 0,
+        points: totalPoints,
+        weeklyPoints,
+        monthlyPoints,
         badges: row.badges ?? 0,
       };
     });
@@ -63,10 +74,13 @@ export async function GET(req: Request) {
     }
 
     const res = NextResponse.json({ entries, lastWinner, error: null });
-    res.headers.set('Cache-Control', 'public, s-maxage=30, stale-while-revalidate=300');
+    // Always serve fresh leaderboard data
+    res.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0');
+    res.headers.set('Pragma', 'no-cache');
+    res.headers.set('Expires', '0');
     return res;
   } catch (e: any) {
+    console.error('Leaderboard API exception:', e);
     return NextResponse.json({ entries: [], lastWinner: null, error: e?.message || 'Unknown error' }, { status: 500 });
   }
 }
-
