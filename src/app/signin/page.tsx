@@ -359,15 +359,27 @@ export default function SignInPage() {
     try {
       console.log('🔐 Attempting sign in for:', email);
       console.log('📱 Device info:', deviceInfo);
-      
-      const { data, error: signInErr } = await supabase.auth.signInWithPassword({
+
+      // Single attempt - no retry loop to avoid rate limiting
+      const result = await supabase.auth.signInWithPassword({
         email: normalizedEmail,
         password,
       });
+      
+      const data = result.data;
+      const signInErr = result.error;
 
       if (signInErr) {
         recordAuthFailure(normalizedEmail);
-        const msg = signInErr.message || 'Sign in failed. Please try again.';
+        const raw: string = signInErr?.message ?? String(signInErr ?? '');
+        const isNetwork = raw.toLowerCase().includes('failed to fetch') ||
+          raw.toLowerCase().includes('networkerror') ||
+          raw.toLowerCase().includes('network request failed') ||
+          raw.toLowerCase().includes('load failed') ||
+          raw.toLowerCase().includes('timeout');
+        const msg = isNetwork
+          ? 'Unable to reach the server. This may be a network or CORS issue. Try: 1) Disable VPN if active 2) Clear browser cache (Settings > Apps > [Browser] > Storage > Clear) 3) Refresh the page 4) Try a different browser'
+          : raw || 'Sign in failed. Please try again.';
         setError(msg);
         return;
       }
@@ -378,24 +390,14 @@ export default function SignInPage() {
       }
       clearAuthFailures(normalizedEmail);
 
-      const sessionFromResponse = data?.session ?? null;
-      let { data: sessionData } = await supabase.auth.getSession();
-      let effectiveSession = sessionData.session ?? sessionFromResponse;
-
-      if (!effectiveSession && data?.session?.access_token && data?.session?.refresh_token) {
-        const { data: setData, error: setErr } = await supabase.auth.setSession({
-          access_token: data.session.access_token,
-          refresh_token: data.session.refresh_token,
-        });
-        if (!setErr) {
-          await new Promise((r) => setTimeout(r, 150));
-          const after = await supabase.auth.getSession();
-          effectiveSession = after.data.session ?? setData.session ?? sessionFromResponse;
-        }
-      }
+      // Wait a moment for session to be established
+      await new Promise((r) => setTimeout(r, 300));
+      
+      const { data: sessionData } = await supabase.auth.getSession();
+      const effectiveSession = sessionData.session;
 
       if (!effectiveSession) {
-        setError('Sign in completed but your device blocked session storage. Please enable cookies/local storage and try again.');
+        setError('Sign in completed but your device blocked session storage. Try: 1) Enable cookies in Settings 2) Disable private/incognito mode 3) Clear app cache if on Android (Settings > Apps > [App] > Clear Cache)');
         return;
       }
 
@@ -413,7 +415,12 @@ export default function SignInPage() {
     } catch (err: any) {
       console.error('🚨 Unexpected sign-in error:', err);
       recordAuthFailure(normalizedEmail);
-      const msg = err?.message || 'An unexpected error occurred. Please try again.';
+      const raw: string = err?.message ?? String(err ?? '');
+      const isNetwork = raw.toLowerCase().includes('failed to fetch') ||
+        raw.toLowerCase().includes('networkerror') ||
+        raw.toLowerCase().includes('network request failed') ||
+        raw.toLowerCase().includes('load failed') ||
+        raw.toLowerCase().includes('timeout');
       if (typeof navigator !== 'undefined' && !navigator.onLine) {
         try {
           const payload = { email: normalizedEmail, password, ts: Date.now() };
@@ -421,10 +428,12 @@ export default function SignInPage() {
           setInfo('You are offline. Your login was saved and will retry when you are back online.');
           setError(null);
         } catch {
-          setError(msg);
+          setError(raw || 'An error occurred.');
         }
+      } else if (isNetwork) {
+        setError('Unable to reach the server. Network issues detected. Try: 1) Disable VPN 2) Clear cache 3) Refresh page 4) Try different browser');
       } else {
-        setError(msg);
+        setError(raw || 'An unexpected error occurred. Please try again.');
       }
     } finally {
       setLoading(false);

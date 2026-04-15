@@ -343,16 +343,49 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
   }, [user, refreshProfile]);
 
-  // Re-fetch on window focus (vital for mobile app state consistency)
+  // Re-fetch on window focus (vital for mobile app state consistency) - with debounce
   useEffect(() => {
+    let debounceTimer: NodeJS.Timeout | null = null;
+    
     const handleFocus = () => {
-      if (user) {
-        console.log('Window focused, refreshing profile...');
-        refreshProfile();
+      if (debounceTimer) clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => {
+        if (user) {
+          console.log('Window focused, refreshing profile...');
+          refreshProfile();
+        }
+      }, 1000); // 1 second debounce
+    };
+
+    const handleVisibilityChange = () => {
+      if (!user) return;
+      if (document.visibilityState === 'visible') {
+        if (debounceTimer) clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(() => {
+          console.log('Tab visible, refreshing profile...');
+          refreshProfile();
+        }, 1000); // 1 second debounce
       }
     };
+
+    const handleOnline = () => {
+      if (!user) return;
+      if (debounceTimer) clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => {
+        console.log('Network reconnected, refreshing profile...');
+        refreshProfile();
+      }, 1000); // 1 second debounce
+    };
+
     window.addEventListener('focus', handleFocus);
-    return () => window.removeEventListener('focus', handleFocus);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('online', handleOnline);
+    return () => {
+      window.removeEventListener('focus', handleFocus);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('online', handleOnline);
+      if (debounceTimer) clearTimeout(debounceTimer);
+    };
   }, [user, refreshProfile]);
 
   const value = useMemo(() => ({
@@ -361,32 +394,53 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     loading,
     logout: async () => {
       try {
-        console.log('Logging out...');
+        console.log('🔓 Starting logout process...');
         
-        // Use mobile-optimized sign out
-        const result = await mobileAuthHelper.signOutWithMobileSupport();
-        
-        if (!result.success) {
-          console.warn('Sign out had issues, but continuing:', result.error);
-        }
-
-        // Clear state
+        // Clear state immediately for faster UI feedback
         setUser(null);
         setProfile(null);
+        
+        // Sign out from Supabase auth
+        try {
+          const { error } = await supabase.auth.signOut({ scope: 'local' });
+          if (error) {
+            console.warn('⚠️ Supabase signOut had issues:', error.message);
+          } else {
+            console.log('✅ Supabase auth cleared');
+          }
+        } catch (supabaseErr) {
+          console.error('❌ Supabase signOut error:', supabaseErr);
+        }
 
-        // Redirect
+        // Clear all storage
+        try {
+          mobileAuthHelper.clearAllStorage();
+          console.log('✅ Storage cleared');
+        } catch (storageErr) {
+          console.error('❌ Storage clear error:', storageErr);
+        }
+
+        // Redirect to signin
+        console.log('🔄 Redirecting to signin...');
         if (typeof window !== 'undefined') {
-          window.location.replace('/signin');
+          // Small delay to ensure state is cleared before redirect
+          setTimeout(() => {
+            window.location.href = '/signin';
+          }, 100);
         }
       } catch (err) {
-        console.error('Logout exception:', err);
-        // Fallback: clear storage manually and redirect
-        mobileAuthHelper.clearAllStorage();
-        setUser(null);
-        setProfile(null);
+        console.error('🚨 Logout exception:', err);
+        
+        // Fallback: force clear everything and redirect
+        try {
+          setUser(null);
+          setProfile(null);
+          mobileAuthHelper.clearAllStorage();
+          await supabase.auth.signOut({ scope: 'local' }).catch(() => {});
+        } catch {}
         
         if (typeof window !== 'undefined') {
-          window.location.replace('/signin');
+          window.location.href = '/signin';
         }
       }
     },
