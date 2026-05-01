@@ -95,6 +95,7 @@ export default function GamesPage() {
   const pointsRef = useRef(0);
   const scrambleWordsCorrect = useRef(0);
   const [feedback, setFeedback] = useState<string | null>(null);
+  const [mcqAnswered, setMcqAnswered] = useState(false);
   const [loading, setLoading] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const [completion, setCompletion] = useState<CompletionSummary | null>(null);
@@ -109,6 +110,7 @@ export default function GamesPage() {
     setCrosswordSolved(false); setCrosswordErrors({}); setCrosswordChecked(false);
     setScrambleInput(''); setScrambleCorrect(false); setScrambleRevealed(false);
     setPoints(0); pointsRef.current = 0; scrambleWordsCorrect.current = 0; setFeedback(null);
+    setMcqAnswered(false);
   };
 
   const awardPointsForGame = async (base: number) => {
@@ -196,14 +198,16 @@ export default function GamesPage() {
   const handleMcqAnswer = async (optionId: string) => {
     if (!currentTask || currentTask.kind !== 'mcq' || loading || selectedOption !== null) return;
     setSelectedOption(optionId);
+    setMcqAnswered(true);
     const isCorrect = optionId === currentTask.correctOptionId;
-    if (isCorrect) { setFeedback('Correct! MashaAllah 🎉'); await awardPointsForGame(currentTask.points); }
-    else setFeedback('Not quite. Keep learning!');
-    setTimeout(async () => {
-      setFeedback(null); setSelectedOption(null);
-      if (taskIndex < (session?.tasks.length ?? 0) - 1) setTaskIndex(p => p + 1);
-      else await finishGame();
-    }, 900);
+    if (isCorrect) { setFeedback('✅ Correct! MashaAllah 🎉'); await awardPointsForGame(currentTask.points); }
+    else { setFeedback(`❌ Not quite. The answer was: ${currentTask.options.find(o => o.id === currentTask.correctOptionId)?.text}`); }
+  };
+
+  const handleMcqNext = async () => {
+    setFeedback(null); setSelectedOption(null); setMcqAnswered(false);
+    if (taskIndex < (session?.tasks.length ?? 0) - 1) setTaskIndex(p => p + 1);
+    else await finishGame();
   };
 
   const handleHangmanGuess = async (letter: string) => {
@@ -403,6 +407,7 @@ export default function GamesPage() {
 
             {currentTask?.kind === 'mcq' && (
               <div className="space-y-4">
+                <p className="text-sm text-[#a1633a]">Question {taskIndex + 1} of {session.tasks.length}</p>
                 <p className="text-lg font-semibold text-[#6a422d]">{currentTask.prompt}</p>
                 <div className="space-y-3">
                   {currentTask.options.map(opt => {
@@ -416,6 +421,15 @@ export default function GamesPage() {
                     return <button key={opt.id} disabled={!!selectedOption || loading} onClick={() => handleMcqAnswer(opt.id)} className={cls}>{opt.text}</button>;
                   })}
                 </div>
+                {mcqAnswered && (
+                  <button
+                    onClick={handleMcqNext}
+                    disabled={loading}
+                    className="w-full py-3 bg-gradient-to-r from-[#14b8a6] to-[#0d9488] text-white font-bold rounded-xl hover:opacity-90 transition disabled:opacity-60"
+                  >
+                    {taskIndex < (session?.tasks.length ?? 0) - 1 ? 'Next Question →' : 'See Results 🏆'}
+                  </button>
+                )}
               </div>
             )}
 

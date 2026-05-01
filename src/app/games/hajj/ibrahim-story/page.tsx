@@ -1,7 +1,9 @@
 'use client';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
+import { awardPoints as awardPointsRpc } from '@/lib/points-service';
+import { useAuth } from '@/lib/auth-context';
 
 interface Chapter {
   icon: string;
@@ -88,6 +90,7 @@ const chapters: Chapter[] = [
 
 export default function IbrahimStoryGame() {
   const router = useRouter();
+  const { user } = useAuth() as any;
   const [step, setStep] = useState(0);
   const [answered, setAnswered] = useState<number | null>(null);
   const [showExplanation, setShowExplanation] = useState(false);
@@ -97,6 +100,13 @@ export default function IbrahimStoryGame() {
   const chapter = chapters[step];
   const hasQ = Boolean(chapter.question);
   const canProceed = !hasQ || answered !== null;
+
+  // Award points when the story is completed
+  useEffect(() => {
+    if (done && user?.id) {
+      awardPointsRpc(30).catch(() => {});
+    }
+  }, [done, user]);
 
   const handleAnswer = (idx: number) => {
     if (answered !== null) return;
@@ -133,6 +143,7 @@ export default function IbrahimStoryGame() {
             You answered <span className="font-bold text-amber-700">{correctCount}</span> out of{' '}
             <span className="font-bold">{chapters.filter((c) => c.question).length}</span> questions correctly!
           </p>
+          <p className="text-amber-700 font-bold text-sm mb-2">+30 points awarded! 🌟</p>
           <p className="text-gray-500 text-sm mb-6">
             SubhanAllah — the story of Ibrahim (AS) is the foundation of Hajj. May Allah grant us all the opportunity to perform Hajj. 🤲
           </p>
