@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
-import { addPoints } from '@/lib/profile-service';
+import { addPointsWithOptions } from '@/lib/profile-service';
 import { supabase } from '@/lib/supabase';
 import { Heart, Sparkles, Trophy } from 'lucide-react';
 
@@ -24,7 +24,7 @@ const ZIKR_OPTIONS = [
 
 export default function PledgeClient() {
   const router = useRouter();
-  const { user } = useAuth();
+  const { user, refreshProfile, updateLocalProfile } = useAuth();
   const [loading, setLoading] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'durood' | 'zikr'>('durood');
@@ -50,8 +50,16 @@ export default function PledgeClient() {
     setLoading(true);
 
     try {
-      const updated = await addPoints(user.id, points);
+      const updated = await addPointsWithOptions(user.id, points, { countTowardDailyLimit: false });
       if (!updated) throw new Error('Could not award points.');
+
+      updateLocalProfile({
+        points: updated.points,
+        weeklyPoints: updated.weeklyPoints,
+        monthlyPoints: updated.monthlyPoints,
+        todayPoints: updated.todayPoints,
+      });
+      await refreshProfile();
 
       await supabase.from('pledges').insert({
         user_id: user.id,
@@ -90,6 +98,18 @@ export default function PledgeClient() {
           </p>
         </div>
 
+        <div className="bg-gradient-to-r from-[#ecfeff] to-[#f0fdfa] border border-[#14b8a6]/30 rounded-2xl p-5 text-center">
+          <p className="text-[#0f766e] font-bold text-base md:text-lg">
+            New winner will be announced on 1 May 2026.
+          </p>
+          <p className="text-[#115e59] mt-2 text-sm md:text-base">
+            Please continue taking part every day to win prizes. You must take part at least 3 times in a week to enter the prize draw.
+          </p>
+          <p className="text-[#0f766e] mt-2 text-sm md:text-base font-semibold">
+            Check the Rewards page for important announcements and your weekly and monthly achievements.
+          </p>
+        </div>
+
         {!user && (
           <div className="bg-[#fffbeb] border border-[#fbbf24]/30 rounded-2xl p-6 text-center">
             <p className="text-[#b45309] font-semibold mb-3">Sign in to log your pledge and earn points</p>
@@ -124,6 +144,17 @@ export default function PledgeClient() {
           >
             📿 Zikr
           </button>
+        </div>
+
+        <div className="text-center">
+          <a
+            href="https://chat.whatsapp.com/E7bJY8Hz5lEEDscBXKtsSM?mode=gi_t"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center justify-center rounded-xl border border-[#14b8a6]/30 bg-[#f0fdfa] px-4 py-3 text-sm font-bold text-[#0d9488] hover:bg-[#ccfbf1] transition"
+          >
+            Join kids zone group on whatsapp to stay updated
+          </a>
         </div>
 
         {/* Form Card */}
@@ -255,6 +286,21 @@ export default function PledgeClient() {
               </div>
               <h3 className="text-2xl font-bold text-[#6a422d]">Pledge Recorded!</h3>
               <p className="text-[#a1633a]">{successMessage}</p>
+              <p className="text-[#0f766e] font-semibold text-sm">
+                Check your Rewards page for important announcements and your weekly and monthly achievements.
+              </p>
+              <p className="text-[#a1633a] text-sm">
+                Please fill the winner contact form there so we can contact your family if your child is selected as a winner.
+              </p>
+              <button
+                onClick={() => {
+                  setSuccessMessage(null);
+                  router.push('/rewards#winner-contact-form');
+                }}
+                className="w-full py-3 bg-white text-[#0d9488] font-bold rounded-xl border border-[#14b8a6]/40 hover:bg-[#f0fdfa]"
+              >
+                Open Rewards + Form
+              </button>
               <button
                 onClick={() => setSuccessMessage(null)}
                 className="w-full py-3 bg-gradient-to-r from-[#14b8a6] to-[#0d9488] text-white font-bold rounded-xl"

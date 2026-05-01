@@ -57,7 +57,7 @@ export function QuizComponent({ quizId, questions }: any) {
         const updatedPoints = await getUserPoints()
         setUserPoints(updatedPoints)
       } else {
-        // Daily limit or other error
+        // Awarding error
         setError(result.message)
         setPointsAwarded(result)
       }
@@ -130,7 +130,7 @@ export function QuizComponent({ quizId, questions }: any) {
           </p>
           {allowance && (
             <p className="daily-limit">
-              Daily Allowance: {allowance.today_points}/100 (+{allowance.remaining} remaining)
+              Daily Progress: {allowance.today_points}
             </p>
           )}
         </div>
@@ -209,16 +209,16 @@ export function QuizComponent({ quizId, questions }: any) {
                 </div>
                 <div>
                   <p className="label">Today</p>
-                  <p className="value">{pointsAwarded.today_points}/100</p>
+                  <p className="value">{pointsAwarded.today_points}</p>
                 </div>
               </div>
             </>
           ) : (
             <>
-              <h3>Daily Limit Reached</h3>
+              <h3>Points Not Added</h3>
               <p>{pointsAwarded.message}</p>
               <p className="daily-status">You've earned {pointsAwarded.today_points} points today</p>
-              <p className="comeback">Come back tomorrow to earn more!</p>
+              <p className="comeback">Keep learning and try again!</p>
             </>
           )}
         </div>
@@ -242,7 +242,7 @@ export function QuizComponent({ quizId, questions }: any) {
             </div>
             <div className="stat">
               <p className="stat-label">Today's Earning</p>
-              <p className="stat-value">{userPoints.today_points}/100</p>
+              <p className="stat-value">{userPoints.today_points}</p>
             </div>
           </div>
         </div>

@@ -33,6 +33,10 @@ npm install
 Create a `.env.local` file in the root directory:
 
 ```
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
+
 NEXT_PUBLIC_FIREBASE_API_KEY=your_api_key
 NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=your_auth_domain
 NEXT_PUBLIC_FIREBASE_PROJECT_ID=your_project_id
@@ -40,6 +44,23 @@ NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=your_storage_bucket
 NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=your_messaging_sender_id
 NEXT_PUBLIC_FIREBASE_APP_ID=your_app_id
 ```
+
+### Supabase Device Compatibility Checklist
+
+To make auth and points updates work reliably across desktop and mobile browsers:
+
+1. In Supabase Dashboard -> Authentication -> URL Configuration:
+- Set Site URL to your production domain.
+- Add Redirect URLs for both production and local dev (for example `http://localhost:3000/*`, `http://localhost:3001/*`, and your deployed domain).
+
+2. In your deploy environment (Vercel/hosting), set all three variables:
+- `NEXT_PUBLIC_SUPABASE_URL`
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+- `SUPABASE_SERVICE_ROLE_KEY`
+
+3. In browser testing, avoid private/incognito mode when validating persistent sessions.
+
+4. Verify Realtime is enabled for `users` and `users_points` updates in Supabase.
 
 ### Running Development Server
 

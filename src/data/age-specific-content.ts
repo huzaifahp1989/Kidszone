@@ -680,10 +680,10 @@ export const AGE_GROUPS: Record<AgeGroup, {
     quizzes: [
       {
         id: 'q1214-1',
-        question: 'Which Surah is known as the "Heart of the Quran"?',
-        options: ['Surah Rahman', 'Surah Yaseen', 'Surah Mulk', 'Surah Kahf'],
-        correctAnswer: 1,
-        explanation: 'Surah Yaseen is often referred to as the heart of the Quran in hadith traditions.',
+        question: 'Which surah is called Umm al-Kitab (Mother of the Book)?',
+        options: ['Surah Al-Fatiha', 'Surah Al-Ikhlas', 'Surah Al-Mulk', 'Surah Al-Kahf'],
+        correctAnswer: 0,
+        explanation: 'Surah Al-Fatiha is called Umm al-Kitab because of its central place in recitation and prayer.',
         category: 'Quran'
       },
       {
@@ -845,3 +845,163 @@ export const AGE_GROUPS: Record<AgeGroup, {
     ]
   }
 };
+
+const AUTHENTIC_TOPIC_ADDONS: Record<AgeGroup, QuizQuestion[]> = {
+  '6-8': [
+    {
+      id: 'q68-auth-quran-1',
+      question: 'How many surahs are in the Quran?',
+      options: ['100', '110', '114', '120'],
+      correctAnswer: 2,
+      explanation: 'The Quran has 114 surahs.',
+      category: 'Quran'
+    },
+    {
+      id: 'q68-auth-hadith-1',
+      question: 'In hadith, deeds are judged by what?',
+      options: ['Intentions', 'Clothes', 'Age', 'Voice'],
+      correctAnswer: 0,
+      explanation: 'The Prophet ﷺ taught that deeds are judged by intentions.',
+      category: 'Hadith'
+    },
+    {
+      id: 'q68-auth-seerah-1',
+      question: 'Where did the Prophet ﷺ migrate in Hijrah?',
+      options: ['Makkah', 'Taif', 'Madinah', 'Jerusalem'],
+      correctAnswer: 2,
+      explanation: 'Hijrah was the migration from Makkah to Madinah.',
+      category: 'Seerah'
+    },
+    {
+      id: 'q68-auth-hajj-1',
+      question: 'What is the name of circling the Ka bah seven times?',
+      options: ['Sa i', 'Tawaf', 'Wudu', 'Iqamah'],
+      correctAnswer: 1,
+      explanation: 'Tawaf is circling the Ka bah seven times.',
+      category: 'Hajj'
+    },
+    {
+      id: 'q68-auth-prophets-1',
+      question: 'Which prophet built the Ark?',
+      options: ['Musa AS', 'Nuh AS', 'Yunus AS', 'Isa AS'],
+      correctAnswer: 1,
+      explanation: 'Allah commanded Prophet Nuh AS to build the Ark.',
+      category: 'Prophets'
+    },
+    {
+      id: 'q68-auth-sahabah-1',
+      question: 'Who was the first Caliph after the Prophet ﷺ?',
+      options: ['Abu Bakr RA', 'Umar RA', 'Ali RA', 'Uthman RA'],
+      correctAnswer: 0,
+      explanation: 'Abu Bakr RA became the first Caliph.',
+      category: 'Sahabah'
+    }
+  ],
+  '9-11': [
+    {
+      id: 'q911-auth-quran-1',
+      question: 'Which surah is the longest in the Quran?',
+      options: ['Surah Ya-Sin', 'Surah Al-Baqarah', 'Surah Al-Ikhlas', 'Surah Al-Mulk'],
+      correctAnswer: 1,
+      explanation: 'Surah Al-Baqarah is the longest surah in the Quran.',
+      category: 'Quran'
+    },
+    {
+      id: 'q911-auth-hadith-1',
+      question: 'Who is a Muslim according to hadith?',
+      options: ['One who harms people', 'One whose tongue and hands do not harm others', 'One who travels often', 'One who only speaks Arabic'],
+      correctAnswer: 1,
+      explanation: 'A Muslim is one from whose tongue and hands people are safe.',
+      category: 'Hadith'
+    },
+    {
+      id: 'q911-auth-seerah-1',
+      question: 'What was the Treaty of Hudaybiyyah?',
+      options: ['A war declaration', 'A peace treaty', 'A trade boycott', 'A battle in Madinah'],
+      correctAnswer: 1,
+      explanation: 'Hudaybiyyah was a peace treaty that helped Islam spread.',
+      category: 'Seerah'
+    },
+    {
+      id: 'q911-auth-hajj-1',
+      question: 'On which day do pilgrims stand at Arafah?',
+      options: ['8th Dhul Hijjah', '9th Dhul Hijjah', '10th Dhul Hijjah', '11th Dhul Hijjah'],
+      correctAnswer: 1,
+      explanation: 'The standing at Arafah is on the 9th of Dhul Hijjah.',
+      category: 'Hajj'
+    },
+    {
+      id: 'q911-auth-prophets-1',
+      question: 'Which prophet and his son raised the Ka bah foundations?',
+      options: ['Musa and Harun AS', 'Ibrahim and Ismail AS', 'Yaqub and Yusuf AS', 'Dawud and Sulayman AS'],
+      correctAnswer: 1,
+      explanation: 'Ibrahim AS and Ismail AS raised the foundations of the Ka bah.',
+      category: 'Prophets'
+    },
+    {
+      id: 'q911-auth-sahabah-1',
+      question: 'Which companion was known as Al-Faruq?',
+      options: ['Bilal RA', 'Umar RA', 'Abu Hurairah RA', 'Zayd RA'],
+      correctAnswer: 1,
+      explanation: 'Umar RA was called Al-Faruq for distinguishing truth and falsehood.',
+      category: 'Sahabah'
+    }
+  ],
+  '12-14': [
+    {
+      id: 'q1214-auth-quran-1',
+      question: 'What were the first revealed verses from?',
+      options: ['Surah Al-Alaq', 'Surah Al-Mulk', 'Surah Al-Kawthar', 'Surah An-Nas'],
+      correctAnswer: 0,
+      explanation: 'The first revealed verses were from Surah Al-Alaq (96:1-5).',
+      category: 'Quran'
+    },
+    {
+      id: 'q1214-auth-hadith-1',
+      question: 'What did the Prophet ﷺ say about mercy?',
+      options: ['Mercy is optional', 'Whoever does not show mercy will not be shown mercy', 'Mercy is only for family', 'Mercy is only for children'],
+      correctAnswer: 1,
+      explanation: 'The Prophet ﷺ taught that mercy is central to faith and character.',
+      category: 'Hadith'
+    },
+    {
+      id: 'q1214-auth-seerah-1',
+      question: 'Which battle was the first major battle in Islam?',
+      options: ['Uhud', 'Khandaq', 'Badr', 'Hunayn'],
+      correctAnswer: 2,
+      explanation: 'Badr was the first major battle fought by Muslims.',
+      category: 'Seerah'
+    },
+    {
+      id: 'q1214-auth-hajj-1',
+      question: 'What does Ramy al-Jamarat symbolize?',
+      options: ['Sports activity', 'Rejecting Shaytan and obeying Allah', 'Choosing a camp', 'Marking the end of Hajj only'],
+      correctAnswer: 1,
+      explanation: 'Throwing pebbles symbolizes rejecting Shaytan and following obedience to Allah.',
+      category: 'Hajj'
+    },
+    {
+      id: 'q1214-auth-prophets-1',
+      question: 'Who are the five Ulul Azm prophets?',
+      options: ['Nuh, Ibrahim, Musa, Isa, Muhammad (peace be upon them)', 'Adam, Idris, Hud, Salih, Lut', 'Yusuf, Yaqub, Ismail, Yunus, Ayyub', 'Harun, Dawud, Sulayman, Zakariya, Yahya'],
+      correctAnswer: 0,
+      explanation: 'Ulul Azm are Nuh, Ibrahim, Musa, Isa, and Muhammad (peace be upon them).',
+      category: 'Prophets'
+    },
+    {
+      id: 'q1214-auth-sahabah-1',
+      question: 'During whose caliphate was the written Mushaf standardized for the Ummah?',
+      options: ['Abu Bakr RA', 'Umar RA', 'Uthman RA', 'Ali RA'],
+      correctAnswer: 2,
+      explanation: 'Uthman RA standardized the Mushaf copies for unity in recitation.',
+      category: 'Sahabah'
+    }
+  ]
+};
+
+for (const ageGroup of Object.keys(AUTHENTIC_TOPIC_ADDONS) as AgeGroup[]) {
+  AGE_GROUPS[ageGroup].quizzes = [
+    ...AGE_GROUPS[ageGroup].quizzes,
+    ...AUTHENTIC_TOPIC_ADDONS[ageGroup]
+  ];
+}

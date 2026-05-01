@@ -23,6 +23,10 @@ type KidProfile = {
   streak?: number;
   lastStreakUpdate?: string;
   isFlagged?: boolean;
+  parentEmail?: string;
+  reminderOptIn?: boolean;
+  reminderFrequency?: 'daily' | '3x_week' | 'weekly';
+  reminderLastSentAt?: string | null;
 };
 
 interface AuthContextValue {
@@ -93,6 +97,10 @@ const mapProfile = (userRow: any, pointsRow?: any): KidProfile => {
     streak: userRow.streak || 0,
     lastStreakUpdate: userRow.last_streak_update,
     isFlagged: userRow.is_flagged || false,
+    parentEmail: userRow.parent_email ?? userRow.parentEmail,
+    reminderOptIn: userRow.reminder_opt_in ?? userRow.reminderOptIn ?? false,
+    reminderFrequency: userRow.reminder_frequency ?? userRow.reminderFrequency ?? 'weekly',
+    reminderLastSentAt: userRow.reminder_last_sent_at ?? null,
   };
 };
 
@@ -181,8 +189,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           (sessionErr.message.includes('Refresh Token Not Found') || sessionErr.message.includes('Invalid Refresh Token'));
 
         if (isMounted && sessionUser) {
+          // Set user but keep loading=true until profile is fetched
           setUser({ id: sessionUser.id, email: sessionUser.email });
-          setLoading(false);
+          // loading will be set false by the profile effect after profile loads
           return;
         }
 
@@ -192,7 +201,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           const retryUser = retryData.session?.user;
           if (isMounted && retryUser) {
             setUser({ id: retryUser.id, email: retryUser.email });
-            setLoading(false);
+            // loading will be set false by the profile effect after profile loads
             return;
           }
         }

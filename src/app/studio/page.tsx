@@ -3,7 +3,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components';
-import { WeeklyWinnerDisplay } from '@/components/WeeklyWinnerDisplay';
 import { useAuth } from '@/lib/auth-context';
 
 type Category = 'quran' | 'nasheed' | 'story';
@@ -353,7 +352,6 @@ export default function StudioPage() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-indigo-50 via-white to-sky-50 py-10 px-4">
       <div className="max-w-4xl mx-auto space-y-8">
-        <WeeklyWinnerDisplay />
         <div className="flex justify-between items-center">
           <Button variant="outline" onClick={() => router.push('/games')}>
             ← Back to Games

@@ -16,7 +16,7 @@ export interface Quiz {
   options: string[];
   correctAnswer: number;
   explanation: string;
-  category: 'Quran' | 'Hadith' | 'Salah' | 'Akhlaq' | 'Seerah';
+  category: 'Quran' | 'Hadith' | 'Salah' | 'Akhlaq' | 'Seerah' | 'Hajj' | 'Prophets' | 'Sahabah' | 'Duas' | 'Sunnah';
   difficulty: 'Easy' | 'Medium' | 'Hard';
   points: number;
 }

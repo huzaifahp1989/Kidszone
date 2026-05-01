@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { LogOut, Menu, X, Home, Gamepad2, Trophy, BookOpen, Gift, Heart } from 'lucide-react';
+import { LogOut, Menu, X, Home, Gamepad2, Trophy, BookOpen, Gift, Heart, ClipboardList } from 'lucide-react';
 
 interface NavbarUser {
   name: string;
@@ -16,10 +16,12 @@ interface NavbarProps {
   badges?: number;
   onLogout?: () => void | Promise<void>;
   user?: NavbarUser | null;
+  loading?: boolean;
 }
 
-export const Navbar: React.FC<NavbarProps> = ({ username, points, level, badges, onLogout, user }) => {
+export const Navbar: React.FC<NavbarProps> = ({ username, points, level, badges, onLogout, user, loading }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   const displayUsername = username || user?.name;
   const displayPoints = points !== undefined ? points : user?.points;
@@ -31,6 +33,7 @@ export const Navbar: React.FC<NavbarProps> = ({ username, points, level, badges,
     { href: '/quiz', label: 'Daily Quiz', icon: BookOpen },
     { href: '/games', label: 'Games', icon: Gamepad2 },
     { href: '/pledge', label: 'Pledge', icon: Heart },
+    { href: '/tasks', label: 'Tasks', icon: ClipboardList },
     { href: '/leaderboard', label: 'Leaderboard', icon: Trophy },
     { href: '/rewards', label: 'Rewards', icon: Gift },
   ];
@@ -68,7 +71,12 @@ export const Navbar: React.FC<NavbarProps> = ({ username, points, level, badges,
 
           {/* Desktop User Actions */}
           <div className="hidden md:flex items-center gap-3">
-            {displayUsername ? (
+            {loading ? (
+              <div className="flex items-center gap-2 animate-pulse">
+                <div className="h-9 w-28 rounded-xl bg-slate-200" />
+                <div className="h-9 w-16 rounded-xl bg-slate-200" />
+              </div>
+            ) : displayUsername ? (
               <>
                 <div className="flex items-center gap-2 bg-gradient-to-r from-[#fff5f5] to-[#f0fdfa] px-4 py-2 rounded-xl border border-[#e5c9a3]/30">
                   <div className="text-right">
@@ -88,11 +96,21 @@ export const Navbar: React.FC<NavbarProps> = ({ username, points, level, badges,
                 
                 {onLogout && (
                   <button
+                    type="button"
                     onClick={async (e) => {
                       e.preventDefault();
-                      if (onLogout) await onLogout();
+                      try {
+                        setIsLoggingOut(true);
+                        if (onLogout) {
+                          await onLogout();
+                        }
+                      } catch (error) {
+                        console.error('Logout error:', error);
+                        setIsLoggingOut(false);
+                      }
                     }}
-                    className="p-2 text-[#ff6b6b] hover:bg-[#fff5f5] rounded-xl transition"
+                    disabled={isLoggingOut}
+                    className="p-2 text-[#ff6b6b] hover:bg-[#fff5f5] rounded-xl transition disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <LogOut size={20} />
                   </button>
@@ -157,19 +175,32 @@ export const Navbar: React.FC<NavbarProps> = ({ username, points, level, badges,
                     
                     {onLogout && (
                       <button
+                        type="button"
                         onClick={async (e) => {
                           e.preventDefault();
-                          if (onLogout) {
-                            await onLogout();
-                            setIsMenuOpen(false);
+                          try {
+                            setIsLoggingOut(true);
+                            if (onLogout) {
+                              await onLogout();
+                              setIsMenuOpen(false);
+                            }
+                          } catch (error) {
+                            console.error('Logout error:', error);
+                            setIsLoggingOut(false);
                           }
                         }}
-                        className="w-full flex items-center justify-center gap-2 bg-[#fff5f5] text-[#ff6b6b] font-semibold px-4 py-3 rounded-xl transition"
+                        disabled={isLoggingOut}
+                        className="w-full flex items-center justify-center gap-2 bg-[#fff5f5] text-[#ff6b6b] font-semibold px-4 py-3 rounded-xl transition disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         <LogOut size={18} />
-                        Sign Out
+                        {isLoggingOut ? 'Signing Out...' : 'Sign Out'}
                       </button>
                     )}
+                  </div>
+                ) : loading ? (
+                  <div className="flex flex-col gap-2 px-4 animate-pulse">
+                    <div className="h-10 rounded-xl bg-slate-200" />
+                    <div className="h-10 rounded-xl bg-slate-200" />
                   </div>
                 ) : (
                   <div className="flex flex-col gap-2 px-4">

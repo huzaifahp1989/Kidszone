@@ -3,7 +3,6 @@
 import React, { useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components';
-import { WeeklyWinnerDisplay } from '@/components/WeeklyWinnerDisplay';
 
 type TemplateId = 'makkah' | 'madinah' | 'aqsa';
 
@@ -93,8 +92,6 @@ export default function ActivitiesPage() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-indigo-50 via-white to-sky-50 py-10 px-4">
       <div className="max-w-5xl mx-auto space-y-8">
-        <WeeklyWinnerDisplay />
-
         <div className="flex items-center justify-between gap-4">
           <Button variant="outline" onClick={() => router.push('/')}>
             ← Home

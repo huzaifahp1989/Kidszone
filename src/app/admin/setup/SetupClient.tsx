@@ -43,9 +43,13 @@ create table if not exists daily_progress (
   completed_items jsonb default '[]'::jsonb,
   good_deed text,
   daily_points int default 0,
+  mission_bonus_claimed_at timestamp with time zone,
+  mission_bonus_points int default 0,
   created_at timestamp with time zone default timezone('utc'::text, now()) not null,
   unique(user_id, date)
 );
+alter table daily_progress add column if not exists mission_bonus_claimed_at timestamp with time zone;
+alter table daily_progress add column if not exists mission_bonus_points int default 0;
 alter table daily_progress enable row level security;
 drop policy if exists "Users can view their own daily progress" on daily_progress;
 create policy "Users can view their own daily progress" on daily_progress for select using ( auth.uid() = user_id );

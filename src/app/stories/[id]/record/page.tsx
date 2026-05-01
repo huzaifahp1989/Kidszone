@@ -5,7 +5,6 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { Story } from '@/types/stories';
-import { WeeklyWinnerDisplay } from '@/components/WeeklyWinnerDisplay';
 import { Mic, Square, RotateCcw, ArrowLeft, Send, Play, Pause, AlertCircle } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
 
@@ -158,24 +157,6 @@ export default function StoryRecordingPage({ params }: { params: Promise<{ id: s
 
     setUploading(true);
     try {
-      // 0. Check daily limit (Client-side check)
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      
-      const { count, error: countError } = await supabase
-        .from('recordings')
-        .select('*', { count: 'exact', head: true })
-        .eq('user_id', user.id)
-        .gte('created_at', today.toISOString());
-
-      if (countError) throw countError;
-      
-      if (count !== null && count >= 3) {
-        alert('You have reached your daily limit of 3 recordings. Please come back tomorrow!');
-        setUploading(false);
-        return;
-      }
-
       // 1. Upload to Storage
       const blobType = audioBlob.type || 'audio/webm';
       const extension = blobType.includes('mp4')
@@ -243,7 +224,6 @@ export default function StoryRecordingPage({ params }: { params: Promise<{ id: s
   return (
     <div className="min-h-screen bg-islamic-light py-8 px-4">
       <div className="max-w-4xl mx-auto">
-        <WeeklyWinnerDisplay />
         <Link href="/stories" className="inline-flex items-center text-gray-600 hover:text-islamic-primary mb-6 transition">
           <ArrowLeft size={20} className="mr-2" /> Back to Stories
         </Link>

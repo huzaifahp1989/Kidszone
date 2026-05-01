@@ -4,6 +4,8 @@
  */
 
 import { supabase } from './supabase'
+import { ensureUserProfile } from './user-profile'
+import { isTestModeEmail } from './test-mode'
 
 async function syncUserSnapshot(userId: string, totals: {
   total_points?: number
@@ -47,6 +49,10 @@ export interface AwardPointsResponse {
   daily_limit?: number
 }
 
+type AwardPointsOptions = {
+  countTowardDailyLimit?: boolean
+}
+
 export interface UserPoints {
   user_id: string
   total_points: number
@@ -60,16 +66,17 @@ export interface UserPoints {
 
 /**
  * Award points to the current user
- * Respects 100 points per day limit
  * Increments: total_points, weekly_points, monthly_points, today_points
  *
  * @param points - Number of points to award (must be > 0)
  * @returns Response with success status and updated points
  */
 export async function awardPoints(
-  points: number
+  points: number,
+  options: AwardPointsOptions = {}
 ): Promise<AwardPointsResponse> {
   try {
+    const countTowardDailyLimit = options.countTowardDailyLimit !== false
     // CRITICAL: Verify user is authenticated BEFORE calling RPC
     const {
       data: { user },
@@ -101,6 +108,14 @@ export async function awardPoints(
     
     console.log('[awardPoints] ✅ User authenticated:', user.id);
 
+    if (isTestModeEmail(user.email)) {
+      return {
+        success: true,
+        message: 'Test mode active for this account. Points are not added to leaderboard.',
+        points_awarded: 0,
+      }
+    }
+
     // Validate points
     if (!points || points <= 0) {
       console.error('[awardPoints] Invalid points:', points)
@@ -111,14 +126,16 @@ export async function awardPoints(
       }
     }
 
+    // Ensure profile and points rows exist for new users before awarding.
+    await ensureUserProfile(user.id)
+
     // STRICT LIMIT CHECK: Check daily allowance BEFORE calling RPC
-    // This prevents points from increasing above 100 even if the server RPC is lenient
     const allowance = await checkDailyAllowance()
-    if (allowance.remaining < points) {
+    if (countTowardDailyLimit && allowance.remaining < points) {
       console.warn('[awardPoints] 🛑 Client-side limit check: Daily limit reached', allowance)
       return {
         success: false,
-        message: 'Daily limit of 100 points reached',
+        message: 'No points can be awarded right now. Please try again later.',
         points_awarded: 0,
         today_points: allowance.today_points,
         daily_limit: 100,
@@ -152,12 +169,10 @@ export async function awardPoints(
       );
       
       if (!isGameLimit) {
-        // If RPC denied points, check if we can actually award partial points
-        // This handles the case where the server has strict "all or nothing" logic (old version)
         const currentToday = data.today_points ?? 0
         const currentLimit = data.daily_limit ?? 100
         const remaining = Math.max(0, currentLimit - currentToday)
-        
+
         if (remaining > 0) {
           console.warn('[awardPoints] RPC denied but partial points possible. Forcing fallback to award remaining:', remaining)
           // Fall through to fallback logic
@@ -170,7 +185,7 @@ export async function awardPoints(
       console.warn('[awardPoints] RPC enforced deprecated game limit. Ignoring and using fallback upsert.');
     }
 
-    // Fallback: direct upsert with daily cap enforcement
+    // Fallback: direct upsert with daily cap
     console.warn('[awardPoints] RPC unavailable or failed, using fallback upsert', error?.message)
 
     const todayStr = new Date().toISOString().slice(0, 10)
@@ -197,32 +212,31 @@ export async function awardPoints(
 
     const isNewDay = !existingRow?.last_earned_date || existingRow.last_earned_date !== todayStr
     const todayPoints = isNewDay ? 0 : existingRow?.today_points ?? 0
-    
-    // Calculate partial points if nearing limit
+
     let pointsToAward = points
-    if (todayPoints + pointsToAward > dailyLimit) {
+    if (countTowardDailyLimit && todayPoints + pointsToAward > dailyLimit) {
       pointsToAward = Math.max(0, dailyLimit - todayPoints)
     }
-    
+
     if (pointsToAward <= 0) {
       console.warn('[awardPoints] Fallback: daily limit reached (0 remaining)')
       return {
         success: false,
-        message: 'Daily limit of 100 points reached',
+        message: 'No points can be awarded right now. Please try again later.',
         points_awarded: 0,
         today_points: todayPoints,
         daily_limit: dailyLimit,
       }
     }
 
-    const newDailyTotal = todayPoints + pointsToAward
-    console.log('[awardPoints] Fallback: daily check:', { isNewDay, todayPoints, newDailyTotal, dailyLimit, pointsToAward })
+    const newDailyTotal = countTowardDailyLimit ? todayPoints + pointsToAward : todayPoints
+    console.log('[awardPoints] Fallback: daily check:', { isNewDay, todayPoints, newDailyTotal, dailyLimit, pointsToAward, countTowardDailyLimit })
 
     const total = (existingRow?.total_points ?? 0) + pointsToAward
     const weekly = (existingRow?.weekly_points ?? 0) + pointsToAward
     const monthly = (existingRow?.monthly_points ?? 0) + pointsToAward
     
-    // Calculate badges and level
+    // Calculate badges/level for response purposes.
     const badges = Math.floor(total / 100)
     const level = 1 + Math.floor(badges / 5)
     const badgesEarnedNow = badges - Math.floor((existingRow?.total_points ?? 0) / 100)
@@ -237,10 +251,10 @@ export async function awardPoints(
         weekly_points: weekly,
         monthly_points: monthly,
         today_points: newDailyTotal,
+        last_earned_date: todayStr,
         badges: badges,
         level: level,
-        last_earned_date: todayStr,
-      })
+      }, { onConflict: 'user_id' })
 
     console.log('[awardPoints] Fallback: upsert result:', { upsertErr })
 
@@ -263,7 +277,7 @@ export async function awardPoints(
     console.log('[awardPoints] Fallback: complete, returning success')
     return {
       success: true,
-      message: 'Points awarded successfully',
+      message: countTowardDailyLimit ? 'Points awarded successfully' : 'Bonus points awarded successfully',
       points_awarded: pointsToAward,
       total_points: total,
       today_points: newDailyTotal,
@@ -386,9 +400,10 @@ export async function checkDailyAllowance(): Promise<{
  * @returns Object with success status and message
  */
 export async function awardPointsWithMessage(
-  points: number
+  points: number,
+  options: AwardPointsOptions = {}
 ): Promise<{ success: boolean; message: string; data?: AwardPointsResponse }> {
-  const response = await awardPoints(points)
+  const response = await awardPoints(points, options)
 
   if (!response.success) {
     return {

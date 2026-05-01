@@ -47,6 +47,22 @@ export async function ensureUserProfile(uid: string): Promise<boolean> {
     }
 
     if (existing?.uid) {
+      // Ensure points row exists for first-time point awards.
+      const { error: pointsUpsertErr } = await supabase
+        .from('users_points')
+        .upsert({
+          user_id: uid,
+          total_points: 0,
+          weekly_points: 0,
+          monthly_points: 0,
+          today_points: 0,
+          last_earned_date: new Date().toISOString().slice(0, 10),
+        }, { onConflict: 'user_id', ignoreDuplicates: true });
+
+      if (pointsUpsertErr) {
+        console.warn('[ensureUserProfile] Could not ensure users_points row:', pointsUpsertErr.message);
+      }
+
       if (isPlaceholderName(existing.name) && derivedName && !isPlaceholderName(derivedName)) {
         const { error: updateErr } = await supabase
           .from('users')
@@ -77,6 +93,21 @@ export async function ensureUserProfile(uid: string): Promise<boolean> {
     if (insertErr) {
       console.error('[ensureUserProfile] Insert failed:', insertErr.code, insertErr.message, insertErr.details);
       return false;
+    }
+
+    const { error: pointsUpsertErr } = await supabase
+      .from('users_points')
+      .upsert({
+        user_id: uid,
+        total_points: 0,
+        weekly_points: 0,
+        monthly_points: 0,
+        today_points: 0,
+        last_earned_date: new Date().toISOString().slice(0, 10),
+      }, { onConflict: 'user_id', ignoreDuplicates: true });
+
+    if (pointsUpsertErr) {
+      console.warn('[ensureUserProfile] Could not create users_points row:', pointsUpsertErr.message);
     }
 
     console.log('[ensureUserProfile] Profile created:', uid);

@@ -46,32 +46,41 @@ export async function POST(
         .from('users_points')
         .select('*')
         .eq('user_id', userId)
-        .single();
+        .maybeSingle();
 
-      if (userPoints) {
-        const newTotal = (userPoints.total_points || 0) + points;
-        const newWeekly = (userPoints.weekly_points || 0) + points;
-        const newMonthly = (userPoints.monthly_points || 0) + points;
-        
-        await supabaseAdmin
-          .from('users_points')
-          .update({
-            total_points: newTotal,
-            weekly_points: newWeekly,
-            monthly_points: newMonthly
-          })
-          .eq('user_id', userId);
-          
-        // Also update users table copy if needed
-         await supabaseAdmin
-          .from('users')
-          .update({
-            points: newTotal,
-            weeklypoints: newWeekly,
-            monthlypoints: newMonthly
-          })
-          .eq('uid', userId);
-      }
+      const { data: userRow } = await supabaseAdmin
+        .from('users')
+        .select('points,weeklypoints,monthlypoints')
+        .eq('uid', userId)
+        .maybeSingle();
+
+      const baseTotal = Number(userPoints?.total_points ?? userRow?.points ?? 0);
+      const baseWeekly = Number(userPoints?.weekly_points ?? userRow?.weeklypoints ?? 0);
+      const baseMonthly = Number(userPoints?.monthly_points ?? userRow?.monthlypoints ?? 0);
+
+      const newTotal = baseTotal + Number(points || 0);
+      const newWeekly = baseWeekly + Number(points || 0);
+      const newMonthly = baseMonthly + Number(points || 0);
+
+      await supabaseAdmin
+        .from('users_points')
+        .upsert({
+          user_id: userId,
+          total_points: newTotal,
+          weekly_points: newWeekly,
+          monthly_points: newMonthly,
+          last_earned_date: new Date().toISOString().slice(0, 10),
+        });
+
+      // Also update users table copy if needed
+      await supabaseAdmin
+        .from('users')
+        .update({
+          points: newTotal,
+          weeklypoints: newWeekly,
+          monthlypoints: newMonthly
+        })
+        .eq('uid', userId);
     }
 
     return NextResponse.json({ success: true });

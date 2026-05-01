@@ -14,6 +14,7 @@ export function WinnerPopup() {
   };
 
   if (pathname.startsWith('/admin')) return null;
+  if (pathname === '/signin' || pathname === '/signup' || pathname === '/reset-password') return null;
   if (!showPopup) return null;
 
   return (
@@ -29,6 +30,14 @@ export function WinnerPopup() {
           <p className="font-semibold text-slate-700">
             If you have any issues signing up or logging in please use the WhatsApp number provided so we can send you a new password.
           </p>
+          <a
+            href="https://docs.google.com/forms/d/1BUqre1m5LhF9ImlIgJ-C3s_r-2xV66M1y1WUWXmIfoY/edit"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-4 inline-flex w-full sm:w-auto items-center justify-center rounded-xl bg-blue-600 px-4 py-2 font-bold text-white hover:bg-blue-700"
+          >
+            Open Winner Form
+          </a>
         </div>
 
         <div className="p-5 sm:p-6 bg-emerald-50 rounded-2xl border border-emerald-200 text-center">

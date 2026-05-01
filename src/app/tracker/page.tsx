@@ -4,7 +4,6 @@ import React from 'react';
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import { ArrowLeft } from 'lucide-react';
-import { WeeklyWinnerDisplay } from '@/components/WeeklyWinnerDisplay';
 
 const DailyChecklist = dynamic(() => import('@/components/DailyChecklist'), { ssr: false });
 
@@ -22,10 +21,6 @@ export default function TrackerPage() {
           Back to Dashboard
         </button>
         
-        <div className="mb-8">
-          <WeeklyWinnerDisplay />
-        </div>
-
         <div className="text-center mb-8">
           <h1 className="text-3xl md:text-4xl font-bold text-islamic-dark mb-2 islamic-shadow">
             My Daily Tracker

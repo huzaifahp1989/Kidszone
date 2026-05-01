@@ -3,7 +3,10 @@
 import React, { useMemo } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/lib/auth-context';
-import { BookOpen, Gamepad2, Heart, Trophy, Sparkles, Star, Target, Zap } from 'lucide-react';
+import { BookOpen, Gamepad2, Heart, Trophy, Sparkles, Star, Target, Zap, ClipboardList } from 'lucide-react';
+import DailyMissions from '@/components/DailyMissions';
+import ReferralTokenHub from '@/components/ReferralTokenHub';
+import { APP_STORE_LINKS } from '@/lib/app-store-links';
 
 export default function Home() {
   const { profile } = useAuth();
@@ -54,6 +57,14 @@ export default function Home() {
       title: 'Leaderboard',
       description: 'See top learners',
       color: 'from-[#8b5cf6] to-[#6366f1]',
+      bgColor: 'bg-[#eef2ff]',
+    },
+    {
+      href: '/tasks',
+      icon: ClipboardList,
+      title: 'Tasks',
+      description: 'Invite friends and track referrals',
+      color: 'from-[#6366f1] to-[#4338ca]',
       bgColor: 'bg-[#eef2ff]',
     },
   ];
@@ -142,6 +153,10 @@ export default function Home() {
           ))}
         </section>
 
+        <DailyMissions />
+
+        <ReferralTokenHub />
+
         {/* Progress Section */}
         <section className="bg-white rounded-2xl p-6 shadow-lg border border-[#e5c9a3]/20">
           <div className="flex items-center justify-between mb-4">
@@ -215,6 +230,36 @@ export default function Home() {
                 </Link>
               </div>
               <span className="text-5xl">🎮</span>
+            </div>
+          </div>
+        </section>
+
+        <section className="bg-gradient-to-r from-[#0f172a] to-[#1e293b] rounded-2xl p-6 text-white border border-[#334155]">
+          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div>
+              <p className="text-xs uppercase tracking-[0.2em] text-[#93c5fd]">Mobile App</p>
+              <h3 className="text-2xl font-bold mt-1">Download Kids Zone on iPhone & Android</h3>
+              <p className="text-[#cbd5e1] text-sm mt-2 max-w-2xl">
+                Make learning easier on mobile. Share these app-store links with families so kids can install and start learning in minutes.
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-3">
+              <a
+                href={APP_STORE_LINKS.ios}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center justify-center px-5 py-3 rounded-xl bg-white text-black font-bold hover:opacity-90"
+              >
+                App Store
+              </a>
+              <a
+                href={APP_STORE_LINKS.android}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center justify-center px-5 py-3 rounded-xl bg-[#22c55e] text-[#052e16] font-bold hover:opacity-90"
+              >
+                Google Play
+              </a>
             </div>
           </div>
         </section>

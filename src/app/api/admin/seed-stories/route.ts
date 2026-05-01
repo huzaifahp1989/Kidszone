@@ -59,6 +59,14 @@ export async function POST() {
         content: 'A powerful king wanted people to worship him, but a young boy believed only in Allah. The king tried to harm the boy many times—throwing him from a mountain, drowning him in the sea—but Allah always saved him. Finally, the boy told the king the only way to kill him was to say "In the name of the Lord of the boy." The king did so, and everyone who saw it realized that the boy’s God was the true God. The boy sacrificed himself to guide his people to the truth.',
         age_min: 8,
         age_max: 14
+      },
+      {
+        title: 'Prophet Yunus (Jonah) and the Rescue from Darkness',
+        summary: 'A Quranic story about patience, sincere dua, and how Allah rescues those who turn back to Him.',
+        content:
+          'Prophet Yunus (peace be upon him) called his people to worship Allah, but many refused to listen. Feeling very upset, he left them before Allah had commanded him to go. Soon, he boarded a ship, and a great storm came. To save everyone, the passengers drew lots, and Yunus was chosen. He went into the sea, and Allah caused a huge fish to swallow him. In the deep darkness of the sea and the fish’s belly, Yunus remembered that only Allah can save. He prayed sincerely: “There is no god except You. You are perfect. I was truly among the wrongdoers.” Allah accepted his prayer and rescued him. Yunus was brought safely to shore, weak but alive, and Allah helped him recover. Yunus learned to be patient and to return to Allah with humility.\n\nReference: Qur’an — Al-Anbiya (21:87-88) and As-Saffat (37:139-148).\nLesson: When we make mistakes, we should not despair—turn back to Allah, ask forgiveness, and keep doing good.\n\nComplete the quiz to earn 100 points!',
+        age_min: 7,
+        age_max: 12
       }
     ];
 

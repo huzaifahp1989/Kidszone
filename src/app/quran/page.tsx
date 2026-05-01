@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState } from 'react';
-import { WeeklyWinnerDisplay } from '@/components/WeeklyWinnerDisplay';
 import { quranSurahs, lastTenSurahs } from '@/data/quran';
 import { Button, Modal } from '@/components';
 import { ChevronDown, ChevronUp } from 'lucide-react';
@@ -29,11 +28,6 @@ export default function QuranPage() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-islamic-light to-white py-8 px-4">
       <div className="max-w-4xl mx-auto">
-        {/* Competition Banner */}
-        <div className="mb-8">
-          <WeeklyWinnerDisplay />
-        </div>
-
         {/* Page Title */}
         <div className="text-center mb-8">
           <h1 className="text-4xl font-bold text-islamic-dark mb-2 islamic-shadow">

@@ -4,7 +4,8 @@ import React, { useEffect, useState, useRef } from 'react';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
 import { Story, Recording } from '@/types/stories';
-import { ArrowLeft, Play, Pause, Square, Mic, Volume2, User } from 'lucide-react';
+import { storyQuizzesByTitle, StoryQuizOptionKey } from '@/data/story-quizzes';
+import { ArrowLeft, Play, Pause, Square, Mic, User } from 'lucide-react';
 import { Button } from '@/components';
 
 export default function StoryDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -14,8 +15,12 @@ export default function StoryDetailPage({ params }: { params: Promise<{ id: stri
   const [loading, setLoading] = useState(true);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
+  const [selectedAnswers, setSelectedAnswers] = useState<Record<number, StoryQuizOptionKey | null>>({});
+  const [quizSubmitted, setQuizSubmitted] = useState(false);
   const synthRef = useRef<SpeechSynthesis | null>(null);
   const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
+
+  const storyQuiz = story ? storyQuizzesByTitle[story.title] : undefined;
 
   useEffect(() => {
     // Unwrap params safely (handles both Promise and object)
@@ -39,6 +44,11 @@ export default function StoryDetailPage({ params }: { params: Promise<{ id: stri
       }
     };
   }, [id]);
+
+  useEffect(() => {
+    setSelectedAnswers({});
+    setQuizSubmitted(false);
+  }, [story?.title]);
 
   const fetchStory = async (storyId: string) => {
     try {
@@ -122,6 +132,12 @@ export default function StoryDetailPage({ params }: { params: Promise<{ id: stri
     }
   };
 
+  const quizScore =
+    storyQuiz && quizSubmitted
+      ? storyQuiz.quiz.reduce((acc, q, idx) => acc + (selectedAnswers[idx] === q.correct_answer ? 1 : 0), 0) *
+        storyQuiz.points_per_question
+      : 0;
+
   if (loading) {
     return (
       <div className="min-h-screen bg-islamic-light flex justify-center items-center">
@@ -157,11 +173,13 @@ export default function StoryDetailPage({ params }: { params: Promise<{ id: stri
             <h1 className="text-3xl md:text-4xl font-bold mb-4">{story.title}</h1>
             <div className="flex flex-wrap gap-4 items-center">
               <span className="bg-white/20 px-3 py-1 rounded-full text-sm backdrop-blur-sm">
-                Age: {story.age_min}-{story.age_max} years
-              </span>
-              <span className="bg-white/20 px-3 py-1 rounded-full text-sm backdrop-blur-sm">
                 Authentic Story
               </span>
+              {storyQuiz && (
+                <span className="bg-white/20 px-3 py-1 rounded-full text-sm backdrop-blur-sm">
+                  Quiz Included
+                </span>
+              )}
             </div>
           </div>
 
@@ -214,6 +232,98 @@ export default function StoryDetailPage({ params }: { params: Promise<{ id: stri
               </div>
             </div>
           </div>
+
+          {storyQuiz && (
+            <div className="bg-white p-8 md:p-12 border-t border-slate-200">
+              <div className="flex flex-col gap-3 mb-6">
+                <h2 className="text-2xl md:text-3xl font-bold text-slate-800">Story Quiz</h2>
+                <div className="text-slate-600">
+                  <div className="font-semibold text-indigo-700">{storyQuiz.engagement_message}</div>
+                  <div className="text-sm">
+                    {storyQuiz.points_per_question} points per question • Total {storyQuiz.total_points} points • Daily limit:{' '}
+                    {storyQuiz.daily_limit} stories
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-6">
+                {storyQuiz.quiz.map((q, idx) => {
+                  const selected = selectedAnswers[idx] ?? null;
+                  const correct = q.correct_answer;
+                  const optionKeys: StoryQuizOptionKey[] = ['A', 'B', 'C', 'D'];
+
+                  return (
+                    <div key={idx} className="bg-slate-50 rounded-2xl p-6 border border-slate-200">
+                      <div className="font-bold text-slate-800 mb-4">
+                        {idx + 1}. {q.question}
+                      </div>
+                      <div className="grid gap-3">
+                        {optionKeys.map((k) => {
+                          const isSelected = selected === k;
+                          const isCorrect = correct === k;
+                          const showCorrectness = quizSubmitted;
+                          const base =
+                            'w-full text-left px-4 py-3 rounded-xl border transition-all active:scale-[0.99]';
+
+                          const classes = showCorrectness
+                            ? isCorrect
+                              ? `${base} bg-emerald-50 border-emerald-300 text-emerald-900`
+                              : isSelected
+                                ? `${base} bg-rose-50 border-rose-300 text-rose-900`
+                                : `${base} bg-white border-slate-200 text-slate-700`
+                            : isSelected
+                              ? `${base} bg-indigo-50 border-indigo-300 text-indigo-900`
+                              : `${base} bg-white border-slate-200 text-slate-700 hover:bg-slate-50`;
+
+                          return (
+                            <button
+                              key={k}
+                              type="button"
+                              className={classes}
+                              onClick={() => {
+                                if (quizSubmitted) return;
+                                setSelectedAnswers((prev) => ({ ...prev, [idx]: k }));
+                              }}
+                            >
+                              <span className="font-bold mr-2">{k}.</span> {q.options[k]}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              <div className="mt-8 flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
+                <div className="text-slate-700 font-semibold">
+                  {quizSubmitted ? `Score: ${quizScore} / ${storyQuiz.total_points}` : `Answer all 5 questions to earn ${storyQuiz.total_points} points.`}
+                </div>
+                <div className="flex gap-2">
+                  {!quizSubmitted ? (
+                    <Button
+                      className="bg-indigo-600 hover:bg-indigo-700 text-white"
+                      onClick={() => setQuizSubmitted(true)}
+                      disabled={Object.keys(selectedAnswers).length < storyQuiz.quiz.length}
+                    >
+                      Submit Quiz
+                    </Button>
+                  ) : (
+                    <Button
+                      variant="secondary"
+                      className="bg-slate-100 text-slate-700 border-slate-200 hover:bg-slate-200"
+                      onClick={() => {
+                        setSelectedAnswers({});
+                        setQuizSubmitted(false);
+                      }}
+                    >
+                      Try Again
+                    </Button>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
           
           {/* Community Recordings Section */}
           {recordings.length > 0 && (

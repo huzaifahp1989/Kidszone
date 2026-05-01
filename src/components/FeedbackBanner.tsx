@@ -64,20 +64,14 @@ export function FeedbackBanner() {
 
   return (
     <>
-      {/* Notice Banner */}
-      <div className="bg-indigo-600 border-b border-indigo-700 py-3 px-4 shadow-md">
-        <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-center gap-2 text-center md:text-left">
-          <div className="hidden md:block w-1 h-1 bg-indigo-400 rounded-full mx-2"></div>
-          <p className="text-indigo-100 text-sm">
-            Check here or our <a href="https://whatsapp.com/channel/0029Va92vStJUM2e613x5B3E" target="_blank" rel="noopener noreferrer" className="text-white underline font-bold hover:text-yellow-300 transition">WhatsApp channel</a> every Friday to see the winners!
-          </p>
-          <button
-            onClick={() => setShowFeedback(!showFeedback)}
-            className="text-xs text-indigo-200 hover:text-white underline ml-2 md:ml-4"
-          >
-            (Feedback)
-          </button>
-        </div>
+      {/* Feedback trigger */}
+      <div className="text-center py-1 bg-indigo-700 border-b border-indigo-800">
+        <button
+          onClick={() => setShowFeedback(!showFeedback)}
+          className="text-xs text-indigo-200 hover:text-white underline"
+        >
+          Feedback
+        </button>
       </div>
 
       {/* Feedback Box */}

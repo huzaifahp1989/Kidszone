@@ -11,6 +11,9 @@ export default function ProfilePage() {
   const { user, profile, loading, refreshProfile } = useAuth();
   const [name, setName] = useState('');
   const [age, setAge] = useState<number | ''>('');
+  const [parentEmail, setParentEmail] = useState('');
+  const [reminderOptIn, setReminderOptIn] = useState(false);
+  const [reminderFrequency, setReminderFrequency] = useState<'daily' | '3x_week' | 'weekly'>('weekly');
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -37,8 +40,11 @@ export default function ProfilePage() {
     if (profile) {
       setName(profile.name ?? '');
       setAge(typeof profile.age === 'number' ? profile.age : '');
+      setParentEmail((profile as any).parentEmail ?? profile.email ?? user?.email ?? '');
+      setReminderOptIn(Boolean((profile as any).reminderOptIn));
+      setReminderFrequency((((profile as any).reminderFrequency as 'daily' | '3x_week' | 'weekly') ?? 'weekly'));
     }
-  }, [profile]);
+  }, [profile, user?.email]);
 
   const canEdit = useMemo(() => !!user?.id, [user?.id]);
 
@@ -80,6 +86,11 @@ export default function ProfilePage() {
       setError('Please enter your age.');
       return;
     }
+    const cleanedParentEmail = parentEmail.trim().toLowerCase();
+    if (reminderOptIn && !cleanedParentEmail) {
+      setError('Please provide a parent email to enable reminders.');
+      return;
+    }
     setSaving(true);
     try {
       console.log('Updating profile:', { name, age, uid: user.id });
@@ -93,6 +104,10 @@ export default function ProfilePage() {
         .update({
           name: trimmedName,
           age: Number(age),
+          parent_email: cleanedParentEmail || null,
+          reminder_opt_in: reminderOptIn,
+          reminder_frequency: reminderFrequency,
+          reminder_unsubscribed_at: reminderOptIn ? null : new Date().toISOString(),
         })
         .eq('uid', user.id);
       
@@ -153,7 +168,7 @@ export default function ProfilePage() {
             </div>
           </div>
         )}
-user?.email ?? 
+
         <form onSubmit={onSave} className="space-y-4">
           <div>
             <label className="block text-sm font-medium mb-1">Email</label>
@@ -187,6 +202,47 @@ user?.email ??
               className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-islamic-blue"
               disabled={!canEdit}
             />
+          </div>
+
+          <div className="rounded-lg border border-gray-200 p-4 bg-teal-50/40">
+            <h2 className="text-sm font-semibold text-gray-900 mb-3">Parent Reminder Settings</h2>
+            <div className="space-y-3">
+              <div>
+                <label className="block text-sm font-medium mb-1">Parent email for reminders</label>
+                <input
+                  type="email"
+                  value={parentEmail}
+                  onChange={(e) => setParentEmail(e.target.value)}
+                  className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-islamic-blue"
+                  disabled={!canEdit}
+                  placeholder="parent@example.com"
+                />
+              </div>
+              <div className="flex items-center gap-2">
+                <input
+                  id="reminder-opt-in"
+                  type="checkbox"
+                  checked={reminderOptIn}
+                  onChange={(e) => setReminderOptIn(e.target.checked)}
+                  disabled={!canEdit}
+                  className="h-4 w-4"
+                />
+                <label htmlFor="reminder-opt-in" className="text-sm text-gray-800">Send return reminders to parent</label>
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Reminder frequency</label>
+                <select
+                  value={reminderFrequency}
+                  onChange={(e) => setReminderFrequency(e.target.value as 'daily' | '3x_week' | 'weekly')}
+                  disabled={!canEdit || !reminderOptIn}
+                  className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-islamic-blue"
+                >
+                  <option value="weekly">Weekly</option>
+                  <option value="3x_week">3 times per week</option>
+                  <option value="daily">Daily</option>
+                </select>
+              </div>
+            </div>
           </div>
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-2">

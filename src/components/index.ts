@@ -13,3 +13,4 @@ export * from './WeeklyWinnerDisplay';
 export * from './RamadanPopup';
 export * from './WinnerPopup';
 export * from './AnnouncementBar';
+export * from './ScrollingTicker';

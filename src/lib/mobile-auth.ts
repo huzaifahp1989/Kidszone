@@ -20,6 +20,17 @@ export class MobileAuthHelper {
     return MobileAuthHelper.instance;
   }
 
+  private async waitForSession(attempts = 10, delayMs = 200) {
+    for (let i = 0; i < attempts; i++) {
+      const { data: sessionData } = await supabase.auth.getSession();
+      if (sessionData.session?.user?.id) {
+        return sessionData.session;
+      }
+      await new Promise((r) => setTimeout(r, delayMs));
+    }
+    return null;
+  }
+
   isMobileBrowser(): boolean {
     if (typeof window === 'undefined') return false;
     
@@ -145,9 +156,9 @@ export class MobileAuthHelper {
 
       console.log('✅ Sign in successful, user ID:', data.user.id);
 
-      // Verify session persistence
-      const { data: sessionData } = await supabase.auth.getSession();
-      if (!sessionData.session) {
+      // Verify session persistence (with short retries for slower mobile/WebView storage)
+      const session = await this.waitForSession(10, 200);
+      if (!session) {
         console.warn('⚠️ Session not persisted after sign in');
         return {
           success: false,
@@ -256,9 +267,9 @@ export class MobileAuthHelper {
       case 'too_many_requests':
         return {
           code: 'RATE_LIMITED',
-          message: 'Too many login attempts. Please wait a few minutes before trying again.',
+          message: 'Too many login attempts. Please wait a few minutes before trying again. You can use social sign-in or reset password while waiting.',
           isMobileSpecific: false,
-          suggestedActions: ['Wait 5-10 minutes', 'Try again later']
+          suggestedActions: ['Wait 5-10 minutes', 'Use Google/Apple sign-in', 'Reset password if needed']
         };
 
       case 'user_not_found':

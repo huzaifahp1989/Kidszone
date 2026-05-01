@@ -19,6 +19,43 @@ const isPlaceholderName = (name: any) => {
   return /^learner\b/i.test(trimmed);
 };
 
+const firstString = (...values: any[]) => {
+  for (const value of values) {
+    if (typeof value === 'string' && value.trim()) return value.trim();
+  }
+  return '';
+};
+
+const syncUsersPointsSnapshot = async (
+  uid: string,
+  points: number,
+  weeklypoints: number,
+  monthlypoints: number
+) => {
+  const safeTotal = Number.isFinite(points) ? Math.max(0, Number(points || 0)) : 0;
+  const safeWeekly = Number.isFinite(weeklypoints) ? Math.max(0, Number(weeklypoints || 0)) : 0;
+  const safeMonthly = Number.isFinite(monthlypoints) ? Math.max(0, Number(monthlypoints || 0)) : 0;
+  const badges = Math.floor(safeTotal / 100);
+  const level = 1 + Math.floor(badges / 5);
+
+  const { error } = await supabaseAdmin
+    .from('users_points')
+    .upsert({
+      user_id: uid,
+      total_points: safeTotal,
+      weekly_points: safeWeekly,
+      monthly_points: safeMonthly,
+      today_points: 0,
+      badges,
+      level,
+      last_earned_date: new Date().toISOString().slice(0, 10),
+    }, { onConflict: 'user_id' });
+
+  if (error) {
+    console.warn('[admin/users] Failed syncing users_points snapshot:', error.message);
+  }
+};
+
 export async function GET(request: Request) {
   if (!checkAdminAuth(request)) {
     console.log('Debug: Unauthorized request');
@@ -74,8 +111,98 @@ export async function GET(request: Request) {
       }
     }
 
+    const userIds = list.map((u: any) => u?.uid).filter(Boolean);
+    const quizAttemptsByUser = new Map<string, number>();
+
+    if (userIds.length > 0) {
+      const { data: attemptRows, error: attemptsError } = await supabaseAdmin
+        .from('quiz_attempts')
+        .select('user_id')
+        .in('user_id', userIds);
+
+      if (attemptsError) {
+        console.warn('[admin/users] Failed fetching quiz attempts:', attemptsError.message);
+      } else {
+        for (const row of attemptRows || []) {
+          const uid = String((row as any).user_id || '');
+          if (!uid) continue;
+          quizAttemptsByUser.set(uid, (quizAttemptsByUser.get(uid) || 0) + 1);
+        }
+      }
+    }
+
+    let metadataByUserId = new Map<string, any>();
+    try {
+      const { data: authUsers, error: authUsersError } = await supabaseAdmin.auth.admin.listUsers({
+        page: 1,
+        perPage: 1000,
+      });
+      if (authUsersError) {
+        console.warn('[admin/users] Failed fetching auth metadata:', authUsersError.message);
+      } else {
+        metadataByUserId = new Map(
+          (authUsers?.users || []).map((authUser: any) => [authUser.id, authUser.user_metadata || {}])
+        );
+      }
+    } catch (authListError: any) {
+      console.warn('[admin/users] Auth metadata fetch threw:', authListError?.message || authListError);
+    }
+
+    const enrichedUsers = list.map((user: any) => {
+      const meta = metadataByUserId.get(user.uid) || {};
+
+      const normalizedMadrasah = firstString(
+        user.madrasah_name,
+        user.madrasahname,
+        user.madrasahName,
+        meta.madrasahName,
+        meta.madrasah_name,
+        meta.madrasahname
+      );
+
+      const normalizedContact = firstString(
+        user.contact_number,
+        user.contactnumber,
+        user.contactNumber,
+        meta.contactNumber,
+        meta.contact_number,
+        meta.contactnumber
+      );
+
+      const normalizedParentEmail = firstString(
+        user.parent_email,
+        user.parentEmail,
+        meta.parentEmail,
+        meta.parent_email
+      );
+
+      const normalizedAbout = firstString(
+        user.winner_note,
+        user.winner_notes,
+        user.about_me,
+        user.about_text,
+        meta.winnerAbout,
+        meta.winner_about
+      );
+
+      const winnerFormSubmittedAt = firstString(
+        meta.winnerFormSubmittedAt,
+        meta.winner_form_submitted_at
+      );
+
+      return {
+        ...user,
+        quizAttempts: quizAttemptsByUser.get(user.uid) || 0,
+        madrasahNameNormalized: normalizedMadrasah,
+        contactNumberNormalized: normalizedContact,
+        parentEmailNormalized: normalizedParentEmail,
+        winnerAboutNormalized: normalizedAbout,
+        winnerFormSubmittedAtNormalized: winnerFormSubmittedAt,
+      };
+    });
+
     console.log(`Debug: Successfully fetched ${users?.length || 0} users`);
-    return NextResponse.json({ users: list });
+    return NextResponse.json({ users: enrichedUsers });
   } catch (error: any) {
     console.error('Error fetching users:', error);
     return NextResponse.json({ error: error.message }, { status: 500 });
@@ -133,7 +260,7 @@ export async function POST(request: Request) {
           points: points || 0,
           weeklypoints: weeklypoints || 0,
           monthlypoints: monthlypoints || 0,
-          role: 'user' // Default role
+          role: 'kid' // Use kid role for standard learner accounts
         })
         .select()
         .single();
@@ -146,13 +273,17 @@ export async function POST(request: Request) {
       profile = newProfile;
     } else {
       // Update points if provided and profile already existed (via trigger)
-      if (points || weeklypoints || monthlypoints) {
+      if (points !== undefined || weeklypoints !== undefined || monthlypoints !== undefined) {
+        const resolvedPoints = points ?? existingProfile.points ?? 0;
+        const resolvedWeekly = weeklypoints ?? existingProfile.weeklypoints ?? 0;
+        const resolvedMonthly = monthlypoints ?? existingProfile.monthlypoints ?? 0;
+
         const { data: updatedProfile, error: updateError } = await supabaseAdmin
           .from('users')
           .update({
-            points: points || existingProfile.points,
-            weeklypoints: weeklypoints || existingProfile.weeklypoints,
-            monthlypoints: monthlypoints || existingProfile.monthlypoints
+            points: resolvedPoints,
+            weeklypoints: resolvedWeekly,
+            monthlypoints: resolvedMonthly
           })
           .eq('uid', userId)
           .select()
@@ -161,6 +292,14 @@ export async function POST(request: Request) {
         if (!updateError) profile = updatedProfile;
       }
     }
+
+    // Always ensure leaderboard source row exists for admin-created users.
+    await syncUsersPointsSnapshot(
+      userId,
+      Number(profile?.points || 0),
+      Number(profile?.weeklypoints || 0),
+      Number(profile?.monthlypoints || 0)
+    );
 
     return NextResponse.json({ user: profile, auth: { email: userEmail, password: userPassword } });
   } catch (error: any) {
@@ -188,6 +327,42 @@ export async function PUT(request: Request) {
     if (weeklypoints !== undefined) updates.weeklypoints = weeklypoints;
     if (monthlypoints !== undefined) updates.monthlypoints = monthlypoints;
 
+    // Ensure a users row exists for admin edits and point synchronization.
+    let existingUser = null as any;
+    const { data: existingUserData } = await supabaseAdmin
+      .from('users')
+      .select('*')
+      .eq('uid', uid)
+      .maybeSingle();
+    existingUser = existingUserData;
+
+    if (!existingUser) {
+      const { data: authRes } = await supabaseAdmin.auth.admin.getUserById(uid);
+      const fallbackName =
+        ((authRes?.user?.user_metadata as any)?.name as string) ||
+        (authRes?.user?.email ? authRes.user.email.split('@')[0] : `Learner-${uid.slice(0, 8)}`);
+      const fallbackEmail = authRes?.user?.email || `user-${uid.slice(0, 8)}@local`;
+
+      const { data: createdUser, error: createUserErr } = await supabaseAdmin
+        .from('users')
+        .insert({
+          uid,
+          email: fallbackEmail,
+          name: fallbackName,
+          role: 'kid',
+          points: 0,
+          weeklypoints: 0,
+          monthlypoints: 0,
+        })
+        .select('*')
+        .single();
+
+      if (createUserErr) {
+        throw createUserErr;
+      }
+      existingUser = createdUser;
+    }
+
     // Update profile fields if provided
     let updatedUser = null as any;
     if (Object.keys(updates).length > 0) {
@@ -208,6 +383,14 @@ export async function PUT(request: Request) {
         .maybeSingle();
       updatedUser = data;
     }
+
+    // Always ensure leaderboard source row is present and synchronized.
+    await syncUsersPointsSnapshot(
+      uid,
+      Number(updatedUser?.points || 0),
+      Number(updatedUser?.weeklypoints || 0),
+      Number(updatedUser?.monthlypoints || 0)
+    );
 
     // Update password if provided
     if (password && typeof password === 'string' && password.length >= 6) {

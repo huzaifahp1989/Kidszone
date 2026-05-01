@@ -8,6 +8,7 @@ import { Trophy, RefreshCw, Crown, Medal, Award, Sparkles, Star } from 'lucide-r
 type Entry = {
   uid: string;
   name: string;
+  madrasahName?: string;
   level: number;
   points: number;
   weeklyPoints?: number;
@@ -75,6 +76,7 @@ export default function LeaderboardClient() {
     return entries.map((e, idx) => ({
       rank: idx + 1,
       username: e.name,
+      madrasahName: e.madrasahName || '',
       level: e.level,
       points: activeTab === 'weekly' ? (e.weeklyPoints ?? 0) : (e.monthlyPoints ?? 0),
       uid: e.uid,
@@ -107,6 +109,15 @@ export default function LeaderboardClient() {
           </div>
           <h1 className="text-4xl md:text-5xl font-bold text-[#6a422d]">Leaderboard</h1>
           <p className="text-[#a1633a] text-lg">See who is leading this week and month</p>
+        </div>
+
+        <div className="bg-gradient-to-r from-[#ecfeff] to-[#f0fdfa] border border-[#14b8a6]/30 rounded-2xl p-5 text-center">
+          <p className="text-[#0f766e] font-bold text-base md:text-lg">
+            New winner will be announced on 1 May 2026.
+          </p>
+          <p className="text-[#115e59] mt-2 text-sm md:text-base">
+            Please continue taking part every day to win prizes.
+          </p>
         </div>
 
         {/* Last Winner */}
@@ -151,6 +162,17 @@ export default function LeaderboardClient() {
           </button>
         </div>
 
+        <div className="text-center">
+          <a
+            href="https://chat.whatsapp.com/E7bJY8Hz5lEEDscBXKtsSM?mode=gi_t"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center justify-center rounded-xl border border-[#14b8a6]/30 bg-[#f0fdfa] px-4 py-3 text-sm font-bold text-[#0d9488] hover:bg-[#ccfbf1] transition"
+          >
+            Join kids zone group on whatsapp to stay updated
+          </a>
+        </div>
+
         {/* Loading */}
         {loading && (
           <div className="bg-white rounded-2xl shadow-lg border border-[#e5c9a3]/30 p-8">
@@ -180,6 +202,7 @@ export default function LeaderboardClient() {
               >
                 <div className="flex justify-center mb-3">{getRankIcon(entry.rank)}</div>
                 <p className="text-lg font-bold truncate">{entry.username}</p>
+                <p className="text-xs opacity-90 truncate">{entry.madrasahName || ''}</p>
                 <p className="text-2xl font-bold">⭐ {entry.points}</p>
                 <p className="text-sm opacity-80">🏆 {entry.badges} badges</p>
               </div>
@@ -209,6 +232,7 @@ export default function LeaderboardClient() {
                   </div>
                   <div className="flex-1">
                     <p className="font-bold text-[#6a422d]">{entry.username}</p>
+                    <p className="text-xs text-[#a1633a]">Madrasah: {entry.madrasahName || ''}</p>
                     <p className="text-sm text-[#a1633a]">Level {entry.level}</p>
                   </div>
                   <div className="text-right">

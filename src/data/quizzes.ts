@@ -341,6 +341,58 @@ export const quizzes = [
     points: 10
   },
 
+  // SALAH
+  {
+    id: 'salah-1',
+    question: 'How many obligatory prayers do Muslims pray each day?',
+    options: ['3', '4', '5', '6'],
+    correctAnswer: 2,
+    explanation: 'Allah made five daily prayers obligatory for Muslims every day and night.',
+    category: 'Salah',
+    difficulty: 'Easy',
+    points: 10
+  },
+  {
+    id: 'salah-2',
+    question: 'Which direction do Muslims face when praying Salah?',
+    options: ['Toward Madinah', 'Toward Jerusalem', 'Toward the Ka bah in Makkah', 'Toward the rising sun'],
+    correctAnswer: 2,
+    explanation: 'Muslims face the Ka bah in Makkah, which is called the Qiblah.',
+    category: 'Salah',
+    difficulty: 'Easy',
+    points: 10
+  },
+  {
+    id: 'salah-3',
+    question: 'What do we say to begin the prayer?',
+    options: ['SubhanAllah', 'Allahu Akbar', 'Astaghfirullah', 'Bismillah only'],
+    correctAnswer: 1,
+    explanation: 'The prayer begins with Takbirat al-Ihram by saying Allahu Akbar.',
+    category: 'Salah',
+    difficulty: 'Easy',
+    points: 10
+  },
+  {
+    id: 'salah-4',
+    question: 'How many fard rak ahs are in Fajr prayer?',
+    options: ['2', '3', '4', '5'],
+    correctAnswer: 0,
+    explanation: 'Fajr has 2 obligatory rak ahs.',
+    category: 'Salah',
+    difficulty: 'Easy',
+    points: 10
+  },
+  {
+    id: 'salah-5',
+    question: 'Which prayer comes just after sunset?',
+    options: ['Fajr', 'Dhuhr', 'Asr', 'Maghrib'],
+    correctAnswer: 3,
+    explanation: 'Maghrib prayer begins just after the sun sets.',
+    category: 'Salah',
+    difficulty: 'Easy',
+    points: 10
+  },
+
   // SUNNAH
   {
     id: 'sunnah-1',
@@ -1015,6 +1067,422 @@ export const quizzes = [
     correctAnswer: 1,
     explanation: 'The Prophet ﷺ said: "The best of you are those who learn the Quran and teach it."',
     category: 'Sunnah',
+    difficulty: 'Medium',
+    points: 10
+  },
+
+  // DUAS
+  {
+    id: 'duas-1',
+    question: 'What should we say before eating food?',
+    options: ['SubhanAllah', 'Bismillah', 'Astaghfirullah', 'Allahu Akbar'],
+    correctAnswer: 1,
+    explanation: 'It is Sunnah to begin with Bismillah before eating.',
+    category: 'Duas',
+    difficulty: 'Easy',
+    points: 10
+  },
+  {
+    id: 'duas-2',
+    question: 'Which dua is recited when entering the bathroom?',
+    options: ['Allahumma inni as aluka ilman nafi an', 'Bismillahi tawakkaltu ala Allah', 'Allahumma inni a udhu bika minal khubuthi wal khabaith', 'Rabbi zidni ilma'],
+    correctAnswer: 2,
+    explanation: 'This dua asks Allah for protection from impurity and evil.',
+    category: 'Duas',
+    difficulty: 'Medium',
+    points: 10
+  },
+  {
+    id: 'duas-3',
+    question: 'What do we say after finishing food?',
+    options: ['Alhamdulillah', 'La ilaha illallah', 'Subhanallah wa bihamdihi', 'Hasbunallahu wa ni mal wakeel'],
+    correctAnswer: 0,
+    explanation: 'Saying Alhamdulillah after food is a beautiful act of gratitude.',
+    category: 'Duas',
+    difficulty: 'Easy',
+    points: 10
+  },
+  {
+    id: 'duas-4',
+    question: 'Which dua is for seeking beneficial knowledge?',
+    options: ['Rabbi zidni ilma', 'Rabbana atina fid-dunya hasanah', 'Allahumma barik lana', 'Allahumma inni zalamtu nafsi'],
+    correctAnswer: 0,
+    explanation: 'Rabbi zidni ilma means My Lord, increase me in knowledge.',
+    category: 'Duas',
+    difficulty: 'Medium',
+    points: 10
+  },
+  {
+    id: 'duas-5',
+    question: 'What do Muslims say when beginning a journey?',
+    options: ['Inna lillahi wa inna ilayhi raji un', 'Bismillah, tawakkaltu ala Allah', 'A udhu billahi minash shaytanir rajim', 'Allahumma inni as aluka al-jannah'],
+    correctAnswer: 1,
+    explanation: 'This dua means: In the name of Allah, I place my trust in Allah.',
+    category: 'Duas',
+    difficulty: 'Medium',
+    points: 10
+  },
+
+  // SAHABAH
+  {
+    id: 'sahabah-1',
+    question: 'Who was known as As-Siddiq among the companions?',
+    options: ['Umar ibn Al-Khattab', 'Ali ibn Abi Talib', 'Abu Bakr', 'Uthman ibn Affan'],
+    correctAnswer: 2,
+    explanation: 'Abu Bakr was called As-Siddiq because of his truthfulness and firm belief.',
+    category: 'Sahabah',
+    difficulty: 'Easy',
+    points: 10
+  },
+  {
+    id: 'sahabah-2',
+    question: 'Which companion was known for justice and called Al-Faruq?',
+    options: ['Umar ibn Al-Khattab', 'Bilal ibn Rabah', 'Sa d ibn Abi Waqqas', 'Abdullah ibn Umar'],
+    correctAnswer: 0,
+    explanation: 'Umar RA was called Al-Faruq because he distinguished truth from falsehood.',
+    category: 'Sahabah',
+    difficulty: 'Easy',
+    points: 10
+  },
+  {
+    id: 'sahabah-3',
+    question: 'Who was the first muadhin (caller to prayer) in Islam?',
+    options: ['Bilal ibn Rabah', 'Abu Hurairah', 'Khalid ibn Al-Walid', 'Zayd ibn Thabit'],
+    correctAnswer: 0,
+    explanation: 'Bilal RA gave the adhan in the time of the Prophet ﷺ.',
+    category: 'Sahabah',
+    difficulty: 'Easy',
+    points: 10
+  },
+  {
+    id: 'sahabah-4',
+    question: 'Which companion compiled and standardized copies of the Quran during his caliphate?',
+    options: ['Ali ibn Abi Talib', 'Uthman ibn Affan', 'Abu Bakr', 'Talhah ibn Ubaydullah'],
+    correctAnswer: 1,
+    explanation: 'Uthman RA standardized the mushaf copies to preserve correct recitation.',
+    category: 'Sahabah',
+    difficulty: 'Medium',
+    points: 10
+  },
+  {
+    id: 'sahabah-5',
+    question: 'Who was known as the Mother of the Believers and narrated many hadith?',
+    options: ['Khadijah bint Khuwaylid', 'Aishah bint Abi Bakr', 'Fatimah bint Muhammad', 'Asma bint Abi Bakr'],
+    correctAnswer: 1,
+    explanation: 'Aishah RA narrated a large number of hadith and taught many companions.',
+    category: 'Sahabah',
+    difficulty: 'Medium',
+    points: 10
+  },
+
+  // AUTHENTIC TOPIC EXPANSION - QURAN
+  {
+    id: 'quran-auth-1',
+    question: 'How many surahs are in the Quran?',
+    options: ['110', '112', '114', '116'],
+    correctAnswer: 2,
+    explanation: 'The Quran contains 114 surahs.',
+    category: 'Quran',
+    difficulty: 'Easy',
+    points: 10
+  },
+  {
+    id: 'quran-auth-2',
+    question: 'Which surah is the longest in the Quran?',
+    options: ['Surah Al-Fatiha', 'Surah Al-Baqarah', 'Surah Ya-Sin', 'Surah Al-Ikhlas'],
+    correctAnswer: 1,
+    explanation: 'Surah Al-Baqarah is the longest surah in the Quran.',
+    category: 'Quran',
+    difficulty: 'Easy',
+    points: 10
+  },
+  {
+    id: 'quran-auth-3',
+    question: 'What were the first revealed verses from?',
+    options: ['Surah Al-Alaq', 'Surah Al-Mulk', 'Surah An-Nas', 'Surah Al-Kawthar'],
+    correctAnswer: 0,
+    explanation: 'The first revealed verses were from Surah Al-Alaq (96:1-5).',
+    category: 'Quran',
+    difficulty: 'Medium',
+    points: 10
+  },
+  {
+    id: 'quran-auth-4',
+    question: 'In which month was the Quran first revealed?',
+    options: ['Muharram', 'Rajab', 'Ramadan', 'Shawwal'],
+    correctAnswer: 2,
+    explanation: 'Allah mentions the Quran was revealed in Ramadan (Surah Al-Baqarah 2:185).',
+    category: 'Quran',
+    difficulty: 'Easy',
+    points: 10
+  },
+  {
+    id: 'quran-auth-5',
+    question: 'Which night is described as better than a thousand months?',
+    options: ['Night of Isra', 'Laylat al-Qadr', 'Night of Badr', 'Night of Eid'],
+    correctAnswer: 1,
+    explanation: 'Laylat al-Qadr is better than a thousand months (Surah Al-Qadr 97:3).',
+    category: 'Quran',
+    difficulty: 'Easy',
+    points: 10
+  },
+
+  // AUTHENTIC TOPIC EXPANSION - HADITH
+  {
+    id: 'hadith-auth-1',
+    question: 'Complete this hadith: "Actions are judged by..."',
+    options: ['Appearances', 'Intentions', 'Speed', 'Numbers'],
+    correctAnswer: 1,
+    explanation: 'The Prophet ﷺ taught that deeds are judged by intentions (Bukhari and Muslim).',
+    category: 'Hadith',
+    difficulty: 'Easy',
+    points: 10
+  },
+  {
+    id: 'hadith-auth-2',
+    question: 'Who is a Muslim according to the hadith?',
+    options: ['One who is wealthy', 'One whose tongue and hands do not harm others', 'One who travels often', 'One who sleeps little'],
+    correctAnswer: 1,
+    explanation: 'A Muslim is one from whose tongue and hands other Muslims are safe (Bukhari).',
+    category: 'Hadith',
+    difficulty: 'Medium',
+    points: 10
+  },
+  {
+    id: 'hadith-auth-3',
+    question: 'What did the Prophet ﷺ say about mercy?',
+    options: ['Mercy is only for family', 'Whoever does not show mercy will not be shown mercy', 'Mercy is for the weak only', 'Mercy is optional'],
+    correctAnswer: 1,
+    explanation: 'The Prophet ﷺ said: "Whoever does not show mercy will not be shown mercy."',
+    category: 'Hadith',
+    difficulty: 'Easy',
+    points: 10
+  },
+  {
+    id: 'hadith-auth-4',
+    question: 'Which statement about learning Quran is from hadith?',
+    options: ['Only scholars should learn Quran', 'The best of you are those who learn Quran and teach it', 'Only adults should teach Quran', 'Quran is only for Ramadan'],
+    correctAnswer: 1,
+    explanation: 'The Prophet ﷺ said the best people are those who learn the Quran and teach it (Bukhari).',
+    category: 'Hadith',
+    difficulty: 'Easy',
+    points: 10
+  },
+  {
+    id: 'hadith-auth-5',
+    question: 'What did the Prophet ﷺ say about strength?',
+    options: ['Strength is only physical', 'A strong believer is better and more beloved to Allah than a weak believer', 'Only soldiers are strong believers', 'Strength has no value'],
+    correctAnswer: 1,
+    explanation: 'The Prophet ﷺ encouraged believers to seek beneficial strength in faith and action (Muslim).',
+    category: 'Hadith',
+    difficulty: 'Medium',
+    points: 10
+  },
+
+  // AUTHENTIC TOPIC EXPANSION - SEERAH
+  {
+    id: 'seerah-auth-1',
+    question: 'In which city was Prophet Muhammad ﷺ born?',
+    options: ['Madinah', 'Makkah', 'Taif', 'Jerusalem'],
+    correctAnswer: 1,
+    explanation: 'Prophet Muhammad ﷺ was born in Makkah.',
+    category: 'Seerah',
+    difficulty: 'Easy',
+    points: 10
+  },
+  {
+    id: 'seerah-auth-2',
+    question: 'To which city did the Prophet ﷺ migrate in the Hijrah?',
+    options: ['Kufa', 'Madinah', 'Damascus', 'Abyssinia'],
+    correctAnswer: 1,
+    explanation: 'The Hijrah was the migration from Makkah to Madinah.',
+    category: 'Seerah',
+    difficulty: 'Easy',
+    points: 10
+  },
+  {
+    id: 'seerah-auth-3',
+    question: 'What was the first major battle fought by Muslims?',
+    options: ['Uhud', 'Khandaq', 'Badr', 'Hunayn'],
+    correctAnswer: 2,
+    explanation: 'The Battle of Badr was the first major battle in Islamic history.',
+    category: 'Seerah',
+    difficulty: 'Medium',
+    points: 10
+  },
+  {
+    id: 'seerah-auth-4',
+    question: 'What was the Treaty of Hudaybiyyah mainly?',
+    options: ['A declaration of war', 'A peace treaty with Quraysh', 'A trade tax law', 'A marriage contract'],
+    correctAnswer: 1,
+    explanation: 'Hudaybiyyah was a peace treaty that opened the way for wider da wah.',
+    category: 'Seerah',
+    difficulty: 'Medium',
+    points: 10
+  },
+  {
+    id: 'seerah-auth-5',
+    question: 'What did the Prophet ﷺ do when Makkah was conquered?',
+    options: ['He took revenge on everyone', 'He forgave many of his former enemies', 'He left the city immediately', 'He closed the Ka bah'],
+    correctAnswer: 1,
+    explanation: 'At Fath Makkah, the Prophet ﷺ showed mercy and forgiveness.',
+    category: 'Seerah',
+    difficulty: 'Medium',
+    points: 10
+  },
+
+  // AUTHENTIC TOPIC EXPANSION - HAJJ
+  {
+    id: 'hajj-auth-1',
+    question: 'Who must perform Hajj?',
+    options: ['Every child', 'Every Muslim who is physically and financially able', 'Only scholars', 'Only people from Makkah'],
+    correctAnswer: 1,
+    explanation: 'Hajj is obligatory once in a lifetime for Muslims who are able.',
+    category: 'Hajj',
+    difficulty: 'Easy',
+    points: 10
+  },
+  {
+    id: 'hajj-auth-2',
+    question: 'On which date of Dhul Hijjah do pilgrims stand at Arafah?',
+    options: ['7th', '8th', '9th', '10th'],
+    correctAnswer: 2,
+    explanation: 'The standing at Arafah is on the 9th of Dhul Hijjah.',
+    category: 'Hajj',
+    difficulty: 'Medium',
+    points: 10
+  },
+  {
+    id: 'hajj-auth-3',
+    question: 'How many times do pilgrims circle the Ka bah in Tawaf?',
+    options: ['Five', 'Six', 'Seven', 'Eight'],
+    correctAnswer: 2,
+    explanation: 'Tawaf is seven circuits around the Ka bah.',
+    category: 'Hajj',
+    difficulty: 'Easy',
+    points: 10
+  },
+  {
+    id: 'hajj-auth-4',
+    question: 'Sa i is performed between which two places?',
+    options: ['Arafah and Muzdalifah', 'Safa and Marwah', 'Mina and Arafah', 'Ka bah and Zamzam'],
+    correctAnswer: 1,
+    explanation: 'Sa i is walking between Safa and Marwah, remembering Hajar AS.',
+    category: 'Hajj',
+    difficulty: 'Easy',
+    points: 10
+  },
+  {
+    id: 'hajj-auth-5',
+    question: 'What is the purpose of throwing pebbles at the Jamarat?',
+    options: ['A sport competition', 'A ritual remembering obedience to Allah and rejecting Shaytan', 'Marking a camping spot', 'Making noise to gather crowds'],
+    correctAnswer: 1,
+    explanation: 'Ramy al-Jamarat symbolizes rejecting Shaytan and obeying Allah, following Prophet Ibrahim AS.',
+    category: 'Hajj',
+    difficulty: 'Medium',
+    points: 10
+  },
+
+  // AUTHENTIC TOPIC EXPANSION - PROPHETS
+  {
+    id: 'prophets-auth-1',
+    question: 'Which prophet built the Ark by Allah s command?',
+    options: ['Prophet Ibrahim AS', 'Prophet Nuh AS', 'Prophet Musa AS', 'Prophet Yunus AS'],
+    correctAnswer: 1,
+    explanation: 'Prophet Nuh AS built the Ark when Allah commanded him.',
+    category: 'Prophets',
+    difficulty: 'Easy',
+    points: 10
+  },
+  {
+    id: 'prophets-auth-2',
+    question: 'Which prophet and his son raised the foundations of the Ka bah?',
+    options: ['Prophet Dawud AS and Sulayman AS', 'Prophet Ibrahim AS and Ismail AS', 'Prophet Yaqub AS and Yusuf AS', 'Prophet Musa AS and Harun AS'],
+    correctAnswer: 1,
+    explanation: 'Allah mentions Ibrahim AS and Ismail AS raising the foundations of the Ka bah (2:127).',
+    category: 'Prophets',
+    difficulty: 'Medium',
+    points: 10
+  },
+  {
+    id: 'prophets-auth-3',
+    question: 'Which prophet is known for speaking directly to Allah by His permission?',
+    options: ['Prophet Musa AS', 'Prophet Isa AS', 'Prophet Nuh AS', 'Prophet Ayyub AS'],
+    correctAnswer: 0,
+    explanation: 'Prophet Musa AS is known as Kalimullah because Allah spoke to him.',
+    category: 'Prophets',
+    difficulty: 'Medium',
+    points: 10
+  },
+  {
+    id: 'prophets-auth-4',
+    question: 'Which prophet was born miraculously to Maryam AS without a father?',
+    options: ['Prophet Yahya AS', 'Prophet Isa AS', 'Prophet Ismail AS', 'Prophet Ibrahim AS'],
+    correctAnswer: 1,
+    explanation: 'Prophet Isa AS was born miraculously by Allah s command.',
+    category: 'Prophets',
+    difficulty: 'Easy',
+    points: 10
+  },
+  {
+    id: 'prophets-auth-5',
+    question: 'Who are the five Ulul Azm prophets?',
+    options: ['Nuh, Ibrahim, Musa, Isa, Muhammad (peace be upon them)', 'Adam, Idris, Hud, Salih, Lut', 'Yusuf, Yaqub, Ismail, Yunus, Ayyub', 'Harun, Dawud, Sulayman, Zakariya, Yahya'],
+    correctAnswer: 0,
+    explanation: 'The five Ulul Azm prophets are Nuh, Ibrahim, Musa, Isa, and Muhammad (peace be upon them).',
+    category: 'Prophets',
+    difficulty: 'Medium',
+    points: 10
+  },
+
+  // AUTHENTIC TOPIC EXPANSION - SAHABAH
+  {
+    id: 'sahabah-auth-1',
+    question: 'Who was the first Caliph after the Prophet ﷺ?',
+    options: ['Umar ibn al-Khattab RA', 'Ali ibn Abi Talib RA', 'Abu Bakr as-Siddiq RA', 'Uthman ibn Affan RA'],
+    correctAnswer: 2,
+    explanation: 'Abu Bakr as-Siddiq RA became the first Caliph.',
+    category: 'Sahabah',
+    difficulty: 'Easy',
+    points: 10
+  },
+  {
+    id: 'sahabah-auth-2',
+    question: 'Who was known as Al-Faruq?',
+    options: ['Bilal RA', 'Umar ibn al-Khattab RA', 'Abu Hurairah RA', 'Zayd ibn Thabit RA'],
+    correctAnswer: 1,
+    explanation: 'Umar RA was called Al-Faruq for distinguishing truth from falsehood.',
+    category: 'Sahabah',
+    difficulty: 'Easy',
+    points: 10
+  },
+  {
+    id: 'sahabah-auth-3',
+    question: 'Which companion gave the first Adhan in Islam?',
+    options: ['Khalid ibn al-Walid RA', 'Bilal ibn Rabah RA', 'Sa d ibn Abi Waqqas RA', 'Abdullah ibn Mas ud RA'],
+    correctAnswer: 1,
+    explanation: 'Bilal ibn Rabah RA was honored as the first Muadhin.',
+    category: 'Sahabah',
+    difficulty: 'Easy',
+    points: 10
+  },
+  {
+    id: 'sahabah-auth-4',
+    question: 'During whose caliphate was the written Mushaf standardized for the Ummah?',
+    options: ['Abu Bakr RA', 'Umar RA', 'Uthman RA', 'Ali RA'],
+    correctAnswer: 2,
+    explanation: 'Uthman ibn Affan RA standardized copies of the Mushaf for unity in recitation.',
+    category: 'Sahabah',
+    difficulty: 'Medium',
+    points: 10
+  },
+  {
+    id: 'sahabah-auth-5',
+    question: 'Which Mother of the Believers is among the greatest narrators of hadith?',
+    options: ['Sawdah bint Zam ah RA', 'Aishah bint Abi Bakr RA', 'Hafsah bint Umar RA', 'Umm Salamah RA'],
+    correctAnswer: 1,
+    explanation: 'Aishah RA taught the Ummah and narrated many authentic hadith.',
+    category: 'Sahabah',
     difficulty: 'Medium',
     points: 10
   }

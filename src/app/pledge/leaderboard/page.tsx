@@ -2,7 +2,6 @@
 
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { supabase } from '@/lib/supabase';
 import { Button } from '@/components';
 
 interface LeaderboardEntry {
@@ -16,71 +15,28 @@ export default function PledgeLeaderboardPage() {
   const [activeTab, setActiveTab] = useState<'durood' | 'zikr'>('durood');
   const [leaders, setLeaders] = useState<LeaderboardEntry[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const fetchLeaderboard = async () => {
     setLoading(true);
+    setError(null);
     try {
-      const { data: pledges, error } = await supabase
-        .from('pledges')
-        .select('user_id, count, type')
-        .eq('type', activeTab);
+      const res = await fetch(`/api/pledge/leaderboard?type=${activeTab}`, { cache: 'no-store' });
+      const payload = await res.json();
 
-      if (error) {
-        console.error('Error fetching pledges:', error);
+      if (!res.ok || !payload?.success) {
+        console.error('Error fetching pledge leaderboard:', payload?.error || 'Unknown error');
         setLeaders([]);
+        setError(payload?.error || 'Could not load leaderboard.');
         return;
       }
 
-      // Aggregate counts by user_id
-      const countsByUser: Record<string, number> = {};
-      pledges?.forEach((p: any) => {
-        countsByUser[p.user_id] = (countsByUser[p.user_id] || 0) + p.count;
-      });
-
-      const userIds = Object.keys(countsByUser);
-      if (userIds.length === 0) {
-        setLeaders([]);
-        setLoading(false);
-        return;
-      }
-
-      const { data: users, error: userError } = await supabase
-        .from('users')
-        .select('uid, name, email')
-        .in('uid', userIds);
-
-      if (userError) {
-        console.error('Error fetching users:', userError);
-      }
-
-      // Create user map with fallback to email username if name is not available
-      const userMap = new Map<string, string>();
-      users?.forEach((u: any) => {
-        let displayName = u.name;
-        // If no name or name looks like a UUID, try to use email username
-        if (!displayName || /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{4}-[0-9a-f]{12}$/i.test(displayName)) {
-          if (u.email && u.email.includes('@')) {
-            displayName = u.email.split('@')[0];
-          } else {
-            displayName = 'Friend';
-          }
-        }
-        userMap.set(u.uid, displayName);
-      });
-
-      const leaderboardData: LeaderboardEntry[] = userIds.map((uid) => ({
-        userId: uid,
-        name: userMap.get(uid) || 'Friend',
-        count: countsByUser[uid]
-      }));
-
-      // Sort by count descending
-      leaderboardData.sort((a, b) => b.count - a.count);
-
-      setLeaders(leaderboardData);
+      setLeaders((payload.leaders || []) as LeaderboardEntry[]);
 
     } catch (err) {
       console.error('Unexpected error:', err);
+      setError('Could not load leaderboard. Please try again.');
+      setLeaders([]);
     } finally {
       setLoading(false);
     }
@@ -133,6 +89,11 @@ export default function PledgeLeaderboardPage() {
           {loading ? (
             <div className="flex justify-center items-center h-40">
               <div className="animate-spin text-4xl">⏳</div>
+            </div>
+          ) : error ? (
+            <div className="text-center py-10 text-red-500">
+              <p className="text-xl font-semibold">Could not load leaderboard</p>
+              <p className="text-sm text-slate-500 mt-2">{error}</p>
             </div>
           ) : leaders.length === 0 ? (
             <div className="text-center py-10 text-slate-400">

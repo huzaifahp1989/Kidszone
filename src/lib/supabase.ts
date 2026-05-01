@@ -2,12 +2,16 @@ import { createClient } from '@supabase/supabase-js';
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL || 'https://placeholder.supabase.co';
 const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY || 'placeholder';
+const isPlaceholderConfig = SUPABASE_URL.includes('placeholder.supabase.co') || SUPABASE_ANON_KEY === 'placeholder';
 
 if (!process.env.NEXT_PUBLIC_SUPABASE_URL && !process.env.SUPABASE_URL) {
   console.warn('[supabase] Warning: SUPABASE URL is missing. Set NEXT_PUBLIC_SUPABASE_URL (or SUPABASE_URL) in Vercel env vars.');
 }
 if (!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY && !process.env.SUPABASE_ANON_KEY) {
   console.warn('[supabase] Warning: SUPABASE ANON KEY is missing. Set NEXT_PUBLIC_SUPABASE_ANON_KEY (or SUPABASE_ANON_KEY) in Vercel env vars.');
+}
+if (typeof window !== 'undefined' && isPlaceholderConfig) {
+  console.error('[supabase] Invalid Supabase configuration detected. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY.');
 }
 
 // Derive default Supabase storage key based on project ref to avoid token mismatches
@@ -95,8 +99,12 @@ const customStorage = {
     if (typeof window === 'undefined') return;
     const primary = getPrimaryStorage();
     const secondary = getSecondaryStorage();
+    // Write to both stores to survive browser quirks and remember-me toggles.
     const wrotePrimary = safeSet(primary, key, value);
-    if (!wrotePrimary) safeSet(secondary, key, value);
+    const wroteSecondary = safeSet(secondary, key, value);
+    if (!wrotePrimary && !wroteSecondary) {
+      console.warn('[supabase] Could not persist auth session in browser storage.');
+    }
   },
   removeItem: (key: string) => {
     if (typeof window === 'undefined') return;

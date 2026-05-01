@@ -4,7 +4,6 @@
 import React, { useState } from 'react';
 import { AGE_GROUPS, AgeGroup } from '@/data/age-specific-content';
 import { Button } from '@/components';
-import { WeeklyWinnerDisplay } from '@/components/WeeklyWinnerDisplay';
 import { Book, Star, CheckCircle, XCircle } from 'lucide-react';
 
 export default function QuranQuizPage() {
@@ -23,7 +22,6 @@ export default function QuranQuizPage() {
     return (
       <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white py-12 px-4">
         <div className="max-w-2xl mx-auto text-center space-y-8">
-          <WeeklyWinnerDisplay />
           <div>
             <h1 className="text-4xl font-bold text-blue-800 mb-4 islamic-shadow">
               📖 Quran Context Quiz

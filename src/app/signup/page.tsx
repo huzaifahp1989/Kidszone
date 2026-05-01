@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { ensureUserProfile } from '@/lib/user-profile';
@@ -27,6 +27,8 @@ export default function SignupPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
@@ -37,6 +39,15 @@ export default function SignupPage() {
   const [needsEmailConfirmation, setNeedsEmailConfirmation] = useState(false);
   const [checking, setChecking] = useState(false);
   const [checkResult, setCheckResult] = useState<any>(null);
+  const [referralCode, setReferralCode] = useState('');
+  const [showNewsletterPopup, setShowNewsletterPopup] = useState(false);
+  const [pendingRedirectUrl, setPendingRedirectUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const code = new URLSearchParams(window.location.search).get('ref') || '';
+    setReferralCode(code.trim().toUpperCase());
+  }, []);
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -92,9 +103,8 @@ export default function SignupPage() {
       if (!session?.user) {
         setNeedsEmailConfirmation(true);
         setSuccess(true);
-        setTimeout(() => {
-          router.push('/signin?message=' + encodeURIComponent('Please confirm your email, then sign in.'));
-        }, 1500);
+        setPendingRedirectUrl('/signin?message=' + encodeURIComponent('Please confirm your email, then sign in.'));
+        setShowNewsletterPopup(true);
         return;
       }
 
@@ -155,11 +165,25 @@ export default function SignupPage() {
       }
       console.log('Profile created:', profileData);
 
+      if (referralCode) {
+        try {
+          const referralRes = await fetch('/api/kids-zone/referrals/join', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userId: uid, referralCode }),
+          });
+          const referralData = await referralRes.json();
+          if (!referralRes.ok) {
+            console.warn('Referral link could not be applied:', referralData?.error || 'Unknown referral error');
+          }
+        } catch (referralErr) {
+          console.warn('Referral processing failed:', referralErr);
+        }
+      }
+
       setSuccess(true);
-      
-      setTimeout(() => {
-        router.push('/');
-      }, 800);
+      setPendingRedirectUrl('/');
+      setShowNewsletterPopup(true);
     } catch (err: any) {
       console.error('Signup process error FULL OBJECT:', err);
       let msg = err?.message || 'Failed to sign up. Please try again.';
@@ -220,11 +244,79 @@ export default function SignupPage() {
     }
   };
 
+  const handleNewsletterDismiss = () => {
+    setShowNewsletterPopup(false);
+    if (pendingRedirectUrl) router.push(pendingRedirectUrl);
+  };
+
   return (
     <div className="min-h-[70vh] flex items-center justify-center px-4 sm:px-6 py-8">
+      {/* Newsletter Popup */}
+      {showNewsletterPopup && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4">
+          <div className="relative w-full max-w-md bg-white rounded-2xl shadow-2xl overflow-hidden">
+            {/* Header banner */}
+            <div className="bg-gradient-to-r from-[#14b8a6] to-[#0d9488] px-6 py-5 text-white text-center">
+              <div className="text-4xl mb-2">📬</div>
+              <h2 className="text-xl font-bold">Stay in the Loop!</h2>
+              <p className="text-white/90 text-sm mt-1">Join the Kids Zone Newsletter</p>
+            </div>
+
+            <div className="px-6 py-5 space-y-4">
+              <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-4 text-left">
+                <p className="text-xs font-bold uppercase tracking-wide text-amber-700">New Update</p>
+                <p className="mt-1 text-sm font-semibold text-amber-900">
+                  Check your Rewards page for your progress, new updates and important announcements.
+                </p>
+                <a
+                  href="/rewards"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-3 inline-flex items-center justify-center rounded-xl bg-amber-500 px-4 py-2 text-sm font-bold text-white transition hover:bg-amber-600"
+                >
+                  Open Rewards Page in New Tab
+                </a>
+              </div>
+
+              <p className="text-[#374151] text-sm text-center">
+                Get weekly updates delivered straight to your inbox:
+              </p>
+              <ul className="space-y-2 text-sm text-[#374151]">
+                <li className="flex items-center gap-2"><span className="text-[#14b8a6] font-bold">⏰</span> Weekly reminders &amp; Islamic tips</li>
+                <li className="flex items-center gap-2"><span className="text-[#fbbf24] font-bold">🏆</span> Winner announcements &amp; prize updates</li>
+                <li className="flex items-center gap-2"><span className="text-[#8b5cf6] font-bold">📅</span> Upcoming events &amp; challenges</li>
+                <li className="flex items-center gap-2"><span className="text-[#ec4899] font-bold">✨</span> New games, quizzes &amp; activities</li>
+              </ul>
+
+              <a
+                href="https://mailchi.mp/3a9b946d45cb/imedia"
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={handleNewsletterDismiss}
+                className="block w-full text-center py-3 bg-gradient-to-r from-[#14b8a6] to-[#0d9488] text-white font-bold rounded-xl hover:opacity-90 transition"
+              >
+                Subscribe to Newsletter 📩
+              </a>
+
+              <button
+                onClick={handleNewsletterDismiss}
+                className="block w-full text-center py-2 text-sm text-[#6b7280] hover:text-[#374151] transition"
+              >
+                Maybe later
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       <div className="w-full max-w-md bg-white shadow-lg rounded-xl p-6 sm:p-8">
         <h1 className="text-2xl sm:text-3xl font-bold text-center mb-2">Create Your Account</h1>
         <p className="text-center text-gray-600 mb-6 text-sm sm:text-base">For kids ages 5–14</p>
+
+        {referralCode ? (
+          <div className="mb-4 rounded-lg bg-amber-50 text-amber-800 border border-amber-200 px-4 py-3 text-sm">
+            Referral code applied: <strong>{referralCode}</strong>
+          </div>
+        ) : null}
 
         {error && (
           <div className="mb-4 rounded-lg bg-red-50 text-red-700 px-4 py-3 text-sm">
@@ -382,26 +474,46 @@ export default function SignupPage() {
 
           <div>
             <label className="block text-sm font-medium mb-1">Password</label>
-            <input
-              type="password"
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-islamic-blue"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="At least 6 characters"
-              autoComplete="new-password"
-            />
+            <div className="relative">
+              <input
+                type={showPassword ? 'text' : 'password'}
+                className="w-full rounded-lg border border-gray-300 px-3 py-2 pr-16 focus:outline-none focus:ring-2 focus:ring-islamic-blue"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="At least 6 characters"
+                autoComplete="new-password"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword((prev) => !prev)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-islamic-blue hover:underline"
+                aria-label={showPassword ? 'Hide password' : 'Show password'}
+              >
+                {showPassword ? 'Hide' : 'Show'}
+              </button>
+            </div>
           </div>
 
           <div>
             <label className="block text-sm font-medium mb-1">Confirm Password</label>
-            <input
-              type="password"
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-islamic-blue"
-              value={confirm}
-              onChange={(e) => setConfirm(e.target.value)}
-              placeholder="Re-enter password"
-              autoComplete="new-password"
-            />
+            <div className="relative">
+              <input
+                type={showConfirmPassword ? 'text' : 'password'}
+                className="w-full rounded-lg border border-gray-300 px-3 py-2 pr-16 focus:outline-none focus:ring-2 focus:ring-islamic-blue"
+                value={confirm}
+                onChange={(e) => setConfirm(e.target.value)}
+                placeholder="Re-enter password"
+                autoComplete="new-password"
+              />
+              <button
+                type="button"
+                onClick={() => setShowConfirmPassword((prev) => !prev)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-islamic-blue hover:underline"
+                aria-label={showConfirmPassword ? 'Hide confirm password' : 'Show confirm password'}
+              >
+                {showConfirmPassword ? 'Hide' : 'Show'}
+              </button>
+            </div>
           </div>
 
           <div className="pt-2">

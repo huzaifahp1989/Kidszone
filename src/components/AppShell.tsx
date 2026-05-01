@@ -6,8 +6,11 @@ import { usePathname, useRouter } from 'next/navigation';
 import { Navbar } from './Navbar';
 import { MobileBottomNav } from './MobileBottomNav';
 import { AnnouncementBar } from '@/components/AnnouncementBar';
+import { PromoSlideshow } from '@/components/PromoSlideshow';
+import { ScrollingTicker } from '@/components/ScrollingTicker';
 import { VisitorCounter } from '@/components/VisitorCounter';
 import { useAuth } from '@/lib/auth-context';
+import { isTestModeEmail } from '@/lib/test-mode';
 
 const WinnerPopup = dynamic(() => import('@/components/WinnerPopup').then(m => m.WinnerPopup), { ssr: false });
 const FeedbackBanner = dynamic(() => import('@/components/FeedbackBanner').then(m => m.FeedbackBanner), { ssr: false });
@@ -17,6 +20,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const fallbackName = user?.email ? user.email.split('@')[0] : undefined;
+  const isTestModeUser = isTestModeEmail(user?.email);
 
   const hasValidName = React.useMemo(() => {
     const t = (profile?.name ?? '').trim();
@@ -41,11 +45,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       router.replace(`/signin?message=${msg}&next=${next}`);
       return;
     }
-    if (profile && !hasValidName && pathname !== '/profile') {
+    if (profile && !hasValidName && pathname !== '/profile' && !isTestModeUser) {
       const msg = encodeURIComponent('Please add your name to your profile before playing quizzes and games.');
       router.replace(`/profile?message=${msg}`);
     }
-  }, [needsAuthForThisRoute, loading, user, profile, hasValidName, pathname, router]);
+  }, [needsAuthForThisRoute, loading, user, profile, hasValidName, pathname, router, isTestModeUser]);
 
   React.useEffect(() => {
     console.log('AppShell mounted, hydration successful');
@@ -59,11 +63,17 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         level={profile?.level}
         badges={profile?.badges}
         onLogout={user ? logout : undefined}
+        loading={loading}
       />
       <AnnouncementBar />
+      <ScrollingTicker />
+      <PromoSlideshow />
       <FeedbackBanner />
-      <main className="min-h-screen pb-24 md:pb-12">{children}</main>
-      <footer className="bg-gradient-to-r from-kids-secondary to-kids-primary text-white p-8 text-center text-sm mt-12 rounded-t-3xl shadow-kids-hover mb-20 md:mb-0">
+      <main className="app-shell-main min-h-screen pb-16 sm:pb-20">
+        <div className="app-shell-backdrop" aria-hidden="true" />
+        <div className="app-shell-content fade-in">{children}</div>
+      </main>
+      <footer className="bg-gradient-to-r from-kids-secondary to-kids-primary text-white p-8 text-center text-sm mt-12 rounded-t-3xl shadow-kids-hover">
         <p className="font-bold text-lg mb-2">&copy; 2025 Islamic Kids Learning Platform</p>
         <p className="opacity-90">A fun, safe, and educational Islamic learning platform for children aged 5-14</p>
         <p className="text-xs opacity-75 mt-4">v1.0.3 • For educational purposes</p>

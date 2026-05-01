@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { createClient } from '@supabase/supabase-js';
+import { isTestModeUserId } from '@/lib/test-mode-server';
 
 // We use a user client for RLS context usually, but for points updates we might need admin
 // However, to keep it secure, we should verify the user's session.
@@ -53,6 +54,7 @@ export async function POST(request: Request) {
     }
 
     const targetDate = date || new Date().toISOString().split('T')[0];
+    const isTestMode = await isTestModeUserId(userId);
 
     // Calculate Points
     // Each item = 2 points
@@ -92,7 +94,7 @@ export async function POST(request: Request) {
     if (upsertError) throw upsertError;
 
     // 3. Update User Total Points (only if there is a difference)
-    if (pointDelta !== 0) {
+    if (pointDelta !== 0 && !isTestMode) {
       try {
         // Try RPC first (best way - handles both tables atomically)
         await supabaseAdmin.rpc('increment_points', { 
@@ -107,29 +109,39 @@ export async function POST(request: Request) {
         // 1. Update legacy users table
         const { data: user } = await supabaseAdmin
           .from('users')
-          .select('points, weeklypoints')
+          .select('points, weeklypoints, monthlypoints')
           .eq('uid', userId)
-          .single();
+          .maybeSingle();
           
         if (user) {
            await supabaseAdmin.from('users').update({
                points: (user.points || 0) + pointDelta,
-               weeklypoints: (user.weeklypoints || 0) + pointDelta
+               weeklypoints: (user.weeklypoints || 0) + pointDelta,
+               monthlypoints: (user.monthlypoints || 0) + pointDelta
            }).eq('uid', userId);
         }
 
         // 2. Update users_points table
         const { data: up } = await supabaseAdmin
           .from('users_points')
-          .select('total_points, weekly_points')
+          .select('total_points, weekly_points, monthly_points')
           .eq('user_id', userId)
-          .single();
+          .maybeSingle();
           
         if (up) {
            await supabaseAdmin.from('users_points').update({
                total_points: (up.total_points || 0) + pointDelta,
-               weekly_points: (up.weekly_points || 0) + pointDelta
+               weekly_points: (up.weekly_points || 0) + pointDelta,
+               monthly_points: (up.monthly_points || 0) + pointDelta
            }).eq('user_id', userId);
+        } else if (user) {
+          await supabaseAdmin.from('users_points').upsert({
+            user_id: userId,
+            total_points: Number(user.points || 0) + pointDelta,
+            weekly_points: Number(user.weeklypoints || 0) + pointDelta,
+            monthly_points: Number(user.monthlypoints || 0) + pointDelta,
+            last_earned_date: new Date().toISOString().slice(0, 10),
+          });
         }
       }
     }
@@ -137,7 +149,8 @@ export async function POST(request: Request) {
     return NextResponse.json({ 
       success: true, 
       points: newPoints,
-      delta: pointDelta 
+      delta: isTestMode ? 0 : pointDelta,
+      testMode: isTestMode 
     });
 
   } catch (error: any) {

@@ -844,3 +844,335 @@ export const islamicCalendarPool = [
   { id: 'lunar-days', prompt: 'The Islamic year is shorter than solar year by approximately ___ days', correct: '11 days', options: ['11 days', '5 days', '15 days', '20 days'] },
 ];
 
+// ============================================================================
+// TRUE OR FALSE POOL - Islamic facts (2 options each, for True/False game)
+// ============================================================================
+export const trueOrFalsePool: BaseTask[] = [
+  {
+    id: 'tf-1',
+    prompt: 'The Quran was revealed to Prophet Muhammad ﷺ over 23 years.',
+    points: 2,
+    options: [{ id: 'tf1-t', text: 'True' }, { id: 'tf1-f', text: 'False' }],
+    correctOptionId: 'tf1-t',
+  },
+  {
+    id: 'tf-2',
+    prompt: 'Prophet Ibrahim ﷺ built the Kaaba together with his son Ismail ﷺ.',
+    points: 2,
+    options: [{ id: 'tf2-t', text: 'True' }, { id: 'tf2-f', text: 'False' }],
+    correctOptionId: 'tf2-t',
+  },
+  {
+    id: 'tf-3',
+    prompt: 'There are 6 pillars of Islam.',
+    points: 2,
+    options: [{ id: 'tf3-t', text: 'True' }, { id: 'tf3-f', text: 'False' }],
+    correctOptionId: 'tf3-f',
+  },
+  {
+    id: 'tf-4',
+    prompt: 'Laylatul Qadr (Night of Power) is better than a thousand months.',
+    points: 2,
+    options: [{ id: 'tf4-t', text: 'True' }, { id: 'tf4-f', text: 'False' }],
+    correctOptionId: 'tf4-t',
+  },
+  {
+    id: 'tf-5',
+    prompt: 'Prophet Isa ﷺ (Jesus) is mentioned more times than Prophet Muhammad ﷺ in the Quran.',
+    points: 2,
+    options: [{ id: 'tf5-t', text: 'True' }, { id: 'tf5-f', text: 'False' }],
+    correctOptionId: 'tf5-t',
+  },
+  {
+    id: 'tf-6',
+    prompt: 'The first word revealed in the Quran was "Bismillah".',
+    points: 2,
+    options: [{ id: 'tf6-t', text: 'True' }, { id: 'tf6-f', text: 'False' }],
+    correctOptionId: 'tf6-f',
+  },
+  {
+    id: 'tf-7',
+    prompt: 'Prophet Nuh ﷺ preached his people for 950 years.',
+    points: 2,
+    options: [{ id: 'tf7-t', text: 'True' }, { id: 'tf7-f', text: 'False' }],
+    correctOptionId: 'tf7-t',
+  },
+  {
+    id: 'tf-8',
+    prompt: 'Masjid Al-Aqsa is located in Makkah.',
+    points: 2,
+    options: [{ id: 'tf8-t', text: 'True' }, { id: 'tf8-f', text: 'False' }],
+    correctOptionId: 'tf8-f',
+  },
+  {
+    id: 'tf-9',
+    prompt: 'Hajj is obligatory once in a lifetime for every Muslim who is able.',
+    points: 2,
+    options: [{ id: 'tf9-t', text: 'True' }, { id: 'tf9-f', text: 'False' }],
+    correctOptionId: 'tf9-t',
+  },
+  {
+    id: 'tf-10',
+    prompt: 'Surah Al-Baqarah is the shortest surah in the Quran.',
+    points: 2,
+    options: [{ id: 'tf10-t', text: 'True' }, { id: 'tf10-f', text: 'False' }],
+    correctOptionId: 'tf10-f',
+  },
+];
+
+// ============================================================================
+// 99 NAMES OF ALLAH QUIZ - Match name to meaning or vice versa
+// ============================================================================
+export const namesOfAllahPool: BaseTask[] = [
+  {
+    id: 'na-1',
+    prompt: 'What does "Ar-Rahman" mean?',
+    points: 2,
+    options: [
+      { id: 'na1-a', text: 'The Most Merciful (general mercy)' },
+      { id: 'na1-b', text: 'The All-Knowing' },
+      { id: 'na1-c', text: 'The Creator' },
+      { id: 'na1-d', text: 'The Sustainer' },
+    ],
+    correctOptionId: 'na1-a',
+  },
+  {
+    id: 'na-2',
+    prompt: 'Which name of Allah means "The All-Seeing"?',
+    points: 2,
+    options: [
+      { id: 'na2-a', text: 'Al-Alim' },
+      { id: 'na2-b', text: 'Al-Basir' },
+      { id: 'na2-c', text: 'As-Sami' },
+      { id: 'na2-d', text: 'Al-Khabir' },
+    ],
+    correctOptionId: 'na2-b',
+  },
+  {
+    id: 'na-3',
+    prompt: 'What does "Al-Ghafur" mean?',
+    points: 2,
+    options: [
+      { id: 'na3-a', text: 'The Most Forgiving' },
+      { id: 'na3-b', text: 'The Most Powerful' },
+      { id: 'na3-c', text: 'The Most Wise' },
+      { id: 'na3-d', text: 'The Most Merciful' },
+    ],
+    correctOptionId: 'na3-a',
+  },
+  {
+    id: 'na-4',
+    prompt: 'Which name means "The Provider / Sustainer"?',
+    points: 2,
+    options: [
+      { id: 'na4-a', text: 'Al-Qadir' },
+      { id: 'na4-b', text: 'Al-Khaliq' },
+      { id: 'na4-c', text: 'Ar-Razzaq' },
+      { id: 'na4-d', text: 'Al-Wadud' },
+    ],
+    correctOptionId: 'na4-c',
+  },
+  {
+    id: 'na-5',
+    prompt: 'What does "Al-Hakim" mean?',
+    points: 2,
+    options: [
+      { id: 'na5-a', text: 'The All-Wise' },
+      { id: 'na5-b', text: 'The All-Hearing' },
+      { id: 'na5-c', text: 'The Protector' },
+      { id: 'na5-d', text: 'The Eternal' },
+    ],
+    correctOptionId: 'na5-a',
+  },
+  {
+    id: 'na-6',
+    prompt: 'Which name of Allah means "The Peace / Source of Peace"?',
+    points: 2,
+    options: [
+      { id: 'na6-a', text: 'Al-Mu\'min' },
+      { id: 'na6-b', text: 'As-Salam' },
+      { id: 'na6-c', text: 'Al-Hafiz' },
+      { id: 'na6-d', text: 'Al-Muqit' },
+    ],
+    correctOptionId: 'na6-b',
+  },
+  {
+    id: 'na-7',
+    prompt: 'What does "Al-Khaliq" mean?',
+    points: 2,
+    options: [
+      { id: 'na7-a', text: 'The Creator' },
+      { id: 'na7-b', text: 'The King' },
+      { id: 'na7-c', text: 'The Just' },
+      { id: 'na7-d', text: 'The Guardian' },
+    ],
+    correctOptionId: 'na7-a',
+  },
+  {
+    id: 'na-8',
+    prompt: 'Which name means "The Most Loving"?',
+    points: 2,
+    options: [
+      { id: 'na8-a', text: 'Ar-Rahman' },
+      { id: 'na8-b', text: 'Al-Karim' },
+      { id: 'na8-c', text: 'Al-Wadud' },
+      { id: 'na8-d', text: 'Al-Afuw' },
+    ],
+    correctOptionId: 'na8-c',
+  },
+  {
+    id: 'na-9',
+    prompt: 'What does "Al-Alim" mean?',
+    points: 2,
+    options: [
+      { id: 'na9-a', text: 'The All-Knowing' },
+      { id: 'na9-b', text: 'The Everlasting' },
+      { id: 'na9-c', text: 'The Gentle' },
+      { id: 'na9-d', text: 'The Majestic' },
+    ],
+    correctOptionId: 'na9-a',
+  },
+  {
+    id: 'na-10',
+    prompt: 'Which name of Allah means "The All-Hearing"?',
+    points: 2,
+    options: [
+      { id: 'na10-a', text: 'Al-Basir' },
+      { id: 'na10-b', text: 'As-Sami' },
+      { id: 'na10-c', text: 'Al-Khabir' },
+      { id: 'na10-d', text: 'Al-Alim' },
+    ],
+    correctOptionId: 'na10-b',
+  },
+];
+
+// ============================================================================
+// CROSSWORD PUZZLES - Pre-designed Islamic crossword grids
+// ============================================================================
+
+export interface CrosswordCell {
+  letter: string;
+  wordIds: string[]; // which word(s) occupy this cell
+}
+
+export interface CrosswordWord {
+  id: string;
+  word: string;
+  clue: string;
+  direction: 'across' | 'down';
+  row: number; // starting row (0-indexed)
+  col: number; // starting col (0-indexed)
+  number: number; // clue number displayed on grid
+}
+
+export interface CrosswordPuzzle {
+  id: string;
+  title: string;
+  rows: number;
+  cols: number;
+  words: CrosswordWord[];
+}
+
+export const crosswordPuzzles: CrosswordPuzzle[] = [
+  // ─── Puzzle 1: "Islam Basics" ─────────────────────────────────────────────
+  // Grid layout (7 rows × 7 cols):
+  //   Col:  0  1  2  3  4  5  6
+  //   r=0:  .  I  S  L  A  M  .     ← ISLAM across (r=0,c=1)
+  //   r=1:  .  .  A  .  D  .  .     ← SALAH down (r=0,c=2), ADAM down (r=0,c=4)
+  //   r=2:  .  .  L  .  A  .  .
+  //   r=3:  .  .  A  .  M  .  .
+  //   r=4:  .  H  H  .  .  .  .     ← HAJJ across (r=4,c=1), SALAH finishes at r=4
+  //   Actually: SALAH = S,A,L,A,H → down from (0,2): (0,2)=S,(1,2)=A,(2,2)=L,(3,2)=A,(4,2)=H
+  //             ADAM = A,D,A,M → down from (0,4): (0,4)=A,(1,4)=D,(2,4)=A,(3,4)=M
+  //             ISLAM = I,S,L,A,M → across (0,1): (0,1)=I,(0,2)=S,(0,3)=L,(0,4)=A,(0,5)=M
+  //             HAJJ = H,A,J,J → across (4,2): (4,2)=H,(4,3)=A,(4,4)=J,(4,5)=J
+  //   Intersections:
+  //     ISLAM[1] S ∩ SALAH[0] S  at (0,2) ✓
+  //     ISLAM[3] A ∩ ADAM[0]  A  at (0,4) ✓
+  //     SALAH[4] H ∩ HAJJ[0]  H  at (4,2) ✓
+  {
+    id: 'crossword-1',
+    title: 'Islam Basics',
+    rows: 7,
+    cols: 7,
+    words: [
+      { id: 'cw1-islam',  word: 'ISLAM',  clue: 'The religion of Muslims',           direction: 'across', row: 0, col: 1, number: 1 },
+      { id: 'cw1-salah',  word: 'SALAH',  clue: 'The five daily prayers',            direction: 'down',   row: 0, col: 2, number: 2 },
+      { id: 'cw1-adam',   word: 'ADAM',   clue: 'First man and first prophet',       direction: 'down',   row: 0, col: 4, number: 3 },
+      { id: 'cw1-hajj',   word: 'HAJJ',   clue: 'Pilgrimage to Makkah',             direction: 'across', row: 4, col: 2, number: 4 },
+    ],
+  },
+
+  // ─── Puzzle 2: "Prophets" ─────────────────────────────────────────────────
+  // Grid layout (8 rows × 8 cols):
+  //   MUSA across (r=2,c=1): (2,1)=M,(2,2)=U,(2,3)=S,(2,4)=A
+  //   ISA  down   (r=1,c=3): (1,3)=I,(2,3)=S,(3,3)=A        ← ISA[1] S ∩ MUSA[2] S at (2,3)
+  //   ADAM down   (r=1,c=4): (1,4)=A,(2,4)=D,(3,4)=A,(4,4)=M  ← MUSA[3] A ∩ ADAM[1] D? No.
+  //   Actually ADAM[0]=A at (1,4), MUSA[3]=A at (2,4)… mismatch.
+  //   Let's fix: ADAM down from (r=2,c=4): (2,4)=A,(3,4)=D,(4,4)=A,(5,4)=M
+  //              MUSA[3] at (2,4) = A, ADAM[0] at (2,4) = A ✓
+  //   NUH across (r=6,c=1): isolated
+  //   IBRAHIM down (r=0,c=6): isolated
+  {
+    id: 'crossword-2',
+    title: 'Prophets',
+    rows: 8,
+    cols: 8,
+    words: [
+      { id: 'cw2-musa',    word: 'MUSA',    clue: 'Prophet who parted the sea',             direction: 'across', row: 2, col: 1, number: 1 },
+      { id: 'cw2-isa',     word: 'ISA',     clue: 'Prophet born without a father',         direction: 'down',   row: 1, col: 3, number: 2 },
+      { id: 'cw2-adam',    word: 'ADAM',    clue: 'First man and first prophet',            direction: 'down',   row: 2, col: 4, number: 3 },
+      { id: 'cw2-nuh',     word: 'NUH',     clue: 'Prophet who built the Ark',             direction: 'across', row: 6, col: 1, number: 4 },
+      { id: 'cw2-ibrahim', word: 'IBRAHIM', clue: 'Built the Kaaba with his son Ismail',   direction: 'down',   row: 0, col: 6, number: 5 },
+    ],
+  },
+
+  // ─── Puzzle 3: "Islamic Values" ───────────────────────────────────────────
+  // Grid layout (7 rows × 7 cols):
+  //   IMAN  across (r=2,c=1): (2,1)=I,(2,2)=M,(2,3)=A,(2,4)=N
+  //   SABR  down   (r=1,c=3): (1,3)=S,(2,3)=A,(3,3)=B,(4,3)=R   ← IMAN[2] A ∩ SABR[1] A at (2,3) ✓
+  //   NOOR  down   (r=2,c=4): (2,4)=N,(3,4)=O,(4,4)=O,(5,4)=R   ← IMAN[3] N ∩ NOOR[0] N at (2,4) ✓
+  //   DEEN  across (r=5,c=1): isolated
+  {
+    id: 'crossword-3',
+    title: 'Islamic Values',
+    rows: 7,
+    cols: 7,
+    words: [
+      { id: 'cw3-iman', word: 'IMAN', clue: 'Faith in Allah',                    direction: 'across', row: 2, col: 1, number: 1 },
+      { id: 'cw3-sabr', word: 'SABR', clue: 'Patience in times of difficulty',  direction: 'down',   row: 1, col: 3, number: 2 },
+      { id: 'cw3-noor', word: 'NOOR', clue: 'Spiritual light / divine light',   direction: 'down',   row: 2, col: 4, number: 3 },
+      { id: 'cw3-deen', word: 'DEEN', clue: 'Way of life / religion',           direction: 'across', row: 5, col: 1, number: 4 },
+    ],
+  },
+];
+
+// ============================================================================
+// WORD SCRAMBLE POOL - Unscramble Islamic terms
+// ============================================================================
+
+export interface ScrambleWord {
+  id: string;
+  word: string;       // correct answer (uppercase)
+  scrambled: string;  // pre-scrambled version
+  hint: string;
+}
+
+export const wordScramblePool: ScrambleWord[] = [
+  { id: 'sc-salah',  word: 'SALAH',  scrambled: 'LAHSA',  hint: 'Five daily prayers' },
+  { id: 'sc-quran',  word: 'QURAN',  scrambled: 'RUQAN',  hint: 'The holy book of Islam' },
+  { id: 'sc-zakat',  word: 'ZAKAT',  scrambled: 'KAZTA',  hint: 'Obligatory charity' },
+  { id: 'sc-sawm',   word: 'SAWM',   scrambled: 'WMSA',   hint: 'Fasting in Ramadan' },
+  { id: 'sc-hajj',   word: 'HAJJ',   scrambled: 'JJAH',   hint: 'Pilgrimage to Makkah' },
+  { id: 'sc-iman',   word: 'IMAN',   scrambled: 'NAMI',   hint: 'Faith / belief' },
+  { id: 'sc-taqwa',  word: 'TAQWA',  scrambled: 'AWQTA',  hint: 'Consciousness and fear of Allah' },
+  { id: 'sc-sabr',   word: 'SABR',   scrambled: 'BRSA',   hint: 'Patience and perseverance' },
+  { id: 'sc-shukr',  word: 'SHUKR',  scrambled: 'KRHUS',  hint: 'Gratitude to Allah' },
+  { id: 'sc-masjid', word: 'MASJID', scrambled: 'DIJMAS', hint: 'Place of worship / mosque' },
+  { id: 'sc-wudu',   word: 'WUDU',   scrambled: 'UDWU',   hint: 'Ritual purification before prayer' },
+  { id: 'sc-kaaba',  word: 'KAABA',  scrambled: 'AABAK',  hint: 'Cube-shaped structure in Makkah' },
+  { id: 'sc-adhan',  word: 'ADHAN',  scrambled: 'NHADA',  hint: 'Call to prayer' },
+  { id: 'sc-jannah', word: 'JANNAH', scrambled: 'HANJAJ', hint: 'Paradise / Heaven in Islam' },
+  { id: 'sc-sunnah', word: 'SUNNAH', scrambled: 'HNANUS', hint: 'Teachings and practices of the Prophet ﷺ' },
+];
+

@@ -1,4 +1,5 @@
 import { supabase } from './supabase';
+import { awardPoints } from './points-service';
 
 export interface KidProfile {
   uid: string;
@@ -141,8 +142,16 @@ export async function createProfile(
  * Update points for a user using RPC function with fallback
  */
 export async function addPoints(uid: string, pointsToAdd: number): Promise<KidProfile | null> {
+  return addPointsWithOptions(uid, pointsToAdd);
+}
+
+export async function addPointsWithOptions(
+  uid: string,
+  pointsToAdd: number,
+  options?: { countTowardDailyLimit?: boolean }
+): Promise<KidProfile | null> {
   try {
-    console.log('[addPoints] Adding points via award_points:', { uid, pointsToAdd });
+    console.log('[addPoints] Adding points via points-service:', { uid, pointsToAdd });
 
     const { data: { user }, error: authErr } = await supabase.auth.getUser();
     if (authErr || !user || user.id !== uid) {
@@ -150,11 +159,9 @@ export async function addPoints(uid: string, pointsToAdd: number): Promise<KidPr
       return null;
     }
 
-    const { data: rpcData, error: rpcError } = await supabase
-      .rpc('award_points', { p_points: pointsToAdd });
-
-    if (rpcError || !rpcData || rpcData.success === false) {
-      console.error('[addPoints] award_points failed:', rpcError || rpcData);
+    const result = await awardPoints(pointsToAdd, options);
+    if (!result.success) {
+      console.error('[addPoints] awardPoints failed:', result.message);
       return null;
     }
 

@@ -4,7 +4,6 @@ import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
 import { Recording } from '@/types/stories';
-import { WeeklyWinnerDisplay } from '@/components/WeeklyWinnerDisplay';
 import { useAuth } from '@/lib/auth-context';
 import { Mic, Clock, Calendar, ChevronRight } from 'lucide-react';
 
@@ -80,7 +79,6 @@ export default function MyRecordingsPage() {
   return (
     <div className="min-h-screen bg-islamic-light py-12 px-4">
       <div className="max-w-4xl mx-auto">
-        <WeeklyWinnerDisplay />
         <div className="flex justify-between items-center mb-8">
           <h1 className="text-3xl font-bold text-gray-900">My Recordings</h1>
           <Link 

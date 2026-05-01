@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
+import { isTestModeEmail } from '@/lib/test-mode';
 
 export const dynamic = 'force-dynamic';
 
@@ -12,6 +13,34 @@ const sanitizeName = (name: string | null | undefined, uid?: string | null) => {
   return t;
 };
 
+const firstString = (...values: any[]) => {
+  for (const value of values) {
+    if (typeof value === 'string' && value.trim()) return value.trim();
+  }
+  return '';
+};
+
+function getCurrentWeekRangeUtc() {
+  const now = new Date();
+  const utcDay = now.getUTCDay();
+  const daysSinceMonday = (utcDay + 6) % 7;
+
+  const weekStart = new Date(Date.UTC(
+    now.getUTCFullYear(),
+    now.getUTCMonth(),
+    now.getUTCDate() - daysSinceMonday,
+    0,
+    0,
+    0,
+    0
+  ));
+
+  const weekEnd = new Date(weekStart);
+  weekEnd.setUTCDate(weekEnd.getUTCDate() + 7);
+
+  return { weekStartIso: weekStart.toISOString(), weekEndIso: weekEnd.toISOString() };
+}
+
 export async function GET(req: Request) {
   try {
     const url = new URL(req.url);
@@ -23,7 +52,7 @@ export async function GET(req: Request) {
 
     const { data, error } = await supabaseAdmin
       .from('users_points')
-      .select('user_id,total_points,weekly_points,monthly_points,badges,level,users(name,points,weeklypoints,monthlypoints)')
+      .select('user_id,total_points,weekly_points,monthly_points,badges,level,users(name,email,points,weeklypoints,monthlypoints)')
       .gt(orderField, 0)  // Only get users with points in this period
       .order(orderField, { ascending: false, nullsFirst: false })
       .limit(100);
@@ -33,8 +62,56 @@ export async function GET(req: Request) {
       return NextResponse.json({ entries: [], lastWinner: null, error: error.message }, { status: 500 });
     }
 
-    const entries = (data || []).map((row: any) => {
+    const filteredRows = (data || []).filter((row: any) => !isTestModeEmail(row.users?.email));
+    const rawUserIds = filteredRows.map((row: any) => row.user_id).filter(Boolean);
+
+    const profilesByUid = new Map<string, any>();
+    if (rawUserIds.length > 0) {
+      const { data: profiles, error: profilesError } = await supabaseAdmin
+        .from('users')
+        .select('*')
+        .in('uid', rawUserIds);
+
+      if (profilesError) {
+        console.error('Leaderboard users profile lookup error:', profilesError);
+      } else {
+        for (const profile of profiles || []) {
+          profilesByUid.set(String((profile as any).uid), profile);
+        }
+      }
+    }
+
+    const metadataByUserId = new Map<string, any>();
+    try {
+      const { data: authUsers, error: authUsersError } = await supabaseAdmin.auth.admin.listUsers({
+        page: 1,
+        perPage: 1000,
+      });
+
+      if (authUsersError) {
+        console.warn('Leaderboard auth metadata lookup error:', authUsersError.message);
+      } else {
+        for (const authUser of authUsers?.users || []) {
+          metadataByUserId.set(String((authUser as any).id), (authUser as any).user_metadata || {});
+        }
+      }
+    } catch (authUsersException: any) {
+      console.warn('Leaderboard auth metadata lookup threw:', authUsersException?.message || authUsersException);
+    }
+
+    const entriesBase = filteredRows
+      .map((row: any) => {
       const displayName = sanitizeName(row.users?.name, row.user_id);
+      const userProfile = profilesByUid.get(String(row.user_id)) || {};
+      const userMeta = metadataByUserId.get(String(row.user_id)) || {};
+      const madrasahName = firstString(
+        userProfile.madrasahName,
+        userProfile.madrasahname,
+        userProfile.madrasah_name,
+        userMeta.madrasahName,
+        userMeta.madrasahname,
+        userMeta.madrasah_name
+      );
       const totalPoints = Number(row.total_points ?? row.users?.points ?? 0);
       const weeklyPoints = Number(row.weekly_points ?? row.users?.weeklypoints ?? 0);
       const monthlyPoints = Number(row.monthly_points ?? row.users?.monthlypoints ?? 0);
@@ -45,6 +122,7 @@ export async function GET(req: Request) {
       return {
         uid: row.user_id,
         name: displayName,
+        madrasahName,
         level: row.level ?? 1,
         points: totalPoints,
         weeklyPoints,
@@ -52,6 +130,34 @@ export async function GET(req: Request) {
         badges: row.badges ?? 0,
       };
     });
+
+    const userIds = entriesBase.map((entry: any) => entry.uid).filter(Boolean);
+    const weeklyAttemptCountByUser = new Map<string, number>();
+
+    if (userIds.length > 0) {
+      const { weekStartIso, weekEndIso } = getCurrentWeekRangeUtc();
+      const { data: weeklyAttempts, error: weeklyAttemptsError } = await supabaseAdmin
+        .from('quiz_attempts')
+        .select('user_id')
+        .in('user_id', userIds)
+        .gte('completed_at', weekStartIso)
+        .lt('completed_at', weekEndIso);
+
+      if (weeklyAttemptsError) {
+        console.error('Leaderboard weekly attempts error:', weeklyAttemptsError);
+      } else {
+        for (const row of weeklyAttempts || []) {
+          const uid = String((row as any).user_id || '');
+          if (!uid) continue;
+          weeklyAttemptCountByUser.set(uid, (weeklyAttemptCountByUser.get(uid) || 0) + 1);
+        }
+      }
+    }
+
+    const entries = entriesBase.map((entry: any) => ({
+      ...entry,
+      weeklyQuizAttempts: weeklyAttemptCountByUser.get(entry.uid) || 0,
+    }));
 
     const { data: winnerData } = await supabaseAdmin
       .from('weekly_winners')
@@ -62,15 +168,17 @@ export async function GET(req: Request) {
 
     let lastWinner: any = null;
     if (winnerData?.user_id) {
-      const { data: userData } = await supabaseAdmin.from('users').select('name').eq('uid', winnerData.user_id).maybeSingle();
-      const winnerName = sanitizeName(userData?.name, winnerData.user_id) || 'Champion';
-      lastWinner = {
-        uid: winnerData.user_id,
-        name: winnerName,
-        level: winnerData.level ?? 1,
-        points: winnerData.weekly_points ?? 0,
-        badges: winnerData.badges ?? 0,
-      };
+      const { data: userData } = await supabaseAdmin.from('users').select('name,email').eq('uid', winnerData.user_id).maybeSingle();
+      if (!isTestModeEmail((userData as any)?.email)) {
+        const winnerName = sanitizeName(userData?.name, winnerData.user_id) || 'Champion';
+        lastWinner = {
+          uid: winnerData.user_id,
+          name: winnerName,
+          level: winnerData.level ?? 1,
+          points: winnerData.weekly_points ?? 0,
+          badges: winnerData.badges ?? 0,
+        };
+      }
     }
 
     const res = NextResponse.json({ entries, lastWinner, error: null });
