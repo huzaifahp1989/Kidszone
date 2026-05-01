@@ -1,22 +1,12 @@
-"use client";
+'use client';
 
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { supabase, supabaseConfigured } from '@/lib/supabase';
 import { ensureUserProfile } from '@/lib/user-profile';
 import { mobileAuthHelper } from '@/lib/mobile-auth';
-import { Button } from '@/components/Button';
-
-const DB_FIX_SQL = `-- QUICK FIX: Run the full repair script from the repo
--- In Supabase SQL Editor, paste the contents of SUPABASE_FIX_AWARD_POINTS.sql
--- Path in repo: SUPABASE_FIX_AWARD_POINTS.sql
--- This script creates users + users_points, trigger, RLS, grants, award_points RPC
--- Steps:
--- 1) Open Supabase SQL Editor
--- 2) Open SUPABASE_FIX_AWARD_POINTS.sql from your repo and copy all contents
--- 3) Paste and Run
--- 4) Re-try signup
-`;
+import { Shield, Eye, EyeOff } from 'lucide-react';
 
 export default function SignupPage() {
   const router = useRouter();
@@ -32,27 +22,13 @@ export default function SignupPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
-  const [errorCode, setErrorCode] = useState<string | null>(null);
-  const [debugUid, setDebugUid] = useState<string | null>(null);
-  const [debugClaims, setDebugClaims] = useState<Record<string, any> | null>(null);
-  const isDev = process.env.NODE_ENV !== 'production';
-  const [debugMode, setDebugMode] = useState(false);
   const [needsEmailConfirmation, setNeedsEmailConfirmation] = useState(false);
-  const [checking, setChecking] = useState(false);
-  const [checkResult, setCheckResult] = useState<any>(null);
   const [referralCode, setReferralCode] = useState('');
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const code = new URLSearchParams(window.location.search).get('ref') || '';
     setReferralCode(code.trim().toUpperCase());
-  }, []);
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    try {
-      setDebugMode(new URLSearchParams(window.location.search).get('debug') === '1');
-    } catch {}
   }, []);
 
   const onSubmit = async (e: React.FormEvent) => {
@@ -62,9 +38,10 @@ export default function SignupPage() {
     setNeedsEmailConfirmation(false);
 
     if (!supabaseConfigured) {
-      setError('Sign up is temporarily unavailable because Supabase is not configured.');
+      setError('Sign up is temporarily unavailable. Please try again later.');
       return;
     }
+
     const trimmedName = name.trim();
     if (!trimmedName) return setError('Please enter your name.');
     if (trimmedName.length < 2) return setError('Name must be at least 2 characters.');
@@ -86,7 +63,7 @@ export default function SignupPage() {
     try {
       setLoading(true);
       const emailNormalized = email.trim().toLowerCase();
-      
+
       const storageCheck = mobileAuthHelper.checkStorageAvailability();
       if (!storageCheck.localStorage && !storageCheck.sessionStorage) {
         setError('Your browser is blocking storage. Please enable cookies/local storage and try again.');
@@ -114,29 +91,25 @@ export default function SignupPage() {
       const session = sessionData.session ?? sessionFromResponse;
 
       if (!session?.user) {
+        // Email confirmation required
         setNeedsEmailConfirmation(true);
         setSuccess(true);
         return;
       }
 
       const uid = session.user.id;
-      setDebugUid(uid);
-      setDebugClaims({ sub: session.user.id, email: session.user.email, role: session.user.role });
 
-      const { error: metaErr } = await supabase.auth.updateUser({
+      // Update auth metadata
+      await supabase.auth.updateUser({
         data: {
           name: trimmedName,
           age: ageNumber,
           madrasahName: trimmedMadrasah,
           contactNumber: contactNumber.trim(),
         },
-      });
-      if (metaErr) {
-        console.warn('Could not save name to auth metadata:', metaErr.message);
-      }
+      }).catch(() => {});
 
-      // Create user profile with provided details now that we have an authenticated session
-      console.log('Creating profile for:', uid, emailNormalized, trimmedName);
+      // Create user profile
       const baseProfile = {
         uid,
         role: 'kid',
@@ -150,361 +123,286 @@ export default function SignupPage() {
         level: 'Beginner',
       };
 
-      const upsertProfile = async (payload: Record<string, any>) => {
-        return supabase
-          .from('users')
-          .upsert(payload, { onConflict: 'uid', ignoreDuplicates: false })
-          .select();
-      };
-
       const contactValue = contactNumber.trim();
-      let profileRes = await upsertProfile({
-        ...baseProfile,
-        contactnumber: contactValue,
-      });
-      if (profileRes.error?.code === '42703') {
-        profileRes = await upsertProfile({
-          ...baseProfile,
-          contact_number: contactValue,
-        });
-      }
-      if (profileRes.error?.code === '42703') {
-        profileRes = await upsertProfile({
-          ...baseProfile,
-          contactNumber: contactValue,
-        });
-      }
-      if (profileRes.error?.code === '42703') {
-        profileRes = await upsertProfile(baseProfile);
-      }
-      const { data: profileData, error: insertErr } = profileRes;
-      
-      if (insertErr) {
-        console.error('Profile creation failed:', insertErr);
-        throw insertErr;
-      }
-      console.log('Profile created:', profileData);
+      let profileRes = await supabase
+        .from('users')
+        .upsert({ ...baseProfile, contactnumber: contactValue }, { onConflict: 'uid', ignoreDuplicates: false })
+        .select();
 
+      if (profileRes.error?.code === '42703') {
+        profileRes = await supabase
+          .from('users')
+          .upsert({ ...baseProfile, contact_number: contactValue }, { onConflict: 'uid', ignoreDuplicates: false })
+          .select();
+      }
+      if (profileRes.error?.code === '42703') {
+        profileRes = await supabase
+          .from('users')
+          .upsert(baseProfile, { onConflict: 'uid', ignoreDuplicates: false })
+          .select();
+      }
+
+      if (profileRes.error) {
+        console.error('Profile creation failed:', profileRes.error);
+        throw profileRes.error;
+      }
+
+      // Handle referral code
       if (referralCode) {
         try {
-          const referralRes = await fetch('/api/kids-zone/referrals/join', {
+          await fetch('/api/kids-zone/referrals/join', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ userId: uid, referralCode }),
           });
-          const referralData = await referralRes.json();
-          if (!referralRes.ok) {
-            console.warn('Referral link could not be applied:', referralData?.error || 'Unknown referral error');
-          }
-        } catch (referralErr) {
-          console.warn('Referral processing failed:', referralErr);
-        }
+        } catch {}
       }
 
+      // Ensure user_points row exists
+      await ensureUserProfile(uid).catch(() => {});
+
       setSuccess(true);
-      router.push('/');
+
+      // Instant redirect - use window.location for immediate navigation
+      // This ensures the auth state is fully refreshed on the home page
+      window.location.href = '/';
+
     } catch (err: any) {
-      console.error('Signup process error FULL OBJECT:', err);
+      console.error('Signup error:', err);
       let msg = err?.message || 'Failed to sign up. Please try again.';
-      
-      // More detailed error messages for common database issues
+
       if (err?.code === '42501') {
-        msg = 'Database permission denied. Please run the FIX_SIGNUP_AND_DB_SCHEMA.sql script in Supabase.';
+        msg = 'Database permission denied. Please contact support.';
       } else if (err?.code === '42703') {
-        msg = 'Database column missing. Please run the FIX_SIGNUP_AND_DB_SCHEMA.sql script in Supabase.';
+        msg = 'Database column missing. Please contact support.';
       } else if (err?.code === 'unexpected_failure' || (err?.message && err.message.includes('Database error saving new user'))) {
-        // This is often a generic 500 from Supabase/PostgREST.
-        // It could mean the Trigger failed.
-        msg = 'Database Error: The "handle_new_user" trigger likely failed. Please run FIX_SIGNUP_AND_DB_SCHEMA.sql in Supabase SQL Editor.';
+        msg = 'Database error during signup. Please try again or contact support.';
       } else if (typeof msg === 'string' && msg.toLowerCase().includes('duplicate key')) {
         msg = 'That email is already registered. Try signing in instead.';
       } else if (err?.code === 'email_exists' || err?.code === '23505') {
         msg = 'That email is already registered. Try signing in instead.';
-      } else if (err?.code === 'email_not_confirmed') {
-        msg = 'Email not confirmed. Check your inbox or disable email confirmation in Supabase.';
       }
-      
-      // Append the actual error code for easier debugging
-      if (err?.code) {
-        msg += ` (Code: ${err.code})`;
-      } else if (err?.details) {
-         msg += ` (${err.details})`;
-      }
-
-      try {
-        const storageCheck = mobileAuthHelper.checkStorageAvailability();
-        const isMobile = mobileAuthHelper.isMobileBrowser();
-        if (isMobile && (!storageCheck.localStorage && !storageCheck.sessionStorage)) {
-          msg = 'Mobile browser storage is blocked. Enable cookies/local storage (and disable private mode) then try again.';
-        }
-      } catch {}
 
       setError(msg);
-      setErrorCode(err?.code || err?.name || null);
-      if (isDev) {
-        console.error('Signup error', { code: err?.code, name: err?.name, message: err?.message });
-      }
     } finally {
       setLoading(false);
     }
   };
 
-  const runSupabaseCheck = async () => {
-    setChecking(true);
-    setCheckResult(null);
-    try {
-      const res = await fetch('/api/admin/check-db', { cache: 'no-store' });
-      const json = await res.json();
-      setCheckResult(json);
-    } catch (e: any) {
-      setCheckResult({ error: e?.message || 'Failed to run check' });
-    } finally {
-      setChecking(false);
-    }
-  };
-
   return (
-    <div className="min-h-[70vh] flex items-center justify-center px-4 sm:px-6 py-8">
-      <div className="w-full max-w-md bg-white shadow-lg rounded-xl p-6 sm:p-8">
-        <h1 className="text-2xl sm:text-3xl font-bold text-center mb-2">Create Your Account</h1>
-        <p className="text-center text-gray-600 mb-6 text-sm sm:text-base">Start earning points for learning.</p>
+    <div className="min-h-[80vh] flex items-center justify-center px-4 sm:px-6 py-10 bg-[#fdf8f3] pattern-islamic">
+      <div className="w-full max-w-5xl grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-10 items-stretch">
 
-        <div className="mb-4 rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
-          Having issues signing up? Send a WhatsApp message to{' '}
-          <a className="font-semibold text-islamic-blue hover:underline" href="https://wa.me/447404644610" target="_blank" rel="noopener noreferrer">
-            07404644610
-          </a>{' '}
-          and we will send you login details.
+        {/* Left panel */}
+        <div className="hidden md:flex flex-col justify-between rounded-2xl p-8 bg-gradient-to-br from-[#14b8a6] to-[#0d9488] text-white shadow-xl">
+          <div>
+            <div className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-xs font-semibold">
+              <Shield size={14} /> Safe & Secure
+            </div>
+            <h1 className="mt-5 text-3xl font-extrabold leading-tight">Join Kids Zone</h1>
+            <p className="mt-3 text-white/80">
+              Create your account to start earning points, track your progress, and compete on the leaderboard!
+            </p>
+          </div>
+          <div className="mt-8 space-y-3 text-white/80 text-sm">
+            <div className="flex items-center gap-2"><span>✅</span> Daily Islamic quizzes</div>
+            <div className="flex items-center gap-2"><span>✅</span> Fun educational games</div>
+            <div className="flex items-center gap-2"><span>✅</span> Track Durood & Zikr</div>
+            <div className="flex items-center gap-2"><span>✅</span> Weekly competitions</div>
+          </div>
+          <div className="mt-8 flex gap-4 text-4xl">
+            <span>🌙</span><span>📿</span><span>📖</span>
+          </div>
         </div>
 
-        {referralCode ? (
-          <div className="mb-4 rounded-lg bg-amber-50 text-amber-800 border border-amber-200 px-4 py-3 text-sm">
-            Referral code applied: <strong>{referralCode}</strong>
+        {/* Right panel - Form */}
+        <div className="w-full rounded-2xl bg-white shadow-xl border border-[#e5c9a3]/30 p-6 sm:p-8">
+          <div className="md:hidden mb-6">
+            <h1 className="text-2xl font-extrabold text-[#6a422d]">Create Your Account</h1>
+            <p className="mt-1 text-sm text-[#a1633a]">Start earning points for learning.</p>
           </div>
-        ) : null}
 
-        {!supabaseConfigured && (
-          <div className="mb-4 rounded-lg bg-amber-50 text-amber-900 border border-amber-200 px-4 py-3 text-sm">
-            Sign up is currently unavailable because Supabase keys are missing on this app.
+          {/* Help banner */}
+          <div className="mb-4 rounded-xl border border-[#e5c9a3]/30 bg-[#f9f0e6] px-4 py-3 text-sm text-[#6a422d]">
+            Having issues? WhatsApp{' '}
+            <a className="font-bold text-[#14b8a6] hover:underline" href="https://wa.me/447404644610" target="_blank" rel="noopener noreferrer">
+              07404644610
+            </a>{' '}
+            and we will send you login details.
           </div>
-        )}
 
-        {error && (
-          <div className="mb-4 rounded-lg bg-red-50 text-red-700 px-4 py-3 text-sm">
-            <p className="font-bold text-lg">⚠️ Signup Failed</p>
-            <p className="mb-2">{error}</p>
-            
-            {(errorCode === 'unexpected_failure' || error.includes('Database Error') || error.includes('database error')) && (
-               <div className="mt-3 bg-white p-4 rounded border-2 border-red-500 shadow-lg animate-pulse-border">
-                 <p className="text-sm font-bold text-red-600 mb-2 uppercase">
-                   Action Required: Fix Database
-                 </p>
-                 <ol className="list-decimal list-inside text-sm space-y-2 mb-3 text-gray-800">
-                   <li>
-                     <a 
-                       href="https://supabase.com/dashboard/project/jlqrbbqsuksncrxjcmbc/sql/new" 
-                       target="_blank" 
-                       rel="noopener noreferrer"
-                       className="text-blue-600 underline font-bold hover:text-blue-800"
-                     >
-                       Click here to open Supabase SQL Editor
-                     </a>
-                   </li>
-                   <li>Copy the code below</li>
-                   <li>Paste it into the SQL Editor</li>
-                   <li>Click the green <strong>"Run"</strong> button</li>
-                 </ol>
-                 
-                 <div className="relative">
-                   <textarea 
-                     readOnly 
-                     className="w-full h-40 text-[11px] font-mono bg-gray-100 border border-gray-400 p-2 rounded focus:ring-2 focus:ring-red-500 focus:outline-none text-black"
-                     value={DB_FIX_SQL}
-                     onClick={(e) => e.currentTarget.select()}
-                   />
-                   <div className="absolute top-2 right-2 bg-white/80 px-2 py-1 rounded text-xs pointer-events-none">
-                     Click to Select All
-                   </div>
-                 </div>
-                 
-                 <p className="text-xs text-center text-gray-500 mt-2 font-medium">
-                   After running this, try signing up again.
-                 </p>
-               </div>
-            )}
-          </div>
-        )}
+          {referralCode && (
+            <div className="mb-4 rounded-xl bg-[#fffbeb] text-[#b45309] border border-[#fbbf24]/30 px-4 py-3 text-sm font-semibold">
+              Referral code applied: <strong>{referralCode}</strong>
+            </div>
+          )}
 
-        {success && (
-          <div className="mb-4 rounded-lg bg-green-50 text-green-700 px-4 py-3 text-sm font-medium">
-            ✓ Successfully signed up! {needsEmailConfirmation ? 'Please confirm your email, then sign in.' : 'Redirecting…'}
-          </div>
-        )}
+          {!supabaseConfigured && (
+            <div className="mb-4 rounded-xl bg-[#fff5f5] text-[#ff4757] border border-[#ff6b6b]/30 px-4 py-3 text-sm">
+              Sign up is currently unavailable. Please try again later.
+            </div>
+          )}
 
-        {isDev && debugMode && (
-          <div className="mb-4 rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-xs text-slate-700">
-            <div className="flex items-center justify-between gap-3">
-              <div className="font-semibold">Supabase check</div>
-              <button
-                type="button"
-                onClick={runSupabaseCheck}
-                disabled={checking}
-                className="text-xs font-semibold underline disabled:opacity-60"
+          {error && (
+            <div className="mb-4 rounded-xl bg-[#fff5f5] text-[#ff4757] px-4 py-3 text-sm">
+              <p className="font-bold mb-1">Signup Failed</p>
+              <p>{error}</p>
+            </div>
+          )}
+
+          {success && !needsEmailConfirmation && (
+            <div className="mb-4 rounded-xl bg-[#f0fdfa] text-[#0d9488] px-4 py-3 text-sm font-semibold text-center">
+              Successfully signed up! Redirecting…
+            </div>
+          )}
+
+          {success && needsEmailConfirmation && (
+            <div className="mb-4 rounded-xl bg-[#f0fdfa] text-[#0d9488] px-4 py-3 text-sm">
+              <p className="font-bold mb-1">Check your email!</p>
+              <p>We sent a confirmation link to your email. Please click it, then{' '}
+                <Link href="/signin" className="font-bold underline">sign in</Link>.
+              </p>
+            </div>
+          )}
+
+          {!success && (
+            <form onSubmit={onSubmit} className="space-y-4">
+              <div>
+                <label className="block text-sm font-semibold text-[#6a422d] mb-1">Full name</label>
+                <input
+                  type="text"
+                  className="w-full rounded-xl border-2 border-[#e5c9a3]/40 px-4 py-3 outline-none focus:ring-2 focus:ring-[#14b8a6] focus:border-[#14b8a6] transition"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="e.g., Aisha Khan"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-[#6a422d] mb-1">Age</label>
+                <input
+                  type="number"
+                  inputMode="numeric"
+                  className="w-full rounded-xl border-2 border-[#e5c9a3]/40 px-4 py-3 outline-none focus:ring-2 focus:ring-[#14b8a6] focus:border-[#14b8a6] transition"
+                  value={age}
+                  onChange={(e) => setAge(e.target.value)}
+                  placeholder="e.g., 10"
+                  min={1}
+                  max={120}
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-[#6a422d] mb-1">Madrasah name</label>
+                <input
+                  type="text"
+                  className="w-full rounded-xl border-2 border-[#e5c9a3]/40 px-4 py-3 outline-none focus:ring-2 focus:ring-[#14b8a6] focus:border-[#14b8a6] transition"
+                  value={madrasahName}
+                  onChange={(e) => setMadrasahName(e.target.value)}
+                  placeholder="e.g., Al Qasswa Madrasah"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-[#6a422d] mb-1">Contact number</label>
+                <input
+                  type="tel"
+                  className="w-full rounded-xl border-2 border-[#e5c9a3]/40 px-4 py-3 outline-none focus:ring-2 focus:ring-[#14b8a6] focus:border-[#14b8a6] transition"
+                  value={contactNumber}
+                  onChange={(e) => setContactNumber(e.target.value)}
+                  placeholder="e.g., +44 7404 644610"
+                  autoComplete="tel"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-[#6a422d] mb-1">Email</label>
+                <input
+                  type="email"
+                  className="w-full rounded-xl border-2 border-[#e5c9a3]/40 px-4 py-3 outline-none focus:ring-2 focus:ring-[#14b8a6] focus:border-[#14b8a6] transition"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="kid@example.com"
+                  autoComplete="email"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-[#6a422d] mb-1">Password</label>
+                <div className="relative">
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    className="w-full rounded-xl border-2 border-[#e5c9a3]/40 px-4 py-3 pr-14 outline-none focus:ring-2 focus:ring-[#14b8a6] focus:border-[#14b8a6] transition"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="At least 6 characters"
+                    autoComplete="new-password"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((prev) => !prev)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-[#a1633a] hover:text-[#14b8a6]"
+                    aria-label={showPassword ? 'Hide password' : 'Show password'}
+                  >
+                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-[#6a422d] mb-1">Confirm Password</label>
+                <div className="relative">
+                  <input
+                    type={showConfirmPassword ? 'text' : 'password'}
+                    className="w-full rounded-xl border-2 border-[#e5c9a3]/40 px-4 py-3 pr-14 outline-none focus:ring-2 focus:ring-[#14b8a6] focus:border-[#14b8a6] transition"
+                    value={confirm}
+                    onChange={(e) => setConfirm(e.target.value)}
+                    placeholder="Re-enter password"
+                    autoComplete="new-password"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword((prev) => !prev)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-[#a1633a] hover:text-[#14b8a6]"
+                    aria-label={showConfirmPassword ? 'Hide confirm password' : 'Show confirm password'}
+                  >
+                    {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
+              </div>
+
+              <div className="pt-2">
+                <button
+                  type="submit"
+                  disabled={!supabaseConfigured || loading}
+                  className="w-full py-3 rounded-xl font-bold text-white bg-gradient-to-r from-[#14b8a6] to-[#0d9488] shadow-lg hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {loading ? 'Creating account…' : 'Sign Up'}
+                </button>
+              </div>
+
+              <p className="text-xs text-[#a1633a] text-center">
+                By signing up, you confirm you have parent/guardian permission.
+              </p>
+
+              <p className="text-sm text-center text-[#6a422d]">
+                Already have an account?{' '}
+                <Link href="/signin" className="text-[#14b8a6] font-semibold hover:underline">Sign in</Link>
+              </p>
+            </form>
+          )}
+
+          {success && needsEmailConfirmation && (
+            <div className="mt-4 text-center">
+              <Link
+                href="/signin"
+                className="inline-block px-6 py-3 bg-gradient-to-r from-[#14b8a6] to-[#0d9488] text-white font-bold rounded-xl shadow-lg hover:shadow-xl transition-all"
               >
-                {checking ? 'Checking…' : 'Run check'}
-              </button>
+                Go to Sign In
+              </Link>
             </div>
-            <div className="mt-2">
-              Storage: {(() => {
-                const s = mobileAuthHelper.checkStorageAvailability();
-                return (s.localStorage || s.sessionStorage) ? 'OK' : 'Blocked';
-              })()}
-            </div>
-            {checkResult && (
-              <pre className="mt-2 max-h-40 overflow-auto rounded bg-white border border-slate-200 p-2">
-                {JSON.stringify(checkResult, null, 2)}
-              </pre>
-            )}
-          </div>
-        )}
-
-        <form onSubmit={onSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium mb-1">Full name</label>
-            <input
-              type="text"
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-islamic-blue"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="e.g., Aisha Khan"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium mb-1">Age</label>
-            <input
-              type="number"
-              inputMode="numeric"
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-islamic-blue"
-              value={age}
-              onChange={(e) => setAge(e.target.value)}
-              placeholder="e.g., 10"
-              min={1}
-              max={120}
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium mb-1">Madrasah name</label>
-            <input
-              type="text"
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-islamic-blue"
-              value={madrasahName}
-              onChange={(e) => setMadrasahName(e.target.value)}
-              placeholder="e.g., Al Qasswa Madrasah"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium mb-1">Contact number</label>
-            <input
-              type="tel"
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-islamic-blue"
-              value={contactNumber}
-              onChange={(e) => setContactNumber(e.target.value)}
-              placeholder="e.g., +44 7404 644610"
-              autoComplete="tel"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium mb-1">Email</label>
-            <input
-              type="email"
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-islamic-blue"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="kid@example.com"
-              autoComplete="email"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium mb-1">Password</label>
-            <div className="relative">
-              <input
-                type={showPassword ? 'text' : 'password'}
-                className="w-full rounded-lg border border-gray-300 px-3 py-2 pr-16 focus:outline-none focus:ring-2 focus:ring-islamic-blue"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="At least 6 characters"
-                autoComplete="new-password"
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword((prev) => !prev)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-islamic-blue hover:underline"
-                aria-label={showPassword ? 'Hide password' : 'Show password'}
-              >
-                {showPassword ? 'Hide' : 'Show'}
-              </button>
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium mb-1">Confirm Password</label>
-            <div className="relative">
-              <input
-                type={showConfirmPassword ? 'text' : 'password'}
-                className="w-full rounded-lg border border-gray-300 px-3 py-2 pr-16 focus:outline-none focus:ring-2 focus:ring-islamic-blue"
-                value={confirm}
-                onChange={(e) => setConfirm(e.target.value)}
-                placeholder="Re-enter password"
-                autoComplete="new-password"
-              />
-              <button
-                type="button"
-                onClick={() => setShowConfirmPassword((prev) => !prev)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-islamic-blue hover:underline"
-                aria-label={showConfirmPassword ? 'Hide confirm password' : 'Show confirm password'}
-              >
-                {showConfirmPassword ? 'Hide' : 'Show'}
-              </button>
-            </div>
-          </div>
-
-          <div className="pt-2">
-            <Button type="submit" disabled={!supabaseConfigured || loading} className="w-full">
-              {loading ? 'Creating account…' : 'Sign Up'}
-            </Button>
-          </div>
-
-          <p className="text-xs text-gray-500 text-center">
-            By signing up, you confirm you have parent/guardian permission.
-          </p>
-
-          <p className="text-sm text-center text-gray-600">
-            Already have an account?{' '}
-            <a href="/signin" className="text-islamic-blue font-semibold hover:underline">Sign in</a>
-          </p>
-        </form>
-
-        {isDev && error && (
-          <div className="mt-6 bg-gray-50 border border-gray-200 rounded-lg p-4 text-sm">
-            <p className="font-semibold mb-2">Debug (dev only)</p>
-            <div className="space-y-1 text-gray-700">
-              <p><span className="font-medium">Error code:</span> {errorCode || 'n/a'}</p>
-              <p><span className="font-medium">UID:</span> {debugUid || 'n/a'}</p>
-              <p><span className="font-medium">Has token claims:</span> {debugClaims ? 'yes' : 'no'}</p>
-              {debugClaims && (
-                <details className="mt-2">
-                  <summary className="cursor-pointer">Show claims JSON</summary>
-                  <pre className="mt-2 overflow-auto bg-white p-2 rounded border text-xs">{JSON.stringify(debugClaims, null, 2)}</pre>
-                </details>
-              )}
-            </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
     </div>
   );
