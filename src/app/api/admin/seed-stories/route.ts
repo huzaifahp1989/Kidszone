@@ -42,7 +42,7 @@ export async function POST() {
       {
         title: 'The Ship of Nuh (Noah)',
         summary: 'The story of the great flood and the ark that saved the believers and animals.',
-        content: 'Prophet Nuh (AS) called his people to Allah for 950 years, but they refused to listen. Allah commanded him to build a giant ship on dry land. People laughed at him, but Nuh kept working. When the flood came, water gushed from the earth and fell from the sky. Only those on the ship were saved. It reminds us to always trust Allah’s plan, even when others mock us.',
+        content: "Prophet Nuh (AS) called his people to Allah for 950 years, but they refused to listen. Allah commanded him to build a giant ship on dry land. People laughed at him, but Nuh kept working. When the flood came, water gushed from the earth and fell from the sky. Only those on the ship were saved. It reminds us to always trust Allah's plan, even when others mock us.",
         age_min: 5,
         age_max: 10
       },
@@ -56,17 +56,165 @@ export async function POST() {
       {
         title: 'The Boy and the King',
         summary: 'The story of a brave boy whose faith was stronger than a powerful king.',
-        content: 'A powerful king wanted people to worship him, but a young boy believed only in Allah. The king tried to harm the boy many times—throwing him from a mountain, drowning him in the sea—but Allah always saved him. Finally, the boy told the king the only way to kill him was to say "In the name of the Lord of the boy." The king did so, and everyone who saw it realized that the boy’s God was the true God. The boy sacrificed himself to guide his people to the truth.',
+        content: "A powerful king wanted people to worship him, but a young boy believed only in Allah. The king tried to harm the boy many times\u2014throwing him from a mountain, drowning him in the sea\u2014but Allah always saved him. Finally, the boy told the king the only way to kill him was to say \"In the name of the Lord of the boy.\" The king did so, and everyone who saw it realized that the boy's God was the true God. The boy sacrificed himself to guide his people to the truth.",
         age_min: 8,
         age_max: 14
       },
       {
         title: 'Prophet Yunus (Jonah) and the Rescue from Darkness',
         summary: 'A Quranic story about patience, sincere dua, and how Allah rescues those who turn back to Him.',
-        content:
-          'Prophet Yunus (peace be upon him) called his people to worship Allah, but many refused to listen. Feeling very upset, he left them before Allah had commanded him to go. Soon, he boarded a ship, and a great storm came. To save everyone, the passengers drew lots, and Yunus was chosen. He went into the sea, and Allah caused a huge fish to swallow him. In the deep darkness of the sea and the fish’s belly, Yunus remembered that only Allah can save. He prayed sincerely: “There is no god except You. You are perfect. I was truly among the wrongdoers.” Allah accepted his prayer and rescued him. Yunus was brought safely to shore, weak but alive, and Allah helped him recover. Yunus learned to be patient and to return to Allah with humility.\n\nReference: Qur’an — Al-Anbiya (21:87-88) and As-Saffat (37:139-148).\nLesson: When we make mistakes, we should not despair—turn back to Allah, ask forgiveness, and keep doing good.\n\nComplete the quiz to earn 100 points!',
+        content: "Prophet Yunus (peace be upon him) called his people to worship Allah, but many refused to listen. Feeling very upset, he left them before Allah had commanded him to go. Soon, he boarded a ship, and a great storm came. To save everyone, the passengers drew lots, and Yunus was chosen. He went into the sea, and Allah caused a huge fish to swallow him. In the deep darkness of the sea and the fish\u2019s belly, Yunus remembered that only Allah can save. He prayed sincerely: \u201cThere is no god except You. You are perfect. I was truly among the wrongdoers.\u201d Allah accepted his prayer and rescued him. Yunus was brought safely to shore, weak but alive, and Allah helped him recover. Yunus learned to be patient and to return to Allah with humility.\n\nReference: Qur\u2019an \u2014 Al-Anbiya (21:87-88) and As-Saffat (37:139-148).\nLesson: When we make mistakes, we should not despair\u2014turn back to Allah, ask forgiveness, and keep doing good.",
         age_min: 7,
         age_max: 12
+      },
+      {
+        title: "The Little Pilgrim's First Hajj",
+        summary: 'A young boy experiences the wonder of Hajj for the first time and learns that even small actions done sincerely for Allah are very special.',
+        content: `Ali was only 7 years old, but today felt very special.
+
+"Baba, are we really going to Hajj?" he asked, eyes wide with excitement.
+
+His father smiled. "Yes, my son. We are going to the house of Allah."
+
+When they reached Makkah, Ali saw the Kaaba for the first time. He stopped walking.
+
+"It's\u2026 so big," he whispered.
+
+His father held his hand. "Make a dua, Ali."
+
+Ali raised his tiny hands and said, "O Allah, help me be a good boy."
+
+They walked around the Kaaba together. Ali tried his best to keep up.
+
+"Why are we walking in circles?" he asked.
+
+"We are doing Tawaf," his father explained. "Just like the angels circle Allah's throne."
+
+Ali smiled. "So I'm walking like the angels?"
+
+"Yes," his father replied.
+
+Ali felt proud. Even though his legs were tired, he kept going.
+
+Lesson: Even small actions done sincerely for Allah are very special.`,
+        age_min: 5,
+        age_max: 10
+      },
+      {
+        title: "Hajar's Trust in Allah",
+        summary: 'The story of how Hajar ran between Safa and Marwa searching for water, and how Allah blessed her with Zamzam water.',
+        content: `Long ago, in a hot desert, there was a mother named Hajar.
+
+She had a little baby, Ismail.
+
+One day, there was no water left.
+
+Ismail began to cry.
+
+Hajar ran to a hill called Safa.
+
+She looked around. No water.
+
+Then she ran to another hill called Marwa.
+
+Still nothing.
+
+She ran again\u2026 and again\u2026 seven times.
+
+"Ya Allah, help us," she cried.
+
+Suddenly, she heard something.
+
+Water began to flow from the ground near Ismail!
+
+It was the blessed Zamzam water.
+
+Hajar smiled with tears in her eyes. Allah had helped her.
+
+Lesson: Always trust Allah, even when things feel difficult.`,
+        age_min: 5,
+        age_max: 9
+      },
+      {
+        title: 'The Brave Sacrifice',
+        summary: "The story of Prophet Ibrahim's great test \u2014 being commanded to sacrifice his beloved son Ismail, and how Allah rewarded his obedience.",
+        content: `Prophet Ibrahim loved his son Ismail very much.
+
+One night, he had a dream.
+
+Allah told him to sacrifice his son.
+
+This was a very big test.
+
+Ibrahim told Ismail, "My son, Allah has commanded me."
+
+Ismail replied, "Father, do what Allah has told you. You will find me patient."
+
+They both trusted Allah.
+
+Just as Ibrahim was about to do it, Allah stopped him.
+
+Instead, Allah sent a ram.
+
+"You have passed the test," Allah revealed.
+
+Lesson: Obeying Allah is always the right choice, even when it is hard.`,
+        age_min: 5,
+        age_max: 9
+      },
+      {
+        title: 'Standing on Arafah',
+        summary: 'A young girl learns the importance of the Day of Arafah and discovers that Allah listens to every dua, big or small.',
+        content: `Fatimah stood with her mother on the plain of Arafah.
+
+"Why is everyone raising their hands?" she asked.
+
+Her mother replied, "Today is the most important day of Hajj. We ask Allah for forgiveness."
+
+Fatimah looked around. Thousands of people were making dua.
+
+She raised her hands too.
+
+"O Allah, forgive me\u2026 and my family."
+
+Tears rolled down her cheeks.
+
+Her mother hugged her. "Allah loves when we ask Him."
+
+Fatimah felt peaceful inside.
+
+Lesson: Allah listens to every dua, big or small.`,
+        age_min: 5,
+        age_max: 9
+      },
+      {
+        title: 'Throwing the Stones',
+        summary: "A boy learns the meaning of Ramy al-Jamarat \u2014 throwing stones to resist Shaytan and choose what pleases Allah.",
+        content: `Yusuf picked up small pebbles.
+
+"Why are we throwing stones?" he asked.
+
+His uncle explained, "We are copying Prophet Ibrahim. He threw stones at Shaytan when Shaytan tried to stop him from obeying Allah."
+
+Yusuf held a pebble tightly.
+
+"I don't like Shaytan," he said.
+
+He threw the pebble.
+
+"This is for when Shaytan tells me to do bad things!"
+
+He threw another.
+
+"And this is for when I don't listen to my parents!"
+
+His uncle smiled.
+
+"Good, Yusuf. We are learning to say NO to Shaytan."
+
+Lesson: We should always resist bad thoughts and choose what pleases Allah.`,
+        age_min: 5,
+        age_max: 9
       }
     ];
 
