@@ -233,6 +233,31 @@ export default function TasksPage() {
           </p>
         </div>
 
+        {/* Activity shortcuts */}
+        <section className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <Link href="/studio" className="group flex flex-col items-center gap-3 bg-white rounded-2xl border border-[#e5c9a3]/20 shadow-lg p-6 text-center hover:border-[#14b8a6]/40 hover:shadow-xl transition">
+            <div className="text-4xl">🎙️</div>
+            <div>
+              <p className="font-black text-[#6a422d] text-lg">Record a Story</p>
+              <p className="text-sm text-[#a1633a] mt-1">Record an Islamic story and earn points</p>
+            </div>
+          </Link>
+          <Link href="/pledge" className="group flex flex-col items-center gap-3 bg-white rounded-2xl border border-[#e5c9a3]/20 shadow-lg p-6 text-center hover:border-[#14b8a6]/40 hover:shadow-xl transition">
+            <div className="text-4xl">📿</div>
+            <div>
+              <p className="font-black text-[#6a422d] text-lg">Durood &amp; Zikr Pledge</p>
+              <p className="text-sm text-[#a1633a] mt-1">Complete pledges to gain points</p>
+            </div>
+          </Link>
+          <Link href="/games" className="group flex flex-col items-center gap-3 bg-white rounded-2xl border border-[#e5c9a3]/20 shadow-lg p-6 text-center hover:border-[#14b8a6]/40 hover:shadow-xl transition">
+            <div className="text-4xl">🎮</div>
+            <div>
+              <p className="font-black text-[#6a422d] text-lg">Play Games</p>
+              <p className="text-sm text-[#a1633a] mt-1">Play Islamic games to earn points</p>
+            </div>
+          </Link>
+        </section>
+
         {!user ? (
           <div className="bg-white rounded-2xl border border-[#e5c9a3]/20 shadow-lg p-8 text-center space-y-4">
             <Users size={42} className="mx-auto text-[#6366f1]" />

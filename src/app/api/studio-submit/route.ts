@@ -64,14 +64,16 @@ export async function POST(request: NextRequest) {
     const { data: insertedRecord, error: dbError } = await supabaseAdmin
       .from('recordings')
       .insert({
-        user_id: userId || null, // Ensure null if undefined/empty
-        story_id: null, // Studio recordings don't have a story
+        user_id: userId || null,
+        story_id: null,
+        category: category || null,
         child_name: safeChildName,
         title: safeTitle,
         description: message,
         audio_path: filename,
         duration: parseInt(duration || '0'),
-        status: 'submitted'
+        status: 'submitted',
+        submitted_at: new Date().toISOString(),
       })
       .select()
       .single();

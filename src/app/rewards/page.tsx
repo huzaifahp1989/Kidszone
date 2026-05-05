@@ -182,6 +182,17 @@ export default function RewardsPage() {
       <Navbar />
 
       <main className="max-w-4xl mx-auto px-4 py-8">
+        <Link href="/tasks" className="mb-6 flex items-center justify-between gap-4 rounded-2xl border-2 border-[#14b8a6]/40 bg-gradient-to-r from-[#f0fdfa] to-[#ecfdf5] px-5 py-4 shadow-sm hover:border-[#14b8a6]/70 hover:shadow-md transition">
+          <div className="flex items-center gap-3">
+            <span className="text-3xl">📋</span>
+            <div>
+              <p className="font-extrabold text-[#0f766e] text-base md:text-lg">Check the Tasks page to gain more points</p>
+              <p className="text-sm text-[#0d9488]">Record stories, pledge Durood &amp; Zikr, play games and invite friends</p>
+            </div>
+          </div>
+          <span className="shrink-0 rounded-xl bg-[#14b8a6] px-4 py-2 text-sm font-bold text-white">Go to Tasks →</span>
+        </Link>
+
         <div className="mb-6 rounded-2xl border-2 border-amber-300 bg-gradient-to-r from-amber-50 via-yellow-50 to-orange-50 px-5 py-4 text-center shadow-sm">
           <p className="text-base font-extrabold text-amber-900 md:text-lg">Announcements</p>
           <p className="mt-1 text-xs font-bold uppercase tracking-wide text-amber-700 md:text-sm">Announcement Date: 27 April 2026</p>

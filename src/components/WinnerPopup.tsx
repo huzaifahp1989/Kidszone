@@ -9,14 +9,6 @@ export function WinnerPopup() {
   const pathname = usePathname();
   const [showPopup, setShowPopup] = useState(true);
 
-  const posterWinners = [
-    { rank: 1, name: 'Aisha Farzan', madrasah: 'Masjid Al Ansaar' },
-    { rank: 2, name: 'Muhammad Umar Esat', madrasah: 'Darul Ihsaan' },
-    { rank: 3, name: 'Amina Farzan', madrasah: 'Masjid Al Ansaar' },
-    { rank: 4, name: 'Sara', madrasah: 'Imaam Adam' },
-    { rank: 5, name: 'Aaminah Bhigjee', madrasah: 'Darul Ihsaan' },
-  ];
-
   const handleClose = () => {
     setShowPopup(false);
   };
@@ -33,31 +25,6 @@ export function WinnerPopup() {
       size="lg"
     >
       <div className="space-y-6 text-slate-700 text-sm sm:text-base">
-
-        <div className="p-5 sm:p-6 bg-white rounded-2xl border border-slate-200">
-          <div className="text-center">
-            <div className="inline-flex items-center gap-2 rounded-full bg-[#f0fdfa] px-3 py-1 text-xs font-extrabold text-[#0d9488]">
-              🏅 Competition winners
-            </div>
-            <p className="mt-2 text-lg sm:text-xl font-black text-[#6a422d]">1st May 2026</p>
-          </div>
-          <div className="mt-4 divide-y divide-slate-100 rounded-xl border border-slate-100 overflow-hidden">
-            {posterWinners.map((w) => (
-              <div key={w.rank} className="flex items-center justify-between gap-3 bg-white px-4 py-3">
-                <div className="flex items-center gap-3 min-w-0">
-                  <div className="w-8 h-8 rounded-xl bg-[#fffbeb] border border-[#fbbf24]/30 flex items-center justify-center font-black text-[#b45309]">
-                    {w.rank}
-                  </div>
-                  <div className="min-w-0">
-                    <div className="font-black text-slate-900 truncate">{w.name}</div>
-                    <div className="text-xs text-slate-600 truncate">{w.madrasah}</div>
-                  </div>
-                </div>
-                <div className="text-sm font-black text-[#0d9488]">Winner</div>
-              </div>
-            ))}
-          </div>
-        </div>
 
         <div className="p-5 sm:p-6 bg-amber-50 rounded-2xl border border-amber-200 text-center">
           <p className="font-semibold text-slate-700">

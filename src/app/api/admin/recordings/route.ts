@@ -57,6 +57,20 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
+    // Generate public audio URLs for each recording
+    const recordingsWithUrls = (data || []).map((rec: any) => {
+      if (rec.audio_path && !rec.audio_url) {
+        const { data: publicUrlData } = supabaseAdmin
+          .storage
+          .from('story-recordings')
+          .getPublicUrl(rec.audio_path);
+        if (publicUrlData?.publicUrl) {
+          rec.audio_url = publicUrlData.publicUrl;
+        }
+      }
+      return rec;
+    });
+
     // Get stats
     const { data: statsData, error: statsError } = await supabaseAdmin
       .from('recordings')
@@ -77,7 +91,7 @@ export async function GET(request: Request) {
     }
 
     return NextResponse.json({
-      recordings: data,
+      recordings: recordingsWithUrls,
       stats: statsData || { total: 0, pending: 0, approved: 0, rejected: 0 }
     });
   } catch (error) {

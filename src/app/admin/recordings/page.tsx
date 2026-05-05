@@ -1,10 +1,10 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { AdminRecording } from '@/types/admin';
 import { formatDate } from '@/lib/utils';
-import { SearchIcon, FilterIcon, ChevronRightIcon, ArrowLeftIcon } from 'lucide-react';
+import { SearchIcon, FilterIcon, ChevronRightIcon, ArrowLeftIcon, PlayIcon, PauseIcon, DownloadIcon } from 'lucide-react';
 
 export default function AdminRecordingsList() {
   const router = useRouter();
@@ -15,6 +15,8 @@ export default function AdminRecordingsList() {
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [selectedRecordings, setSelectedRecordings] = useState<Set<string>>(new Set());
   const [bulkActionLoading, setBulkActionLoading] = useState(false);
+  const [playingId, setPlayingId] = useState<string | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
   const [stats, setStats] = useState({
     total: 0,
     pending: 0,
@@ -24,6 +26,14 @@ export default function AdminRecordingsList() {
 
   useEffect(() => {
     fetchRecordings();
+  }, [statusFilter, categoryFilter, searchQuery]);
+
+  // Auto-refresh every 30 seconds to pick up new submissions
+  useEffect(() => {
+    const interval = setInterval(() => {
+      fetchRecordings();
+    }, 30000);
+    return () => clearInterval(interval);
   }, [statusFilter, categoryFilter, searchQuery]);
 
   const fetchRecordings = async () => {
@@ -100,6 +110,47 @@ export default function AdminRecordingsList() {
     }
   };
 
+  const togglePlay = (rec: AdminRecording, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!rec.audio_url) return;
+
+    if (playingId === rec.id) {
+      audioRef.current?.pause();
+      setPlayingId(null);
+      return;
+    }
+
+    if (audioRef.current) {
+      audioRef.current.pause();
+    }
+
+    const newAudio = new Audio(rec.audio_url);
+    newAudio.onended = () => setPlayingId(null);
+    newAudio.onerror = () => setPlayingId(null);
+    newAudio.play().then(() => setPlayingId(rec.id)).catch(() => setPlayingId(null));
+    audioRef.current = newAudio;
+  };
+
+  const downloadRecording = async (rec: AdminRecording, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!rec.audio_url) return;
+    try {
+      const response = await fetch(rec.audio_url);
+      const blob = await response.blob();
+      const ext = rec.audio_path?.split('.').pop() || 'webm';
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `recording-${rec.id}.${ext}`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch {
+      alert('Download failed. Try opening the audio URL directly.');
+    }
+  };
+
   const handleBulkReject = async () => {
     if (selectedRecordings.size === 0) return;
     if (!confirm(`Reject ${selectedRecordings.size} recording(s)?`)) return;
@@ -146,10 +197,16 @@ export default function AdminRecordingsList() {
             >
                 <ArrowLeftIcon size={20} className="text-gray-600" />
             </button>
-            <div>
+            <div className="flex-1">
                 <h1 className="text-3xl font-bold text-gray-900">Story Recordings</h1>
-                <p className="text-gray-500 mt-1">Manage and review student submissions</p>
+                <p className="text-gray-500 mt-1">Manage and review student submissions — auto-refreshes every 30s</p>
             </div>
+            <button
+              onClick={() => fetchRecordings()}
+              className="ml-4 flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-xl shadow-sm hover:bg-gray-50 text-sm font-medium text-gray-700 transition"
+            >
+              🔄 Refresh
+            </button>
         </div>
 
         {/* Stats Dashboard */}
@@ -265,6 +322,7 @@ export default function AdminRecordingsList() {
                     <th className="px-6 py-4">Duration</th>
                     <th className="px-6 py-4">Status</th>
                     <th className="px-6 py-4">Submitted</th>
+                    <th className="px-6 py-4">Audio</th>
                     <th className="px-6 py-4"></th>
                   </tr>
                 </thead>
@@ -277,9 +335,10 @@ export default function AdminRecordingsList() {
                       return (
                     <tr 
                       key={rec.id} 
-                      className={`hover:bg-gray-50 transition-colors ${selectedRecordings.has(rec.id) ? 'bg-blue-50' : ''}`}
+                      className={`hover:bg-gray-50 transition-colors cursor-pointer ${selectedRecordings.has(rec.id) ? 'bg-blue-50' : ''}`}
+                      onClick={() => router.push(`/admin/recordings/${rec.id}`)}
                     >
-                      <td className="px-6 py-4">
+                      <td className="px-6 py-4" onClick={(e) => e.stopPropagation()}>
                         <input
                           type="checkbox"
                           checked={selectedRecordings.has(rec.id)}
@@ -309,6 +368,33 @@ export default function AdminRecordingsList() {
                       </td>
                       <td className="px-6 py-4 text-gray-500">
                         {formatDate(submittedAt)}
+                      </td>
+                      <td className="px-6 py-4" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex items-center gap-2">
+                          {rec.audio_url && (
+                            <button
+                              onClick={(e) => togglePlay(rec, e)}
+                              title={playingId === rec.id ? 'Pause' : 'Play'}
+                              className="w-8 h-8 rounded-full bg-islamic-primary text-white flex items-center justify-center hover:bg-islamic-primary/80 transition"
+                            >
+                              {playingId === rec.id
+                                ? <PauseIcon size={14} fill="currentColor" />
+                                : <PlayIcon size={14} fill="currentColor" className="ml-0.5" />}
+                            </button>
+                          )}
+                          {rec.audio_url && (
+                            <button
+                              onClick={(e) => downloadRecording(rec, e)}
+                              title="Download"
+                              className="w-8 h-8 rounded-full bg-gray-200 text-gray-700 flex items-center justify-center hover:bg-gray-300 transition"
+                            >
+                              <DownloadIcon size={14} />
+                            </button>
+                          )}
+                          {!rec.audio_url && (
+                            <span className="text-xs text-gray-400">No audio</span>
+                          )}
+                        </div>
                       </td>
                       <td className="px-6 py-4 text-right text-gray-400">
                         <ChevronRightIcon size={18} />

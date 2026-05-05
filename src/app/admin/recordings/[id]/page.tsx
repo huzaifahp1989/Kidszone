@@ -289,6 +289,25 @@ export default function AdminRecordingDetail({ params }: { params: Promise<{ id:
     }
   };
 
+  const handleDownload = async () => {
+    if (!recording?.audio_url) return;
+    try {
+      const response = await fetch(recording.audio_url);
+      const blob = await response.blob();
+      const ext = recording.audio_path?.split('.').pop() || 'webm';
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `recording-${recording.id}.${ext}`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch {
+      setAudioError('Download failed. Try opening the audio URL directly.');
+    }
+  };
+
   const formatTime = (time: number) => {
     const minutes = Math.floor(time / 60);
     const seconds = Math.floor(time % 60);
@@ -409,16 +428,13 @@ export default function AdminRecordingDetail({ params }: { params: Promise<{ id:
                   </button>
 
                   {recording.audio_url && (
-                    <a
-                      href={recording.audio_url}
-                      download={`recording-${recording.id}.${recording.audio_path?.split('.').pop() || 'webm'}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
+                    <button
+                      onClick={handleDownload}
                       className="w-12 h-12 rounded-full bg-gray-700 hover:bg-gray-600 text-white flex items-center justify-center transition shadow-lg"
                       title="Download Audio"
                     >
                       <DownloadIcon size={20} />
-                    </a>
+                    </button>
                   )}
                 </div>
               </div>
