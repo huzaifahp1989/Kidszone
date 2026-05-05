@@ -22,7 +22,6 @@ export default function AdminRecordingDetail({ params }: { params: Promise<{ id:
   const [isPlaying, setIsPlaying] = useState(false);
   const [audio, setAudio] = useState<HTMLAudioElement | null>(null);
   const [audioError, setAudioError] = useState<string | null>(null);
-  const [audioBytes, setAudioBytes] = useState<number | null>(null);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [audioContext, setAudioContext] = useState<AudioContext | null>(null);
@@ -43,29 +42,11 @@ export default function AdminRecordingDetail({ params }: { params: Promise<{ id:
     const url = recording?.audio_url;
     if (!url) return;
 
-    const controller = new AbortController();
-    setAudioBytes(null);
-
-    fetch(url, { method: 'HEAD', signal: controller.signal })
-      .then((res) => {
-        const contentLength = res.headers.get('content-length');
-        const parsed = contentLength ? Number(contentLength) : NaN;
-        if (Number.isFinite(parsed)) {
-          setAudioBytes(parsed);
-          if (parsed === 0) {
-            setAudioError('Audio file is empty (0 bytes). Please re-record and submit again.');
-          }
-        }
-      })
-      .catch(() => {});
-
     // Setup audio context for waveform analysis
-    if (url && !audioContext) {
+    if (!audioContext) {
       const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
       setAudioContext(ctx);
     }
-
-    return () => controller.abort();
   }, [recording?.audio_url, audioContext]);
 
   const fetchRecording = async (recordingId: string) => {
@@ -76,7 +57,6 @@ export default function AdminRecordingDetail({ params }: { params: Promise<{ id:
       setRecording(data);
       setAudioError(null);
       setIsPlaying(false);
-      setAudioBytes(null);
       if (audio) {
         audio.pause();
         setAudio(null);
@@ -94,7 +74,6 @@ export default function AdminRecordingDetail({ params }: { params: Promise<{ id:
 
   const togglePlay = () => {
     if (!recording?.audio_url) return;
-    if (audioBytes === 0) return;
 
     if (!audio) {
       const newAudio = new Audio(recording.audio_url);
@@ -441,12 +420,13 @@ export default function AdminRecordingDetail({ params }: { params: Promise<{ id:
 
               {recording.audio_url && (
                 <div className="mt-4">
+                  <p className="text-xs text-gray-400 mb-1">Native player (use if play button above fails):</p>
                   <audio
                     src={recording.audio_url}
                     controls
-                    preload="metadata"
+                    preload="auto"
                     onError={() => setAudioError('Audio failed to load. Try downloading it instead.')}
-                    className="w-full hidden"
+                    className="w-full"
                   />
                 </div>
               )}

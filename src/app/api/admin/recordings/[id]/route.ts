@@ -29,7 +29,7 @@ export async function GET(
       const { data: signedData, error: signedError } = await supabaseAdmin
         .storage
         .from('story-recordings') // Correct bucket name
-        .createSignedUrl(data.audio_path, 3600); // 1 hour expiry
+        .createSignedUrl(data.audio_path, 86400); // 24 hour expiry
 
       if (!signedError && signedData) {
         data.audio_url = signedData.signedUrl;
