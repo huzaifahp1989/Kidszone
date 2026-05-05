@@ -193,20 +193,6 @@ export default function RewardsPage() {
           <span className="shrink-0 rounded-xl bg-[#14b8a6] px-4 py-2 text-sm font-bold text-white">Go to Tasks →</span>
         </Link>
 
-        <div className="mb-6 rounded-2xl border-2 border-amber-300 bg-gradient-to-r from-amber-50 via-yellow-50 to-orange-50 px-5 py-4 text-center shadow-sm">
-          <p className="text-base font-extrabold text-amber-900 md:text-lg">Announcements</p>
-          <p className="mt-1 text-xs font-bold uppercase tracking-wide text-amber-700 md:text-sm">Announcement Date: 27 April 2026</p>
-          <p className="mt-2 text-sm font-semibold text-amber-800 md:text-base">
-            Win &pound;10.00 Amazon gift voucher by sending feedback on the Apple App Store or Google Play Store.
-          </p>
-          <p className="mt-2 text-sm text-amber-800 md:text-base">
-            Continue taking part in quizzes and pledge Durood and Zikr to stay active and boost your chances.
-          </p>
-          <p className="mt-2 text-sm font-semibold text-amber-900 md:text-base">
-            Send us your full name and email to the number shown on the app.
-          </p>
-        </div>
-
         <section className="mb-8 grid gap-6">
           <div className="rounded-3xl border border-emerald-200 bg-gradient-to-br from-emerald-50 via-white to-teal-50 p-6 shadow-sm">
             <div className="flex items-start gap-4">
