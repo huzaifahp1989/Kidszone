@@ -257,21 +257,6 @@ export default function StudioPage() {
       setSubmitError('Please choose what you recorded (Qur’an, Nasheed, or Story).');
       return;
     }
-    // Quality checks
-    if (recordingQuality) {
-      if (recordingQuality.duration < 30) {
-        setSubmitError('Recording is too short! Please record at least 30 seconds.');
-        return;
-      }
-      if (recordingQuality.duration > 300) {
-        setSubmitError('Recording is too long! Please keep it under 5 minutes.');
-        return;
-      }
-      if (recordingQuality.averageVolume < 5) {
-        setSubmitError('Recording volume is too low. Please speak louder or check your microphone.');
-        return;
-      }
-    }
     setSubmitError(null);
     setSubmitSuccess(null);
     setSubmitting(true);
