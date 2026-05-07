@@ -400,7 +400,7 @@ export default function AdminRecordingDetail({ params }: { params: Promise<{ id:
                 <div className="flex items-center justify-center gap-4">
                   <button
                     onClick={togglePlay}
-                    disabled={audioBytes === 0}
+                    disabled={!recording.audio_url}
                     className="w-14 h-14 rounded-full bg-islamic-primary hover:bg-islamic-primary/80 text-white flex items-center justify-center transition-all shadow-lg hover:scale-105 disabled:opacity-50 disabled:hover:scale-100"
                   >
                     {isPlaying ? <PauseIcon size={24} fill="currentColor" /> : <PlayIcon size={24} fill="currentColor" className="ml-1" />}

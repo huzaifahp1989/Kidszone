@@ -12,6 +12,7 @@ import { useAuth } from '@/lib/auth-context';
 import { isTestModeEmail } from '@/lib/test-mode';
 
 const WinnerPopup = dynamic(() => import('@/components/WinnerPopup').then(m => m.WinnerPopup), { ssr: false });
+const NewsletterPopup = dynamic(() => import('@/components/NewsletterPopup').then(m => m.NewsletterPopup), { ssr: false });
 const FeedbackBanner = dynamic(() => import('@/components/FeedbackBanner').then(m => m.FeedbackBanner), { ssr: false });
 const Navbar = dynamic(() => import('./Navbar').then(m => m.Navbar), { ssr: false });
 
@@ -81,6 +82,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </div>
       </footer>
       <MobileBottomNav />
+      <NewsletterPopup />
       <WinnerPopup />
     </>
   );
