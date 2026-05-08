@@ -15,49 +15,56 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Valid email is required' }, { status: 400 });
     }
 
-    const RESEND_API_KEY = process.env.RESEND_API_KEY;
-    if (!RESEND_API_KEY) {
-      console.error('RESEND_API_KEY not configured');
+    const MAILCHIMP_API_KEY = process.env.MAILCHIMP_API_KEY;
+    const MAILCHIMP_LIST_ID = process.env.MAILCHIMP_LIST_ID;
+
+    if (!MAILCHIMP_API_KEY || !MAILCHIMP_LIST_ID) {
+      console.error('Mailchimp credentials not configured');
       return NextResponse.json({ error: 'Email service not configured' }, { status: 500 });
     }
 
-    const toEmail = 'imediac786@gmail.com';
-    const subject = 'New Newsletter Signup';
-    const html = `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <h2 style="color: #0ea5e9;">New Newsletter Signup</h2>
-        <p><strong>Date:</strong> ${new Date().toLocaleString()}</p>
-        <p><strong>Email:</strong> ${email}</p>
-        <p style="color: #6b7280; font-size: 12px; margin-top: 24px;">
-          This email was submitted from the newsletter popup on the Islamic Kids Learning Platform.
-        </p>
-      </div>
-    `;
+    const serverPrefix = MAILCHIMP_API_KEY.split('-')[1];
+    const mailchimpUrl = `https://${serverPrefix}.api.mailchimp.com/3.0/lists/${MAILCHIMP_LIST_ID}/members`;
 
-    const response = await fetch('https://api.resend.com/emails', {
+    const mailchimpResponse = await fetch(mailchimpUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${RESEND_API_KEY}`,
+        Authorization: `Bearer ${MAILCHIMP_API_KEY}`,
       },
       body: JSON.stringify({
-        from: 'Islamic Kids Platform <onboarding@resend.dev>',
-        to: [toEmail],
-        subject,
-        html,
+        email_address: email,
+        status: 'subscribed',
+        tags: ['newsletter-signup'],
       }),
     });
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('Resend API error (newsletter):', errorText);
-      return NextResponse.json({ error: 'Failed to subscribe' }, { status: 500 });
+    if (!mailchimpResponse.ok) {
+      const errorData = await mailchimpResponse.json().catch(() => ({}));
+
+      if (mailchimpResponse.status === 400 && errorData?.title === 'Member Exists') {
+        return NextResponse.json({
+          success: true,
+          message: 'Already subscribed'
+        });
+      }
+
+      console.error('Mailchimp API error:', errorData);
+      return NextResponse.json({
+        error: 'Failed to subscribe. Please try again.'
+      }, { status: 500 });
     }
 
-    return NextResponse.json({ success: true });
+    return NextResponse.json({
+      success: true,
+      message: 'Successfully subscribed to newsletter'
+    });
   } catch (error) {
     console.error('Error in newsletter subscribe API:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json({
+      error: 'Internal server error'
+    }, { status: 500 });
   }
 }
+
 

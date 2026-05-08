@@ -5,9 +5,6 @@ import { usePathname } from 'next/navigation';
 import { Modal, Button } from '@/components';
 
 const STORAGE_KEY = 'newsletter_popup_last_seen';
-const MAILCHIMP_ACTION =
-  'https://mc.us12.list-manage.com/subscribe/post?u=92de7b1f7e938c2bd3b35aab4&id=8ba87552de&f_id=003417e9f0';
-const MAILCHIMP_HONEYPOT = 'b_92de7b1f7e938c2bd3b35aab4_76397';
 
 function isValidEmail(email: string): boolean {
   const t = email.trim();
@@ -21,6 +18,8 @@ export function NewsletterPopup() {
   const [isOpen, setIsOpen] = React.useState(false);
   const [email, setEmail] = React.useState('');
   const [error, setError] = React.useState<string | null>(null);
+  const [loading, setLoading] = React.useState(false);
+  const [submitted, setSubmitted] = React.useState(false);
 
   const isExcludedRoute = React.useMemo(() => {
     if (!pathname) return false;
@@ -45,17 +44,47 @@ export function NewsletterPopup() {
       window.localStorage.setItem(STORAGE_KEY, today);
     }
     setIsOpen(false);
+    setSubmitted(false);
+    setEmail('');
+    setError(null);
   }, []);
 
-  const onSubmit = (e: React.FormEvent) => {
+  const onSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
     setError(null);
 
     if (!isValidEmail(email)) {
       setError('Please enter a valid email address.');
-      e.preventDefault();
       return;
     }
-    close();
+
+    setLoading(true);
+
+    try {
+      const response = await fetch('/api/newsletter/subscribe', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        setError(data?.error || 'Failed to subscribe. Please try again.');
+        return;
+      }
+
+      setSubmitted(true);
+      setEmail('');
+      setTimeout(() => close(), 2000);
+    } catch (err) {
+      console.error('Newsletter subscription error:', err);
+      setError('An error occurred. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   if (isExcludedRoute) return null;
@@ -74,46 +103,54 @@ export function NewsletterPopup() {
           </p>
         </div>
 
-        <form
-          action={MAILCHIMP_ACTION}
-          method="post"
-          target="_blank"
-          onSubmit={onSubmit}
-          className="space-y-3"
-        >
-          <div>
-            <label className="block text-sm font-medium mb-1">Email</label>
-            <input
-              type="email"
-              name="EMAIL"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-islamic-blue"
-              placeholder="you@example.com"
-              autoComplete="email"
-              required
-            />
+        {submitted ? (
+          <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-center">
+            <p className="font-semibold text-emerald-900">✓ Successfully subscribed!</p>
+            <p className="text-sm text-emerald-800 mt-1">Check your email for confirmation.</p>
           </div>
-
-          <div aria-hidden="true" className="hidden">
-            <input type="text" name={MAILCHIMP_HONEYPOT} tabIndex={-1} defaultValue="" />
-          </div>
-
-          {error && (
-            <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
-              {error}
+        ) : (
+          <form onSubmit={onSubmit} className="space-y-3">
+            <div>
+              <label className="block text-sm font-medium mb-1">Email</label>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-islamic-blue"
+                placeholder="you@example.com"
+                autoComplete="email"
+                disabled={loading}
+                required
+              />
             </div>
-          )}
 
-          <div className="flex flex-col sm:flex-row gap-3">
-            <Button type="submit" variant="primary" className="w-full">
-              Subscribe
-            </Button>
-            <Button type="button" variant="outline" className="w-full" onClick={close}>
-              No thanks
-            </Button>
-          </div>
-        </form>
+            {error && (
+              <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+                {error}
+              </div>
+            )}
+
+            <div className="flex flex-col sm:flex-row gap-3">
+              <Button
+                type="submit"
+                variant="primary"
+                className="w-full"
+                disabled={loading}
+              >
+                {loading ? 'Subscribing...' : 'Subscribe'}
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full"
+                onClick={close}
+                disabled={loading}
+              >
+                No thanks
+              </Button>
+            </div>
+          </form>
+        )}
       </div>
     </Modal>
   );
