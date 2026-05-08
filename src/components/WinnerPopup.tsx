@@ -111,6 +111,24 @@ export function WinnerPopup() {
                 </Button>
               </div>
             </div>
+
+            <div className="bg-white rounded-xl border border-sky-100 p-4 text-center">
+              <p className="font-bold text-slate-900">
+                Check out our guide on how to take part to win prizes.
+              </p>
+              <div className="mt-3">
+                <Button
+                  variant="outline"
+                  className="w-full"
+                  onClick={() => {
+                    handleClose();
+                    router.push('/guide');
+                  }}
+                >
+                  📘 Open Guide
+                </Button>
+              </div>
+            </div>
           </div>
         </div>
 
