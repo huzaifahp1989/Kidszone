@@ -18,6 +18,13 @@ export async function POST(request: NextRequest) {
     const MAILCHIMP_API_KEY = process.env.MAILCHIMP_API_KEY;
     const MAILCHIMP_LIST_ID = process.env.MAILCHIMP_LIST_ID;
 
+    console.log('Newsletter API - Environment vars:', {
+      hasApiKey: !!MAILCHIMP_API_KEY,
+      hasListId: !!MAILCHIMP_LIST_ID,
+      apiKeyLength: MAILCHIMP_API_KEY?.length || 0,
+      listIdValue: MAILCHIMP_LIST_ID || 'undefined',
+    });
+
     if (!MAILCHIMP_API_KEY || !MAILCHIMP_LIST_ID) {
       console.error('Mailchimp credentials not configured');
       return NextResponse.json({ error: 'Email service not configured' }, { status: 500 });
