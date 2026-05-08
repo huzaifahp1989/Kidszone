@@ -182,6 +182,15 @@ export default function RewardsPage() {
       <Navbar />
 
       <main className="max-w-4xl mx-auto px-4 py-8">
+        <div className="mb-6">
+          <img
+            src="/posters/weekly-winners-2026-05-08.png"
+            alt="Weekly winners poster"
+            className="w-full max-w-md mx-auto rounded-3xl shadow-lg border border-[#e5c9a3]/30"
+            loading="lazy"
+          />
+        </div>
+
         <Link href="/tasks" className="mb-6 flex items-center justify-between gap-4 rounded-2xl border-2 border-[#14b8a6]/40 bg-gradient-to-r from-[#f0fdfa] to-[#ecfdf5] px-5 py-4 shadow-sm hover:border-[#14b8a6]/70 hover:shadow-md transition">
           <div className="flex items-center gap-3">
             <span className="text-3xl">📋</span>
