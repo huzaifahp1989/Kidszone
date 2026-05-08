@@ -13,5 +13,6 @@ export * from './WeeklyWinnerDisplay';
 export * from './RamadanPopup';
 export * from './WinnerPopup';
 export * from './NewsletterPopup';
+export * from './RewardsPosterPopup';
 export * from './AnnouncementBar';
 export * from './ScrollingTicker';

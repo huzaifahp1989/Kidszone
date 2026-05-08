@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '@/lib/auth-context';
-import { Navbar, Button } from '@/components';
+import { Navbar, Button, RewardsPosterPopup } from '@/components';
 import { Trophy, Star, Award, Lock, Crown } from 'lucide-react';
 import Link from 'next/link';
 
@@ -182,6 +182,8 @@ export default function RewardsPage() {
       <Navbar />
 
       <main className="max-w-4xl mx-auto px-4 py-8">
+        <RewardsPosterPopup />
+
         <div className="mb-6">
           <img
             src="/posters/weekly-winners-2026-05-08.png"
