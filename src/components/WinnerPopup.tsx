@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { Modal, Button } from '@/components';
 
@@ -8,6 +8,11 @@ export function WinnerPopup() {
   const router = useRouter();
   const pathname = usePathname();
   const [showPopup, setShowPopup] = useState(true);
+  const [today, setToday] = useState<string>('');
+
+  useEffect(() => {
+    setToday(new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }));
+  }, []);
 
   const handleClose = () => {
     setShowPopup(false);
@@ -25,6 +30,32 @@ export function WinnerPopup() {
       size="lg"
     >
       <div className="space-y-6 text-slate-700 text-sm sm:text-base">
+
+        <div className="p-5 sm:p-6 bg-gradient-to-r from-yellow-50 to-amber-50 rounded-2xl border-2 border-yellow-300 text-center shadow-lg">
+          <div className="text-5xl mb-3">🏆</div>
+          <p className="font-bold text-slate-600 uppercase tracking-wider text-xs">
+            Weekly Winners{today ? ` • ${today}` : ''}
+          </p>
+          <div className="mt-4 space-y-2">
+            <div className="bg-white/80 rounded-lg p-3 font-bold text-slate-900">
+              🥇 Amina Farzan<span className="block text-xs font-semibold text-slate-600 mt-1">Madrasah Masjid Al Ansaar</span>
+            </div>
+            <div className="bg-white/80 rounded-lg p-3 font-bold text-slate-900">
+              🥈 Salmaan Musa<span className="block text-xs font-semibold text-slate-600 mt-1">Darul Ihsaan</span>
+            </div>
+            <div className="bg-white/80 rounded-lg p-3 font-bold text-slate-900">
+              🥉 Ahmed Raza Ali
+            </div>
+            <div className="bg-white/80 rounded-lg p-3 font-bold text-slate-900">
+              Muhammad Umar Esat<span className="block text-xs font-semibold text-slate-600 mt-1">Darul Ihsaan</span>
+            </div>
+          </div>
+          <div className="mt-4 bg-blue-50 border border-blue-200 rounded-lg p-3">
+            <p className="text-xs sm:text-sm font-semibold text-blue-900">
+              ✨ Please keep taking part in more weekly quizzes, games and pledging durood to be chosen for weekly winner
+            </p>
+          </div>
+        </div>
 
         <div className="p-5 sm:p-6 bg-amber-50 rounded-2xl border border-amber-200 text-center">
           <p className="font-semibold text-slate-700">
