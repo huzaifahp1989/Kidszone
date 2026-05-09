@@ -2,7 +2,7 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { CheckCircle2, ClipboardList, Copy, Mail, Send, Star, Smartphone, UserPlus, Users } from 'lucide-react';
+import { CheckCircle2, ClipboardList, Copy, Mail, Mic, Send, Star, Smartphone, UserPlus, Users } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
 import { APP_STORE_LINKS } from '@/lib/app-store-links';
 
@@ -232,6 +232,36 @@ export default function TasksPage() {
             Your friend must sign up to Kids Zone using your referral link. After they join, your {payload?.joinReward?.points ?? 50} referral points are added automatically.
           </p>
         </div>
+
+        {/* Recording Feature */}
+        <section className="rounded-3xl border border-purple-200 bg-gradient-to-br from-purple-50 via-white to-indigo-50 p-6 shadow-sm">
+          <div className="flex items-start gap-4">
+            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-purple-600 text-3xl text-white shadow-sm">
+              <Mic size={28} />
+            </div>
+            <div className="flex-1">
+              <div className="inline-flex rounded-full bg-purple-100 px-3 py-1 text-xs font-bold uppercase tracking-wide text-purple-800">
+                Record &amp; Earn Points
+              </div>
+              <h2 className="mt-3 text-2xl font-bold text-[#6a422d]">Record Quran, Nasheeds, Stories &amp; Hadith</h2>
+              <div className="mt-3 space-y-2 text-sm leading-6 text-[#a1633a] md:text-base">
+                <p>Use this recorder to record Quran recitation, nasheeds, Islamic stories, Hadith and more.</p>
+                <p className="font-semibold text-purple-700">We will check your recordings and give more points!</p>
+              </div>
+              <div className="mt-5">
+                <a
+                  href="https://create-me-a-audio.vercel.app/record"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center justify-center gap-2 rounded-xl bg-purple-600 px-5 py-3 text-sm font-bold text-white transition hover:bg-purple-700"
+                >
+                  <Mic size={18} />
+                  Open Recorder
+                </a>
+              </div>
+            </div>
+          </div>
+        </section>
 
         {/* Activity shortcuts */}
         <section className="grid grid-cols-1 sm:grid-cols-3 gap-4">

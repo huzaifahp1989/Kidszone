@@ -2,8 +2,8 @@
 
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '@/lib/auth-context';
-import { Navbar, Button, RewardsPosterPopup } from '@/components';
-import { Trophy, Star, Award, Lock, Crown } from 'lucide-react';
+import { Navbar, Button } from '@/components';
+import { Trophy, Star, Award, Lock, Crown, Mic } from 'lucide-react';
 import Link from 'next/link';
 
 type MonthlyCertificate = {
@@ -182,16 +182,36 @@ export default function RewardsPage() {
       <Navbar />
 
       <main className="max-w-4xl mx-auto px-4 py-8">
-        <RewardsPosterPopup />
 
-        <div className="mb-6">
-          <img
-            src="/posters/weekly-winners-2026-05-08.png"
-            alt="Weekly winners poster"
-            className="w-full max-w-md mx-auto rounded-3xl shadow-lg border border-[#e5c9a3]/30"
-            loading="lazy"
-          />
-        </div>
+        {/* Recording Feature */}
+        <section className="mb-6 rounded-3xl border border-purple-200 bg-gradient-to-br from-purple-50 via-white to-indigo-50 p-6 shadow-sm">
+          <div className="flex items-start gap-4">
+            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-purple-600 text-3xl text-white shadow-sm">
+              <Mic size={28} />
+            </div>
+            <div className="flex-1">
+              <div className="inline-flex rounded-full bg-purple-100 px-3 py-1 text-xs font-bold uppercase tracking-wide text-purple-800">
+                Record &amp; Earn Points
+              </div>
+              <h2 className="mt-3 text-2xl font-bold text-slate-900">Record Quran, Nasheeds, Stories &amp; Hadith</h2>
+              <div className="mt-3 space-y-2 text-sm leading-6 text-slate-700 md:text-base">
+                <p>Use the recorder to record your Quran recitation, nasheeds, Islamic stories, Hadith and more.</p>
+                <p className="font-semibold text-purple-700">We will check your recordings and give more points!</p>
+              </div>
+              <div className="mt-5">
+                <a
+                  href="https://create-me-a-audio.vercel.app/record"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center justify-center gap-2 rounded-xl bg-purple-600 px-5 py-3 text-sm font-bold text-white transition hover:bg-purple-700"
+                >
+                  <Mic size={18} />
+                  Open Recorder
+                </a>
+              </div>
+            </div>
+          </div>
+        </section>
 
         <Link href="/tasks" className="mb-6 flex items-center justify-between gap-4 rounded-2xl border-2 border-[#14b8a6]/40 bg-gradient-to-r from-[#f0fdfa] to-[#ecfdf5] px-5 py-4 shadow-sm hover:border-[#14b8a6]/70 hover:shadow-md transition">
           <div className="flex items-center gap-3">
@@ -299,12 +319,7 @@ export default function RewardsPage() {
           </p>
         </div>
 
-        <div className="mb-10 rounded-2xl border border-teal-200 bg-gradient-to-r from-teal-50 to-cyan-50 px-5 py-4 text-center">
-          <p className="font-bold text-teal-800 text-base md:text-lg">New winner will be announced on 1 May 2026.</p>
-          <p className="text-teal-700 mt-2 text-sm md:text-base">
-            Please continue taking part every day to win prizes. The more you play every day, the more points you get.
-          </p>
-        </div>
+
 
         <div className="mb-10 text-center">
           <a
