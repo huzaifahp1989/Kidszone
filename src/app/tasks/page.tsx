@@ -152,11 +152,14 @@ export default function TasksPage() {
     const currentState = referralClaims[task.id] || 'idle';
     if (currentState === 'loading' || currentState === 'submitted' || currentState === 'already_submitted') return;
     setReferralClaims((prev) => ({ ...prev, [task.id]: 'loading' }));
+    const name = task.name.trim();
+    const email = task.email.trim().toLowerCase();
+    const notes = `Referral: name=${name || ''}; email=${email || ''}`;
     submitClaimRequest(
       'referral',
       (state) => setReferralClaims((prev) => ({ ...prev, [task.id]: state })),
       (msg) => setReferralClaimMessages((prev) => ({ ...prev, [task.id]: msg })),
-      `Referred: ${task.name}${task.email ? ` (${task.email})` : ''}`
+      notes
     );
   };
 
@@ -465,7 +468,7 @@ export default function TasksPage() {
                 <CheckCircle2 size={18} className="text-[#14b8a6]" />
                 <h2 className="text-2xl font-bold text-[#6a422d]">Your Referral Tasks</h2>
               </div>
-              <p className="text-sm text-[#a1633a]">Once a friend signs up using your link, click <strong>Claim +50 Points</strong> on their task to submit a reward request. The admin will approve it and add your points.</p>
+              <p className="text-sm text-[#a1633a]">After you refer someone, add their name or email here and click <strong>Claim +30 Points</strong>. The admin will approve it and add your points.</p>
 
               {tasks.length === 0 ? (
                 <div className="rounded-2xl bg-[#fffdf9] border border-dashed border-[#e5c9a3]/40 p-6 text-center text-[#a1633a]">
@@ -506,7 +509,7 @@ export default function TasksPage() {
                                   : 'bg-gradient-to-r from-[#6366f1] to-[#4f46e5] text-white border-transparent shadow-md'
                               } disabled:opacity-60`}
                             >
-                              {submitted ? '✓ Reward Submitted' : cs === 'loading' ? 'Submitting…' : 'Claim +50 Points'}
+                              {submitted ? '✓ Reward Submitted' : cs === 'loading' ? 'Submitting…' : 'Claim +30 Points'}
                             </button>
                           );
                         })()}

@@ -4,7 +4,7 @@ import { supabaseAdmin } from '@/lib/supabase-admin';
 const POINTS_MAP: Record<string, number> = {
   feedback_ios: 30,
   feedback_android: 30,
-  referral: 50,
+  referral: 30,
 };
 
 const LABEL_MAP: Record<string, string> = {
@@ -33,14 +33,28 @@ export async function POST(req: Request) {
     const pointsRequested = POINTS_MAP[claimType];
     const claimLabel = LABEL_MAP[claimType];
 
-    // Prevent duplicate pending/approved claims of the same type for this user.
-    const { data: existing, error: checkError } = await supabaseAdmin
+    const normalizedNotes = typeof notes === 'string' ? notes.trim().slice(0, 500) : '';
+
+    if (claimType === 'referral' && !normalizedNotes) {
+      return NextResponse.json(
+        { error: 'Please add the referred friend name or email.' },
+        { status: 400 }
+      );
+    }
+
+    const checkQuery = supabaseAdmin
       .from('pending_reward_claims')
       .select('id, status')
       .eq('user_id', userId)
       .eq('claim_type', claimType)
-      .in('status', ['pending', 'approved'])
-      .limit(1);
+      .in('status', ['pending', 'approved']);
+
+    // Allow multiple referral claims, but prevent duplicates for the same referred details.
+    if (claimType === 'referral') {
+      checkQuery.eq('notes', normalizedNotes);
+    }
+
+    const { data: existing, error: checkError } = await checkQuery.limit(1);
 
     if (checkError) {
       // Table likely doesn't exist yet — guide the admin.
@@ -92,7 +106,7 @@ export async function POST(req: Request) {
         claim_label: claimLabel,
         points_requested: pointsRequested,
         status: 'pending',
-        notes: typeof notes === 'string' ? notes.slice(0, 500) : null,
+        notes: normalizedNotes ? normalizedNotes : null,
       })
       .select()
       .single();
