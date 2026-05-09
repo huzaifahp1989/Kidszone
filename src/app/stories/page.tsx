@@ -151,7 +151,7 @@ export default function StoriesListPage() {
                     </button>
                   </Link>
 
-                  <a href="https://create-me-a-audio.vercel.app/record" target="_blank" rel="noopener noreferrer">
+                  <a href="https://create-me-a-audio.vercel.app/kids-record" target="_blank" rel="noopener noreferrer">
                     <button className="px-4 py-3 rounded-xl font-bold bg-gradient-to-r from-[#ff6b6b] to-[#ff4757] text-white shadow-md hover:shadow-lg transition-all flex items-center gap-2">
                       <Mic size={16} /> <span className="hidden sm:inline">Record</span>
                       <span className="bg-white/20 text-xs px-1.5 py-0.5 rounded-md">+30</span>
