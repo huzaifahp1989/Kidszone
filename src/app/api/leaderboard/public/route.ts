@@ -41,6 +41,11 @@ function getCurrentWeekRangeUtc() {
   return { weekStartIso: weekStart.toISOString(), weekEndIso: weekEnd.toISOString() };
 }
 
+function buildWeeklyChallenge(summary: { quizCount: number; gameCount: number; pledgeCount: number; recordingCount: number }) {
+  const totalCompleted = summary.quizCount + summary.gameCount + summary.pledgeCount + summary.recordingCount;
+  return totalCompleted >= 5;
+}
+
 export async function GET(req: Request) {
   try {
     const url = new URL(req.url);
@@ -135,7 +140,9 @@ export async function GET(req: Request) {
     const userIds = entriesBase.map((entry: any) => entry.uid).filter(Boolean);
     const winnerTickByUser = new Set<string>();
     const weeklyAttemptCountByUser = new Map<string, number>();
-    const competitionEnteredByUser = new Set<string>();
+    const weeklyGameCountByUser = new Map<string, number>();
+    const weeklyPledgeCountByUser = new Map<string, number>();
+    const weeklyRecordingCountByUser = new Map<string, number>();
 
     if (userIds.length > 0) {
       const { data: winnerRows, error: winnerErr } = await supabaseAdmin
@@ -158,44 +165,70 @@ export async function GET(req: Request) {
 
     if (userIds.length > 0) {
       const { weekStartIso, weekEndIso } = getCurrentWeekRangeUtc();
-      const { data: weeklyAttempts, error: weeklyAttemptsError } = await supabaseAdmin
-        .from('quiz_attempts')
-        .select('user_id')
-        .in('user_id', userIds)
-        .gte('completed_at', weekStartIso)
-        .lt('completed_at', weekEndIso);
+      const [weeklyAttemptsRes, weeklyGamesRes, weeklyPledgesRes, weeklyRecordingsRes] = await Promise.all([
+        supabaseAdmin
+          .from('quiz_attempts')
+          .select('user_id')
+          .in('user_id', userIds)
+          .gte('completed_at', weekStartIso)
+          .lt('completed_at', weekEndIso),
+        supabaseAdmin
+          .from('game_activity_logs')
+          .select('user_id')
+          .in('user_id', userIds)
+          .gte('played_at', weekStartIso)
+          .lt('played_at', weekEndIso),
+        supabaseAdmin
+          .from('pledges')
+          .select('user_id')
+          .in('user_id', userIds)
+          .gte('created_at', weekStartIso)
+          .lt('created_at', weekEndIso),
+        supabaseAdmin
+          .from('recordings')
+          .select('user_id')
+          .in('user_id', userIds)
+          .gte('created_at', weekStartIso)
+          .lt('created_at', weekEndIso),
+      ]);
 
-      if (weeklyAttemptsError) {
-        console.error('Leaderboard weekly attempts error:', weeklyAttemptsError);
+      if (weeklyAttemptsRes.error) {
+        console.error('Leaderboard weekly attempts error:', weeklyAttemptsRes.error);
       } else {
-        for (const row of weeklyAttempts || []) {
+        for (const row of weeklyAttemptsRes.data || []) {
           const uid = String((row as any).user_id || '');
           if (!uid) continue;
           weeklyAttemptCountByUser.set(uid, (weeklyAttemptCountByUser.get(uid) || 0) + 1);
         }
       }
-    }
 
-    if (userIds.length > 0) {
-      const weekStartDate = getCurrentWeekRangeUtc().weekStartIso.slice(0, 10);
-      const { data: progressRows, error: progressErr } = await supabaseAdmin
-        .from('weekly_competition_progress')
-        .select('user_id')
-        .eq('week_start', weekStartDate)
-        .eq('did_quiz', true)
-        .eq('did_pledge', true)
-        .eq('did_game', true)
-        .in('user_id', userIds);
-
-      if (progressErr) {
-        if (progressErr.code !== '42P01') {
-          console.warn('Leaderboard competition progress lookup error:', progressErr.message);
-        }
+      if (weeklyGamesRes.error) {
+        console.error('Leaderboard weekly games error:', weeklyGamesRes.error);
       } else {
-        for (const row of progressRows || []) {
+        for (const row of weeklyGamesRes.data || []) {
           const uid = String((row as any).user_id || '');
           if (!uid) continue;
-          competitionEnteredByUser.add(uid);
+          weeklyGameCountByUser.set(uid, (weeklyGameCountByUser.get(uid) || 0) + 1);
+        }
+      }
+
+      if (weeklyPledgesRes.error) {
+        console.error('Leaderboard weekly pledges error:', weeklyPledgesRes.error);
+      } else {
+        for (const row of weeklyPledgesRes.data || []) {
+          const uid = String((row as any).user_id || '');
+          if (!uid) continue;
+          weeklyPledgeCountByUser.set(uid, (weeklyPledgeCountByUser.get(uid) || 0) + 1);
+        }
+      }
+
+      if (weeklyRecordingsRes.error) {
+        console.error('Leaderboard weekly recordings error:', weeklyRecordingsRes.error);
+      } else {
+        for (const row of weeklyRecordingsRes.data || []) {
+          const uid = String((row as any).user_id || '');
+          if (!uid) continue;
+          weeklyRecordingCountByUser.set(uid, (weeklyRecordingCountByUser.get(uid) || 0) + 1);
         }
       }
     }
@@ -204,7 +237,12 @@ export async function GET(req: Request) {
       ...entry,
       winnerTick: winnerTickByUser.has(String(entry.uid)),
       weeklyQuizAttempts: weeklyAttemptCountByUser.get(entry.uid) || 0,
-      competitionEntered: competitionEnteredByUser.has(String(entry.uid)),
+      weeklyChallengeDone: buildWeeklyChallenge({
+        quizCount: weeklyAttemptCountByUser.get(entry.uid) || 0,
+        gameCount: weeklyGameCountByUser.get(entry.uid) || 0,
+        pledgeCount: weeklyPledgeCountByUser.get(entry.uid) || 0,
+        recordingCount: weeklyRecordingCountByUser.get(entry.uid) || 0,
+      }),
     }));
 
     const { data: winnerData } = await supabaseAdmin

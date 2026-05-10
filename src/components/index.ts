@@ -16,3 +16,5 @@ export * from './NewsletterPopup';
 export * from './RewardsPosterPopup';
 export * from './AnnouncementBar';
 export * from './ScrollingTicker';
+export * from './WeeklyActivitiesProgress';
+export * from './WeeklyActivityPopup';
