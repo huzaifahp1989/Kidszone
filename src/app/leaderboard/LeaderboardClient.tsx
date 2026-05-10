@@ -22,7 +22,6 @@ type Entry = {
 export default function LeaderboardClient() {
   const [activeTab, setActiveTab] = useState<'weekly' | 'monthly'>('monthly');
   const [entries, setEntries] = useState<Entry[]>([]);
-  const [lastWinner, setLastWinner] = useState<Entry | null>(null);
   const [weeklyChallenge, setWeeklyChallenge] = useState<{ remaining: number; qualifiedForDraw: boolean } | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -41,9 +40,7 @@ export default function LeaderboardClient() {
 
       if (!res.ok || !Array.isArray(json.entries)) return;
 
-      const list = json.entries as Entry[];
-      setEntries(list);
-      setLastWinner(json.lastWinner ?? null);
+      setEntries(json.entries as Entry[]);
     } catch (err) {
       const isAbort = (err as any)?.name === 'AbortError';
       if (!isAbort) console.error('Leaderboard load error:', err);
@@ -85,7 +82,6 @@ export default function LeaderboardClient() {
     };
   }, [profile?.uid]);
 
-  // Real-time subscription to refresh when points change
   useEffect(() => {
     const channel = supabase
       .channel('leaderboard-updates')
@@ -106,17 +102,17 @@ export default function LeaderboardClient() {
   };
 
   const leaderboardData = useMemo(() => {
-    return entries.map((e, idx) => ({
-      rank: idx + 1,
-      username: e.name,
-      madrasahName: e.madrasahName || '',
-      level: e.level,
-      points: activeTab === 'weekly' ? (e.weeklyPoints ?? 0) : (e.monthlyPoints ?? 0),
-      uid: e.uid,
-      badges: e.badges ?? 0,
-      lastPlayedDate: e.lastPlayedDate ?? null,
-      winnerTick: e.winnerTick ?? false,
-      weeklyChallengeDone: e.weeklyChallengeDone ?? false,
+    return entries.map((entry, index) => ({
+      rank: index + 1,
+      username: entry.name,
+      madrasahName: entry.madrasahName || '',
+      level: entry.level,
+      points: activeTab === 'weekly' ? (entry.weeklyPoints ?? 0) : (entry.monthlyPoints ?? 0),
+      uid: entry.uid,
+      badges: entry.badges ?? 0,
+      lastPlayedDate: entry.lastPlayedDate ?? null,
+      winnerTick: entry.winnerTick ?? false,
+      weeklyChallengeDone: entry.weeklyChallengeDone ?? false,
     }));
   }, [entries, activeTab]);
 
@@ -149,7 +145,6 @@ export default function LeaderboardClient() {
   return (
     <div className="min-h-screen bg-[#fdf8f3] pattern-islamic">
       <div className="max-w-5xl mx-auto px-4 py-8 space-y-8">
-        {/* Header */}
         <div className="text-center space-y-4">
           <div className="inline-flex items-center gap-2 px-4 py-2 bg-[#fffbeb] rounded-full border border-[#fbbf24]/30">
             <Trophy size={16} className="text-[#f59e0b]" />
@@ -168,18 +163,6 @@ export default function LeaderboardClient() {
           </p>
         </div>
 
-        {/* Last Winner */}
-        {lastWinner && (
-          <div className="bg-gradient-to-r from-[#fbbf24]/20 via-[#fbbf24]/10 to-[#fbbf24]/20 rounded-2xl border-2 border-[#fbbf24]/30 p-6 text-center">
-            <div className="inline-flex items-center gap-2 px-3 py-1 bg-[#fbbf24] text-[#92400e] rounded-full text-sm font-bold mb-3">
-              <Crown size={14} /> Last Week's Champion
-            </div>
-            <h3 className="text-2xl font-bold text-[#6a422d] mb-1">{lastWinner.name}</h3>
-            <p className="text-[#a1633a]">Won with {lastWinner.points} points & {lastWinner.badges} badges</p>
-          </div>
-        )}
-
-        {/* Tabs */}
         <div className="flex gap-3 justify-center">
           <button
             onClick={() => setActiveTab('weekly')}
@@ -189,7 +172,7 @@ export default function LeaderboardClient() {
                 : 'bg-white text-[#6a422d] border border-[#e5c9a3]/30 hover:bg-[#f0fdfa]'
             }`}
           >
-            📊 Weekly
+            Weekly
           </button>
           <button
             onClick={() => setActiveTab('monthly')}
@@ -199,7 +182,7 @@ export default function LeaderboardClient() {
                 : 'bg-white text-[#6a422d] border border-[#e5c9a3]/30 hover:bg-[#f0fdfa]'
             }`}
           >
-            📅 Monthly
+            Monthly
           </button>
           <button
             onClick={handleRefresh}
@@ -225,23 +208,21 @@ export default function LeaderboardClient() {
           <div className={`rounded-2xl border p-5 text-center ${weeklyChallenge.qualifiedForDraw ? 'border-amber-200 bg-amber-50' : 'border-teal-200 bg-teal-50'}`}>
             <p className="font-bold text-base md:text-lg text-[#6a422d]">
               {weeklyChallenge.qualifiedForDraw
-                ? '⭐ You finished all 5 weekly activities. Your leaderboard name gets a star.'
-                : `You have ${weeklyChallenge.remaining} activit${weeklyChallenge.remaining === 1 ? 'y' : 'ies'} left to get your leaderboard star and go into the winner draw.`}
+                ? 'You finished all 5 weekly activities. Your leaderboard name gets a star.'
+                : `You have ${weeklyChallenge.remaining} activit${weeklyChallenge.remaining === 1 ? 'y' : 'ies'} left to get your leaderboard star.`}
             </p>
           </div>
         ) : null}
 
-        {/* Loading */}
         {loading && (
           <div className="bg-white rounded-2xl shadow-lg border border-[#e5c9a3]/30 p-8">
             <div className="h-6 w-48 bg-[#f9f0e6] rounded mb-6 animate-pulse" />
             <div className="space-y-3">
-              {[1,2,3].map(i => <div key={i} className="h-12 bg-[#f9f0e6] rounded animate-pulse" />)}
+              {[1, 2, 3].map((i) => <div key={i} className="h-12 bg-[#f9f0e6] rounded animate-pulse" />)}
             </div>
           </div>
         )}
 
-        {/* Empty State */}
         {!loading && leaderboardData.length === 0 && (
           <div className="bg-white rounded-2xl shadow-lg border border-[#e5c9a3]/30 p-8 text-center">
             <Trophy size={48} className="mx-auto mb-4 text-[#e5c9a3]" />
@@ -250,30 +231,25 @@ export default function LeaderboardClient() {
           </div>
         )}
 
-        {/* Top 3 Podium */}
         {!loading && leaderboardData.length > 0 && (
           <div className="grid grid-cols-3 gap-2 sm:gap-4">
-            {leaderboardData.slice(0, 3).map(entry => (
-              <div
-                key={entry.rank}
-                className={`${getRankStyle(entry.rank)} rounded-2xl p-3 sm:p-6 text-center shadow-lg ${entry.rank === 1 ? 'scale-105' : ''}`}
-              >
+            {leaderboardData.slice(0, 3).map((entry) => (
+              <div key={entry.rank} className={`${getRankStyle(entry.rank)} rounded-2xl p-3 sm:p-6 text-center shadow-lg ${entry.rank === 1 ? 'scale-105' : ''}`}>
                 <div className="flex justify-center mb-3">{getRankIcon(entry.rank)}</div>
                 <p className="text-xs sm:text-sm md:text-base font-bold truncate inline-flex items-center justify-center gap-2 leading-tight">
                   <span className="truncate">{entry.username}</span>
-                  {entry.winnerTick && <span aria-label="Winner" className="text-white/90">✓</span>}
-                  {entry.weeklyChallengeDone && <span aria-label="Weekly challenge complete" className="text-white/90">⭐</span>}
+                  {entry.winnerTick ? <span aria-label="Winner" className="text-white/90">✓</span> : null}
+                  {entry.weeklyChallengeDone && activeTab === 'weekly' ? <span aria-label="Weekly challenge complete" className="text-white/90">⭐</span> : null}
                 </p>
                 <p className="text-xs opacity-90 truncate">{entry.madrasahName || ''}</p>
-                {formatPlayedDate(entry.lastPlayedDate) && <p className="text-xs opacity-90 mt-1">Played: {formatPlayedDate(entry.lastPlayedDate)}</p>}
-                <p className="text-lg sm:text-2xl font-bold">⭐ {entry.points}</p>
-                <p className="text-xs sm:text-sm opacity-80">🏆 {entry.badges} badges</p>
+                {formatPlayedDate(entry.lastPlayedDate) ? <p className="text-xs opacity-90 mt-1">Played: {formatPlayedDate(entry.lastPlayedDate)}</p> : null}
+                <p className="text-lg sm:text-2xl font-bold">{entry.points}</p>
+                <p className="text-xs sm:text-sm opacity-80">{entry.badges} badges</p>
               </div>
             ))}
           </div>
         )}
 
-        {/* Full Leaderboard */}
         {!loading && leaderboardData.length > 0 && (
           <div className="bg-white rounded-2xl shadow-lg border border-[#e5c9a3]/30 overflow-hidden">
             <div className="p-6 bg-gradient-to-r from-[#14b8a6] to-[#0d9488] text-white">
@@ -285,9 +261,7 @@ export default function LeaderboardClient() {
               {leaderboardData.map((entry) => (
                 <div
                   key={entry.rank}
-                  className={`flex items-center gap-4 p-4 transition hover:bg-[#f9f0e6]/50 ${
-                    entry.uid === profile?.uid ? 'bg-[#f0fdfa]/50' : ''
-                  }`}
+                  className={`flex items-center gap-4 p-4 transition hover:bg-[#f9f0e6]/50 ${entry.uid === profile?.uid ? 'bg-[#f0fdfa]/50' : ''}`}
                 >
                   <div className="w-10 text-center font-bold text-[#a1633a]">#{entry.rank}</div>
                   <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#fbbf24] to-[#f59e0b] flex items-center justify-center text-xl">
@@ -296,19 +270,19 @@ export default function LeaderboardClient() {
                   <div className="flex-1">
                     <p className="font-bold text-[#6a422d] inline-flex items-center gap-2">
                       <span>{entry.username}</span>
-                      {entry.winnerTick && <span aria-label="Winner" className="text-emerald-600">✓</span>}
-                      {entry.weeklyChallengeDone && <span aria-label="Weekly challenge complete" className="text-amber-500">⭐</span>}
+                      {entry.winnerTick ? <span aria-label="Winner" className="text-emerald-600">✓</span> : null}
+                      {entry.weeklyChallengeDone && activeTab === 'weekly' ? <span aria-label="Weekly challenge complete" className="text-amber-500">⭐</span> : null}
                     </p>
                     {!entry.weeklyChallengeDone && activeTab === 'weekly' ? (
                       <p className="text-xs text-[#0f766e]">Finish 5 weekly activities to get a star</p>
                     ) : null}
                     <p className="text-xs text-[#a1633a]">Madrasah: {entry.madrasahName || ''}</p>
                     <p className="text-sm text-[#a1633a]">Level {entry.level}</p>
-                    {formatPlayedDate(entry.lastPlayedDate) && <p className="text-xs text-[#a1633a]">Played: {formatPlayedDate(entry.lastPlayedDate)}</p>}
+                    {formatPlayedDate(entry.lastPlayedDate) ? <p className="text-xs text-[#a1633a]">Played: {formatPlayedDate(entry.lastPlayedDate)}</p> : null}
                   </div>
                   <div className="text-right">
-                    <p className="font-bold text-[#f59e0b]">⭐ {entry.points}</p>
-                    <p className="text-sm text-[#a1633a]">🏆 {entry.badges}</p>
+                    <p className="font-bold text-[#f59e0b]">{entry.points}</p>
+                    <p className="text-sm text-[#a1633a]">{entry.badges}</p>
                   </div>
                 </div>
               ))}
@@ -316,7 +290,6 @@ export default function LeaderboardClient() {
           </div>
         )}
 
-        {/* Your Ranking */}
         <div className="bg-gradient-to-r from-[#14b8a6] to-[#0d9488] rounded-2xl p-6 text-white">
           <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
             <Star size={20} /> Your Ranking
@@ -325,10 +298,12 @@ export default function LeaderboardClient() {
             <div className="bg-white/10 rounded-xl p-4 text-center">
               <p className="text-sm text-white/80 mb-1">Your Rank</p>
               <p className="text-3xl font-bold">
-                {profile?.uid ? (() => {
-                  const idx = leaderboardData.findIndex(e => e.uid === profile.uid);
-                  return idx >= 0 ? `#${idx + 1}` : '—';
-                })() : '—'}
+                {profile?.uid
+                  ? (() => {
+                      const idx = leaderboardData.findIndex((entry) => entry.uid === profile.uid);
+                      return idx >= 0 ? `#${idx + 1}` : '—';
+                    })()
+                  : '—'}
               </p>
             </div>
             <div className="bg-white/10 rounded-xl p-4 text-center">
@@ -340,7 +315,6 @@ export default function LeaderboardClient() {
           </div>
         </div>
 
-        {/* Tips */}
         <div className="bg-[#f0fdfa] rounded-2xl p-6 border border-[#14b8a6]/20">
           <h4 className="font-bold text-[#0d9488] mb-3 flex items-center gap-2">
             <Sparkles size={18} /> Tips to Climb the Leaderboard

@@ -83,8 +83,8 @@ export function WeeklyActivitiesProgress() {
               {loading
                 ? 'Checking your weekly challenge progress...'
                 : data?.qualifiedForDraw
-                ? 'Amazing! You completed all 5 activities and are now in the weekly winner draw.'
-                : `You have ${data?.remaining ?? 5} activit${(data?.remaining ?? 5) === 1 ? 'y' : 'ies'} left before going into the winner draw.`}
+                ? 'Amazing! You completed all 5 activities and got your leaderboard star.'
+                : `You have ${data?.remaining ?? 5} activit${(data?.remaining ?? 5) === 1 ? 'y' : 'ies'} left before getting your leaderboard star.`}
             </p>
           </div>
           <Link

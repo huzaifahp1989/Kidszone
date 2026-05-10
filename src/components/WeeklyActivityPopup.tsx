@@ -77,17 +77,17 @@ export function WeeklyActivityPopup({ userId }: WeeklyActivityPopupProps) {
     <Modal
       isOpen={open}
       onClose={() => setOpen(false)}
-      title={qualified ? 'You are in the winner draw' : 'Weekly winner draw progress'}
+      title={qualified ? 'Weekly activities complete' : 'Weekly activities progress'}
       size="lg"
     >
       <div className="space-y-5">
         <div className={`rounded-2xl border p-5 text-center ${qualified ? 'border-amber-200 bg-amber-50' : 'border-teal-200 bg-teal-50'}`}>
           <p className="text-4xl mb-2">{qualified ? '⭐' : '🏆'}</p>
           <p className="text-lg font-bold text-[#6a422d]">
-            {qualified ? 'Amazing! You completed all 5 weekly activities.' : `You have ${remaining} activit${remaining === 1 ? 'y' : 'ies'} left before the winner draw.`}
+            {qualified ? 'Amazing! You completed all 5 weekly activities.' : `You have ${remaining} activit${remaining === 1 ? 'y' : 'ies'} left to complete this week.`}
           </p>
           <p className="mt-2 text-sm text-[#a1633a]">
-            {qualified ? 'Your name can show with a star on the leaderboard this week.' : 'Finish all 5 weekly activities to enter the winner draw.'}
+            {qualified ? 'You now have a star on the weekly leaderboard.' : 'Finish all 5 weekly activities to get a star on the weekly leaderboard.'}
           </p>
         </div>
 
