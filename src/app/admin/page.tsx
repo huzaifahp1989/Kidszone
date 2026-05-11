@@ -82,7 +82,7 @@ interface User {
 
 export default function AdminPanel() {
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<'users' | 'winner-contacts' | 'questions' | 'surahs' | 'hadiths' | 'system' | 'rewards' | 'claims'>('users');
+  const [activeTab, setActiveTab] = useState<'users' | 'winner-contacts' | 'competitions' | 'questions' | 'surahs' | 'hadiths' | 'system' | 'rewards' | 'claims'>('users');
   const [showAddModal, setShowAddModal] = useState(false);
   const [winner, setWinner] = useState<any>(null);
   const [pickingWinner, setPickingWinner] = useState(false);
@@ -115,6 +115,35 @@ export default function AdminPanel() {
   const [claimsError, setClaimsError] = useState<string | null>(null);
   const [processingClaim, setProcessingClaim] = useState<string | null>(null);
 
+  // Competition (Masjid Al-Aqsa) submissions scoring
+  type CompetitionSubmission = {
+    id: string;
+    competition_key: string;
+    full_name: string;
+    email: string;
+    status: string;
+    question_marks: number[];
+    bonus_marks: number;
+    main_score: number;
+    total_score: number;
+    admin_notes?: string | null;
+    reviewed_at?: string | null;
+    created_at?: string;
+  };
+  const [competitionKey, setCompetitionKey] = useState('masjid-al-aqsa-quiz-2026');
+  const [competitionFilter, setCompetitionFilter] = useState<'submitted' | 'approved' | 'rejected' | 'all'>('submitted');
+  const [competitionLoading, setCompetitionLoading] = useState(false);
+  const [competitionError, setCompetitionError] = useState<string | null>(null);
+  const [competitionSetupRequired, setCompetitionSetupRequired] = useState(false);
+  const [competitionSubmissions, setCompetitionSubmissions] = useState<CompetitionSubmission[]>([]);
+  const [editingCompetition, setEditingCompetition] = useState<CompetitionSubmission | null>(null);
+  const [competitionEdit, setCompetitionEdit] = useState<{
+    questionMarks: number[];
+    bonusMarks: number;
+    status: 'submitted' | 'approved' | 'rejected';
+    adminNotes: string;
+  }>({ questionMarks: Array.from({ length: 10 }, () => 0), bonusMarks: 0, status: 'submitted', adminNotes: '' });
+
   // Email Reminder State
   const [sendingReminder, setSendingReminder] = useState<string | null>(null); // userId or 'all'
   const [reminderSent, setReminderSent] = useState<Record<string, boolean>>({});
@@ -141,8 +170,74 @@ export default function AdminPanel() {
       fetchUsers();
     } else if (activeTab === 'claims') {
       fetchClaims();
+    } else if (activeTab === 'competitions') {
+      fetchCompetitionSubmissions();
     }
   }, [activeTab]);
+
+  const fetchCompetitionSubmissions = async (
+    status = competitionFilter,
+    key = competitionKey
+  ) => {
+    setCompetitionLoading(true);
+    setCompetitionError(null);
+    setCompetitionSetupRequired(false);
+    try {
+      const res = await fetch(
+        `/api/admin/competition-submissions?competitionKey=${encodeURIComponent(key)}&status=${encodeURIComponent(status)}`,
+        { headers: { 'x-admin-auth': 'true' }, cache: 'no-store' }
+      );
+      const data = await res.json();
+      if (data.setupRequired) {
+        setCompetitionSetupRequired(true);
+        setCompetitionSubmissions([]);
+        return;
+      }
+      if (!res.ok) throw new Error(data.error || 'Failed to load submissions');
+      setCompetitionSubmissions(Array.isArray(data.submissions) ? data.submissions : []);
+    } catch (err: any) {
+      setCompetitionError(err?.message || 'Could not load competition submissions');
+    } finally {
+      setCompetitionLoading(false);
+    }
+  };
+
+  const openCompetitionEditor = (submission: CompetitionSubmission) => {
+    setEditingCompetition(submission);
+    setCompetitionEdit({
+      questionMarks: Array.isArray(submission.question_marks) && submission.question_marks.length === 10
+        ? submission.question_marks.map((x) => (Number(x) >= 1 ? 1 : 0))
+        : Array.from({ length: 10 }, () => 0),
+      bonusMarks: Number(submission.bonus_marks ?? 0),
+      status: (submission.status as any) || 'submitted',
+      adminNotes: String(submission.admin_notes || ''),
+    });
+  };
+
+  const saveCompetitionEditor = async () => {
+    if (!editingCompetition) return;
+    try {
+      const res = await fetch('/api/admin/competition-submissions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-admin-auth': 'true' },
+        body: JSON.stringify({
+          id: editingCompetition.id,
+          questionMarks: competitionEdit.questionMarks,
+          bonusMarks: competitionEdit.bonusMarks,
+          status: competitionEdit.status,
+          adminNotes: competitionEdit.adminNotes,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to save');
+      const updated = data.submission;
+      setCompetitionSubmissions((prev) => prev.map((s) => (s.id === updated?.id ? updated : s)));
+      setEditingCompetition(null);
+      alert('Scores updated.');
+    } catch (err: any) {
+      alert(err?.message || 'Failed to update scores');
+    }
+  };
 
   const fetchClaims = async (status = claimsFilter) => {
     setClaimsLoading(true);
@@ -515,6 +610,17 @@ export default function AdminPanel() {
             }`}
           >
             <ClipboardCheck size={18} /> Claims
+          </button>
+
+          <button
+            onClick={() => setActiveTab('competitions')}
+            className={`px-5 py-2.5 rounded-lg font-bold transition flex items-center gap-2 whitespace-nowrap ${
+              activeTab === 'competitions'
+                ? 'bg-indigo-600 text-white shadow-md'
+                : 'bg-white text-slate-600 hover:bg-slate-50'
+            }`}
+          >
+            <TrophyIcon size={18} /> Competitions
           </button>
 
           <button
@@ -932,6 +1038,211 @@ export default function AdminPanel() {
                 </table>
               </div>
             </div>
+          </div>
+        )}
+
+        {/* Competitions Tab */}
+        {activeTab === 'competitions' && (
+          <div className="space-y-6">
+            <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4 bg-white p-4 rounded-xl shadow-sm border border-slate-100">
+              <div className="space-y-2">
+                <h2 className="text-2xl font-bold text-slate-800">Competition Scoring</h2>
+                <p className="text-sm text-slate-600">Edit marks for submissions (Masjid Al-Aqsa quiz).</p>
+              </div>
+              <div className="flex flex-col sm:flex-row gap-3">
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-slate-600">Competition key</label>
+                  <input
+                    value={competitionKey}
+                    onChange={(e) => setCompetitionKey(e.target.value)}
+                    className="w-full sm:w-[320px] px-3 py-2 rounded-lg border border-slate-200 text-sm"
+                    placeholder="masjid-al-aqsa-quiz-2026"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-slate-600">Status</label>
+                  <select
+                    value={competitionFilter}
+                    onChange={(e) => {
+                      const v = e.target.value as any;
+                      setCompetitionFilter(v);
+                      fetchCompetitionSubmissions(v, competitionKey);
+                    }}
+                    className="px-3 py-2 rounded-lg border border-slate-200 text-sm bg-white"
+                  >
+                    <option value="submitted">submitted</option>
+                    <option value="approved">approved</option>
+                    <option value="rejected">rejected</option>
+                    <option value="all">all</option>
+                  </select>
+                </div>
+                <div className="flex items-end">
+                  <button
+                    onClick={() => fetchCompetitionSubmissions(competitionFilter, competitionKey)}
+                    className="px-4 py-2 rounded-lg text-sm font-bold bg-white border border-slate-200 text-slate-600 hover:bg-slate-50"
+                  >
+                    Refresh
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {competitionSetupRequired && (
+              <div className="bg-amber-50 border border-amber-300 rounded-xl p-6 space-y-3">
+                <p className="font-bold text-amber-800">Setup Required</p>
+                <p className="text-amber-700 text-sm">
+                  Run <strong>20260511_admin_competition_score_editor.sql</strong> in Supabase SQL editor to enable admin scoring.
+                </p>
+              </div>
+            )}
+
+            {competitionError && (
+              <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-sm text-red-700">
+                {competitionError}
+              </div>
+            )}
+
+            <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-indigo-700 text-white">
+                    <tr>
+                      <th className="px-5 py-4 text-left text-xs font-semibold uppercase tracking-wider">Name</th>
+                      <th className="px-5 py-4 text-left text-xs font-semibold uppercase tracking-wider">Email</th>
+                      <th className="px-5 py-4 text-left text-xs font-semibold uppercase tracking-wider">Status</th>
+                      <th className="px-5 py-4 text-left text-xs font-semibold uppercase tracking-wider">Main</th>
+                      <th className="px-5 py-4 text-left text-xs font-semibold uppercase tracking-wider">Bonus</th>
+                      <th className="px-5 py-4 text-left text-xs font-semibold uppercase tracking-wider">Total</th>
+                      <th className="px-5 py-4 text-left text-xs font-semibold uppercase tracking-wider">Submitted</th>
+                      <th className="px-5 py-4 text-left text-xs font-semibold uppercase tracking-wider">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {competitionLoading ? (
+                      <tr>
+                        <td colSpan={8} className="px-5 py-8 text-center text-slate-500">Loading submissions...</td>
+                      </tr>
+                    ) : competitionSubmissions.length === 0 ? (
+                      <tr>
+                        <td colSpan={8} className="px-5 py-8 text-center text-slate-500">No submissions found.</td>
+                      </tr>
+                    ) : (
+                      competitionSubmissions.map((s) => (
+                        <tr key={s.id} className="hover:bg-slate-50 transition-colors">
+                          <td className="px-5 py-4">
+                            <div className="font-semibold text-slate-800">{s.full_name || 'Unknown'}</div>
+                            <div className="text-xs text-slate-500 mt-1">{s.id}</div>
+                          </td>
+                          <td className="px-5 py-4 text-sm text-slate-700">{s.email}</td>
+                          <td className="px-5 py-4 text-sm font-bold capitalize text-slate-700">{s.status}</td>
+                          <td className="px-5 py-4 text-sm font-bold text-slate-800">{s.main_score ?? 0}/10</td>
+                          <td className="px-5 py-4 text-sm font-bold text-slate-800">{s.bonus_marks ?? 0}/5</td>
+                          <td className="px-5 py-4 text-sm font-bold text-slate-900">{s.total_score ?? 0}/15</td>
+                          <td className="px-5 py-4 text-xs text-slate-500">
+                            {s.created_at ? new Date(s.created_at).toLocaleString() : '-'}
+                          </td>
+                          <td className="px-5 py-4">
+                            <button
+                              onClick={() => openCompetitionEditor(s)}
+                              className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-indigo-50 text-indigo-700 font-bold hover:bg-indigo-100"
+                            >
+                              <Edit size={16} /> Edit
+                            </button>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <Modal
+              isOpen={Boolean(editingCompetition)}
+              onClose={() => setEditingCompetition(null)}
+              title="Edit Competition Scores"
+            >
+              <div className="space-y-4">
+                <div className="text-sm text-slate-600">
+                  <div><strong>Name:</strong> {editingCompetition?.full_name}</div>
+                  <div><strong>Email:</strong> {editingCompetition?.email}</div>
+                </div>
+
+                <div className="space-y-2">
+                  <p className="font-bold text-slate-800">Main questions (10 × 1 mark)</p>
+                  <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+                    {competitionEdit.questionMarks.map((v, idx) => (
+                      <label key={idx} className="flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-sm">
+                        <input
+                          type="checkbox"
+                          checked={v === 1}
+                          onChange={(e) => {
+                            const checked = e.target.checked;
+                            setCompetitionEdit((prev) => {
+                              const next = [...prev.questionMarks];
+                              next[idx] = checked ? 1 : 0;
+                              return { ...prev, questionMarks: next };
+                            });
+                          }}
+                        />
+                        Q{idx + 1}
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <label className="text-sm font-bold text-slate-700">Bonus marks (0–5)</label>
+                    <input
+                      type="number"
+                      min={0}
+                      max={5}
+                      value={competitionEdit.bonusMarks}
+                      onChange={(e) => setCompetitionEdit((p) => ({ ...p, bonusMarks: Number(e.target.value) }))}
+                      className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-sm font-bold text-slate-700">Status</label>
+                    <select
+                      value={competitionEdit.status}
+                      onChange={(e) => setCompetitionEdit((p) => ({ ...p, status: e.target.value as any }))}
+                      className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm bg-white"
+                    >
+                      <option value="submitted">submitted</option>
+                      <option value="approved">approved</option>
+                      <option value="rejected">rejected</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-sm font-bold text-slate-700">Admin notes (optional)</label>
+                  <textarea
+                    value={competitionEdit.adminNotes}
+                    onChange={(e) => setCompetitionEdit((p) => ({ ...p, adminNotes: e.target.value }))}
+                    className="w-full min-h-[90px] px-3 py-2 rounded-lg border border-slate-200 text-sm"
+                    placeholder="Notes for this submission..."
+                  />
+                </div>
+
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => setEditingCompetition(null)}
+                    className="flex-1 px-4 py-3 rounded-xl border border-slate-200 font-bold text-slate-700 hover:bg-slate-50"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={saveCompetitionEditor}
+                    className="flex-1 px-4 py-3 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold hover:opacity-95"
+                  >
+                    Save
+                  </button>
+                </div>
+              </div>
+            </Modal>
           </div>
         )}
 
