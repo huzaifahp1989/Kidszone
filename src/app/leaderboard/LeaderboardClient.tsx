@@ -126,19 +126,6 @@ export default function LeaderboardClient() {
     return `${dd} ${mon} ${y}`;
   };
 
-  const isUserOnlineToday = (lastPlayedDate: string | null | undefined, uid: string) => {
-    if (onlineUserIds.has(uid)) return true;
-    if (!lastPlayedDate) return false;
-    const today = new Date().toISOString().slice(0, 10);
-    return lastPlayedDate === today;
-  };
-
-    useEffect(() => {
-      console.log('Leaderboard: Current onlineUserIds:', Array.from(onlineUserIds));
-      if (profile?.uid) {
-        console.log('Leaderboard: Current user uid:', profile.uid, 'Is online?:', onlineUserIds.has(profile.uid));
-      }
-    }, [onlineUserIds, profile?.uid]);
   const leaderboardData = useMemo(() => {
     return entries.map((entry, index) => ({
       rank: index + 1,
@@ -151,7 +138,7 @@ export default function LeaderboardClient() {
       lastPlayedDate: entry.lastPlayedDate ?? null,
       winnerTick: entry.winnerTick ?? false,
       weeklyChallengeDone: entry.weeklyChallengeDone ?? false,
-      isOnline: isUserOnlineToday(entry.lastPlayedDate, entry.uid),
+      isOnline: onlineUserIds.has(entry.uid),
     }));
   }, [entries, onlineUserIds]);
 
@@ -265,6 +252,9 @@ export default function LeaderboardClient() {
                   key={entry.rank}
                   className={`flex items-center gap-4 p-4 transition hover:bg-[#f9f0e6]/50 ${entry.uid === profile?.uid ? 'bg-[#f0fdfa]/50' : ''}`}
                 >
+                  <div className="w-8 flex-shrink-0 text-center">
+                    {getRankIcon(entry.rank)}
+                  </div>
                   <div className="relative">
                     <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#fbbf24] to-[#f59e0b] flex items-center justify-center text-xl">
                       🌍

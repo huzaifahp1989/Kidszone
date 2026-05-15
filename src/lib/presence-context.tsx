@@ -1,8 +1,16 @@
 'use client';
 
 import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
+import { usePathname } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
 import { supabase } from '@/lib/supabase';
+
+// Pages that are NOT part of the kids zone
+const NON_KIDS_ZONE_PREFIXES = ['/admin', '/signin', '/signup', '/reset-password'];
+
+function isKidsZonePath(path: string): boolean {
+  return !NON_KIDS_ZONE_PREFIXES.some((prefix) => path === prefix || path.startsWith(prefix + '/'));
+}
 
 type PresenceContextType = {
   onlineUserIds: Set<string>;
@@ -13,6 +21,7 @@ const PresenceContext = createContext<PresenceContextType | null>(null);
 export function PresenceProvider({ children }: { children: React.ReactNode }) {
   const [onlineUserIds, setOnlineUserIds] = useState<Set<string>>(new Set());
   const { profile } = useAuth();
+  const pathname = usePathname();
   const presenceChannelRef = useRef<any>(null);
   const heartbeatIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -27,51 +36,49 @@ export function PresenceProvider({ children }: { children: React.ReactNode }) {
       heartbeatIntervalRef.current = null;
     }
 
-      // Only create a new channel if user is logged in
-      if (!profile?.uid) {
-        console.log('PresenceProvider: No profile uid, skipping presence setup');
-        return;
-      }
+    // Only create a new channel if user is logged in
+    if (!profile?.uid) {
+      return;
+    }
 
-      console.log('PresenceProvider: Setting up presence for user:', profile.uid, profile.name);
-    const presenceChannel = supabase.channel('global-presence', { config: { broadcast: { self: true } } });
+    // Key the channel by profile.uid so presenceState() is keyed by uid
+    const presenceChannel = supabase.channel('kids-zone-presence', {
+      config: { presence: { key: profile.uid } },
+    });
     presenceChannelRef.current = presenceChannel;
 
     presenceChannel.on('presence', { event: 'sync' }, () => {
-      const state = presenceChannel.presenceState();
+      const state = presenceChannel.presenceState<{ uid: string; zone: string }>();
       const activeUsers = new Set<string>();
-      
-      Object.entries(state).forEach(([userId, presences]) => {
+
+      Object.entries(state).forEach(([uid, presences]) => {
         if (Array.isArray(presences) && presences.length > 0) {
-          activeUsers.add(userId);
+          const latest = presences[presences.length - 1];
+          // Only count users who are on a kids zone page
+          if (latest.zone && isKidsZonePath(latest.zone)) {
+            activeUsers.add(uid);
+          }
         }
       });
-      
-        console.log('PresenceProvider: Active users updated:', Array.from(activeUsers));
+
       setOnlineUserIds(activeUsers);
     }).subscribe(async (status) => {
-        console.log('PresenceProvider: Channel status:', status);
       if (status === 'SUBSCRIBED') {
-        // Track presence immediately
-          console.log('PresenceProvider: Tracking presence for:', profile.uid);
-        await presenceChannel.track({ uid: profile.uid, name: profile.name, timestamp: Date.now() });
-        
-        // Set up heartbeat to keep presence active
+        await presenceChannel.track({ uid: profile.uid, name: profile.name, zone: pathname, timestamp: Date.now() });
+
         if (heartbeatIntervalRef.current) clearInterval(heartbeatIntervalRef.current);
         heartbeatIntervalRef.current = setInterval(async () => {
-            console.log('PresenceProvider: Heartbeat for:', profile.uid);
-          await presenceChannel.track({ uid: profile.uid, name: profile.name, timestamp: Date.now() });
-        }, 30000); // Update presence every 30 seconds
+          await presenceChannel.track({ uid: profile.uid, name: profile.name, zone: pathname, timestamp: Date.now() });
+        }, 30000);
       }
     });
 
     return () => {
-        console.log('PresenceProvider: Cleaning up presence channel');
       presenceChannel.unsubscribe();
     };
-  }, [profile?.uid, profile?.name]);
+  }, [profile?.uid, profile?.name, pathname]);
 
-  // Cleanup on unmount
+  // Cleanup heartbeat on unmount
   useEffect(() => {
     return () => {
       if (heartbeatIntervalRef.current) {
