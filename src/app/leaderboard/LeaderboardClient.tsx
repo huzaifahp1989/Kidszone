@@ -112,22 +112,6 @@ export default function LeaderboardClient() {
     };
   }, [loadLeaderboard]);
 
-  const leaderboardData = useMemo(() => {
-    return entries.map((entry, index) => ({
-      rank: index + 1,
-      username: entry.name,
-      madrasahName: entry.madrasahName || '',
-      level: entry.level,
-      points: entry.weeklyPoints ?? 0,
-      uid: entry.uid,
-      badges: entry.badges ?? 0,
-      lastPlayedDate: entry.lastPlayedDate ?? null,
-      winnerTick: entry.winnerTick ?? false,
-      weeklyChallengeDone: entry.weeklyChallengeDone ?? false,
-      isOnline: isUserOnlineToday(entry.lastPlayedDate),
-    }));
-  }, [entries]);
-
   const formatPlayedDate = (isoDate: string | null | undefined) => {
     if (!isoDate) return null;
     const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(isoDate.trim());
@@ -145,6 +129,22 @@ export default function LeaderboardClient() {
     const today = new Date().toISOString().slice(0, 10);
     return lastPlayedDate === today;
   };
+
+  const leaderboardData = useMemo(() => {
+    return entries.map((entry, index) => ({
+      rank: index + 1,
+      username: entry.name,
+      madrasahName: entry.madrasahName || '',
+      level: entry.level,
+      points: entry.weeklyPoints ?? 0,
+      uid: entry.uid,
+      badges: entry.badges ?? 0,
+      lastPlayedDate: entry.lastPlayedDate ?? null,
+      winnerTick: entry.winnerTick ?? false,
+      weeklyChallengeDone: entry.weeklyChallengeDone ?? false,
+      isOnline: isUserOnlineToday(entry.lastPlayedDate),
+    }));
+  }, [entries]);
 
   const getRankIcon = (rank: number) => {
     if (rank === 1) return <Crown size={24} className="text-[#fbbf24]" />;
