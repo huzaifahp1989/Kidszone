@@ -3,6 +3,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useAuth } from '@/lib/auth-context';
+import { usePresence } from '@/lib/presence-context';
 import { supabase } from '@/lib/supabase';
 import { Trophy, Crown, Medal, Award, Sparkles, Star } from 'lucide-react';
 
@@ -26,8 +27,8 @@ const POLICY_POPUP_KEY = 'leaderboard_policy_popup_v1';
 export default function LeaderboardClient() {
   const activeTab: 'weekly' = 'weekly';
   const [entries, setEntries] = useState<Entry[]>([]);
-  const [onlineUserIds, setOnlineUserIds] = useState<Set<string>>(new Set());
   const [weeklyChallenge, setWeeklyChallenge] = useState<{ remaining: number; qualifiedForDraw: boolean } | null>(null);
+  const { onlineUserIds } = usePresence();
   const [loading, setLoading] = useState(true);
   const [showPolicyPopup, setShowPolicyPopup] = useState(false);
   const [popupMounted, setPopupMounted] = useState(false);
@@ -112,31 +113,6 @@ export default function LeaderboardClient() {
       supabase.removeChannel(channel);
     };
   }, [loadLeaderboard]);
-
-  useEffect(() => {
-    const presenceChannel = supabase.channel('online-presence', { config: { broadcast: { self: true } } });
-    
-    presenceChannel.on('presence', { event: 'sync' }, () => {
-      const state = presenceChannel.presenceState();
-      const activeUsers = new Set<string>();
-      
-      Object.entries(state).forEach(([userId, presences]) => {
-        if (Array.isArray(presences) && presences.length > 0) {
-          activeUsers.add(userId);
-        }
-      });
-      
-      setOnlineUserIds(activeUsers);
-    }).subscribe(async (status) => {
-      if (status === 'SUBSCRIBED' && profile?.uid) {
-        await presenceChannel.track({ uid: profile.uid, name: profile.name, timestamp: Date.now() });
-      }
-    });
-
-    return () => {
-      presenceChannel.unsubscribe();
-    };
-  }, [profile?.uid, profile?.name]);
 
   const formatPlayedDate = (isoDate: string | null | undefined) => {
     if (!isoDate) return null;

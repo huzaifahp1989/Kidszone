@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Script from 'next/script';
 import './globals.css';
 import { AuthProvider } from '@/lib/auth-context';
+import { PresenceProvider } from '@/lib/presence-context';
 import { AppShell } from '@/components/AppShell';
 import { Nunito, Amiri } from 'next/font/google';
 
@@ -34,7 +35,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en" data-scroll-behavior="smooth">
       <body className={`${nunito.variable} ${amiri.variable} font-sans bg-[#fdf8f3]`}>
         <AuthProvider>
-          <AppShell>{children}</AppShell>
+          <PresenceProvider>
+            <AppShell>{children}</AppShell>
+          </PresenceProvider>
         </AuthProvider>
       </body>
     </html>
