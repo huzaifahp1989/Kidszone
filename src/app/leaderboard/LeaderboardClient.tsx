@@ -267,8 +267,7 @@ export default function LeaderboardClient() {
                   <div className="flex-1">
                     <p className="font-bold text-[#6a422d] inline-flex items-center gap-2">
                       <span>{entry.username}</span>
-                      {entry.isOnline && <span className="text-[10px] font-bold px-2 py-0.5 bg-green-100 text-green-700 rounded-full">online</span>}6a422d] inline-flex items-center gap-2">
-                      <span>{entry.username}</span>
+                      {entry.isOnline && <span className="text-[10px] font-bold px-2 py-0.5 bg-green-100 text-green-700 rounded-full">online</span>}
                       {entry.winnerTick ? <span aria-label="Winner" className="text-emerald-600">✓</span> : null}
                       {entry.weeklyChallengeDone ? <span aria-label="Weekly challenge complete" className="text-amber-500">⭐</span> : null}
                     </p>
