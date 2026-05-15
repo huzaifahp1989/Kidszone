@@ -26,6 +26,7 @@ const POLICY_POPUP_KEY = 'leaderboard_policy_popup_v1';
 export default function LeaderboardClient() {
   const activeTab: 'weekly' = 'weekly';
   const [entries, setEntries] = useState<Entry[]>([]);
+  const [onlineUserIds, setOnlineUserIds] = useState<Set<string>>(new Set());
   const [weeklyChallenge, setWeeklyChallenge] = useState<{ remaining: number; qualifiedForDraw: boolean } | null>(null);
   const [loading, setLoading] = useState(true);
   const [showPolicyPopup, setShowPolicyPopup] = useState(false);
@@ -112,6 +113,31 @@ export default function LeaderboardClient() {
     };
   }, [loadLeaderboard]);
 
+  useEffect(() => {
+    const presenceChannel = supabase.channel('online-presence', { config: { broadcast: { self: true } } });
+    
+    presenceChannel.on('presence', { event: 'sync' }, () => {
+      const state = presenceChannel.presenceState();
+      const activeUsers = new Set<string>();
+      
+      Object.entries(state).forEach(([userId, presences]) => {
+        if (Array.isArray(presences) && presences.length > 0) {
+          activeUsers.add(userId);
+        }
+      });
+      
+      setOnlineUserIds(activeUsers);
+    }).subscribe(async (status) => {
+      if (status === 'SUBSCRIBED' && profile?.uid) {
+        await presenceChannel.track({ uid: profile.uid, name: profile.name, timestamp: Date.now() });
+      }
+    });
+
+    return () => {
+      presenceChannel.unsubscribe();
+    };
+  }, [profile?.uid, profile?.name]);
+
   const formatPlayedDate = (isoDate: string | null | undefined) => {
     if (!isoDate) return null;
     const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(isoDate.trim());
@@ -124,7 +150,8 @@ export default function LeaderboardClient() {
     return `${dd} ${mon} ${y}`;
   };
 
-  const isUserOnlineToday = (lastPlayedDate: string | null | undefined) => {
+  const isUserOnlineToday = (lastPlayedDate: string | null | undefined, uid: string) => {
+    if (onlineUserIds.has(uid)) return true;
     if (!lastPlayedDate) return false;
     const today = new Date().toISOString().slice(0, 10);
     return lastPlayedDate === today;
@@ -142,9 +169,9 @@ export default function LeaderboardClient() {
       lastPlayedDate: entry.lastPlayedDate ?? null,
       winnerTick: entry.winnerTick ?? false,
       weeklyChallengeDone: entry.weeklyChallengeDone ?? false,
-      isOnline: isUserOnlineToday(entry.lastPlayedDate),
+      isOnline: isUserOnlineToday(entry.lastPlayedDate, entry.uid),
     }));
-  }, [entries]);
+  }, [entries, onlineUserIds]);
 
   const getRankIcon = (rank: number) => {
     if (rank === 1) return <Crown size={24} className="text-[#fbbf24]" />;
