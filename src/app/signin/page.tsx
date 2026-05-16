@@ -339,14 +339,15 @@ export default function SignInPage() {
 
       const finishSuccess = async (uid: string) => {
         setProgress('Finalizing sign-in…');
-        // Prime auth state quickly before route transition.
-        try {
-          await withTimeout(supabase.auth.getUser(), isMobile ? 2500 : 3500);
-        } catch {}
 
         // On mobile, always proceed even if getSession isn't immediately readable
         // because WebView storage can lag. The tokens were already set via setSession.
         if (!isMobile) {
+          // Prime auth state quickly before route transition (desktop only).
+          try {
+            await withTimeout(supabase.auth.getUser(), 3500);
+          } catch {}
+
           const session = await waitForSession();
           if (!session) {
             setError('Sign-in succeeded but your browser blocked the session. Please enable cookies/local storage and try again.');
@@ -421,6 +422,13 @@ export default function SignInPage() {
             const uid = json?.user?.id;
             if (access_token && refresh_token && uid) {
               setProgress('Saving session…');
+              // On mobile, don't block on setSession — it can hang in WebViews.
+              // Fire-and-forget and proceed immediately to redirect.
+              if (isMobile) {
+                supabase.auth.setSession({ access_token, refresh_token }).catch(() => {});
+                await finishSuccess(uid);
+                return;
+              }
               await withTimeout(supabase.auth.setSession({ access_token, refresh_token }), 4000);
               await finishSuccess(uid);
               return;
@@ -461,7 +469,7 @@ export default function SignInPage() {
           email: normalizedEmail,
           password,
         }),
-        8000
+        isMobile ? 5000 : 8000
       );
 
       if (!directErr && directData.session?.user?.id) {
@@ -509,6 +517,12 @@ export default function SignInPage() {
         }
 
         setProgress('Saving session…');
+        // On mobile, don't block on setSession — it can hang in WebViews.
+        if (isMobile) {
+          supabase.auth.setSession({ access_token, refresh_token }).catch(() => {});
+          await finishSuccess(uid);
+          return;
+        }
         await withTimeout(supabase.auth.setSession({ access_token, refresh_token }), 4000);
         await finishSuccess(uid);
         return;
