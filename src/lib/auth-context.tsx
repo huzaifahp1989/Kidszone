@@ -205,6 +205,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           }
         }
 
+        // Retry window to handle slower mobile/webview storage propagation
+        // right after a successful sign-in redirect.
+        for (let i = 0; i < 12; i++) {
+          await new Promise((r) => setTimeout(r, 250));
+          const { data: lateData } = await supabase.auth.getSession();
+          const lateUser = lateData.session?.user;
+          if (isMounted && lateUser) {
+            setUser({ id: lateUser.id, email: lateUser.email });
+            setLoading(false);
+            return;
+          }
+        }
+
         // No session; stay signed out. UI can prompt to sign in.
         if (isMounted) {
           setLoading(false);
@@ -228,8 +241,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         console.log('Auth state changed:', u?.id);
         setUser(u);
         
-        // If user signed in, ensure profile is loaded
-        if (u && event === 'SIGNED_IN') {
+        // If user has a valid session event, ensure profile is loaded immediately.
+        if (u && (event === 'SIGNED_IN' || event === 'INITIAL_SESSION')) {
           console.log('User signed in, loading profile...');
           try {
             const { data, error } = await supabase
