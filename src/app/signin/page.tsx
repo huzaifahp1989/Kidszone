@@ -160,7 +160,7 @@ export default function SignInPage() {
     try { window.localStorage.setItem('iklp_remember_me', val ? 'true' : 'false'); } catch {}
   };
 
-  const waitForSession = async (attempts = 6, delayMs = 200) => {
+  const waitForSession = async (attempts = 12, delayMs = 150) => {
     for (let i = 0; i < attempts; i++) {
       try {
         const { data } = await withTimeout(supabase.auth.getSession(), 5000);
@@ -338,31 +338,68 @@ export default function SignInPage() {
         })();
 
       const finishSuccess = async (uid: string) => {
-        setProgress('Checking session…');
-        const session = await waitForSession(isMobile ? 12 : 6, isMobile ? 250 : 200);
-        if (!session) {
-          setError('Sign-in succeeded but your browser blocked the session. Please enable cookies/local storage and try again.');
-          setProgress(null);
-          return;
+        setProgress('Finalizing sign-in…');
+        // Prime auth state quickly before route transition.
+        try {
+          await withTimeout(supabase.auth.getUser(), isMobile ? 2500 : 3500);
+        } catch {}
+
+        // On mobile, always proceed even if getSession isn't immediately readable
+        // because WebView storage can lag. The tokens were already set via setSession.
+        if (!isMobile) {
+          const session = await waitForSession();
+          if (!session) {
+            setError('Sign-in succeeded but your browser blocked the session. Please enable cookies/local storage and try again.');
+            setLoading(false);
+            setProgress(null);
+            authInFlightRef.current = false;
+            return;
+          }
         }
+
         clearFailedAttempts();
+        // Do not block redirect on profile provisioning.
         ensureUserProfile(uid).catch(() => {});
+
         let needsMfa = false;
         try {
-          needsMfa = await withTimeout(beginMfaIfNeeded(), 7000);
+          needsMfa = await withTimeout(beginMfaIfNeeded(), isMobile ? 2500 : 7000);
         } catch {
           needsMfa = false;
         }
         if (needsMfa) {
           setInfo('Enter your 2FA code to continue.');
+          setLoading(false);
           setProgress(null);
+          authInFlightRef.current = false;
           return;
         }
         setInfo('Signed in! Redirecting…');
         setProgress('Redirecting…');
         const next = getNextPath();
-        // Instant redirect - use window.location for immediate navigation
-        window.location.href = next;
+        router.replace(next);
+        router.refresh();
+
+        // Mobile/webview safeguard: do one hard navigation so authenticated UI state
+        // is guaranteed without requiring the user to manually refresh.
+        if (isMobile && typeof window !== 'undefined') {
+          window.setTimeout(() => {
+            try {
+              window.location.replace(next);
+            } catch {}
+          }, 650);
+        }
+
+        // Fallback for stubborn clients that may ignore client routing.
+        if (typeof window !== 'undefined') {
+          window.setTimeout(() => {
+            try {
+              if (window.location.pathname.startsWith('/signin')) {
+                window.location.href = next;
+              }
+            } catch {}
+          }, 900);
+        }
       };
 
       if (isMobile) {
@@ -375,7 +412,7 @@ export default function SignInPage() {
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ email: normalizedEmail, password }),
             },
-            12000
+            7000
           );
 
           if (res.ok) {
@@ -384,10 +421,14 @@ export default function SignInPage() {
             const uid = json?.user?.id;
             if (access_token && refresh_token && uid) {
               setProgress('Saving session…');
-              await withTimeout(supabase.auth.setSession({ access_token, refresh_token }), 8000);
+              await withTimeout(supabase.auth.setSession({ access_token, refresh_token }), 4000);
               await finishSuccess(uid);
               return;
             }
+            // Tokens missing from API response — show error instead of falling through
+            setError('Sign-in succeeded but session tokens were missing. Please try again.');
+            setProgress(null);
+            return;
           } else {
             const raw: string = json?.error ?? '';
             const waitFromApi: number | null = typeof json?.retryAfter === 'number' ? json.retryAfter : null;
@@ -399,6 +440,10 @@ export default function SignInPage() {
               setError(`Too many requests. Please wait ${wait} seconds then try again.`);
               return;
             }
+            // Show the server error directly instead of falling through to direct sign-in
+            setError(raw || 'Sign-in failed. Please check your email and password.');
+            setProgress(null);
+            return;
           }
         } catch (err: any) {
           if (err?.name === 'AbortError') {
@@ -406,6 +451,7 @@ export default function SignInPage() {
             setProgress(null);
             return;
           }
+          // On network errors, fall through to direct Supabase sign-in as a fallback
         }
       }
 
@@ -415,7 +461,7 @@ export default function SignInPage() {
           email: normalizedEmail,
           password,
         }),
-        12000
+        8000
       );
 
       if (!directErr && directData.session?.user?.id) {
@@ -435,7 +481,7 @@ export default function SignInPage() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ email: normalizedEmail, password }),
           },
-          12000
+          7000
         );
 
         if (!res.ok) {
@@ -463,17 +509,19 @@ export default function SignInPage() {
         }
 
         setProgress('Saving session…');
-        await withTimeout(supabase.auth.setSession({ access_token, refresh_token }), 8000);
+        await withTimeout(supabase.auth.setSession({ access_token, refresh_token }), 4000);
         await finishSuccess(uid);
         return;
       }
 
       recordFailedAttempt();
       setError(directMsg || 'Sign-in failed. Please check your email and password.');
+      setLoading(false);
+      setProgress(null);
+      authInFlightRef.current = false;
     } catch (err: any) {
       recordFailedAttempt();
       setError(err?.message || 'An unexpected error occurred. Please try again.');
-    } finally {
       setLoading(false);
       setProgress(null);
       authInFlightRef.current = false;
