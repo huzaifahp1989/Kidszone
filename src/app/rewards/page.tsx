@@ -178,6 +178,24 @@ export default function RewardsPage() {
       <Navbar />
 
       <main className="max-w-4xl mx-auto px-4 py-8">
+        <section className="mb-6 rounded-3xl border border-slate-200 bg-white/80 p-5 shadow-sm">
+          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+            <div>
+              <p className="text-xs font-black uppercase tracking-[0.18em] text-[#0f766e]">Kids Zone Progress</p>
+              <h2 className="mt-2 text-2xl font-black text-slate-900">Points, badges, and competitions</h2>
+              <p className="mt-1 text-sm text-slate-600">Earn points through quizzes, games, and activities. Check your badges, level progress, and monthly certificates below.</p>
+            </div>
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <Link href="/vouchers" className="inline-flex items-center justify-center rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-bold text-slate-800 transition hover:bg-slate-50">
+                Browse Vouchers
+              </Link>
+              <Link href="/my-vouchers" className="inline-flex items-center justify-center rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-bold text-slate-800 transition hover:bg-slate-50">
+                My Vouchers
+              </Link>
+            </div>
+          </div>
+        </section>
+
         <section className="mb-4 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-center">
           <p className="text-amber-900 font-bold">Weekly points are capped at 400 and reset manually by admin.</p>
           <p className="text-amber-800 text-sm mt-1">Accounts above 400 are normalized to 300 so there is still 100 points to achieve during the week.</p>

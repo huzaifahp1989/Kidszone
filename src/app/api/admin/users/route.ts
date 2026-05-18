@@ -43,6 +43,48 @@ const toDateMs = (value: any): number => {
   return Number.isFinite(ms) ? ms : 0;
 };
 
+const normalizeSearch = (value: any) => String(value || '').trim().toLowerCase();
+
+const userMatchesSearch = (user: any, q: string) => {
+  const normalized = normalizeSearch(q);
+  if (!normalized) return true;
+
+  const tokens = normalized.split(/\s+/).filter(Boolean);
+  const searchableText = [
+    user.name,
+    user.email,
+    user.parentEmailNormalized,
+    user.parent_email,
+    user.parentEmail,
+    user.contactNumberNormalized,
+    user.contact_number,
+    user.contactnumber,
+    user.contactNumber,
+    user.cityNormalized,
+    user.city,
+    user.town,
+    user.location,
+    user.madrasahNameNormalized,
+    user.madrasah_name,
+    user.madrasahname,
+    user.madrasahName,
+    user.winnerAboutNormalized,
+    user.winner_note,
+    user.winner_notes,
+    user.about_me,
+    user.about_text,
+    user.uid,
+    user.ageNormalized,
+    user.age,
+    user.child_age,
+  ]
+    .map((v) => String(v ?? ''))
+    .join(' ')
+    .toLowerCase();
+
+  return tokens.every((token) => searchableText.includes(token));
+};
+
 const syncUsersPointsSnapshot = async (
   uid: string,
   points: number,
@@ -80,6 +122,9 @@ export async function GET(request: Request) {
   }
 
   try {
+    const url = new URL(request.url);
+    const q = (url.searchParams.get('q') || '').trim();
+
     console.log('Debug: Fetching users via admin client...');
     const { data: users, error } = await supabaseAdmin
       .from('users')
@@ -270,8 +315,12 @@ export async function GET(request: Request) {
       return toDateMs(b.created_at) - toDateMs(a.created_at);
     });
 
+    const filteredUsers = q
+      ? sortedUsers.filter((user: any) => userMatchesSearch(user, q))
+      : sortedUsers;
+
     console.log(`Debug: Successfully fetched ${users?.length || 0} users`);
-    return NextResponse.json({ users: sortedUsers });
+    return NextResponse.json({ users: filteredUsers });
   } catch (error: any) {
     console.error('Error fetching users:', error);
     return NextResponse.json({ error: error.message }, { status: 500 });

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { AdminRecording } from '@/types/admin';
 import { formatDate } from '@/lib/utils';
@@ -24,19 +24,7 @@ export default function AdminRecordingsList() {
     rejected: 0
   });
 
-  useEffect(() => {
-    fetchRecordings();
-  }, [statusFilter, categoryFilter, searchQuery]);
-
-  // Auto-refresh every 30 seconds to pick up new submissions
-  useEffect(() => {
-    const interval = setInterval(() => {
-      fetchRecordings();
-    }, 30000);
-    return () => clearInterval(interval);
-  }, [statusFilter, categoryFilter, searchQuery]);
-
-  const fetchRecordings = async () => {
+  const fetchRecordings = useCallback(async () => {
     setLoading(true);
     try {
       let url = '/api/admin/recordings';
@@ -60,7 +48,19 @@ export default function AdminRecordingsList() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [statusFilter, categoryFilter, searchQuery]);
+
+  useEffect(() => {
+    fetchRecordings();
+  }, [fetchRecordings]);
+
+  // Auto-refresh every 30 seconds to pick up new submissions
+  useEffect(() => {
+    const interval = setInterval(() => {
+      fetchRecordings();
+    }, 30000);
+    return () => clearInterval(interval);
+  }, [fetchRecordings]);
 
   const handleSelectAll = (checked: boolean) => {
     if (checked) {

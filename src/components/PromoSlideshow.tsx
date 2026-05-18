@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 
 type Slide = {
@@ -102,23 +102,23 @@ export function PromoSlideshow() {
   const [animating, setAnimating] = useState(false);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const goTo = (idx: number) => {
+  const goTo = useCallback((idx: number) => {
     if (animating) return;
     setAnimating(true);
     setTimeout(() => {
       setActive(idx);
       setAnimating(false);
     }, 250);
-  };
+  }, [animating]);
 
-  const next = () => goTo((active + 1) % SLIDES.length);
-  const prev = () => goTo((active - 1 + SLIDES.length) % SLIDES.length);
+  const next = useCallback(() => goTo((active + 1) % SLIDES.length), [active, goTo]);
+  const prev = useCallback(() => goTo((active - 1 + SLIDES.length) % SLIDES.length), [active, goTo]);
 
   useEffect(() => {
     if (paused) return;
     timerRef.current = setInterval(next, INTERVAL_MS);
     return () => { if (timerRef.current) clearInterval(timerRef.current); };
-  }, [active, paused]);
+  }, [next, paused]);
 
   const slide = SLIDES[active];
 

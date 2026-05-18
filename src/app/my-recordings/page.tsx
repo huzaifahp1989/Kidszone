@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
 import { Recording } from '@/types/stories';
@@ -12,15 +12,7 @@ export default function MyRecordingsPage() {
   const [recordings, setRecordings] = useState<Recording[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    if (user) {
-      fetchRecordings();
-    } else {
-      setLoading(false);
-    }
-  }, [user]);
-
-  const fetchRecordings = async () => {
+  const fetchRecordings = useCallback(async () => {
     try {
       const runQuery = async (orderColumn: 'submitted_at' | 'created_at') => {
         return await supabase
@@ -47,7 +39,15 @@ export default function MyRecordingsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user]);
+
+  useEffect(() => {
+    if (user) {
+      fetchRecordings();
+    } else {
+      setLoading(false);
+    }
+  }, [fetchRecordings, user]);
 
   const getStatusColor = (status: string) => {
     switch (status) {

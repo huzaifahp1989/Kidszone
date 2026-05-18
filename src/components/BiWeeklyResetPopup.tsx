@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 
 type BiWeeklyResetPopupProps = {
@@ -17,25 +17,15 @@ function getBiWeeklyPeriodIndex(nowMs: number) {
 }
 
 export function BiWeeklyResetPopup({ pageKey }: BiWeeklyResetPopupProps) {
-  const [open, setOpen] = useState(false);
-  const [mounted, setMounted] = useState(false);
+  const [periodIndex] = useState(() => getBiWeeklyPeriodIndex(Date.now()));
 
   const popupStorageKey = useMemo(() => {
-    const periodIndex = getBiWeeklyPeriodIndex(Date.now());
     return `kidszone-weekly-reset-popup:v4:${pageKey}:${periodIndex}`;
-  }, [pageKey]);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    const seen = window.localStorage.getItem(popupStorageKey);
-    if (!seen) {
-      setOpen(true);
-    }
-  }, [popupStorageKey]);
+  }, [pageKey, periodIndex]);
+  const [open, setOpen] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return !window.localStorage.getItem(popupStorageKey);
+  });
 
   const closePopup = () => {
     if (typeof window !== 'undefined') {
@@ -44,7 +34,7 @@ export function BiWeeklyResetPopup({ pageKey }: BiWeeklyResetPopupProps) {
     setOpen(false);
   };
 
-  if (!mounted || !open) return null;
+  if (typeof document === 'undefined' || !open) return null;
 
   return createPortal(
     <div className="fixed inset-0 z-[10000] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">

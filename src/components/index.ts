@@ -17,5 +17,7 @@ export * from './RewardsPosterPopup';
 export * from './BiWeeklyResetPopup';
 export * from './AnnouncementBar';
 export * from './ScrollingTicker';
+export * from './VoucherAdminPanel';
+export * from './VoucherHub';
 export * from './WeeklyActivitiesProgress';
 export * from './WeeklyActivityPopup';

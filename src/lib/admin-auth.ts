@@ -1,0 +1,1 @@
+export const isAdminRequest = (request: Request) => request.headers.get('x-admin-auth') === 'true';

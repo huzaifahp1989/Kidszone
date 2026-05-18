@@ -8,11 +8,7 @@ export function WinnerPopup() {
   const router = useRouter();
   const pathname = usePathname();
   const [showPopup, setShowPopup] = useState(true);
-  const [today, setToday] = useState<string>('');
-
-  useEffect(() => {
-    setToday(new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }));
-  }, []);
+  const [today] = useState<string>(() => new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }));
 
   const handleClose = () => {
     setShowPopup(false);

@@ -5,7 +5,7 @@ import { createPortal } from 'react-dom';
 import { useAuth } from '@/lib/auth-context';
 import { usePresence } from '@/lib/presence-context';
 import { supabase } from '@/lib/supabase';
-import { Trophy, Crown, Medal, Award, Sparkles, Star } from 'lucide-react';
+import { Trophy, Award, Sparkles, Star } from 'lucide-react';
 
 type Entry = {
   uid: string;
@@ -143,8 +143,8 @@ export default function LeaderboardClient() {
   }, [entries, onlineUserIds]);
 
   const getRankIcon = (rank: number) => {
-    if (rank === 1) return <Crown size={24} className="text-[#fbbf24]" />;
-    if (rank === 2) return <Medal size={24} className="text-gray-400" />;
+    if (rank === 1) return <span className="text-[#a1633a] font-bold">#1</span>;
+    if (rank === 2) return <span className="text-[#a1633a] font-bold">#2</span>;
     if (rank === 3) return <Award size={24} className="text-[#cd9456]" />;
     return <span className="text-[#a1633a] font-bold">#{rank}</span>;
   };

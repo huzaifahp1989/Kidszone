@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { MASJID_AL_AQSA_BONUS_QUESTION, MASJID_AL_AQSA_MAIN_QUESTION_COUNT, MASJID_AL_AQSA_QUESTIONS, MASJID_AL_AQSA_MAX_TOTAL_SCORE, type MasjidAlAqsaSubmission } from '@/lib/masjid-al-aqsa-competition';
 import { ArrowLeft, CheckCircle2, RefreshCw, ShieldCheck, XCircle } from 'lucide-react';
@@ -42,7 +42,7 @@ export default function AdminMasjidAlAqsaCompetitionPage() {
     }
   }, [router]);
 
-  const fetchSubmissions = async () => {
+  const fetchSubmissions = useCallback(async () => {
     setLoading(true);
     try {
       const res = await fetch('/api/admin/competitions/masjid-al-aqsa/submissions', {
@@ -72,11 +72,11 @@ export default function AdminMasjidAlAqsaCompetitionPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [selectedId]);
 
   useEffect(() => {
     fetchSubmissions();
-  }, []);
+  }, [fetchSubmissions]);
 
   const selected = useMemo(() => submissions.find((submission) => submission.id === selectedId) || null, [submissions, selectedId]);
 
@@ -93,7 +93,7 @@ export default function AdminMasjidAlAqsaCompetitionPage() {
       bonusMarks: Number(selected.bonus_marks || 0),
       adminNotes: parsed.cleanNotes,
     });
-  }, [selected?.id]);
+  }, [selected]);
 
   const markCount = draft.questionMarks.reduce((sum, mark) => sum + Number(mark || 0), 0);
   const effectiveMainScore = Math.max(0, Math.min(10, Number.isFinite(Number(draft.mainScoreOverride)) ? Number(draft.mainScoreOverride) : markCount));

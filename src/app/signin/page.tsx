@@ -33,6 +33,22 @@ export default function SignInPage() {
   const [mfaCode, setMfaCode]               = useState('');
   const [retryIn, setRetryIn]               = useState<number | null>(null);
 
+  const sanitizeNextPath = useCallback((raw: string | null): string => {
+    if (!raw) return '/';
+    const next = raw.startsWith('/') ? raw : '/';
+    const pathOnly = next.split('?')[0]?.split('#')[0] ?? next;
+    if (pathOnly === '/signin' || pathOnly === '/signup' || pathOnly === '/reset-password') return '/';
+    return next;
+  }, []);
+
+  const getNextPath = useCallback(() => {
+    if (typeof window === 'undefined') return '/';
+    try {
+      const next = new URLSearchParams(window.location.search).get('next');
+      return sanitizeNextPath(next);
+    } catch { return '/'; }
+  }, [sanitizeNextPath]);
+
   /* ── Manual-retry countdown (counts down, does NOT auto-submit) ── */
   useEffect(() => {
     if (retryIn === null || retryIn <= 0) { setRetryIn(null); return; }
@@ -102,7 +118,7 @@ export default function SignInPage() {
         router.replace(getNextPath());
       }
     })();
-  }, [router]);
+  }, [getNextPath, router]);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -127,22 +143,6 @@ export default function SignInPage() {
   const normalizedEmail = useMemo(() => email.trim().toLowerCase(), [email]);
   const emailValid      = useMemo(() => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail), [normalizedEmail]);
   const passwordValid   = useMemo(() => password.length >= 6, [password]);
-
-  const sanitizeNextPath = (raw: string | null): string => {
-    if (!raw) return '/';
-    const next = raw.startsWith('/') ? raw : '/';
-    const pathOnly = next.split('?')[0]?.split('#')[0] ?? next;
-    if (pathOnly === '/signin' || pathOnly === '/signup' || pathOnly === '/reset-password') return '/';
-    return next;
-  };
-
-  const getNextPath = () => {
-    if (typeof window === 'undefined') return '/';
-    try {
-      const next = new URLSearchParams(window.location.search).get('next');
-      return sanitizeNextPath(next);
-    } catch { return '/'; }
-  };
 
   const parseRetrySeconds = (msg: string): number | null => {
     const secMatch = msg.match(/try again in (\d+)\s*second/i);

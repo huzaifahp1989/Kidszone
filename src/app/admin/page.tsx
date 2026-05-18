@@ -1,7 +1,7 @@
 ﻿'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Button, Modal } from '@/components';
+import { Button, Modal, VoucherAdminPanel } from '@/components';
 import { TrashIcon, PlusIcon, TrophyIcon, Users, Edit, Search, Loader2, ClipboardCheck, Mail } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
@@ -101,6 +101,9 @@ export default function AdminPanel() {
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [showEditPassword, setShowEditPassword] = useState(false);
   const [editForm, setEditForm] = useState({ name: '', password: '', points: 0, weeklypoints: 0, monthlypoints: 0, winnerTick: false, city: '', age: '' });
+  const [sessionPasswords, setSessionPasswords] = useState<Record<string, string>>({});
+  const [showSessionPassword, setShowSessionPassword] = useState<Record<string, boolean>>({});
+  const [resettingPasswordUser, setResettingPasswordUser] = useState<string | null>(null);
 
   // Pending Claims State
   type PendingClaim = {
@@ -174,13 +177,25 @@ export default function AdminPanel() {
     if (activeTab === 'rewards') {
       fetchCurrentWinner();
     } else if (activeTab === 'users' || activeTab === 'winner-contacts') {
-      fetchUsers();
+      fetchUsers(searchTerm);
     } else if (activeTab === 'claims') {
       fetchClaims();
     } else if (activeTab === 'competitions') {
       fetchCompetitionSubmissions();
     }
+    // This dashboard still uses large local handlers; keep this effect scoped to tab switches.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab]);
+
+  useEffect(() => {
+    if (activeTab !== 'users' && activeTab !== 'winner-contacts') return;
+
+    const timer = window.setTimeout(() => {
+      fetchUsers(searchTerm);
+    }, 300);
+
+    return () => window.clearTimeout(timer);
+  }, [searchTerm, activeTab]);
 
   const fetchCompetitionSubmissions = async (
     status = competitionFilter,
@@ -311,11 +326,15 @@ export default function AdminPanel() {
     }
   };
 
-  const fetchUsers = async () => {
+  const fetchUsers = async (query = '') => {
     setLoadingUsers(true);
     try {
       console.log('Fetching users from Admin API...');
-      const res = await fetch('/api/admin/users', {
+      const params = new URLSearchParams();
+      if (query.trim()) params.set('q', query.trim());
+      const endpoint = params.toString() ? `/api/admin/users?${params.toString()}` : '/api/admin/users';
+
+      const res = await fetch(endpoint, {
         headers: { 'x-admin-auth': 'true' },
         cache: 'no-store'
       });
@@ -429,6 +448,42 @@ export default function AdminPanel() {
     } catch (err: any) {
       console.error('Error deleting user:', err);
       alert('Failed to delete user: ' + err.message);
+    }
+  };
+
+  const generateTempPassword = () => {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#$%';
+    let out = 'KZ-';
+    for (let i = 0; i < 9; i++) {
+      out += chars[Math.floor(Math.random() * chars.length)];
+    }
+    return out;
+  };
+
+  const handleResetUserPassword = async (user: User) => {
+    if (!confirm(`Reset password for ${user.name || 'this user'}?`)) return;
+    const nextPassword = generateTempPassword();
+    setResettingPasswordUser(user.uid);
+    try {
+      const res = await fetch('/api/admin/users', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-admin-auth': 'true',
+        },
+        body: JSON.stringify({ uid: user.uid, password: nextPassword }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to reset password');
+
+      setSessionPasswords((prev) => ({ ...prev, [user.uid]: nextPassword }));
+      setShowSessionPassword((prev) => ({ ...prev, [user.uid]: false }));
+      alert('Password reset successfully. Click Show to reveal it.');
+    } catch (err: any) {
+      alert('Failed to reset password: ' + (err?.message || 'Unknown error'));
+    } finally {
+      setResettingPasswordUser(null);
     }
   };
 
@@ -590,14 +645,30 @@ export default function AdminPanel() {
     return `${day} ${month} ${year}`;
   };
 
-  const filteredUsers = users.filter(user => 
-    (user.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (user.email || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-    getCity(user).toLowerCase().includes(searchTerm.toLowerCase()) ||
-    getAge(user).includes(searchTerm) ||
-    getMobileNumber(user).toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (user.uid || '').includes(searchTerm)
-  );
+  const normalizedSearch = searchTerm.trim().toLowerCase();
+
+  const userMatchesSearch = (user: User) => {
+    if (!normalizedSearch) return true;
+
+    const tokens = normalizedSearch.split(/\s+/).filter(Boolean);
+    const searchableText = [
+      user.name || '',
+      user.email || '',
+      getParentEmail(user),
+      getMobileNumber(user),
+      getCity(user),
+      getMadrasahName(user),
+      getAge(user),
+      user.uid || '',
+      getWinnerAbout(user),
+    ]
+      .join(' ')
+      .toLowerCase();
+
+    return tokens.every((token) => searchableText.includes(token));
+  };
+
+  const filteredUsers = users.filter((user) => userMatchesSearch(user));
 
   const winnerContactUsers = filteredUsers.filter((user) => {
     return Boolean(
@@ -702,17 +773,23 @@ export default function AdminPanel() {
             <TrophyIcon size={18} /> Winner Contacts
           </button>
           
-          {['questions', 'surahs', 'hadiths', 'rewards', 'system'].map(tab => (
+          {[
+            { key: 'questions', label: 'Questions' },
+            { key: 'surahs', label: 'Surahs' },
+            { key: 'hadiths', label: 'Hadiths' },
+            { key: 'rewards', label: 'Vouchers' },
+            { key: 'system', label: 'System' },
+          ].map((tab) => (
             <button
-              key={tab}
-              onClick={() => setActiveTab(tab as any)}
+              key={tab.key}
+              onClick={() => setActiveTab(tab.key as any)}
               className={`px-5 py-2.5 rounded-lg font-bold transition whitespace-nowrap capitalize ${
-                activeTab === tab
+                activeTab === tab.key
                   ? 'bg-indigo-600 text-white shadow-md'
                   : 'bg-white text-slate-600 hover:bg-slate-50'
               }`}
             >
-              {tab}
+              {tab.label}
             </button>
           ))}
         </div>
@@ -830,17 +907,32 @@ export default function AdminPanel() {
         {activeTab === 'users' && (
           <div className="space-y-6">
             <div className="flex flex-col sm:flex-row justify-between items-center gap-4 bg-white p-4 rounded-xl shadow-sm border border-slate-100">
-              <h2 className="text-2xl font-bold text-slate-800">User Management</h2>
+              <h2 className="text-2xl font-bold text-slate-800">
+                User Management
+                <span className="ml-2 text-base font-semibold text-slate-500">
+                  ({filteredUsers.length}/{users.length})
+                </span>
+              </h2>
               <div className="flex items-center gap-4 w-full sm:w-auto">
                 <div className="relative w-full sm:w-64">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400" size={18} />
                   <input 
                     type="text"
-                    placeholder="Search users..."
+                    placeholder="Search name, email, parent email, phone, city..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    className="w-full pl-10 pr-12 py-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   />
+                  {searchTerm && (
+                    <button
+                      type="button"
+                      onClick={() => setSearchTerm('')}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-500 hover:text-slate-700"
+                      title="Clear search"
+                    >
+                      Clear
+                    </button>
+                  )}
                 </div>
                 <button
                   onClick={() => {
@@ -923,6 +1015,7 @@ export default function AdminPanel() {
                   <thead className="bg-slate-50 border-b border-slate-200">
                     <tr>
                       <th className="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">User</th>
+                      <th className="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Password</th>
                       <th className="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Role</th>
                       <th className="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Joined</th>
                       <th className="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">City</th>
@@ -938,11 +1031,11 @@ export default function AdminPanel() {
                   <tbody className="divide-y divide-slate-100">
                     {loadingUsers ? (
                       <tr>
-                        <td colSpan={11} className="px-6 py-8 text-center text-slate-500">Loading users...</td>
+                        <td colSpan={12} className="px-6 py-8 text-center text-slate-500">Loading users...</td>
                       </tr>
                     ) : filteredUsers.length === 0 ? (
                       <tr>
-                        <td colSpan={11} className="px-6 py-8 text-center text-slate-500">No users found</td>
+                        <td colSpan={12} className="px-6 py-8 text-center text-slate-500">No users found</td>
                       </tr>
                     ) : (
                       filteredUsers.map(user => (
@@ -963,6 +1056,32 @@ export default function AdminPanel() {
                                 </div>
                               </div>
                             </div>
+                          </td>
+                          <td className="px-6 py-4 text-sm text-slate-700">
+                            {sessionPasswords[user.uid] ? (
+                              <div className="space-y-2">
+                                <div className="font-mono text-xs">
+                                  {showSessionPassword[user.uid] ? sessionPasswords[user.uid] : '••••••••••••'}
+                                </div>
+                                <button
+                                  onClick={() => setShowSessionPassword((prev) => ({ ...prev, [user.uid]: !prev[user.uid] }))}
+                                  className="px-2 py-1 rounded-md text-xs font-bold bg-slate-100 text-slate-700 hover:bg-slate-200"
+                                >
+                                  {showSessionPassword[user.uid] ? 'Hide' : 'Show'}
+                                </button>
+                              </div>
+                            ) : (
+                              <div className="space-y-2">
+                                <div className="text-xs text-slate-400">Not available</div>
+                                <button
+                                  onClick={() => handleResetUserPassword(user)}
+                                  disabled={resettingPasswordUser === user.uid}
+                                  className="px-2 py-1 rounded-md text-xs font-bold bg-indigo-100 text-indigo-700 hover:bg-indigo-200 disabled:opacity-50"
+                                >
+                                  {resettingPasswordUser === user.uid ? 'Resetting...' : 'Reset'}
+                                </button>
+                              </div>
+                            )}
                           </td>
                           <td className="px-6 py-4">
                             <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
@@ -1049,16 +1168,31 @@ export default function AdminPanel() {
         {activeTab === 'winner-contacts' && (
           <div className="space-y-6">
             <div className="flex flex-col sm:flex-row justify-between items-center gap-4 bg-white p-4 rounded-xl shadow-sm border border-slate-100">
-              <h2 className="text-2xl font-bold text-slate-800">Winner Contact Submissions</h2>
+              <h2 className="text-2xl font-bold text-slate-800">
+                Winner Contact Submissions
+                <span className="ml-2 text-base font-semibold text-slate-500">
+                  ({winnerContactUsers.length})
+                </span>
+              </h2>
               <div className="relative w-full sm:w-72">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400" size={18} />
                 <input
                   type="text"
-                  placeholder="Search by name/email/phone..."
+                  placeholder="Search name, parent email, phone, madrasah..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="w-full pl-10 pr-12 py-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 />
+                {searchTerm && (
+                  <button
+                    type="button"
+                    onClick={() => setSearchTerm('')}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-500 hover:text-slate-700"
+                    title="Clear search"
+                  >
+                    Clear
+                  </button>
+                )}
               </div>
             </div>
 
@@ -1444,7 +1578,11 @@ export default function AdminPanel() {
         {activeTab === 'rewards' && (
           <div className="space-y-6">
              <div className="flex justify-between items-center">
-              <h2 className="text-2xl font-bold text-islamic-dark">Weekly Rewards</h2>
+              <h2 className="text-2xl font-bold text-islamic-dark">Voucher Management</h2>
+            </div>
+
+            <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900">
+              Open the <strong>Create voucher</strong> card below and click <strong>New voucher</strong> to add offers that appear on the Rewards page.
             </div>
             
             <div className="bg-white rounded-2xl shadow-lg p-8 text-center">
@@ -1476,6 +1614,8 @@ export default function AdminPanel() {
                  </div>
                )}
             </div>
+
+            <VoucherAdminPanel />
           </div>
         )}
 

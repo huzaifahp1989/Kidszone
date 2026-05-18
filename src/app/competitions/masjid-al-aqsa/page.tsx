@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/lib/auth-context';
 import { ArrowLeft, Clock3, Crown, Globe, Loader2, ShieldCheck, Sparkles, Star, TimerReset } from 'lucide-react';
@@ -68,7 +68,7 @@ export default function MasjidAlAqsaCompetitionPage() {
   const progressPercent = deck.length ? Math.round((currentIndex / deck.length) * 100) : 0;
   const answeredCount = Object.values(answers).filter((value) => value.trim().length > 0).length;
 
-  const loadStatus = async () => {
+  const loadStatus = useCallback(async () => {
     const params = new URLSearchParams();
     if (user?.id) params.set('userId', user.id);
     if (email.trim()) params.set('email', email.trim());
@@ -84,43 +84,24 @@ export default function MasjidAlAqsaCompetitionPage() {
     }
 
     return null;
-  };
+  }, [email, user?.id]);
 
-  const loadLeaderboard = async () => {
+  const loadLeaderboard = useCallback(async () => {
     const res = await fetch('/api/competitions/masjid-al-aqsa/leaderboard', { cache: 'no-store' });
     const json = await res.json();
     if (!res.ok) return;
     setLeaderboard(Array.isArray(json.entries) ? json.entries : []);
     setLeaderboardHidden(Boolean(json.hiddenUntilReviewed));
-  };
+  }, []);
 
   useEffect(() => {
     loadLeaderboard();
-  }, []);
+  }, [loadLeaderboard]);
 
   useEffect(() => {
     if (!email.trim()) return;
     loadStatus().catch(() => null);
-  }, [email, user?.id]);
-
-  useEffect(() => {
-    if (phase !== 'quiz') return;
-    const tick = () => {
-      if (!startedAt) return;
-      const elapsed = Math.floor((Date.now() - startedAt) / 1000);
-      const remaining = MASJID_AL_AQSA_TIMER_SECONDS - elapsed;
-      if (remaining <= 0) {
-        setTimeLeft(0);
-        void submitCompetition(true);
-        return;
-      }
-      setTimeLeft(remaining);
-    };
-
-    tick();
-    const timer = setInterval(tick, 1000);
-    return () => clearInterval(timer);
-  }, [phase, startedAt]);
+  }, [email, loadStatus, user?.id]);
 
   const startCompetition = async () => {
     setMessage(null);
@@ -147,7 +128,7 @@ export default function MasjidAlAqsaCompetitionPage() {
     setAnswers((prev) => ({ ...prev, [currentQuestion.id]: value }));
   };
 
-  const submitCompetition = async (auto = false) => {
+  const submitCompetition = useCallback(async (auto = false) => {
     if (submitLockRef.current) return;
     submitLockRef.current = true;
     setSubmitting(true);
@@ -183,7 +164,26 @@ export default function MasjidAlAqsaCompetitionPage() {
       setSubmitting(false);
       submitLockRef.current = false;
     }
-  };
+  }, [answers, bonusAnswer, deck, email, fullName, loadLeaderboard, startedAt, user?.id]);
+
+  useEffect(() => {
+    if (phase !== 'quiz') return;
+    const tick = () => {
+      if (!startedAt) return;
+      const elapsed = Math.floor((Date.now() - startedAt) / 1000);
+      const remaining = MASJID_AL_AQSA_TIMER_SECONDS - elapsed;
+      if (remaining <= 0) {
+        setTimeLeft(0);
+        void submitCompetition(true);
+        return;
+      }
+      setTimeLeft(remaining);
+    };
+
+    tick();
+    const timer = setInterval(tick, 1000);
+    return () => clearInterval(timer);
+  }, [phase, startedAt, submitCompetition]);
 
   const leaderboardTotal = useMemo(() => leaderboard.reduce((max, row) => Math.max(max, row.totalScore), 0), [leaderboard]);
 

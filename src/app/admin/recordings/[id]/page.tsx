@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { AdminRecording } from '@/types/admin';
 import { formatDate } from '@/lib/utils';
@@ -33,12 +33,6 @@ export default function AdminRecordingDetail({ params }: { params: Promise<{ id:
   }, [params]);
 
   useEffect(() => {
-    if (id) {
-      fetchRecording(id);
-    }
-  }, [id]);
-
-  useEffect(() => {
     const url = recording?.audio_url;
     if (!url) return;
 
@@ -49,7 +43,7 @@ export default function AdminRecordingDetail({ params }: { params: Promise<{ id:
     }
   }, [recording?.audio_url, audioContext]);
 
-  const fetchRecording = async (recordingId: string) => {
+  const fetchRecording = useCallback(async (recordingId: string) => {
     try {
       const res = await fetch(`/api/admin/recordings/${recordingId}`);
       if (!res.ok) throw new Error('Failed to fetch');
@@ -70,7 +64,13 @@ export default function AdminRecordingDetail({ params }: { params: Promise<{ id:
     } finally {
       setLoading(false);
     }
-  };
+  }, [audio]);
+
+  useEffect(() => {
+    if (id) {
+      fetchRecording(id);
+    }
+  }, [fetchRecording, id]);
 
   const togglePlay = () => {
     if (!recording?.audio_url) return;
