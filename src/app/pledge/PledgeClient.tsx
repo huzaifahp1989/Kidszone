@@ -115,18 +115,6 @@ export default function PledgeClient() {
           </p>
         </div>
 
-        <div className="bg-gradient-to-r from-[#ecfeff] to-[#f0fdfa] border border-[#14b8a6]/30 rounded-2xl p-5 text-center">
-          <p className="text-[#0f766e] font-bold text-base md:text-lg">
-            New winner will be announced on 1 May 2026.
-          </p>
-          <p className="text-[#115e59] mt-2 text-sm md:text-base">
-            Please continue taking part every day to win prizes. You must take part at least 3 times in a week to enter the prize draw.
-          </p>
-          <p className="text-[#0f766e] mt-2 text-sm md:text-base font-semibold">
-            Check the Rewards page for important announcements and your weekly and monthly achievements.
-          </p>
-        </div>
-
         {!user && (
           <div className="bg-[#fffbeb] border border-[#fbbf24]/30 rounded-2xl p-6 text-center">
             <p className="text-[#b45309] font-semibold mb-3">Sign in to log your pledge and earn points</p>

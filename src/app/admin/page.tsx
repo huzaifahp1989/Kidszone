@@ -165,6 +165,17 @@ export default function AdminPanel() {
   const [newUser, setNewUser] = useState({ name: '', points: 0, weeklypoints: 0, monthlypoints: 0 });
   const [addingUser, setAddingUser] = useState(false);
 
+  // Pledge Reset State
+  const now = new Date();
+  const [duroodResetYear, setDuroodResetYear] = useState(now.getFullYear());
+  const [duroodResetMonth, setDuroodResetMonth] = useState(now.getMonth() + 1);
+  const [duroodResetAllTime, setDuroodResetAllTime] = useState(false);
+  const [duroodDeletePledges, setDuroodDeletePledges] = useState(false);
+  const [duroodPledgeType, setDuroodPledgeType] = useState<'durood' | 'zikr'>('durood');
+  const [duroodPreviewRows, setDuroodPreviewRows] = useState<{ userId: string; name: string; pledgeCount: number; recitations: number; ptsToRemove: number; currentPoints: number; newPoints: number }[]>([]);
+  const [duroodPreviewDone, setDuroodPreviewDone] = useState(false);
+  const [duroodResetLoading, setDuroodResetLoading] = useState(false);
+
   useEffect(() => {
     // Check authentication
     const auth = localStorage.getItem('admin_auth');
@@ -1623,6 +1634,177 @@ export default function AdminPanel() {
         {activeTab === 'system' && (
           <div className="space-y-6">
             <h2 className="text-2xl font-bold text-islamic-dark">System Management</h2>
+
+            {/* Pledge Points Reset */}
+            <div className="bg-rose-50 border border-rose-200 rounded-2xl p-6 space-y-5">
+              <div>
+                <h3 className="text-lg font-bold text-rose-800">📿 Reset Pledge Points</h3>
+                <p className="text-sm text-rose-600 mt-1">Remove points awarded from durood or zikr pledges. Optionally also delete pledge records (this clears the leaderboard). Use Preview first.</p>
+              </div>
+
+              <div className="flex flex-wrap items-end gap-4">
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-rose-700">Type</label>
+                  <select
+                    value={duroodPledgeType}
+                    onChange={(e) => { setDuroodPledgeType(e.target.value as 'durood' | 'zikr'); setDuroodPreviewDone(false); setDuroodPreviewRows([]); }}
+                    className="px-3 py-2 rounded-lg border border-rose-200 text-sm bg-white"
+                  >
+                    <option value="durood">Durood</option>
+                    <option value="zikr">Zikr</option>
+                  </select>
+                </div>
+                <label className="flex items-center gap-2 text-sm font-semibold text-rose-800">
+                  <input
+                    type="checkbox"
+                    checked={duroodResetAllTime}
+                    onChange={(e) => { setDuroodResetAllTime(e.target.checked); setDuroodPreviewDone(false); setDuroodPreviewRows([]); }}
+                  />
+                  All-time (ignore date filter)
+                </label>
+                <label className="flex items-center gap-2 text-sm font-semibold text-red-800">
+                  <input
+                    type="checkbox"
+                    checked={duroodDeletePledges}
+                    onChange={(e) => { setDuroodDeletePledges(e.target.checked); setDuroodPreviewDone(false); setDuroodPreviewRows([]); }}
+                  />
+                  Also delete pledge records (clears leaderboard)
+                </label>
+                {!duroodResetAllTime && (
+                  <>
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold text-rose-700">Year</label>
+                      <input
+                        type="number"
+                        min={2024}
+                        max={2030}
+                        value={duroodResetYear}
+                        onChange={(e) => { setDuroodResetYear(Number(e.target.value)); setDuroodPreviewDone(false); setDuroodPreviewRows([]); }}
+                        className="w-24 px-3 py-2 rounded-lg border border-rose-200 text-sm bg-white"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold text-rose-700">Month</label>
+                      <select
+                        value={duroodResetMonth}
+                        onChange={(e) => { setDuroodResetMonth(Number(e.target.value)); setDuroodPreviewDone(false); setDuroodPreviewRows([]); }}
+                        className="px-3 py-2 rounded-lg border border-rose-200 text-sm bg-white"
+                      >
+                        {['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'].map((m, i) => (
+                          <option key={i+1} value={i+1}>{m}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </>
+                )}
+
+                <button
+                  disabled={duroodResetLoading}
+                  onClick={async () => {
+                    setDuroodResetLoading(true);
+                    setDuroodPreviewDone(false);
+                    setDuroodPreviewRows([]);
+                    try {
+                      const body = duroodResetAllTime
+                        ? { preview: true, deletePledgeRecords: duroodDeletePledges, pledgeType: duroodPledgeType }
+                        : { year: duroodResetYear, month: duroodResetMonth, preview: true, deletePledgeRecords: duroodDeletePledges, pledgeType: duroodPledgeType };
+                      const res = await fetch('/api/admin/reset-durood-points', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'x-admin-auth': 'true' },
+                        body: JSON.stringify(body),
+                      });
+                      const data = await res.json();
+                      if (!res.ok) throw new Error(data.error || 'Failed');
+                      setDuroodPreviewRows(data.affected ?? []);
+                      setDuroodPreviewDone(true);
+                    } catch (e: any) {
+                      alert(e?.message || 'Preview failed');
+                    } finally {
+                      setDuroodResetLoading(false);
+                    }
+                  }}
+                  className="px-5 py-2.5 rounded-xl bg-rose-100 text-rose-800 font-bold text-sm hover:bg-rose-200 disabled:opacity-50 transition"
+                >
+                  {duroodResetLoading ? 'Loading...' : 'Preview'}
+                </button>
+
+                {duroodPreviewDone && (
+                  <button
+                    disabled={duroodResetLoading}
+                    onClick={async () => {
+                      const totalPts = duroodPreviewRows.reduce((s, r) => s + r.ptsToRemove, 0);
+                      const label = duroodResetAllTime
+                        ? `ALL-TIME ${duroodPledgeType} points`
+                        : `${duroodPledgeType} points for ${duroodResetYear}-${String(duroodResetMonth).padStart(2,'0')}`;
+                      const pledgeNote = duroodDeletePledges ? 'Pledge records will also be DELETED (leaderboard cleared).' : 'Pledge records are kept.';
+                      if (!confirm(`This will remove ${totalPts} pts from ${duroodPreviewRows.length} users (${label}). ${pledgeNote} Proceed?`)) return;
+                      setDuroodResetLoading(true);
+                      try {
+                        const body = duroodResetAllTime
+                          ? { preview: false, deletePledgeRecords: duroodDeletePledges, pledgeType: duroodPledgeType }
+                          : { year: duroodResetYear, month: duroodResetMonth, preview: false, deletePledgeRecords: duroodDeletePledges, pledgeType: duroodPledgeType };
+                        const res = await fetch('/api/admin/reset-durood-points', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json', 'x-admin-auth': 'true' },
+                          body: JSON.stringify(body),
+                        });
+                        const data = await res.json();
+                        if (!res.ok) throw new Error(data.error || 'Failed');
+                        alert(data.message || 'Durood points reset successfully.');
+                        setDuroodPreviewRows([]);
+                        setDuroodPreviewDone(false);
+                        fetchUsers();
+                      } catch (e: any) {
+                        alert(e?.message || 'Reset failed');
+                      } finally {
+                        setDuroodResetLoading(false);
+                      }
+                    }}
+                    className="px-5 py-2.5 rounded-xl bg-red-600 text-white font-bold text-sm hover:bg-red-700 disabled:opacity-50 transition"
+                  >
+                    {duroodResetLoading ? 'Resetting...' : `Reset (${duroodPreviewRows.reduce((s,r)=>s+r.ptsToRemove,0)} pts)`}
+                  </button>
+                )}
+              </div>
+
+              {duroodPreviewDone && (
+                <div className="rounded-xl overflow-hidden border border-rose-200">
+                  {duroodPreviewRows.length === 0 ? (
+                    <p className="px-5 py-4 text-sm text-rose-700">No durood pledges found for this period.</p>
+                  ) : (
+                    <table className="w-full text-sm">
+                      <thead className="bg-rose-100">
+                        <tr>
+                          <th className="px-4 py-3 text-left text-xs font-bold text-rose-700 uppercase">User</th>
+                          <th className="px-4 py-3 text-left text-xs font-bold text-rose-700 uppercase">Pledges</th>
+                          <th className="px-4 py-3 text-left text-xs font-bold text-rose-700 uppercase">Recitations</th>
+                          <th className="px-4 py-3 text-left text-xs font-bold text-rose-700 uppercase">Pts to Remove</th>
+                          <th className="px-4 py-3 text-left text-xs font-bold text-rose-700 uppercase">Current → New</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-rose-100 bg-white">
+                        {duroodPreviewRows.map((r) => (
+                          <tr key={r.userId}>
+                            <td className="px-4 py-3 font-semibold text-slate-800">{r.name}</td>
+                            <td className="px-4 py-3 text-slate-600">{r.pledgeCount}</td>
+                            <td className="px-4 py-3 text-slate-600">{r.recitations.toLocaleString()}</td>
+                            <td className="px-4 py-3 font-bold text-red-600">-{r.ptsToRemove}</td>
+                            <td className="px-4 py-3 text-slate-700">{r.currentPoints} → {r.newPoints}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                      <tfoot className="bg-rose-50">
+                        <tr>
+                          <td colSpan={3} className="px-4 py-3 text-xs font-bold text-rose-700 uppercase">Total</td>
+                          <td className="px-4 py-3 font-bold text-red-700">-{duroodPreviewRows.reduce((s,r)=>s+r.ptsToRemove,0)}</td>
+                          <td className="px-4 py-3 text-xs text-rose-600">{duroodPreviewRows.length} user(s)</td>
+                        </tr>
+                      </tfoot>
+                    </table>
+                  )}
+                </div>
+              )}
+            </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="bg-yellow-50 border-l-4 border-islamic-gold p-6 rounded-lg">
