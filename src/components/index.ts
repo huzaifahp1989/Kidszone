@@ -21,3 +21,4 @@ export * from './VoucherAdminPanel';
 export * from './VoucherHub';
 export * from './WeeklyActivitiesProgress';
 export * from './WeeklyActivityPopup';
+export * from './SurveyPopup';

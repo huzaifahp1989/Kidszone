@@ -5,6 +5,7 @@ import { useAuth } from '@/lib/auth-context';
 import { Navbar, BiWeeklyResetPopup, Button, WeeklyActivitiesProgress } from '@/components';
 import { Trophy, Star, Award, Lock, Crown, Mic, Sparkles } from 'lucide-react';
 import Link from 'next/link';
+import { SurveyPopup } from '@/components';
 
 type MonthlyCertificate = {
   key: string;
@@ -174,6 +175,7 @@ export default function RewardsPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-rose-50 to-white">
+      <SurveyPopup />
       <BiWeeklyResetPopup pageKey="rewards" />
       <Navbar />
 

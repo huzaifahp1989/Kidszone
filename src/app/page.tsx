@@ -7,6 +7,7 @@ import { BookOpen, Gamepad2, Heart, Trophy, Sparkles, Star, Target, Zap, Clipboa
 import DailyMissions from '@/components/DailyMissions';
 import ReferralTokenHub from '@/components/ReferralTokenHub';
 import { APP_STORE_LINKS } from '@/lib/app-store-links';
+import { SurveyPopup } from '@/components';
 
 export default function Home() {
   const { profile } = useAuth();
@@ -79,6 +80,7 @@ export default function Home() {
 
   return (
     <div className="page-canvas pattern-islamic">
+      <SurveyPopup />
       <div className="page-wrap space-y-8">
         
         {/* Hero Section */}
