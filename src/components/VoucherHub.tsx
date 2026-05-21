@@ -321,9 +321,15 @@ export function VoucherHub({ initialView = 'offers' }: VoucherHubProps) {
                 />
 
                 <div className="p-5">
+                  {offer.imageOnly && (
+                    <p className="rounded-2xl border border-[#dbe4ea] bg-slate-50 px-4 py-3 text-sm text-slate-600">
+                      Poster voucher. Extra details may be added later by admin.
+                    </p>
+                  )}
+
                   <div className="flex-1">
                     <p className="text-sm font-black uppercase tracking-[0.18em] text-[#0f766e]">{offer.discountLabel || offer.discountType.replace('_', ' ')}</p>
-                    <p className="mt-2 text-sm leading-6 text-slate-600">{offer.description}</p>
+                    {!offer.imageOnly && <p className="mt-2 text-sm leading-6 text-slate-600">{offer.description}</p>}
                   </div>
 
                   <div className="mt-4 flex flex-wrap gap-2 text-xs font-bold text-slate-600">
@@ -333,10 +339,12 @@ export function VoucherHub({ initialView = 'offers' }: VoucherHubProps) {
                     {offer.closeToExpiry && <span className="rounded-full bg-amber-100 px-3 py-1 text-amber-800">{getExpiryCountdown(offer.expiryDate)}</span>}
                   </div>
 
-                  <div className="mt-4 rounded-2xl bg-slate-50 p-4">
-                    <p className="text-xs font-black uppercase tracking-[0.18em] text-slate-500">Terms & conditions</p>
-                    <p className="mt-2 text-sm leading-6 text-slate-600">{offer.termsAndConditions}</p>
-                  </div>
+                  {!offer.imageOnly && (
+                    <div className="mt-4 rounded-2xl bg-slate-50 p-4">
+                      <p className="text-xs font-black uppercase tracking-[0.18em] text-slate-500">Terms & conditions</p>
+                      <p className="mt-2 text-sm leading-6 text-slate-600">{offer.termsAndConditions}</p>
+                    </div>
+                  )}
 
                   <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
                     <div className="text-sm text-slate-500">

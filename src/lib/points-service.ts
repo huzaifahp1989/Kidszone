@@ -176,6 +176,12 @@ export async function awardPoints(
         if (remaining > 0) {
           console.warn('[awardPoints] RPC denied but partial points possible. Forcing fallback to award remaining:', remaining)
           // Fall through to fallback logic
+        } else if (!countTowardDailyLimit) {
+          // Activity explicitly bypasses the daily cap (e.g. pledge/durood).
+          // The RPC enforces the cap regardless, so fall through to the fallback
+          // upsert which respects countTowardDailyLimit=false.
+          console.warn('[awardPoints] Daily limit reached but countTowardDailyLimit=false — falling through to fallback to bypass cap')
+          // Fall through to fallback logic
         } else {
           console.log('[awardPoints] RPC denied points (likely daily points limit):', data.message)
           return data as AwardPointsResponse

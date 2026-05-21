@@ -34,6 +34,65 @@ export const isVoucherSetupMissing = (error: { code?: string } | null | undefine
 
 const generateSecureVoucherCode = () => `IMC-${randomBytes(3).toString('base64url').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6)}`;
 
+const isJpgAssetUrl = (value: string | null | undefined) => {
+  const trimmed = String(value || '').trim();
+  if (!trimmed) return true;
+
+  try {
+    const parsed = new URL(trimmed);
+    return /\.jpe?g$/i.test(parsed.pathname);
+  } catch {
+    const normalized = trimmed.split(/[?#]/)[0];
+    return /\.jpe?g$/i.test(normalized);
+  }
+};
+
+const normalizeImageOnlyVoucherInput = (input: VoucherFormInput): VoucherFormInput => {
+  const normalized = { ...input };
+
+  if (!normalized.imageOnly) {
+    return normalized;
+  }
+
+  if (!normalized.imageUrl?.trim()) {
+    normalized.imageUrl = normalized.bannerUrl?.trim() || normalized.logoUrl?.trim() || '';
+  }
+  if (!normalized.title?.trim()) normalized.title = 'Voucher Poster';
+  if (!normalized.businessName?.trim()) normalized.businessName = 'Partner Offer';
+  if (!normalized.description?.trim()) normalized.description = 'Image-only voucher poster. Details can be added later.';
+  if (!normalized.termsAndConditions?.trim()) normalized.termsAndConditions = 'Refer to the voucher poster image for details.';
+  if (!normalized.discountLabel?.trim()) normalized.discountLabel = 'See poster';
+
+  if (!normalized.expiryDate) {
+    const oneYearAhead = new Date();
+    oneYearAhead.setFullYear(oneYearAhead.getFullYear() + 1);
+    normalized.expiryDate = oneYearAhead.toISOString();
+  }
+
+  return normalized;
+};
+
+const assertJpgVoucherAssets = (input: VoucherFormInput) => {
+  const imageFields = [input.logoUrl, input.imageUrl, input.bannerUrl].filter(Boolean);
+  if (imageFields.some((url) => !isJpgAssetUrl(url))) {
+    throw new Error('Only JPG image URLs are allowed for vouchers.');
+  }
+};
+
+const toRequiredTimestamp = (value: string | null | undefined, fieldLabel: string) => {
+  const trimmed = String(value || '').trim();
+  if (!trimmed) {
+    throw new Error(`${fieldLabel} is required.`);
+  }
+
+  const parsed = Date.parse(trimmed);
+  if (Number.isNaN(parsed)) {
+    throw new Error(`${fieldLabel} is invalid.`);
+  }
+
+  return new Date(parsed).toISOString();
+};
+
 const mapOffer = (row: any): VoucherOffer => {
   const computedStatus = getVoucherStatus({
     status: row.status,
@@ -553,41 +612,46 @@ export async function getVoucherEligibility(params: {
 }
 
 export async function createVoucherOffer(input: VoucherFormInput) {
-  if (!input.logoUrl?.trim() && !input.imageUrl?.trim() && !input.bannerUrl?.trim()) {
+  const normalizedInput = normalizeImageOnlyVoucherInput(input);
+  const expiryDate = toRequiredTimestamp(normalizedInput.expiryDate, 'Expiry date');
+
+  if (!normalizedInput.logoUrl?.trim() && !normalizedInput.imageUrl?.trim() && !normalizedInput.bannerUrl?.trim()) {
     throw new Error('At least one image is required (logo, promotional image, or banner).');
   }
 
+  assertJpgVoucherAssets(normalizedInput);
+
   const now = new Date().toISOString();
-  const titleSlug = createVoucherSlug(`${input.businessName}-${input.title}`) || createVoucherSlug(input.title) || `voucher-${Date.now()}`;
+  const titleSlug = createVoucherSlug(`${normalizedInput.businessName}-${normalizedInput.title}`) || createVoucherSlug(normalizedInput.title) || `voucher-${Date.now()}`;
   const payload = {
     slug: titleSlug,
-    title: input.title,
-    business_name: input.businessName,
-    description: input.description,
-    terms_and_conditions: input.termsAndConditions,
-    expiry_date: input.expiryDate,
-    start_date: input.startDate || null,
-    status: input.active ? 'active' : 'inactive',
-    approval_mode: input.approvalMode,
-    audience: input.audience,
-    discount_type: input.discountType,
-    discount_label: input.discountLabel,
-    logo_url: input.logoUrl || null,
-    image_url: input.imageUrl || null,
-    banner_url: input.bannerUrl || null,
-    location_label: input.locationLabel || null,
-    winners_limit: input.winnersLimit,
-    max_redemptions: input.maxRedemptions,
-    per_user_limit: input.perUserLimit,
-    period_limit: input.periodLimit,
-    period_limit_window: input.periodLimitWindow,
-    min_points: input.minPoints,
-    min_activities: input.minActivities,
-    public_visible: input.publicVisible,
-    image_only: input.imageOnly,
-    manual_approval_required: input.manualApprovalRequired || input.approvalMode === 'manual',
-    featured: input.featured,
-    qr_enabled: input.qrEnabled,
+    title: normalizedInput.title,
+    business_name: normalizedInput.businessName,
+    description: normalizedInput.description,
+    terms_and_conditions: normalizedInput.termsAndConditions,
+    expiry_date: expiryDate,
+    start_date: normalizedInput.startDate || null,
+    status: normalizedInput.active ? 'active' : 'inactive',
+    approval_mode: normalizedInput.approvalMode,
+    audience: normalizedInput.audience,
+    discount_type: normalizedInput.discountType,
+    discount_label: normalizedInput.discountLabel,
+    logo_url: normalizedInput.logoUrl || null,
+    image_url: normalizedInput.imageUrl || null,
+    banner_url: normalizedInput.bannerUrl || null,
+    location_label: normalizedInput.locationLabel || null,
+    winners_limit: normalizedInput.winnersLimit,
+    max_redemptions: normalizedInput.maxRedemptions,
+    per_user_limit: normalizedInput.perUserLimit,
+    period_limit: normalizedInput.periodLimit,
+    period_limit_window: normalizedInput.periodLimitWindow,
+    min_points: normalizedInput.minPoints,
+    min_activities: normalizedInput.minActivities,
+    public_visible: normalizedInput.publicVisible,
+    image_only: normalizedInput.imageOnly,
+    manual_approval_required: normalizedInput.manualApprovalRequired || normalizedInput.approvalMode === 'manual',
+    featured: normalizedInput.featured,
+    qr_enabled: normalizedInput.qrEnabled,
     total_redeemed: 0,
     created_at: now,
     updated_at: now,
@@ -617,38 +681,43 @@ export async function createVoucherOffer(input: VoucherFormInput) {
 }
 
 export async function updateVoucherOffer(id: string, input: VoucherFormInput) {
-  if (!input.logoUrl?.trim() && !input.imageUrl?.trim() && !input.bannerUrl?.trim()) {
+  const normalizedInput = normalizeImageOnlyVoucherInput(input);
+  const expiryDate = toRequiredTimestamp(normalizedInput.expiryDate, 'Expiry date');
+
+  if (!normalizedInput.logoUrl?.trim() && !normalizedInput.imageUrl?.trim() && !normalizedInput.bannerUrl?.trim()) {
     throw new Error('At least one image is required (logo, promotional image, or banner).');
   }
 
+  assertJpgVoucherAssets(normalizedInput);
+
   const payload = {
-    title: input.title,
-    business_name: input.businessName,
-    description: input.description,
-    terms_and_conditions: input.termsAndConditions,
-    expiry_date: input.expiryDate,
-    start_date: input.startDate || null,
-    status: input.active ? 'active' : 'inactive',
-    approval_mode: input.approvalMode,
-    audience: input.audience,
-    discount_type: input.discountType,
-    discount_label: input.discountLabel,
-    logo_url: input.logoUrl || null,
-    image_url: input.imageUrl || null,
-    banner_url: input.bannerUrl || null,
-    location_label: input.locationLabel || null,
-    winners_limit: input.winnersLimit,
-    max_redemptions: input.maxRedemptions,
-    per_user_limit: input.perUserLimit,
-    period_limit: input.periodLimit,
-    period_limit_window: input.periodLimitWindow,
-    min_points: input.minPoints,
-    min_activities: input.minActivities,
-    public_visible: input.publicVisible,
-    image_only: input.imageOnly,
-    manual_approval_required: input.manualApprovalRequired || input.approvalMode === 'manual',
-    featured: input.featured,
-    qr_enabled: input.qrEnabled,
+    title: normalizedInput.title,
+    business_name: normalizedInput.businessName,
+    description: normalizedInput.description,
+    terms_and_conditions: normalizedInput.termsAndConditions,
+    expiry_date: expiryDate,
+    start_date: normalizedInput.startDate || null,
+    status: normalizedInput.active ? 'active' : 'inactive',
+    approval_mode: normalizedInput.approvalMode,
+    audience: normalizedInput.audience,
+    discount_type: normalizedInput.discountType,
+    discount_label: normalizedInput.discountLabel,
+    logo_url: normalizedInput.logoUrl || null,
+    image_url: normalizedInput.imageUrl || null,
+    banner_url: normalizedInput.bannerUrl || null,
+    location_label: normalizedInput.locationLabel || null,
+    winners_limit: normalizedInput.winnersLimit,
+    max_redemptions: normalizedInput.maxRedemptions,
+    per_user_limit: normalizedInput.perUserLimit,
+    period_limit: normalizedInput.periodLimit,
+    period_limit_window: normalizedInput.periodLimitWindow,
+    min_points: normalizedInput.minPoints,
+    min_activities: normalizedInput.minActivities,
+    public_visible: normalizedInput.publicVisible,
+    image_only: normalizedInput.imageOnly,
+    manual_approval_required: normalizedInput.manualApprovalRequired || normalizedInput.approvalMode === 'manual',
+    featured: normalizedInput.featured,
+    qr_enabled: normalizedInput.qrEnabled,
     updated_at: new Date().toISOString(),
   };
 

@@ -52,6 +52,36 @@ type AdminUserSearchRow = {
   city?: string;
 };
 
+const JPG_UPLOAD_TYPES = new Set(['image/jpeg', 'image/jpg']);
+
+function toDateTimeLocalValue(value: Date) {
+  const year = value.getFullYear();
+  const month = String(value.getMonth() + 1).padStart(2, '0');
+  const day = String(value.getDate()).padStart(2, '0');
+  const hours = String(value.getHours()).padStart(2, '0');
+  const minutes = String(value.getMinutes()).padStart(2, '0');
+  return `${year}-${month}-${day}T${hours}:${minutes}`;
+}
+
+function addDays(value: Date, days: number) {
+  const next = new Date(value);
+  next.setDate(next.getDate() + days);
+  return next;
+}
+
+function isJpgAssetUrl(value: string) {
+  const trimmed = value.trim();
+  if (!trimmed) return true;
+
+  try {
+    const parsed = new URL(trimmed);
+    return /\.jpe?g$/i.test(parsed.pathname);
+  } catch {
+    const normalized = trimmed.split(/[?#]/)[0];
+    return /\.jpe?g$/i.test(normalized);
+  }
+}
+
 async function uploadAsset(file: File, folder: string) {
   const formData = new FormData();
   formData.append('file', file);
@@ -193,6 +223,25 @@ export function VoucherAdminPanel() {
     setForm(defaultVoucherForm());
   };
 
+  const applyWeeklyPreset = () => {
+    const start = new Date();
+    const end = addDays(start, 7);
+    setEditingOffer(null);
+    setForm((prev) => ({
+      ...defaultVoucherForm(),
+      ...prev,
+      title: prev.title || 'Weekly Voucher',
+      discountLabel: prev.discountLabel || 'Weekly special',
+      startDate: toDateTimeLocalValue(start),
+      expiryDate: toDateTimeLocalValue(end),
+      perUserLimit: 1,
+      periodLimitWindow: 'weekly',
+      publicVisible: true,
+      active: true,
+    }));
+    setActionMessage('Weekly preset applied. Add image/details and save.');
+  };
+
   const openEdit = (offer: VoucherOffer) => {
     setEditingOffer(offer);
     setForm({
@@ -227,17 +276,86 @@ export function VoucherAdminPanel() {
     });
   };
 
+  const duplicateForNextWeek = (offer: VoucherOffer) => {
+    const offerStart = offer.startDate ? new Date(offer.startDate) : new Date();
+    const offerEnd = offer.expiryDate ? new Date(offer.expiryDate) : addDays(offerStart, 7);
+
+    setEditingOffer(null);
+    setForm({
+      id: undefined,
+      title: offer.title,
+      businessName: offer.businessName,
+      description: offer.description,
+      termsAndConditions: offer.termsAndConditions,
+      expiryDate: toDateTimeLocalValue(addDays(offerEnd, 7)),
+      startDate: toDateTimeLocalValue(addDays(offerStart, 7)),
+      discountType: offer.discountType,
+      discountLabel: offer.discountLabel,
+      approvalMode: offer.approvalMode,
+      audience: offer.audience,
+      logoUrl: offer.logoUrl || '',
+      imageUrl: offer.imageUrl || '',
+      bannerUrl: offer.bannerUrl || '',
+      locationLabel: offer.locationLabel || '',
+      winnersLimit: offer.winnersLimit,
+      maxRedemptions: offer.maxRedemptions,
+      perUserLimit: offer.perUserLimit,
+      periodLimit: offer.periodLimit,
+      periodLimitWindow: offer.periodLimitWindow || 'weekly',
+      minPoints: offer.minPoints,
+      minActivities: offer.minActivities,
+      publicVisible: offer.publicVisible,
+      imageOnly: offer.imageOnly,
+      manualApprovalRequired: offer.manualApprovalRequired,
+      featured: offer.featured,
+      qrEnabled: offer.qrEnabled,
+      active: true,
+    });
+    setActionMessage(`Copied "${offer.title}" to next week. Save to publish it.`);
+  };
+
   const saveOffer = async () => {
-    const hasAnyImage = Boolean(form.logoUrl.trim() || form.imageUrl.trim() || form.bannerUrl.trim());
+    const normalizedForm: VoucherFormInput = {
+      ...form,
+    };
+
+    if (normalizedForm.imageOnly) {
+      if (!normalizedForm.imageUrl.trim()) {
+        normalizedForm.imageUrl = normalizedForm.bannerUrl.trim() || normalizedForm.logoUrl.trim();
+      }
+      if (!normalizedForm.title.trim()) normalizedForm.title = 'Voucher Poster';
+      if (!normalizedForm.businessName.trim()) normalizedForm.businessName = 'Partner Offer';
+      if (!normalizedForm.description.trim()) normalizedForm.description = 'Image-only voucher poster. Details can be added later.';
+      if (!normalizedForm.termsAndConditions.trim()) normalizedForm.termsAndConditions = 'Refer to the voucher poster image for details.';
+      if (!normalizedForm.discountLabel.trim()) normalizedForm.discountLabel = 'See poster';
+      if (!normalizedForm.expiryDate) {
+        const oneYearAhead = new Date();
+        oneYearAhead.setFullYear(oneYearAhead.getFullYear() + 1);
+        normalizedForm.expiryDate = oneYearAhead.toISOString().slice(0, 16);
+      }
+    }
+
+    const hasAnyImage = Boolean(normalizedForm.logoUrl.trim() || normalizedForm.imageUrl.trim() || normalizedForm.bannerUrl.trim());
     if (!hasAnyImage) {
       setError('Add at least one image URL (logo, promotional image, or banner) before saving.');
+      return;
+    }
+
+    if (!normalizedForm.expiryDate.trim()) {
+      setError('Expiry date is required before saving this voucher.');
+      return;
+    }
+
+    const allImageFields = [normalizedForm.logoUrl, normalizedForm.imageUrl, normalizedForm.bannerUrl].filter(Boolean);
+    if (allImageFields.some((url) => !isJpgAssetUrl(url))) {
+      setError('Only JPG image URLs are allowed for vouchers.');
       return;
     }
 
     setSaving(true);
     try {
       const method = editingOffer ? 'PUT' : 'POST';
-      const body = editingOffer ? { ...form, id: editingOffer.id } : form;
+      const body = editingOffer ? { ...normalizedForm, id: editingOffer.id } : normalizedForm;
       const res = await fetch('/api/admin/vouchers', {
         method,
         headers: {
@@ -275,6 +393,11 @@ export function VoucherAdminPanel() {
   const handleUpload = async (field: 'logoUrl' | 'imageUrl' | 'bannerUrl', event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
+    if (!JPG_UPLOAD_TYPES.has(file.type)) {
+      setError('Only JPG/JPEG files can be uploaded for vouchers.');
+      event.target.value = '';
+      return;
+    }
     setUploadingField(field);
     try {
       const url = await uploadAsset(file, field);
@@ -374,6 +497,7 @@ export function VoucherAdminPanel() {
           </div>
           <div className="flex flex-wrap gap-2">
             <button onClick={openCreate} className="rounded-2xl bg-slate-900 px-5 py-3 text-sm font-black text-white hover:bg-slate-800">New voucher</button>
+            <button onClick={applyWeeklyPreset} className="rounded-2xl border border-emerald-200 bg-emerald-50 px-5 py-3 text-sm font-black text-emerald-800 hover:bg-emerald-100">Quick weekly voucher</button>
             <button onClick={() => { loadAdmin(); loadRedemptions(); }} className="rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-black text-slate-700 hover:bg-slate-50">Refresh</button>
           </div>
         </div>
@@ -445,6 +569,9 @@ export function VoucherAdminPanel() {
                     </div>
                   </div>
                   <div className="flex flex-wrap gap-2">
+                    <button onClick={() => duplicateForNextWeek(offer)} className="inline-flex items-center gap-2 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-black text-emerald-700 hover:bg-emerald-100">
+                      <Gift size={16} /> Duplicate next week
+                    </button>
                     <button onClick={() => openEdit(offer)} className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-black text-slate-700 hover:bg-slate-50">
                       <Pencil size={16} /> Edit
                     </button>
@@ -594,6 +721,11 @@ export function VoucherAdminPanel() {
               </div>
               <textarea value={form.description} onChange={(e) => setForm((prev) => ({ ...prev, description: e.target.value }))} placeholder="Full description" className="min-h-[92px] w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm" />
               <textarea value={form.termsAndConditions} onChange={(e) => setForm((prev) => ({ ...prev, termsAndConditions: e.target.value }))} placeholder="Terms & conditions" className="min-h-[92px] w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm" />
+              {form.imageOnly && (
+                <p className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs font-semibold text-amber-800">
+                  JPG poster mode is on. You can upload the JPG now and fill details later.
+                </p>
+              )}
               <div className="grid gap-4 md:grid-cols-2">
                 <input type="datetime-local" value={form.startDate} onChange={(e) => setForm((prev) => ({ ...prev, startDate: e.target.value }))} className="rounded-2xl border border-slate-200 px-4 py-3 text-sm" />
                 <input type="datetime-local" value={form.expiryDate} onChange={(e) => setForm((prev) => ({ ...prev, expiryDate: e.target.value }))} className="rounded-2xl border border-slate-200 px-4 py-3 text-sm" />
@@ -651,12 +783,12 @@ export function VoucherAdminPanel() {
                   <div className="flex items-center justify-between gap-3">
                     <div>
                       <p className="text-sm font-black text-slate-900">{label}</p>
-                      <p className="text-xs text-slate-500">Upload JPG/PNG/WebP, or paste a manual URL.</p>
+                      <p className="text-xs text-slate-500">Upload JPG only, or paste a JPG URL.</p>
                     </div>
                     <label className="inline-flex cursor-pointer items-center gap-2 rounded-xl bg-white px-3 py-2 text-xs font-black text-slate-700 shadow-sm hover:bg-slate-50">
                       {uploadingField === field ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />}
                       Upload
-                      <input type="file" accept="image/png,image/jpeg,image/webp" className="hidden" onChange={(event) => handleUpload(field, event)} />
+                      <input type="file" accept="image/jpeg,image/jpg" className="hidden" onChange={(event) => handleUpload(field, event)} />
                     </label>
                   </div>
                   <input value={form[field]} onChange={(e) => setForm((prev) => ({ ...prev, [field]: e.target.value }))} placeholder="https://..." className="mt-3 w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm" />
@@ -671,7 +803,7 @@ export function VoucherAdminPanel() {
               <div className="grid gap-3 md:grid-cols-2">
                 {([
                   ['publicVisible', 'Available on rewards page'],
-                  ['imageOnly', 'Poster/gallery mode'],
+                  ['imageOnly', 'JPG poster only (details optional)'],
                   ['manualApprovalRequired', 'Manual approval required'],
                   ['featured', 'Featured offer'],
                   ['qrEnabled', 'QR enabled'],

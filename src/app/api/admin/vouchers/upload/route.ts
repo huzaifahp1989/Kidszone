@@ -5,7 +5,7 @@ import { supabaseAdmin } from '@/lib/supabase-admin';
 
 export const dynamic = 'force-dynamic';
 
-const ALLOWED_TYPES = new Set(['image/png', 'image/jpeg', 'image/jpg', 'image/webp']);
+const ALLOWED_TYPES = new Set(['image/jpeg', 'image/jpg']);
 
 export async function POST(request: Request) {
   if (!isAdminRequest(request)) {
@@ -22,15 +22,14 @@ export async function POST(request: Request) {
     }
 
     if (!ALLOWED_TYPES.has(file.type)) {
-      return NextResponse.json({ error: 'Only PNG, JPG, JPEG, and WEBP files are allowed.' }, { status: 400 });
+      return NextResponse.json({ error: 'Only JPG/JPEG files are allowed.' }, { status: 400 });
     }
 
-    const ext = file.name.includes('.') ? file.name.split('.').pop() : 'png';
-    const key = `${folder}/${randomUUID()}.${ext}`;
+    const key = `${folder}/${randomUUID()}.jpg`;
     const bytes = Buffer.from(await file.arrayBuffer());
 
     const { error: uploadError } = await supabaseAdmin.storage.from('voucher-assets').upload(key, bytes, {
-      contentType: file.type,
+      contentType: 'image/jpeg',
       upsert: false,
     });
 
