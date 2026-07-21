@@ -58,15 +58,32 @@ export function getLegacyOneSignalAppId(): string {
  * - Includes legacy website app when ONESIGNAL_LEGACY_REST_API_KEY is set
  *   (or when primary key is reused only if explicitly allowed — we never reuse
  *   mismatched keys; legacy needs its own key).
+ * - `options.reusePrimaryKeyForLegacy`: when the configured primary key actually
+ *   belongs to the legacy app, still reach website subscribers.
  */
-export function getOneSignalAppTargets(overrideAppId?: string | null): OneSignalAppTarget[] {
+export function getOneSignalAppTargets(
+  overrideAppId?: string | null,
+  options?: { reusePrimaryKeyForLegacy?: boolean }
+): OneSignalAppTarget[] {
   const primaryKey = getPrimaryRestApiKey();
   const targets: OneSignalAppTarget[] = [];
   const override = clean(overrideAppId);
+  const legacyAppId = getLegacyOneSignalAppId();
 
   if (override && primaryKey) {
     // Admin paste override: send only to that app with the primary key
     return [{ label: 'override', appId: override, restApiKey: primaryKey }];
+  }
+
+  if (options?.reusePrimaryKeyForLegacy && primaryKey && legacyAppId) {
+    // Key was verified against the legacy website app — don't send to WTN with it
+    return [
+      {
+        label: 'legacy',
+        appId: legacyAppId,
+        restApiKey: primaryKey,
+      },
+    ];
   }
 
   if (primaryKey) {
@@ -78,7 +95,6 @@ export function getOneSignalAppTargets(overrideAppId?: string | null): OneSignal
   }
 
   const legacyKey = getLegacyRestApiKey();
-  const legacyAppId = getLegacyOneSignalAppId();
   if (legacyKey && legacyAppId && !targets.some((t) => t.appId === legacyAppId)) {
     targets.push({
       label: 'legacy',
