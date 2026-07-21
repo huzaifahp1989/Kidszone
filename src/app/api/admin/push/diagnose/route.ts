@@ -4,6 +4,7 @@ import { getServerOneSignalAppId } from '@/lib/onesignal-server-config';
 import {
   isOneSignalServerConfigured,
   lookupOneSignalPlayer,
+  verifyOneSignalRestAuth,
 } from '@/lib/onesignal-server';
 import { ONESIGNAL_APP_ID as PUBLIC_ONESIGNAL_APP_ID } from '@/lib/onesignal-app-id';
 import { supabaseAdmin } from '@/lib/supabase-admin';
@@ -31,14 +32,35 @@ export async function GET(request: Request) {
 
   const serverAppId = getServerOneSignalAppId(appIdOverride);
   const publicAppId = PUBLIC_ONESIGNAL_APP_ID;
+  const auth = await verifyOneSignalRestAuth(appIdOverride);
 
-  if (!isOneSignalServerConfigured()) {
+  if (!isOneSignalServerConfigured() || !auth.configured) {
     return NextResponse.json({
       configured: false,
       serverAppId,
       publicAppId,
       appIdMismatch: serverAppId !== publicAppId,
-      error: 'ONESIGNAL_REST_API_KEY missing',
+      restAuthOk: false,
+      keyBelongsToLegacyApp: false,
+      authHint: auth.hint,
+      error: auth.error || 'ONESIGNAL_REST_API_KEY missing',
+      tokens: [],
+    });
+  }
+
+  if (!auth.ok) {
+    return NextResponse.json({
+      configured: true,
+      serverAppId,
+      publicAppId,
+      appIdMismatch: serverAppId !== publicAppId,
+      restAuthOk: false,
+      keyBelongsToLegacyApp: Boolean(auth.keyBelongsToLegacyApp),
+      authHint: auth.hint,
+      error: auth.error,
+      hint: auth.hint,
+      checked: 0,
+      validOnApp: 0,
       tokens: [],
     });
   }
@@ -87,6 +109,9 @@ export async function GET(request: Request) {
     serverAppId,
     publicAppId,
     appIdMismatch: serverAppId !== publicAppId,
+    restAuthOk: true,
+    keyBelongsToLegacyApp: false,
+    authHint: undefined,
     hint:
       foundCount === 0
         ? 'No saved tokens exist on this OneSignal app. Paste the WTN OneSignal App ID below, use that app’s REST API key in Vercel, reopen the WTN app to re-register, then diagnose again.'
