@@ -51,8 +51,23 @@ export async function GET(request: Request) {
     }
   }
 
+  const playerId = new URL(request.url).searchParams.get('playerId') || '';
   const matrix: Record<string, unknown> = {};
   if (key) {
+    const keyKind = key.startsWith('os_v2_app_')
+      ? 'app'
+      : key.startsWith('os_v2_org_')
+        ? 'org'
+        : key.startsWith('os_v2_')
+          ? 'os_v2_other'
+          : 'legacy_or_unknown';
+
+    // Organization keys can list apps; useful when the key isn't tied to 0bb81263…
+    if (keyKind === 'org' || keyKind === 'os_v2_other') {
+      matrix.org_apps_list_Key = await hit('https://api.onesignal.com/apps', `Key ${key}`);
+      matrix.org_apps_list_Basic = await hit('https://api.onesignal.com/apps', `Basic ${key}`);
+    }
+
     for (const [label, id] of [['primary', appId], ['legacy', legacyAppId]] as const) {
       for (const mode of ['Key', 'Basic'] as const) {
         const auth = `${mode} ${key}`;
@@ -62,6 +77,12 @@ export async function GET(request: Request) {
           `https://onesignal.com/api/v1/players?app_id=${encodeURIComponent(id)}&limit=1`,
           auth
         );
+        if (playerId) {
+          matrix[`${label}_player_by_id_${mode}`] = await hit(
+            `https://onesignal.com/api/v1/players/${encodeURIComponent(playerId)}?app_id=${encodeURIComponent(id)}`,
+            auth
+          );
+        }
         matrix[`${label}_notify_api_${mode}`] = await hit(
           'https://api.onesignal.com/notifications',
           auth,
@@ -86,6 +107,14 @@ export async function GET(request: Request) {
         );
       }
     }
+
+    return NextResponse.json({
+      appId,
+      legacyAppId,
+      keyMeta: { ...keyMeta, keyKind },
+      legacyKeyMeta,
+      matrix,
+    });
   }
 
   return NextResponse.json({

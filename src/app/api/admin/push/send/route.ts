@@ -6,6 +6,7 @@ import {
   getServerOneSignalAppId,
 } from '@/lib/onesignal-server-config';
 import {
+  getOneSignalRestKeyMeta,
   isOneSignalServerConfigured,
   sendOneSignalPushMultiApp,
   verifyOneSignalRestAuth,
@@ -453,6 +454,7 @@ export async function GET(request: Request) {
       restAuthError: restAuth.error,
       restAuthHint: restAuth.hint,
       restAuthVia: restAuth.authVia,
+      restKeyMeta: getOneSignalRestKeyMeta(),
       campaigns: campaigns.map((c) => ({
         id: c.id,
         title: c.title,

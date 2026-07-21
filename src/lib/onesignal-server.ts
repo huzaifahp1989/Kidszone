@@ -84,6 +84,25 @@ export function isOneSignalServerConfigured(): boolean {
   return Boolean(getRestApiKey() && getServerOneSignalAppId());
 }
 
+/** Non-secret metadata about the configured REST key (for admin diagnostics). */
+export function getOneSignalRestKeyMeta() {
+  const key = getRestApiKey() || '';
+  const keyKind = key.startsWith('os_v2_app_')
+    ? 'app'
+    : key.startsWith('os_v2_org_')
+      ? 'org'
+      : key.startsWith('os_v2_')
+        ? 'os_v2_other'
+        : key
+          ? 'legacy_or_unknown'
+          : 'missing';
+  return {
+    present: Boolean(key),
+    length: key.length,
+    keyKind,
+  };
+}
+
 function authHeaders(apiKey: string, mode: 'key' | 'basic'): Record<string, string> {
   return {
     'Content-Type': 'application/json',

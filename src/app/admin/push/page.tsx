@@ -55,6 +55,7 @@ type StatusInfo = {
   restAuthError?: string;
   restAuthHint?: string;
   restAuthVia?: string;
+  restKeyMeta?: { present: boolean; length: number; keyKind: string };
   campaigns?: Array<{
     id: string;
     title: string;
@@ -751,6 +752,12 @@ export default function AdminPushPage() {
                   `Update Vercel ONESIGNAL_REST_API_KEY to the App API Key for ${
                     info.serverAppId || '0bb81263-a5f5-4fd8-8786-d71f43a43725'
                   } (Settings → Keys & IDs), not the old daf8fc36… website app. Redeploy after saving.`}
+              </p>
+              <p className="mt-2">
+                Open OneSignal → app <code className="rounded bg-white px-1">0bb81263…</code> → Settings →
+                Keys &amp; IDs → copy <strong>App API Key</strong> into Vercel Production{' '}
+                <code className="rounded bg-white px-1">ONESIGNAL_REST_API_KEY</code>, then{' '}
+                <strong>Redeploy</strong>.
               </p>
               {info.keyBelongsToLegacyApp && (
                 <p className="mt-2">
