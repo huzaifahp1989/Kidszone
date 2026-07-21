@@ -120,7 +120,8 @@ export async function POST(request: NextRequest) {
         }
 
         // Create points record
-        await supabaseAdmin
+        console.log(`Creating points record for ${learner.username} (${uid})`);
+        const { data: pointsData, error: pointsErr } = await supabaseAdmin
           .from('users_points')
           .upsert(
             {
@@ -129,11 +130,15 @@ export async function POST(request: NextRequest) {
               weekly_points: 0,
               monthly_points: 0,
               today_points: 0,
-              badges: [],
-              level: 'Beginner',
             },
             { onConflict: 'user_id', ignoreDuplicates: false }
           );
+
+        console.log(`Points upsert result: error=${!!pointsErr}, data=${JSON.stringify(pointsData)}`);
+        if (pointsErr) {
+          console.error(`Points record creation error for ${learner.username}:`, pointsErr);
+          // Continue anyway - profile is created, points record can be created manually if needed
+        }
 
         createdUsers.push({
           uid,
