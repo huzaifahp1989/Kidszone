@@ -88,6 +88,14 @@ export const CREATE_HUB_ACTIVITIES: CreateActivityCard[] = [
     blurb: 'See artworks you saved from colouring and drawing',
     pointsNote: 'Save & show your creations',
   },
+  {
+    href: '/create/offline',
+    emoji: '📄',
+    title: 'Offline Activities',
+    blurb: 'Print colouring, mazes, checklists and dua cards for home',
+    pointsNote: 'Print · no screen needed',
+    badge: 'NEW',
+  },
 ];
 
 export const COLOURING_PALETTE = [
