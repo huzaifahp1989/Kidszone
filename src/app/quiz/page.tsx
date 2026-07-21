@@ -3,7 +3,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { BiWeeklyResetPopup } from '@/components';
 import { DailyPointsBar } from '@/components/DailyPointsBar';
 import { usePointsProgress } from '@/lib/points-progress-context';
 import { MAX_DAILY_QUIZ_ATTEMPTS, QUIZ_POINTS_PER_COMPLETION, POINTS_DAILY_CAP, MAX_DAILY_QUIZ_POINTS } from '@/lib/points-policy';
@@ -353,7 +352,6 @@ export default function QuizPage() {
   if (!mounted) {
     return (
       <>
-        <BiWeeklyResetPopup pageKey="quiz" />
         <div className="min-h-[70vh] flex items-center justify-center bg-[#f0fdfa]">
           <div className="text-[#475569]">Loading...</div>
         </div>
@@ -364,7 +362,6 @@ export default function QuizPage() {
   if (!mode) {
     return (
       <>
-      <BiWeeklyResetPopup pageKey="quiz" />
       <div className="min-h-screen bg-[#f0fdfa] pattern-islamic">
         <div className="max-w-4xl mx-auto px-4 py-8 space-y-8">
           <EarnMorePointsLinks title="Earn more points today" />
@@ -603,7 +600,6 @@ export default function QuizPage() {
   // Quiz Interface
   return (
     <>
-    <BiWeeklyResetPopup pageKey="quiz" />
     <div className="min-h-screen bg-[#f0fdfa] py-8 px-4">
       <div className="max-w-2xl mx-auto">
         {/* Header */}

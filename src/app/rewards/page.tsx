@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '@/lib/auth-context';
-import { BiWeeklyResetPopup, Button, WeeklyActivitiesProgress } from '@/components';
+import { Button, WeeklyActivitiesProgress } from '@/components';
 import { Trophy, Star, Award, Lock, Crown, Mic, Sparkles, CheckCircle2, MessageCircle, CalendarDays } from 'lucide-react';
 import Link from 'next/link';
 import { SurveyPopup } from '@/components';
@@ -186,7 +186,6 @@ export default function RewardsPage() {
   if (!mounted || loading) {
     return (
       <div className="page-inner">
-        <BiWeeklyResetPopup pageKey="rewards" />
         <div className="flex h-[60vh] items-center justify-center">
           <div className="animate-pulse text-xl text-islamic-blue">Loading Rewards...</div>
         </div>
@@ -277,7 +276,6 @@ export default function RewardsPage() {
   return (
     <div className="page-inner">
       <SurveyPopup />
-      <BiWeeklyResetPopup pageKey="rewards" />
 
       <main className="mx-auto max-w-4xl">
         <section className="mb-6 rounded-3xl border border-slate-200 bg-white/80 p-5 shadow-sm">

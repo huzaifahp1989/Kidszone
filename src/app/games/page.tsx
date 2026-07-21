@@ -1,7 +1,6 @@
 'use client';
 import { useRouter } from 'next/navigation';
 import React, { useEffect, useRef, useState } from 'react';
-import { BiWeeklyResetPopup } from '@/components';
 import { usePointsProgress } from '@/lib/points-progress-context';
 import { useAuth } from '@/lib/auth-context';
 import { completeGameSession } from '@/lib/complete-game-session';
@@ -497,7 +496,6 @@ export default function GamesPage() {
 
   return (
     <>
-      <BiWeeklyResetPopup pageKey="games" />
       <div className="page-canvas pattern-islamic">
         <div className="page-wrap max-w-5xl space-y-8">
           <EarnMorePointsLinks title="Earn more points today" />

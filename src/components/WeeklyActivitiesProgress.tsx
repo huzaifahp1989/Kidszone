@@ -4,7 +4,6 @@ import Link from 'next/link';
 import React, { useEffect, useMemo, useState } from 'react';
 import { useAuth } from '@/lib/auth-context';
 import { BookOpen, Gamepad2, Mic, Sparkles, Star } from 'lucide-react';
-import { WeeklyActivityPopup } from './WeeklyActivityPopup';
 
 type WeeklyActivities = {
   quiz: number;
@@ -80,7 +79,6 @@ export function WeeklyActivitiesProgress() {
 
   return (
     <>
-      <WeeklyActivityPopup userId={userId} />
       <section className="mb-8 rounded-3xl border border-[#0d9488]/25 bg-gradient-to-br from-[#f0fdfa] via-white to-[#f0fdfa] p-6 shadow-sm">
         <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
           <div>
