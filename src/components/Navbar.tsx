@@ -113,17 +113,18 @@ export const Navbar: React.FC<NavbarProps> = ({ username, points, level, badges,
         <div className="flex justify-between items-center h-14 sm:h-[3.75rem]">
           {/* Logo — Kids Zone wordmark always visible */}
           <Link href="/" className="group flex min-w-0 items-center gap-2.5 sm:gap-3">
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-teal-500 to-teal-700 shadow-sm ring-1 ring-white/70 transition-transform group-hover:scale-[1.04] sm:h-10 sm:w-10 sm:rounded-2xl">
-              <span className="text-lg sm:text-xl" aria-hidden>
-                🌙
-              </span>
+            <div className="relative flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-gradient-to-br from-gold-300 via-teal-400 to-teal-700 shadow-sm ring-1 ring-white/70 transition-transform group-hover:scale-[1.04] sm:h-10 sm:w-10 sm:rounded-2xl">
+              <span
+                className="absolute inset-x-2 bottom-1.5 top-2 rounded-t-full border-2 border-white/80 bg-white/25"
+                aria-hidden
+              />
             </div>
             <div className="min-w-0">
               <h1 className="font-heading text-lg font-extrabold leading-tight tracking-tight text-teal-900 sm:text-xl">
                 Kids Zone
               </h1>
               <p className="hidden text-[10px] font-semibold uppercase tracking-[0.16em] text-sand-500 sm:block">
-                Islamic Learning
+                Sunlit Courtyard
               </p>
             </div>
           </Link>
@@ -230,8 +231,8 @@ export const Navbar: React.FC<NavbarProps> = ({ username, points, level, badges,
             <SupportDonateLink />
             {loading ? (
               <div className="flex items-center gap-2">
-                <div className="w-20 h-8 bg-[#ede9fe] rounded-xl animate-pulse"></div>
-                <div className="w-12 h-8 bg-[#ede9fe] rounded-xl animate-pulse"></div>
+                <div className="w-20 h-8 bg-[#ccfbf1] rounded-xl animate-pulse"></div>
+                <div className="w-12 h-8 bg-[#ccfbf1] rounded-xl animate-pulse"></div>
               </div>
             ) : displayUsername ? (
               <>
@@ -270,7 +271,7 @@ export const Navbar: React.FC<NavbarProps> = ({ username, points, level, badges,
               <div className="flex items-center gap-2">
                 <Link
                   href="/signin"
-                  className="px-4 py-2.5 text-[#1e1b4b] font-semibold hover:bg-[#ede9fe] rounded-xl transition interactive-focus touch-target"
+                  className="px-4 py-2.5 text-[#134e4a] font-semibold hover:bg-[#ccfbf1] rounded-xl transition interactive-focus touch-target"
                 >
                   Sign In
                 </Link>
@@ -306,7 +307,7 @@ export const Navbar: React.FC<NavbarProps> = ({ username, points, level, badges,
               </>
             )}
             <button
-              className="hidden sm:inline-flex p-2.5 text-[#1e1b4b] hover:bg-[#ede9fe] rounded-xl transition interactive-focus touch-target border border-[#ddd6fe]/60 bg-white/60"
+              className="hidden sm:inline-flex p-2.5 text-[#134e4a] hover:bg-[#ccfbf1] rounded-xl transition interactive-focus touch-target border border-[#99f6e4]/60 bg-white/60"
               onClick={() => setIsMenuOpen(!isMenuOpen)}
               aria-expanded={isMenuOpen}
               aria-controls="mobile-main-menu"
@@ -322,7 +323,7 @@ export const Navbar: React.FC<NavbarProps> = ({ username, points, level, badges,
           {isMenuOpen && (
           <motion.div
             id="mobile-main-menu"
-            className="lg:hidden py-4 border-t border-[#c4b5fd]/40"
+            className="lg:hidden py-4 border-t border-[#5eead4]/40"
             initial={reduceMotion ? undefined : { opacity: 0, y: -8 }}
             animate={reduceMotion ? undefined : { opacity: 1, y: 0 }}
             exit={reduceMotion ? undefined : { opacity: 0, y: -8 }}
@@ -343,8 +344,8 @@ export const Navbar: React.FC<NavbarProps> = ({ username, points, level, badges,
                           href={item.href}
                           className={`flex items-center gap-3 px-4 py-3 rounded-xl font-semibold transition-all interactive-focus touch-target ${
                             active
-                              ? 'bg-gradient-to-r from-[#ede9fe] to-[#ede9fe] text-[#6d28d9]'
-                              : 'text-[#1e1b4b] hover:bg-[#f5f3ff] hover:text-[#6d28d9]'
+                              ? 'bg-gradient-to-r from-[#ccfbf1] to-[#ccfbf1] text-[#0f766e]'
+                              : 'text-[#134e4a] hover:bg-[#f0fdfa] hover:text-[#0f766e]'
                           }`}
                           onClick={() => setIsMenuOpen(false)}
                           aria-current={active ? 'page' : undefined}
@@ -368,8 +369,8 @@ export const Navbar: React.FC<NavbarProps> = ({ username, points, level, badges,
                       href={item.href}
                       className={`flex items-center gap-3 px-4 py-3 rounded-xl font-semibold transition-all interactive-focus touch-target ${
                         active
-                          ? 'bg-gradient-to-r from-[#ede9fe] to-[#ede9fe] text-[#6d28d9]'
-                          : 'text-[#1e1b4b] hover:bg-[#f5f3ff] hover:text-[#6d28d9]'
+                          ? 'bg-gradient-to-r from-[#ccfbf1] to-[#ccfbf1] text-[#0f766e]'
+                          : 'text-[#134e4a] hover:bg-[#f0fdfa] hover:text-[#0f766e]'
                       }`}
                       onClick={() => setIsMenuOpen(false)}
                       aria-current={active ? 'page' : undefined}
@@ -381,22 +382,22 @@ export const Navbar: React.FC<NavbarProps> = ({ username, points, level, badges,
                 })}
               </div>
 
-              <div className="mt-2 pt-4 border-t border-[#c4b5fd]/30">
+              <div className="mt-2 pt-4 border-t border-[#5eead4]/30">
                 {loading ? (
                   <div className="px-4 py-3">
-                    <div className="w-32 h-6 bg-[#ede9fe] rounded animate-pulse mb-2"></div>
-                    <div className="w-20 h-4 bg-[#ede9fe] rounded animate-pulse"></div>
+                    <div className="w-32 h-6 bg-[#ccfbf1] rounded animate-pulse mb-2"></div>
+                    <div className="w-20 h-4 bg-[#ccfbf1] rounded animate-pulse"></div>
                   </div>
                 ) : displayUsername ? (
                   <div className="space-y-3 px-4">
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="font-bold text-[#1e1b4b]">{displayUsername}</p>
+                        <p className="font-bold text-[#134e4a]">{displayUsername}</p>
                         <p className="text-sm text-[#475569]">{displayLevel || 'Beginner'}</p>
                       </div>
                       <div className="flex gap-2">
                         <span className="text-sm font-bold text-[#f59e0b]">⭐ {displayPoints || 0}</span>
-                        <span className="text-sm font-bold text-[#6d28d9]">🏆 {displayBadges || 0}</span>
+                        <span className="text-sm font-bold text-[#0f766e]">🏆 {displayBadges || 0}</span>
                       </div>
                     </div>
 
@@ -420,7 +421,7 @@ export const Navbar: React.FC<NavbarProps> = ({ username, points, level, badges,
                     <Link
                       href="/signin"
                       onClick={() => setIsMenuOpen(false)}
-                      className="w-full text-center py-3 text-[#1e1b4b] font-semibold hover:bg-[#ede9fe] rounded-xl transition interactive-focus touch-target"
+                      className="w-full text-center py-3 text-[#134e4a] font-semibold hover:bg-[#ccfbf1] rounded-xl transition interactive-focus touch-target"
                     >
                       Sign In
                     </Link>

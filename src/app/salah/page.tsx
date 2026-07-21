@@ -359,7 +359,7 @@ export default function SalahPage() {
 
   if (authLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-[#f5f3ff] to-white">
+      <div className="min-h-screen bg-gradient-to-b from-[#f0fdfa] to-white">
         <Navbar loading />
         <div className="mx-auto max-w-5xl px-4 py-10">
           <div className="h-10 w-64 animate-pulse rounded-2xl bg-slate-100" />
@@ -370,7 +370,7 @@ export default function SalahPage() {
 
   if (!user) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-[#f5f3ff] to-white">
+      <div className="min-h-screen bg-gradient-to-b from-[#f0fdfa] to-white">
         <Navbar />
         <main className="mx-auto max-w-3xl px-4 py-10">
           <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
@@ -391,13 +391,13 @@ export default function SalahPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[linear-gradient(180deg,#f5f3ff_0%,#ffffff_45%,#fff7ed_100%)]">
+    <div className="min-h-screen bg-[linear-gradient(180deg,#f0fdfa_0%,#ffffff_45%,#fff7ed_100%)]">
       <Navbar user={pageUser} />
       <main className="mx-auto max-w-6xl px-4 py-8">
         <div className="mb-6 rounded-[2rem] border border-slate-200 bg-white/90 p-6 shadow-sm">
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div>
-              <p className="text-xs font-black uppercase tracking-[0.22em] text-[#5b21b6]">Salah Tracking</p>
+              <p className="text-xs font-black uppercase tracking-[0.22em] text-[#115e59]">Salah Tracking</p>
               <h1 className="mt-2 text-3xl font-black text-slate-900">Daily obligatory prayers</h1>
               <p className="mt-2 text-sm text-slate-600">Log each salah as completed or missed, and monitor your weekly and monthly progress.</p>
             </div>
@@ -408,14 +408,14 @@ export default function SalahPage() {
               <button
                 type="button"
                 onClick={requestReminders}
-                className="inline-flex items-center gap-2 rounded-2xl bg-[#5b21b6] px-4 py-3 text-sm font-black text-white shadow-sm hover:bg-[#5b21b6]"
+                className="inline-flex items-center gap-2 rounded-2xl bg-[#115e59] px-4 py-3 text-sm font-black text-white shadow-sm hover:bg-[#115e59]"
               >
                 <Bell size={16} />
                 Enable reminders
               </button>
             </div>
           </div>
-          {reminderStatus && <p className="mt-4 rounded-2xl border border-[#99f6e4] bg-[#f5f3ff] px-4 py-3 text-sm font-bold text-[#5b21b6]">{reminderStatus}</p>}
+          {reminderStatus && <p className="mt-4 rounded-2xl border border-[#99f6e4] bg-[#f0fdfa] px-4 py-3 text-sm font-bold text-[#115e59]">{reminderStatus}</p>}
           {salahPointsMessage && <p className="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-bold text-emerald-800">{salahPointsMessage}</p>}
           {!salahPointsMessage && (
             <p className="mt-4 rounded-2xl border border-violet-200 bg-violet-50 px-4 py-3 text-sm text-violet-900">
@@ -493,7 +493,7 @@ export default function SalahPage() {
                       {logged === 0 ? 'No logs' : `${completed}/5 completed`}
                     </div>
                     <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-slate-200/70">
-                      <div className={classNames('h-full', selected ? 'bg-white/80' : 'bg-[#5b21b6]')} style={{ width: `${Math.min(100, (completed / 5) * 100)}%` }} />
+                      <div className={classNames('h-full', selected ? 'bg-white/80' : 'bg-[#115e59]')} style={{ width: `${Math.min(100, (completed / 5) * 100)}%` }} />
                     </div>
                   </button>
                 );
@@ -609,10 +609,10 @@ export default function SalahPage() {
             </section>
 
             {prayerTimes && (
-              <section className="rounded-[2rem] border border-[#99f6e4] bg-[#f5f3ff] p-5 shadow-sm">
-                <p className="text-xs font-black uppercase tracking-[0.18em] text-[#5b21b6]">Today&apos;s prayer times</p>
-                <p className="mt-1 text-sm font-bold text-[#5b21b6]">{prayerTimes.timezone}</p>
-                <div className="mt-4 space-y-2 text-sm font-bold text-[#5b21b6]">
+              <section className="rounded-[2rem] border border-[#99f6e4] bg-[#f0fdfa] p-5 shadow-sm">
+                <p className="text-xs font-black uppercase tracking-[0.18em] text-[#115e59]">Today&apos;s prayer times</p>
+                <p className="mt-1 text-sm font-bold text-[#115e59]">{prayerTimes.timezone}</p>
+                <div className="mt-4 space-y-2 text-sm font-bold text-[#115e59]">
                   {SALAH_PRAYERS.map((p) => (
                     <div key={p.key} className="flex items-center justify-between rounded-xl bg-white/80 px-3 py-2">
                       <span>{p.label}</span>

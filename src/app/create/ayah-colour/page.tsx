@@ -56,7 +56,7 @@ export default function AyahColourPage() {
               <path
                 d={r.d}
                 fill={fills[r.id] || '#f8fafc'}
-                stroke="#1e1b4b"
+                stroke="#134e4a"
                 strokeWidth={2}
                 className="cursor-pointer"
                 onClick={() => paint(r.id, r.num)}

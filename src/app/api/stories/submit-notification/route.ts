@@ -51,7 +51,7 @@ export async function POST(request: NextRequest) {
 
     const html = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e5e7eb; border-radius: 12px; overflow: hidden;">
-        <div style="background-color: #4f46e5; padding: 20px; text-align: center;">
+        <div style="background-color: #0f766e; padding: 20px; text-align: center;">
           <h2 style="color: white; margin: 0;">New Story Submission 🎤</h2>
         </div>
         
@@ -69,7 +69,7 @@ export async function POST(request: NextRequest) {
               ▶️ Listen to Recording
             </a>
             
-            <a href="${adminUrl}" style="background-color: #6366f1; color: white; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: bold; display: inline-block;">
+            <a href="${adminUrl}" style="background-color: #0d9488; color: white; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: bold; display: inline-block;">
               🛡️ Review in Admin
             </a>
           </div>

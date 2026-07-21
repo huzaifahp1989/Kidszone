@@ -65,7 +65,7 @@ export function SpinWheel() {
         setResult({
           rewardKey: json.spin.rewardKey,
           rewardLabel: json.spin.rewardLabel,
-          color: json.rewards?.find((r: RewardSlot) => r.key === json.spin.rewardKey)?.color || '#7c3aed',
+          color: json.rewards?.find((r: RewardSlot) => r.key === json.spin.rewardKey)?.color || '#0d9488',
         });
       } else {
         setResult(null);
@@ -116,7 +116,7 @@ export function SpinWheel() {
           setResult({
             rewardKey: json.spin.rewardKey,
             rewardLabel: json.spin.rewardLabel,
-            color: json.spin.color || rewards[safeIndex]?.color || '#7c3aed',
+            color: json.spin.color || rewards[safeIndex]?.color || '#0d9488',
           });
           setSpinning(false);
           loadStatus();

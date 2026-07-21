@@ -283,7 +283,7 @@ export default function RewardsPage() {
         <section className="mb-6 rounded-3xl border border-slate-200 bg-white/80 p-5 shadow-sm">
           <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
             <div>
-              <p className="text-xs font-black uppercase tracking-[0.18em] text-[#5b21b6]">Kids Zone Progress</p>
+              <p className="text-xs font-black uppercase tracking-[0.18em] text-[#115e59]">Kids Zone Progress</p>
               <h2 className="mt-2 text-2xl font-black text-slate-900">Points, badges, and competitions</h2>
               <p className="mt-1 text-sm text-slate-600">Earn points through quizzes, games, and activities. Check your badges, level progress, and monthly certificates below.</p>
             </div>
@@ -345,8 +345,8 @@ export default function RewardsPage() {
 
         {activeTab === 'week' && (
           <>
-        <section className="mb-6 rounded-2xl border border-[#7c3aed]/30 bg-[#ecfdf5] p-4 text-center">
-          <p className="text-[#5b21b6] font-bold">Complete any 5 activities every week to finish your weekly challenge.</p>
+        <section className="mb-6 rounded-2xl border border-[#0d9488]/30 bg-[#f0fdfa] p-4 text-center">
+          <p className="text-[#115e59] font-bold">Complete any 5 activities every week to finish your weekly challenge.</p>
         </section>
         <WeeklyActivitiesProgress />
 
@@ -515,15 +515,15 @@ export default function RewardsPage() {
           </div>
         </section>
 
-        <Link href="/tasks" className="mb-6 flex items-center justify-between gap-4 rounded-2xl border-2 border-[#7c3aed]/40 bg-gradient-to-r from-[#f5f3ff] to-[#ecfdf5] px-5 py-4 shadow-sm hover:border-[#7c3aed]/70 hover:shadow-md transition">
+        <Link href="/tasks" className="mb-6 flex items-center justify-between gap-4 rounded-2xl border-2 border-[#0d9488]/40 bg-gradient-to-r from-[#fff9eb] to-[#f0fdfa] px-5 py-4 shadow-sm hover:border-[#0d9488]/70 hover:shadow-md transition">
           <div className="flex items-center gap-3">
             <span className="text-3xl">📋</span>
             <div>
-              <p className="font-extrabold text-[#5b21b6] text-base md:text-lg">Check the Tasks page to gain more points</p>
-              <p className="text-sm text-[#6d28d9]">Record stories, pledge Durood &amp; Zikr, play games and invite friends</p>
+              <p className="font-extrabold text-[#115e59] text-base md:text-lg">Check the Tasks page to gain more points</p>
+              <p className="text-sm text-[#0f766e]">Record stories, pledge Durood &amp; Zikr, play games and invite friends</p>
             </div>
           </div>
-          <span className="shrink-0 rounded-xl bg-[#7c3aed] px-4 py-2 text-sm font-bold text-white">Go to Tasks →</span>
+          <span className="shrink-0 rounded-xl bg-[#0d9488] px-4 py-2 text-sm font-bold text-white">Go to Tasks →</span>
         </Link>
 
         <section className="mb-8 grid gap-6">

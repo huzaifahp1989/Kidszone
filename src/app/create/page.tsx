@@ -18,7 +18,7 @@ export default function CreateHubPage() {
         </div>
 
         <header className="page-header">
-          <p className="inline-flex items-center gap-2 rounded-full border border-pink-200 bg-pink-50 px-3 py-1 text-xs font-bold uppercase tracking-[0.14em] text-pink-800">
+          <p className="inline-flex items-center gap-2 rounded-full border border-gold-200 bg-gold-50 px-3 py-1 text-xs font-bold uppercase tracking-[0.14em] text-gold-800">
             <Palette size={14} /> Create & Play
           </p>
           <h1 className="mt-3 font-heading text-3xl font-extrabold text-sand-900 md:text-4xl">

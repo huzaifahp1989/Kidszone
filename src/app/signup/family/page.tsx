@@ -141,10 +141,10 @@ export default function FamilySignupPage() {
   };
 
   return (
-    <div className="min-h-[80vh] flex items-center justify-center px-4 sm:px-6 py-10 bg-[#f5f3ff] pattern-islamic">
+    <div className="min-h-[80vh] flex items-center justify-center px-4 sm:px-6 py-10 bg-[#f0fdfa] pattern-islamic">
       <div className="w-full max-w-5xl grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-10 items-stretch">
         {/* Left Panel */}
-        <div className="hidden md:flex flex-col justify-between rounded-2xl p-8 bg-gradient-to-br from-[#7c3aed] to-[#6d28d9] text-white shadow-xl">
+        <div className="hidden md:flex flex-col justify-between rounded-2xl p-8 bg-gradient-to-br from-[#0d9488] to-[#0f766e] text-white shadow-xl">
           <div>
             <div className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-xs font-semibold">
               <Shield size={14} /> Family Setup

@@ -17,15 +17,15 @@ function buildEmailHtml(name: string, points: number, weeklyPoints: number, leve
 <!DOCTYPE html>
 <html lang="en">
 <head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" /></head>
-<body style="margin:0;padding:0;background:#f5f3ff;font-family:'Segoe UI',Arial,sans-serif;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f5f3ff;padding:32px 0;">
+<body style="margin:0;padding:0;background:#f0fdfa;font-family:'Segoe UI',Arial,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f0fdfa;padding:32px 0;">
     <tr>
       <td align="center">
         <table width="600" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:20px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);max-width:600px;">
 
           <!-- Header -->
           <tr>
-            <td style="background:linear-gradient(135deg,#6d28d9 0%,#7c3aed 50%,#6d28d9 100%);padding:36px 32px;text-align:center;">
+            <td style="background:linear-gradient(135deg,#0f766e 0%,#0d9488 50%,#0f766e 100%);padding:36px 32px;text-align:center;">
               <div style="font-size:48px;line-height:1;">🌙</div>
               <h1 style="color:#ffffff;margin:12px 0 6px;font-size:26px;font-weight:700;">Kids Zone</h1>
               <p style="color:rgba(255,255,255,0.85);margin:0;font-size:14px;">Islamic Learning Platform</p>
@@ -35,7 +35,7 @@ function buildEmailHtml(name: string, points: number, weeklyPoints: number, leve
           <!-- Greeting -->
           <tr>
             <td style="padding:32px 32px 0;">
-              <p style="font-size:18px;color:#1e1b4b;font-weight:700;margin:0 0 8px;">Assalamu Alaikum, ${escapeHtml(name)}! 👋</p>
+              <p style="font-size:18px;color:#134e4a;font-weight:700;margin:0 0 8px;">Assalamu Alaikum, ${escapeHtml(name)}! 👋</p>
               <p style="font-size:15px;color:#475569;margin:0 0 24px;line-height:1.6;">
                 Your quiz is waiting! Here is a quick look at how you are doing on Kids Zone.
               </p>
@@ -48,9 +48,9 @@ function buildEmailHtml(name: string, points: number, weeklyPoints: number, leve
               <table width="100%" cellpadding="0" cellspacing="0">
                 <tr>
                   <td width="33%" style="padding:4px;">
-                    <div style="background:#f5f3ff;border-radius:14px;padding:16px;text-align:center;border:1px solid rgba(20,184,166,0.2);">
-                      <div style="font-size:28px;font-weight:800;color:#6d28d9;">${points.toLocaleString()}</div>
-                      <div style="font-size:12px;color:#5b21b6;margin-top:4px;">⭐ Total Points</div>
+                    <div style="background:#f0fdfa;border-radius:14px;padding:16px;text-align:center;border:1px solid rgba(20,184,166,0.2);">
+                      <div style="font-size:28px;font-weight:800;color:#0f766e;">${points.toLocaleString()}</div>
+                      <div style="font-size:12px;color:#115e59;margin-top:4px;">⭐ Total Points</div>
                     </div>
                   </td>
                   <td width="33%" style="padding:4px;">
@@ -61,14 +61,14 @@ function buildEmailHtml(name: string, points: number, weeklyPoints: number, leve
                   </td>
                   <td width="33%" style="padding:4px;">
                     <div style="background:#eef2ff;border-radius:14px;padding:16px;text-align:center;border:1px solid rgba(99,102,241,0.2);">
-                      <div style="font-size:28px;font-weight:800;color:#4f46e5;">${streak}</div>
-                      <div style="font-size:12px;color:#4338ca;margin-top:4px;">🔥 Day Streak</div>
+                      <div style="font-size:28px;font-weight:800;color:#0f766e;">${streak}</div>
+                      <div style="font-size:12px;color:#115e59;margin-top:4px;">🔥 Day Streak</div>
                     </div>
                   </td>
                 </tr>
               </table>
-              <div style="background:#ede9fe;border-radius:14px;padding:14px;margin-top:8px;text-align:center;border:1px solid rgba(229,201,163,0.3);">
-                <span style="font-size:13px;color:#1e1b4b;">🏅 Current Level: <strong>${escapeHtml(String(levelLabel))}</strong></span>
+              <div style="background:#ccfbf1;border-radius:14px;padding:14px;margin-top:8px;text-align:center;border:1px solid rgba(229,201,163,0.3);">
+                <span style="font-size:13px;color:#134e4a;">🏅 Current Level: <strong>${escapeHtml(String(levelLabel))}</strong></span>
               </div>
             </td>
           </tr>
@@ -76,7 +76,7 @@ function buildEmailHtml(name: string, points: number, weeklyPoints: number, leve
           <!-- Motivational Message -->
           <tr>
             <td style="padding:0 32px 24px;">
-              <div style="background:linear-gradient(135deg,#4c1d95 0%,#7c3aed 100%);border-radius:16px;padding:24px;color:#ffffff;">
+              <div style="background:linear-gradient(135deg,#134e4a 0%,#0d9488 100%);border-radius:16px;padding:24px;color:#ffffff;">
                 <p style="font-size:18px;font-weight:700;margin:0 0 10px;">💬 A Message For You</p>
                 <p style="font-size:14px;line-height:1.7;margin:0;color:rgba(255,255,255,0.9);">${motivational}</p>
               </div>
@@ -86,14 +86,14 @@ function buildEmailHtml(name: string, points: number, weeklyPoints: number, leve
           <!-- What to do next -->
           <tr>
             <td style="padding:0 32px 24px;">
-              <p style="font-size:16px;font-weight:700;color:#1e1b4b;margin:0 0 14px;">Continue Your Journey</p>
+              <p style="font-size:16px;font-weight:700;color:#134e4a;margin:0 0 14px;">Continue Your Journey</p>
               <table width="100%" cellpadding="0" cellspacing="0">
                 <tr>
                   <td style="padding:4px;">
-                    <a href="${SITE_URL}/quiz" style="display:block;background:#f5f3ff;border:1px solid rgba(20,184,166,0.25);border-radius:12px;padding:14px 16px;text-decoration:none;">
+                    <a href="${SITE_URL}/quiz" style="display:block;background:#f0fdfa;border:1px solid rgba(20,184,166,0.25);border-radius:12px;padding:14px 16px;text-decoration:none;">
                       <span style="font-size:20px;">🧠</span>
-                      <span style="display:inline-block;margin-left:10px;font-size:14px;font-weight:700;color:#6d28d9;vertical-align:middle;">Take Today&apos;s Quiz</span>
-                      <span style="float:right;font-size:12px;color:#5b21b6;font-weight:600;line-height:2;">+${QUIZ_POINTS_PER_COMPLETION} pts</span>
+                      <span style="display:inline-block;margin-left:10px;font-size:14px;font-weight:700;color:#0f766e;vertical-align:middle;">Take Today&apos;s Quiz</span>
+                      <span style="float:right;font-size:12px;color:#115e59;font-weight:600;line-height:2;">+${QUIZ_POINTS_PER_COMPLETION} pts</span>
                     </a>
                   </td>
                 </tr>
@@ -110,8 +110,8 @@ function buildEmailHtml(name: string, points: number, weeklyPoints: number, leve
                   <td style="padding:4px;">
                     <a href="${SITE_URL}/tasks" style="display:block;background:#eef2ff;border:1px solid rgba(99,102,241,0.25);border-radius:12px;padding:14px 16px;text-decoration:none;">
                       <span style="font-size:20px;">📝</span>
-                      <span style="display:inline-block;margin-left:10px;font-size:14px;font-weight:700;color:#4f46e5;vertical-align:middle;">Invite a Friend</span>
-                      <span style="float:right;font-size:12px;color:#4338ca;font-weight:600;line-height:2;">+50 pts</span>
+                      <span style="display:inline-block;margin-left:10px;font-size:14px;font-weight:700;color:#0f766e;vertical-align:middle;">Invite a Friend</span>
+                      <span style="float:right;font-size:12px;color:#115e59;font-weight:600;line-height:2;">+50 pts</span>
                     </a>
                   </td>
                 </tr>
@@ -122,7 +122,7 @@ function buildEmailHtml(name: string, points: number, weeklyPoints: number, leve
           <!-- CTA Button -->
           <tr>
             <td style="padding:0 32px 32px;text-align:center;">
-              <a href="${SITE_URL}" style="display:inline-block;background:linear-gradient(135deg,#7c3aed,#6d28d9);color:#ffffff;font-size:16px;font-weight:700;padding:14px 40px;border-radius:14px;text-decoration:none;box-shadow:0 4px 14px rgba(13,148,136,0.4);">
+              <a href="${SITE_URL}" style="display:inline-block;background:linear-gradient(135deg,#0d9488,#0f766e);color:#ffffff;font-size:16px;font-weight:700;padding:14px 40px;border-radius:14px;text-decoration:none;box-shadow:0 4px 14px rgba(13,148,136,0.4);">
                 Continue Learning →
               </a>
               <p style="font-size:12px;color:#475569;margin:20px 0 0;">
@@ -133,7 +133,7 @@ function buildEmailHtml(name: string, points: number, weeklyPoints: number, leve
 
           <!-- Footer -->
           <tr>
-            <td style="background:#ede9fe;padding:20px 32px;text-align:center;border-top:1px solid rgba(229,201,163,0.4);">
+            <td style="background:#ccfbf1;padding:20px 32px;text-align:center;border-top:1px solid rgba(229,201,163,0.4);">
               <p style="font-size:12px;color:#475569;margin:0;">© 2026 Kids Zone — Islam Media Central</p>
               <p style="font-size:11px;color:#c4956a;margin:6px 0 0;">This is an automated progress reminder. Keep learning!</p>
             </td>

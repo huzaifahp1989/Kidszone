@@ -81,14 +81,14 @@ export function WeeklyActivitiesProgress() {
   return (
     <>
       <WeeklyActivityPopup userId={userId} />
-      <section className="mb-8 rounded-3xl border border-[#7c3aed]/25 bg-gradient-to-br from-[#ecfdf5] via-white to-[#f5f3ff] p-6 shadow-sm">
+      <section className="mb-8 rounded-3xl border border-[#0d9488]/25 bg-gradient-to-br from-[#f0fdfa] via-white to-[#f0fdfa] p-6 shadow-sm">
         <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
           <div>
-            <div className="inline-flex rounded-full bg-[#ccfbf1] px-3 py-1 text-xs font-bold uppercase tracking-wide text-[#5b21b6]">
+            <div className="inline-flex rounded-full bg-[#ccfbf1] px-3 py-1 text-xs font-bold uppercase tracking-wide text-[#115e59]">
               Weekly 5 Activities Challenge
             </div>
-            <h2 className="mt-3 text-2xl font-bold text-[#4c1d95]">Finish any 5 activities this week</h2>
-            <p className="mt-2 text-sm text-[#5b21b6] md:text-base">
+            <h2 className="mt-3 text-2xl font-bold text-[#134e4a]">Finish any 5 activities this week</h2>
+            <p className="mt-2 text-sm text-[#115e59] md:text-base">
               {loading
                 ? 'Checking your weekly challenge progress...'
                 : data?.qualifiedForDraw
@@ -100,14 +100,14 @@ export function WeeklyActivitiesProgress() {
             <button
               onClick={() => fetchData()}
               disabled={loading}
-              className="inline-flex items-center justify-center rounded-xl border border-[#7c3aed] px-3 py-3 text-sm font-bold text-[#7c3aed] transition hover:bg-[#ecfdf5] disabled:opacity-50"
+              className="inline-flex items-center justify-center rounded-xl border border-[#0d9488] px-3 py-3 text-sm font-bold text-[#0d9488] transition hover:bg-[#f0fdfa] disabled:opacity-50"
               title="Refresh progress"
             >
               {loading ? '...' : '↻'}
             </button>
             <Link
               href="/leaderboard"
-              className="inline-flex items-center justify-center rounded-xl bg-[#7c3aed] px-4 py-3 text-sm font-bold text-white transition hover:bg-[#6d28d9]"
+              className="inline-flex items-center justify-center rounded-xl bg-[#0d9488] px-4 py-3 text-sm font-bold text-white transition hover:bg-[#0f766e]"
             >
               View Leaderboard
             </Link>
@@ -128,14 +128,14 @@ export function WeeklyActivitiesProgress() {
             </div>
           </div>
 
-          <div className="mb-3 flex items-center justify-between text-sm font-semibold text-[#5b21b6]">
+          <div className="mb-3 flex items-center justify-between text-sm font-semibold text-[#115e59]">
             <span>{loading ? 'Loading progress...' : `${data?.completed ?? 0}/${data?.total ?? 5} activities done`}</span>
             <span>{progressPercent}%</span>
           </div>
           <div className="h-4 w-full overflow-hidden rounded-full bg-[#ccfbf1]">
-            <div className="h-full bg-gradient-to-r from-[#7c3aed] to-[#6d28d9] transition-all duration-500" style={{ width: `${progressPercent}%` }} />
+            <div className="h-full bg-gradient-to-r from-[#0d9488] to-[#0f766e] transition-all duration-500" style={{ width: `${progressPercent}%` }} />
           </div>
-          <p className="mt-3 text-xs font-semibold text-[#5b21b6]">
+          <p className="mt-3 text-xs font-semibold text-[#115e59]">
             Any activities completed during the week count. You can use any mix (for example 5 quizzes, or 3 games + 2 quizzes).
           </p>
         </div>
@@ -147,14 +147,14 @@ export function WeeklyActivitiesProgress() {
             const isTotalCard = item.key === 'total';
             const reachedTarget = Boolean(data?.qualifiedForDraw);
             const inner = (
-              <div className={`rounded-2xl border px-4 py-4 transition ${isTotalCard ? (reachedTarget ? 'border-emerald-200 bg-emerald-50' : 'border-[#7c3aed]/30 bg-[#ecfdf5]') : 'border-[#c4b5fd]/30 bg-white hover:border-[#7c3aed]/40'}`}>
+              <div className={`rounded-2xl border px-4 py-4 transition ${isTotalCard ? (reachedTarget ? 'border-emerald-200 bg-emerald-50' : 'border-[#0d9488]/30 bg-[#f0fdfa]') : 'border-[#5eead4]/30 bg-white hover:border-[#0d9488]/40'}`}>
                 <div className="flex items-center gap-3">
-                  <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${isTotalCard ? (reachedTarget ? 'bg-emerald-600 text-white' : 'bg-[#7c3aed] text-white') : 'bg-[#ede9fe] text-[#1e1b4b]'}`}>
+                  <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${isTotalCard ? (reachedTarget ? 'bg-emerald-600 text-white' : 'bg-[#0d9488] text-white') : 'bg-[#ccfbf1] text-[#134e4a]'}`}>
                     <Icon size={18} />
                   </div>
                   <div className="flex-1">
-                    <p className="font-bold text-[#1e1b4b]">{item.label}</p>
-                    <p className={`text-xs font-semibold ${isTotalCard ? (reachedTarget ? 'text-emerald-700' : 'text-[#5b21b6]') : 'text-[#475569]'}`}>
+                    <p className="font-bold text-[#134e4a]">{item.label}</p>
+                    <p className={`text-xs font-semibold ${isTotalCard ? (reachedTarget ? 'text-emerald-700' : 'text-[#115e59]') : 'text-[#475569]'}`}>
                       {item.key === 'total' ? `${Math.min(5, count)}/5 counted this week` : `${count} completed this week`}
                     </p>
                   </div>

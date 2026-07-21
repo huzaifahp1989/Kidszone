@@ -70,23 +70,23 @@ export default function OnboardingFormPage() {
 
   if (loading || allowed === null) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#f5f3ff] px-4">
-        <p className="text-[#1e1b4b] font-semibold">Loading your form...</p>
+      <div className="min-h-screen flex items-center justify-center bg-[#f0fdfa] px-4">
+        <p className="text-[#134e4a] font-semibold">Loading your form...</p>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#f5f3ff] px-4 py-6">
-      <div className="max-w-5xl mx-auto bg-white rounded-2xl border border-[#c4b5fd]/40 shadow-xl overflow-hidden">
-        <div className="px-6 py-5 border-b border-[#c4b5fd]/30">
-          <h1 className="text-2xl font-extrabold text-[#1e1b4b]">Welcome! Please fill this form first</h1>
+    <div className="min-h-screen bg-[#f0fdfa] px-4 py-6">
+      <div className="max-w-5xl mx-auto bg-white rounded-2xl border border-[#5eead4]/40 shadow-xl overflow-hidden">
+        <div className="px-6 py-5 border-b border-[#5eead4]/30">
+          <h1 className="text-2xl font-extrabold text-[#134e4a]">Welcome! Please fill this form first</h1>
           <p className="text-sm text-[#475569] mt-1">New members need to complete this form before continuing.</p>
           <a
             href={GOOGLE_FORM_VIEW_URL}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-block mt-3 text-sm font-bold text-[#6d28d9] hover:underline"
+            className="inline-block mt-3 text-sm font-bold text-[#0f766e] hover:underline"
           >
             Open form in a new tab
           </a>
@@ -101,12 +101,12 @@ export default function OnboardingFormPage() {
           />
         </div>
 
-        <div className="px-6 py-4 border-t border-[#c4b5fd]/30 bg-[#fffaf4] flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
+        <div className="px-6 py-4 border-t border-[#5eead4]/30 bg-[#fffaf4] flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
           <p className="text-xs text-[#8b5a3c]">After submitting the form, click the button below.</p>
           <button
             onClick={completeOnboarding}
             disabled={saving}
-            className="px-5 py-2.5 rounded-xl bg-[#6d28d9] text-white font-bold hover:bg-[#0b7f75] disabled:opacity-50"
+            className="px-5 py-2.5 rounded-xl bg-[#0f766e] text-white font-bold hover:bg-[#0b7f75] disabled:opacity-50"
           >
             {saving ? 'Saving...' : 'I have submitted the form'}
           </button>

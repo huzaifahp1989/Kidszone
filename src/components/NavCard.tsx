@@ -40,7 +40,7 @@ export const NavCard: React.FC<NavCardProps> = ({
       <h3 className="font-heading mb-2 text-2xl font-bold text-sand-900">{title}</h3>
       <p className="text-lg font-medium text-sand-700">{description}</p>
       {comingSoon && (
-        <div className="mt-4 inline-block bg-[#1e1b4b]/80 text-white px-3 py-1 rounded-full text-xs font-bold">
+        <div className="mt-4 inline-block bg-[#134e4a]/80 text-white px-3 py-1 rounded-full text-xs font-bold">
           Coming Soon
         </div>
       )}

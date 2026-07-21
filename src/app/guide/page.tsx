@@ -189,10 +189,10 @@ const extraWays = [
 
 export default function GuidePage() {
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[#f5f3ff] via-white to-[#fff5f5] px-4 py-10">
+    <div className="min-h-screen bg-gradient-to-b from-[#fff9eb] via-white to-[#f0fdfa] px-4 py-10">
       <div className="mx-auto w-full max-w-4xl">
-        <div className="mb-8 rounded-3xl border border-[#7c3aed]/15 bg-white/90 p-6 shadow-xl backdrop-blur sm:p-8">
-          <div className="inline-flex items-center gap-2 rounded-full bg-[#f5f3ff] px-3 py-1 text-xs font-extrabold text-[#6d28d9]">
+        <div className="mb-8 rounded-3xl border border-[#0d9488]/15 bg-white/90 p-6 shadow-xl backdrop-blur sm:p-8">
+          <div className="inline-flex items-center gap-2 rounded-full bg-[#f0fdfa] px-3 py-1 text-xs font-extrabold text-[#0f766e]">
             <Sparkles size={14} />
             Points Guide
           </div>
@@ -270,7 +270,7 @@ export default function GuidePage() {
 
         <div className="mb-6 rounded-3xl border border-slate-200 bg-white p-6 shadow-lg">
           <div className="mb-4 flex items-center gap-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#f5f3ff] text-[#6d28d9]">
+            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#f0fdfa] text-[#0f766e]">
               <Zap size={20} />
             </div>
             <h2 className="text-xl font-extrabold text-slate-900">Your daily plan (up to {POINTS_DAILY_CAP} pts)</h2>
@@ -310,7 +310,7 @@ export default function GuidePage() {
               <p className="mt-2 text-sm text-slate-700">{activity.description}</p>
               <Link
                 href={activity.href}
-                className="mt-4 inline-flex rounded-xl bg-[#f5f3ff] px-4 py-2 text-sm font-bold text-[#6d28d9] hover:bg-[#ede9fe]"
+                className="mt-4 inline-flex rounded-xl bg-[#f0fdfa] px-4 py-2 text-sm font-bold text-[#0f766e] hover:bg-[#ccfbf1]"
               >
                 {activity.cta} →
               </Link>
@@ -320,7 +320,7 @@ export default function GuidePage() {
 
         <div className="mb-6 rounded-3xl border border-slate-200 bg-white p-6 shadow-lg">
           <div className="flex items-start gap-3">
-            <div className="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-[#f5f3ff] text-[#6d28d9]">
+            <div className="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-[#f0fdfa] text-[#0f766e]">
               <Star size={20} />
             </div>
             <div className="flex-1">
@@ -328,7 +328,7 @@ export default function GuidePage() {
               <ul className="mt-3 space-y-3">
                 {extraWays.map((item) => (
                   <li key={item.label} className="rounded-xl border border-slate-100 bg-slate-50 px-4 py-3 text-sm">
-                    <Link href={item.href} className="font-bold text-[#6d28d9] hover:underline">
+                    <Link href={item.href} className="font-bold text-[#0f766e] hover:underline">
                       {item.label}
                     </Link>
                     <p className="mt-0.5 text-slate-600">{item.note}</p>
@@ -341,7 +341,7 @@ export default function GuidePage() {
 
         <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-lg">
-            <div className="mb-3 inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-[#f5f3ff] text-[#6d28d9]">
+            <div className="mb-3 inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-[#f0fdfa] text-[#0f766e]">
               <Trophy size={20} />
             </div>
             <h2 className="text-lg font-extrabold text-slate-900">Badges &amp; leaderboard</h2>
@@ -351,7 +351,7 @@ export default function GuidePage() {
               <li>The leaderboard shows weekly activity — rank is for fun, not who wins prizes.</li>
               <li>Earn above <strong>150 weekly points</strong> to enter the random winner draw.</li>
             </ul>
-            <Link href="/leaderboard" className="mt-4 inline-flex text-sm font-bold text-[#6d28d9] hover:underline">
+            <Link href="/leaderboard" className="mt-4 inline-flex text-sm font-bold text-[#0f766e] hover:underline">
               View leaderboard →
             </Link>
           </div>
@@ -367,7 +367,7 @@ export default function GuidePage() {
               <li>Check the daily points counter at the top of each page.</li>
               <li>Complete daily missions and chase the 7-day mystery box on the home page.</li>
             </ul>
-            <Link href="/rewards" className="mt-4 inline-flex text-sm font-bold text-[#6d28d9] hover:underline">
+            <Link href="/rewards" className="mt-4 inline-flex text-sm font-bold text-[#0f766e] hover:underline">
               View rewards →
             </Link>
           </div>
@@ -406,7 +406,7 @@ export default function GuidePage() {
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-lg">
             <div className="flex items-start gap-3">
-              <div className="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-[#f5f3ff] text-[#6d28d9]">
+              <div className="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-[#f0fdfa] text-[#0f766e]">
                 <Shield size={20} />
               </div>
               <div>
@@ -427,7 +427,7 @@ export default function GuidePage() {
                 <h2 className="text-lg font-extrabold text-slate-900">Need help?</h2>
                 <p className="mt-2 text-sm text-slate-700">
                   WhatsApp{' '}
-                  <a className="font-bold text-[#6d28d9] hover:underline" href="https://wa.me/447404644610" target="_blank" rel="noopener noreferrer">
+                  <a className="font-bold text-[#0f766e] hover:underline" href="https://wa.me/447404644610" target="_blank" rel="noopener noreferrer">
                     07404644610
                   </a>{' '}
                   for login help or questions.

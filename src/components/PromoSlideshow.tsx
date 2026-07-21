@@ -17,7 +17,7 @@ type Slide = {
 const SLIDES: Slide[] = [
   {
     id: 1,
-    gradient: 'linear-gradient(135deg,#5b21b6 0%,#7c3aed 50%,#4c1d95 100%)',
+    gradient: 'linear-gradient(135deg,#115e59 0%,#0d9488 50%,#134e4a 100%)',
     emoji: '🏆',
     eyebrow: 'Weekly Competition',
     headline: 'Win Amazing Prizes!',
@@ -28,7 +28,7 @@ const SLIDES: Slide[] = [
   },
   {
     id: 2,
-    gradient: 'linear-gradient(135deg,#4338ca 0%,#6366f1 50%,#312e81 100%)',
+    gradient: 'linear-gradient(135deg,#115e59 0%,#0d9488 50%,#134e4a 100%)',
     emoji: '⭐',
     eyebrow: 'Daily Quiz Challenge',
     headline: 'Earn Points Every Day',
@@ -50,7 +50,7 @@ const SLIDES: Slide[] = [
   },
   {
     id: 4,
-    gradient: 'linear-gradient(135deg,#5b21b6 0%,#6d28d9 50%,#4c1d95 100%)',
+    gradient: 'linear-gradient(135deg,#115e59 0%,#0f766e 50%,#134e4a 100%)',
     emoji: '📿',
     eyebrow: 'Pledge Durood & Zikr',
     headline: 'Earn Blessings & Points',
@@ -72,7 +72,7 @@ const SLIDES: Slide[] = [
   },
   {
     id: 6,
-    gradient: 'linear-gradient(135deg,#3730a3 0%,#6366f1 50%,#312e81 100%)',
+    gradient: 'linear-gradient(135deg,#134e4a 0%,#0d9488 50%,#134e4a 100%)',
     emoji: '📝',
     eyebrow: 'Tasks & Rewards',
     headline: 'Invite Friends & Earn Points!',
@@ -83,7 +83,7 @@ const SLIDES: Slide[] = [
   },
   {
     id: 7,
-    gradient: 'linear-gradient(135deg,#4c1d95 0%,#7c3aed 50%,#312e81 100%)',
+    gradient: 'linear-gradient(135deg,#134e4a 0%,#0d9488 50%,#134e4a 100%)',
     emoji: '📞',
     eyebrow: 'Need Help?',
     headline: "We're Here for You",

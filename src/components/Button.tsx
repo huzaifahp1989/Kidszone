@@ -12,12 +12,12 @@ interface ButtonProps {
 }
 
 const variantClasses = {
-  primary: 'bg-gradient-to-r from-violet-500 to-violet-700 text-white hover:from-violet-400 hover:to-violet-600 border border-white/30',
-  secondary: 'bg-gradient-to-r from-indigo-500 to-indigo-700 text-white hover:from-indigo-400 hover:to-indigo-600 border border-white/30',
+  primary: 'bg-gradient-to-r from-teal-500 to-teal-700 text-white hover:from-teal-400 hover:to-teal-600 border border-white/30',
+  secondary: 'bg-gradient-to-r from-gold-400 to-gold-600 text-sand-900 hover:from-gold-300 hover:to-gold-500 border border-white/40',
   success: 'bg-gradient-to-r from-emerald-500 to-emerald-700 text-white hover:from-emerald-400 hover:to-emerald-600 border border-white/30',
   danger: 'bg-gradient-to-r from-coral-400 to-coral-600 text-white hover:from-coral-300 hover:to-coral-500 border border-white/30',
   warning: 'bg-gradient-to-r from-gold-400 to-gold-600 text-sand-900 hover:from-gold-300 hover:to-gold-500 border border-white/40',
-  outline: 'bg-white/90 border-2 border-sand-200 text-sand-800 hover:border-violet-400 hover:bg-violet-50/50',
+  outline: 'bg-white/90 border-2 border-sand-200 text-sand-800 hover:border-teal-400 hover:bg-teal-50/60',
 };
 
 const sizeClasses = {

@@ -614,10 +614,10 @@ export default function SignInPage() {
   };
 
   return (
-    <div className="min-h-[80vh] flex items-center justify-center px-4 sm:px-6 py-10 bg-[#f5f3ff] pattern-islamic">
+    <div className="min-h-[80vh] flex items-center justify-center px-4 sm:px-6 py-10 bg-[#f0fdfa] pattern-islamic">
       <div className="w-full max-w-5xl grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-10 items-stretch">
 
-        <div className="hidden md:flex flex-col justify-between rounded-2xl p-8 bg-gradient-to-br from-[#6d28d9] to-[#5b21b6] text-white shadow-xl">
+        <div className="hidden md:flex flex-col justify-between rounded-2xl p-8 bg-gradient-to-br from-[#0f766e] to-[#115e59] text-white shadow-xl">
           <div>
             <div className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-xs font-semibold">
               <Shield size={14} /> Secure Sign In
@@ -636,10 +636,10 @@ export default function SignInPage() {
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.26, ease: [0.22, 1, 0.36, 1] }}
-          className="w-full rounded-2xl bg-white shadow-xl border border-[#c4b5fd]/30 p-6 sm:p-8"
+          className="w-full rounded-2xl bg-white shadow-xl border border-[#5eead4]/30 p-6 sm:p-8"
         >
           <div className="md:hidden mb-6">
-            <h1 className="text-2xl font-extrabold text-[#1e1b4b]">Sign in</h1>
+            <h1 className="text-2xl font-extrabold text-[#134e4a]">Sign in</h1>
             <p className="mt-1 text-sm text-[#475569]">Use your email or username.</p>
           </div>
 
@@ -674,7 +674,7 @@ export default function SignInPage() {
           {pendingMembers && pendingMembers.length > 0 && !mfaRequired ? (
             <div className="space-y-4">
               <div>
-                <p className="text-sm font-semibold text-[#1e1b4b]">Who is learning today?</p>
+                <p className="text-sm font-semibold text-[#134e4a]">Who is learning today?</p>
                 <p className="mt-1 text-xs text-[#475569]">
                   Same family password for everyone. Pick your name to continue.
                 </p>
@@ -686,9 +686,9 @@ export default function SignInPage() {
                     type="button"
                     disabled={loading || retryIn !== null}
                     onClick={() => onPickMember(member)}
-                    className="w-full rounded-xl border-2 border-[#c4b5fd]/40 px-4 py-3 text-left hover:border-[#7c3aed] hover:bg-[#f5f3ff] transition disabled:opacity-50"
+                    className="w-full rounded-xl border-2 border-[#5eead4]/40 px-4 py-3 text-left hover:border-[#0d9488] hover:bg-[#f0fdfa] transition disabled:opacity-50"
                   >
-                    <span className="block font-bold text-[#1e1b4b]">{member.name}</span>
+                    <span className="block font-bold text-[#134e4a]">{member.name}</span>
                     <span className="block text-xs text-[#475569]">
                       @{member.username || 'learner'} · age {member.age || '?'}
                     </span>
@@ -709,7 +709,7 @@ export default function SignInPage() {
           ) : !mfaRequired ? (
             <form id="signin-form" onSubmit={onSubmit} className="space-y-4" noValidate>
               <div>
-                <label htmlFor="loginId" className="block text-sm font-semibold text-[#1e1b4b] mb-1">
+                <label htmlFor="loginId" className="block text-sm font-semibold text-[#134e4a] mb-1">
                   Email or username
                 </label>
                 <input
@@ -721,7 +721,7 @@ export default function SignInPage() {
                   onChange={(e) => setLoginId(e.target.value)}
                   onBlur={() => setTouched((t) => ({ ...t, login: true }))}
                   className={`w-full rounded-xl border-2 px-4 py-3 interactive-focus touch-target transition ${
-                    touched.login && !loginValid ? 'border-[#ff6b6b] bg-[#fff5f5]' : 'border-[#c4b5fd]/40'
+                    touched.login && !loginValid ? 'border-[#ff6b6b] bg-[#fff5f5]' : 'border-[#5eead4]/40'
                   }`}
                 />
                 {touched.login && !loginValid && (
@@ -731,8 +731,8 @@ export default function SignInPage() {
 
               <div>
                 <div className="flex items-center justify-between mb-1">
-                  <label htmlFor="password" className="block text-sm font-semibold text-[#1e1b4b]">Password</label>
-                  <button type="button" onClick={onForgotPassword} className="text-xs font-semibold text-[#7c3aed] hover:underline interactive-focus touch-target">
+                  <label htmlFor="password" className="block text-sm font-semibold text-[#134e4a]">Password</label>
+                  <button type="button" onClick={onForgotPassword} className="text-xs font-semibold text-[#0d9488] hover:underline interactive-focus touch-target">
                     Forgot password?
                   </button>
                 </div>
@@ -746,7 +746,7 @@ export default function SignInPage() {
                     onChange={(e) => setPassword(e.target.value)}
                     onBlur={() => setTouched((t) => ({ ...t, password: true }))}
                     className={`w-full rounded-xl border-2 px-4 py-3 pr-11 interactive-focus touch-target transition ${
-                      touched.password && !passwordValid ? 'border-[#ff6b6b] bg-[#fff5f5]' : 'border-[#c4b5fd]/40'
+                      touched.password && !passwordValid ? 'border-[#ff6b6b] bg-[#fff5f5]' : 'border-[#5eead4]/40'
                     }`}
                   />
                   <button
@@ -763,12 +763,12 @@ export default function SignInPage() {
                 )}
               </div>
 
-              <label className="flex items-center gap-2 text-sm text-[#1e1b4b] select-none cursor-pointer">
+              <label className="flex items-center gap-2 text-sm text-[#134e4a] select-none cursor-pointer">
                 <input
                   type="checkbox"
                   checked={rememberMe}
                   onChange={(e) => setRememberMe(e.target.checked)}
-                  className="h-4 w-4 rounded border-[#c4b5fd] text-[#7c3aed] interactive-focus"
+                  className="h-4 w-4 rounded border-[#5eead4] text-[#0d9488] interactive-focus"
                 />
                 Keep me signed in
               </label>
@@ -776,7 +776,7 @@ export default function SignInPage() {
               <button
                 type="submit"
                 disabled={!supabaseConfigured || loading || retryIn !== null}
-                className="w-full py-3 rounded-xl font-bold text-white bg-gradient-to-r from-[#7c3aed] to-[#6d28d9] shadow-lg hover:shadow-xl transition-all transition-bouncy interactive-focus touch-target disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full py-3 rounded-xl font-bold text-white bg-gradient-to-r from-[#0d9488] to-[#0f766e] shadow-lg hover:shadow-xl transition-all transition-bouncy interactive-focus touch-target disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {loading ? 'Signing in…' : retryIn !== null ? `Please wait ${retryIn}s…` : 'Sign In'}
               </button>
@@ -784,19 +784,19 @@ export default function SignInPage() {
                 <div className="text-center text-xs text-[#475569]">{progress}</div>
               )}
 
-              <p className="text-sm text-center text-[#1e1b4b]">
+              <p className="text-sm text-center text-[#134e4a]">
                 New here?{' '}
-                <Link href="/signup" className="text-[#7c3aed] font-semibold hover:underline">Create an account</Link>
+                <Link href="/signup" className="text-[#0d9488] font-semibold hover:underline">Create an account</Link>
               </p>
             </form>
           ) : (
             <form onSubmit={onVerifyMfa} className="space-y-4">
-              <div className="rounded-xl border border-[#c4b5fd]/30 bg-[#ede9fe] px-4 py-3">
-                <p className="text-sm font-semibold text-[#1e1b4b]">Two-factor authentication</p>
+              <div className="rounded-xl border border-[#5eead4]/30 bg-[#ccfbf1] px-4 py-3">
+                <p className="text-sm font-semibold text-[#134e4a]">Two-factor authentication</p>
                 <p className="mt-1 text-sm text-[#475569]">Enter the 6-digit code from your authenticator app.</p>
               </div>
               <div>
-                <label htmlFor="mfa" className="block text-sm font-semibold text-[#1e1b4b] mb-1">2FA code</label>
+                <label htmlFor="mfa" className="block text-sm font-semibold text-[#134e4a] mb-1">2FA code</label>
                 <input
                   id="mfa"
                   type="text"
@@ -805,13 +805,13 @@ export default function SignInPage() {
                   value={mfaCode}
                   onChange={(e) => setMfaCode(e.target.value)}
                   onBlur={() => setTouched((t) => ({ ...t, mfa: true }))}
-                  className="w-full rounded-xl border-2 border-[#c4b5fd]/40 px-4 py-3 outline-none focus:ring-2 focus:ring-[#7c3aed] focus:border-[#7c3aed]"
+                  className="w-full rounded-xl border-2 border-[#5eead4]/40 px-4 py-3 outline-none focus:ring-2 focus:ring-[#0d9488] focus:border-[#0d9488]"
                 />
               </div>
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full py-3 rounded-xl font-bold text-white bg-gradient-to-r from-[#7c3aed] to-[#6d28d9] shadow-lg hover:shadow-xl transition-all transition-bouncy interactive-focus touch-target disabled:opacity-50"
+                className="w-full py-3 rounded-xl font-bold text-white bg-gradient-to-r from-[#0d9488] to-[#0f766e] shadow-lg hover:shadow-xl transition-all transition-bouncy interactive-focus touch-target disabled:opacity-50"
               >
                 {loading ? 'Verifying…' : 'Verify & Continue'}
               </button>

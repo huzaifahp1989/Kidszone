@@ -71,7 +71,7 @@ function ShapeEl({
 }) {
   const style = {
     fill,
-    stroke: '#1e1b4b',
+    stroke: '#134e4a',
     strokeWidth: 2,
     className: 'cursor-pointer transition hover:opacity-90',
     onClick: onPaint,

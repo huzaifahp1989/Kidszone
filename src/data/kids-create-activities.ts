@@ -99,15 +99,15 @@ export const CREATE_HUB_ACTIVITIES: CreateActivityCard[] = [
 ];
 
 export const COLOURING_PALETTE = [
-  '#7c3aed',
   '#0d9488',
+  '#14b8a6',
   '#f59e0b',
-  '#ef4444',
-  '#3b82f6',
+  '#ef5a33',
+  '#0ea5e9',
   '#10b981',
-  '#ec4899',
+  '#fbbf24',
   '#f8fafc',
-  '#1e1b4b',
+  '#134e4a',
   '#f97316',
 ];
 
@@ -119,7 +119,7 @@ export const TRACE_WORDS = [
 ];
 
 export const AYAH_COLOUR_NUMBERS = [
-  { num: 1, color: '#7c3aed', label: 'Violet' },
+  { num: 1, color: '#0d9488', label: 'Violet' },
   { num: 2, color: '#0d9488', label: 'Teal' },
   { num: 3, color: '#f59e0b', label: 'Gold' },
   { num: 4, color: '#3b82f6', label: 'Blue' },

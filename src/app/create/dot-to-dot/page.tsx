@@ -38,10 +38,10 @@ export default function DotToDotPage() {
                 cy={d.y}
                 r={10}
                 fill={d.n < nextDot ? '#0d9488' : d.n === nextDot ? '#f59e0b' : '#e2e8f0'}
-                stroke="#1e1b4b"
+                stroke="#134e4a"
                 strokeWidth={1.5}
               />
-              <text x={d.x} y={d.y + 4} textAnchor="middle" fontSize="9" fontWeight="bold" fill="#1e1b4b">
+              <text x={d.x} y={d.y + 4} textAnchor="middle" fontSize="9" fontWeight="bold" fill="#134e4a">
                 {d.n}
               </text>
             </g>

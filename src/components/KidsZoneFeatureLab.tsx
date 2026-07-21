@@ -413,7 +413,7 @@ export default function KidsZoneFeatureLab() {
           </div>
           <Link
             href={weeklyTheme.href}
-            className="inline-flex shrink-0 items-center justify-center rounded-xl bg-white px-5 py-3 text-sm font-bold text-[#1e1b4b] shadow hover:bg-white/90"
+            className="inline-flex shrink-0 items-center justify-center rounded-xl bg-white px-5 py-3 text-sm font-bold text-[#134e4a] shadow hover:bg-white/90"
           >
             Start {weeklyTheme.title}
           </Link>
@@ -422,11 +422,11 @@ export default function KidsZoneFeatureLab() {
 
     <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
       <article className="surface-card p-5 xl:col-span-1">
-        <div className="inline-flex items-center gap-2 rounded-full border border-[#7c3aed]/20 bg-[#f5f3ff] px-3 py-1 text-xs font-bold uppercase tracking-[0.16em] text-[#5b21b6]">
+        <div className="inline-flex items-center gap-2 rounded-full border border-[#0d9488]/20 bg-[#f0fdfa] px-3 py-1 text-xs font-bold uppercase tracking-[0.16em] text-[#115e59]">
           <BookHeart size={14} /> Ayah of the Day
         </div>
-        <p className="mt-4 text-lg font-bold text-[#1e1b4b] leading-7">{ayah.text}</p>
-        <p className="mt-2 text-sm font-semibold text-[#5b21b6]">{ayah.reference}</p>
+        <p className="mt-4 text-lg font-bold text-[#134e4a] leading-7">{ayah.text}</p>
+        <p className="mt-2 text-sm font-semibold text-[#115e59]">{ayah.reference}</p>
         <p className="mt-3 text-sm text-[#7c4b2f]">{ayah.reflection}</p>
       </article>
 
@@ -439,7 +439,7 @@ export default function KidsZoneFeatureLab() {
             <p className="mt-2 text-sm text-[#8c5a3c]">Small deeds today build big habits tomorrow.</p>
           </div>
           <div className="text-right">
-            <p className="text-2xl font-black text-[#1e1b4b]">{loading ? '...' : `${habitPercent}%`}</p>
+            <p className="text-2xl font-black text-[#134e4a]">{loading ? '...' : `${habitPercent}%`}</p>
             <p className="text-xs text-[#475569]">{loading ? 'Syncing...' : `${completedHabits}/${HABITS.length} done`}</p>
           </div>
         </div>
@@ -454,22 +454,22 @@ export default function KidsZoneFeatureLab() {
                 onClick={() => toggleHabit(habit.key)}
                 className={`w-full rounded-xl border p-3 text-left transition-all ${
                   checked
-                    ? 'border-[#7c3aed]/40 bg-[#f5f3ff]'
-                    : 'border-[#c4b5fd]/30 bg-white hover:border-[#d6b18a]'
+                    ? 'border-[#0d9488]/40 bg-[#f0fdfa]'
+                    : 'border-[#5eead4]/30 bg-white hover:border-[#d6b18a]'
                 }`}
               >
                 <div className="flex items-start gap-3">
                   <div
                     className={`mt-0.5 h-5 w-5 rounded-full border-2 flex items-center justify-center ${
                       checked
-                        ? 'border-[#6d28d9] bg-[#6d28d9] text-white'
+                        ? 'border-[#0f766e] bg-[#0f766e] text-white'
                         : 'border-[#d6b18a] bg-transparent'
                     }`}
                   >
                     {checked ? <CheckCircle2 size={12} /> : null}
                   </div>
                   <div>
-                    <p className="font-semibold text-[#1e1b4b]">{habit.label}</p>
+                    <p className="font-semibold text-[#134e4a]">{habit.label}</p>
                     <p className="text-xs text-[#475569] mt-0.5">{habit.description}</p>
                   </div>
                 </div>
@@ -479,31 +479,31 @@ export default function KidsZoneFeatureLab() {
         </div>
       </article>
 
-      <article className="surface-card p-5 xl:col-span-1 bg-gradient-to-br from-[#eef2ff] via-white to-[#f5f3ff] border border-[#c7d2fe]">
-        <div className="inline-flex items-center gap-2 rounded-full border border-[#6366f1]/25 bg-white px-3 py-1 text-xs font-bold uppercase tracking-[0.16em] text-[#4338ca]">
+      <article className="surface-card p-5 xl:col-span-1 bg-gradient-to-br from-[#eef2ff] via-white to-[#f0fdfa] border border-[#c7d2fe]">
+        <div className="inline-flex items-center gap-2 rounded-full border border-[#0d9488]/25 bg-white px-3 py-1 text-xs font-bold uppercase tracking-[0.16em] text-[#115e59]">
           <Compass size={14} /> Mystery Challenge
         </div>
 
-        <h3 className="mt-4 text-xl font-black text-[#312e81]">{challenge.title}</h3>
-        <p className="mt-2 text-sm text-[#4f46e5]">{challenge.description}</p>
+        <h3 className="mt-4 text-xl font-black text-[#134e4a]">{challenge.title}</h3>
+        <p className="mt-2 text-sm text-[#0f766e]">{challenge.description}</p>
 
         <div className="mt-4 rounded-xl bg-white/80 border border-[#c7d2fe] px-3 py-3">
-          <p className="text-xs uppercase tracking-[0.14em] text-[#6366f1]">Potential Reward</p>
-          <p className="text-2xl font-black text-[#1e1b4b]">+{challenge.points} points</p>
+          <p className="text-xs uppercase tracking-[0.14em] text-[#0d9488]">Potential Reward</p>
+          <p className="text-2xl font-black text-[#134e4a]">+{challenge.points} points</p>
         </div>
 
         <div className="mt-4 flex flex-wrap gap-2">
           <button
             type="button"
             onClick={rollChallenge}
-            className="inline-flex items-center gap-2 rounded-xl border border-[#6366f1]/30 bg-white px-4 py-2 text-sm font-bold text-[#4338ca] hover:bg-[#eef2ff]"
+            className="inline-flex items-center gap-2 rounded-xl border border-[#0d9488]/30 bg-white px-4 py-2 text-sm font-bold text-[#115e59] hover:bg-[#eef2ff]"
           >
             <Shuffle size={16} /> New Challenge
           </button>
 
           <Link
             href={challenge.href}
-            className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-[#6366f1] to-[#4338ca] px-4 py-2 text-sm font-bold text-white shadow hover:opacity-95"
+            className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-[#0d9488] to-[#115e59] px-4 py-2 text-sm font-bold text-white shadow hover:opacity-95"
           >
             <Sparkles size={16} /> Start Challenge
           </Link>
