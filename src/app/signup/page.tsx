@@ -473,7 +473,7 @@ export default function SignupPage() {
                   autoComplete="email"
                 />
                 <p className="mt-1 text-xs text-[#475569]">
-                  One email for the family. You can add brothers and sisters later from Profile.
+                  One email for the family. Or use <Link href="/signup/family" className="text-[#7c3aed] font-semibold hover:underline">family signup</Link> to add all children at once.
                 </p>
               </div>
 
@@ -539,6 +539,13 @@ export default function SignupPage() {
                 Already have an account?{' '}
                 <Link href="/signin" className="text-[#7c3aed] font-semibold hover:underline">
                   Sign in
+                </Link>
+              </p>
+
+              <p className="text-sm text-center text-[#475569]">
+                Have multiple children?{' '}
+                <Link href="/signup/family" className="text-[#7c3aed] font-semibold hover:underline">
+                  Create family accounts
                 </Link>
               </p>
             </form>

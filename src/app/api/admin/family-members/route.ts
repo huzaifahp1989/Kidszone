@@ -191,7 +191,10 @@ export async function POST(request: Request) {
         }
 
         // Ensure user records (points table, etc.)
-        await ensureUserRecords(uid).catch(() => {});
+        const ensureResult = await ensureUserRecords(uid);
+        if (!ensureResult.ok) {
+          console.error(`[admin/family-members] ensureUserRecords failed for ${uid}:`, ensureResult.error);
+        }
 
         createdMembers.push({
           uid,
