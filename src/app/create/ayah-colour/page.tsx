@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { CreateShell } from '@/components/CreateShell';
+import { ClaimCreatePointsButton } from '@/components/ClaimCreatePointsButton';
 import { AYAH_COLOUR_NUMBERS } from '@/data/kids-create-activities';
 
 const REGIONS = [
@@ -55,7 +56,7 @@ export default function AyahColourPage() {
               <path
                 d={r.d}
                 fill={fills[r.id] || '#f8fafc'}
-                stroke="#1e1b4b"
+                stroke="#134e4a"
                 strokeWidth={2}
                 className="cursor-pointer"
                 onClick={() => paint(r.id, r.num)}
@@ -76,6 +77,7 @@ export default function AyahColourPage() {
         </svg>
       </div>
       {allDone && <p className="font-bold text-teal-800">MashaAllah — ayah colouring complete!</p>}
+      <ClaimCreatePointsButton activity="creative" ready={allDone} />
     </CreateShell>
   );
 }

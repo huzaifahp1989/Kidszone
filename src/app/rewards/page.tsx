@@ -2,12 +2,16 @@
 
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '@/lib/auth-context';
-import { BiWeeklyResetPopup, Button, WeeklyActivitiesProgress } from '@/components';
+import { Button, WeeklyActivitiesProgress } from '@/components';
 import { Trophy, Star, Award, Lock, Crown, Mic, Sparkles, CheckCircle2, MessageCircle, CalendarDays } from 'lucide-react';
 import Link from 'next/link';
 import { SurveyPopup } from '@/components';
+import { FadeUp, Reveal } from '@/components/Motion';
 import { SpinWheel } from '@/components/SpinWheel';
 import { WonPrizeVouchers } from '@/components/WonPrizeVouchers';
+import { StickerBook } from '@/components/StickerBook';
+import { AvatarCustomizer } from '@/components/AvatarCustomizer';
+import { FamilyChallengeCard } from '@/components/FamilyChallengeCard';
 
 type MonthlyCertificate = {
   key: string;
@@ -183,7 +187,6 @@ export default function RewardsPage() {
   if (!mounted || loading) {
     return (
       <div className="page-inner">
-        <BiWeeklyResetPopup pageKey="rewards" />
         <div className="flex h-[60vh] items-center justify-center">
           <div className="animate-pulse text-xl text-islamic-blue">Loading Rewards...</div>
         </div>
@@ -274,76 +277,102 @@ export default function RewardsPage() {
   return (
     <div className="page-inner">
       <SurveyPopup />
-      <BiWeeklyResetPopup pageKey="rewards" />
 
       <main className="mx-auto max-w-4xl">
-        <section className="mb-6 rounded-3xl border border-slate-200 bg-white/80 p-5 shadow-sm">
-          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-            <div>
-              <p className="text-xs font-black uppercase tracking-[0.18em] text-[#5b21b6]">Kids Zone Progress</p>
-              <h2 className="mt-2 text-2xl font-black text-slate-900">Points, badges, and competitions</h2>
-              <p className="mt-1 text-sm text-slate-600">Earn points through quizzes, games, and activities. Check your badges, level progress, and monthly certificates below.</p>
+        <FadeUp>
+          <section className="mb-6 rounded-3xl border border-slate-200 bg-white/80 p-5 shadow-sm">
+            <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+              <div>
+                <p className="text-xs font-black uppercase tracking-[0.18em] text-[#115e59]">Kids Zone Progress</p>
+                <h2 className="mt-2 font-heading text-2xl font-black text-slate-900">Points, badges, and competitions</h2>
+                <p className="mt-1 text-sm text-slate-600">
+                  Earn points through quizzes, games, and activities. Check your badges, level progress, and monthly
+                  certificates below.
+                </p>
+              </div>
+              <div className="flex flex-col gap-2 sm:flex-row">
+                <Link
+                  href="/vouchers"
+                  className="inline-flex items-center justify-center rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-bold text-slate-800 transition hover:bg-slate-50"
+                >
+                  Browse Vouchers
+                </Link>
+                <Link
+                  href="/my-vouchers"
+                  className="inline-flex items-center justify-center rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-bold text-slate-800 transition hover:bg-slate-50"
+                >
+                  My Vouchers
+                </Link>
+              </div>
             </div>
-            <div className="flex flex-col gap-2 sm:flex-row">
-              <Link href="/vouchers" className="inline-flex items-center justify-center rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-bold text-slate-800 transition hover:bg-slate-50">
-                Browse Vouchers
-              </Link>
-              <Link href="/my-vouchers" className="inline-flex items-center justify-center rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-bold text-slate-800 transition hover:bg-slate-50">
-                My Vouchers
-              </Link>
-            </div>
-          </div>
-        </section>
+          </section>
+        </FadeUp>
 
-        <div className="mb-6 flex flex-wrap gap-2 rounded-2xl border border-slate-200 bg-white p-2">
-          {([
-            { id: 'today' as const, label: 'Today' },
-            { id: 'week' as const, label: 'This week' },
-            { id: 'prizes' as const, label: 'My prizes' },
-          ]).map((tab) => (
-            <button
-              key={tab.id}
-              type="button"
-              onClick={() => setActiveTab(tab.id)}
-              className={`flex-1 rounded-xl px-4 py-3 text-sm font-bold transition touch-target ${
-                activeTab === tab.id
-                  ? 'bg-violet-600 text-white shadow'
-                  : 'bg-slate-50 text-slate-700 hover:bg-violet-50'
-              }`}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </div>
+        <FadeUp delay={0.06}>
+          <div className="mb-6 flex flex-wrap gap-2 rounded-2xl border border-slate-200 bg-white p-2">
+            {(
+              [
+                { id: 'today' as const, label: 'Today' },
+                { id: 'week' as const, label: 'This week' },
+                { id: 'prizes' as const, label: 'My prizes' },
+              ] as const
+            ).map((tab) => (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => setActiveTab(tab.id)}
+                className={`flex-1 rounded-xl px-4 py-3 text-sm font-bold transition touch-target ${
+                  activeTab === tab.id
+                    ? 'bg-teal-600 text-white shadow'
+                    : 'bg-slate-50 text-slate-700 hover:bg-teal-50'
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+        </FadeUp>
 
         {activeTab === 'today' && (
-          <>
-        <WonPrizeVouchers />
+          <Reveal>
+            <>
+              <WonPrizeVouchers />
 
-        <section className="mb-6">
-          <SpinWheel />
-        </section>
+              <section className="mb-6">
+                <SpinWheel />
+              </section>
 
-        <Link href="/" className="mb-6 flex items-center justify-between gap-4 rounded-2xl border-2 border-violet-200 bg-violet-50 px-5 py-4 shadow-sm hover:border-violet-300 transition">
-          <div>
-            <p className="font-extrabold text-violet-900">Daily missions</p>
-            <p className="text-sm text-violet-700">Complete today&apos;s tasks on Home for bonus points.</p>
-          </div>
-          <span className="shrink-0 rounded-xl bg-violet-600 px-4 py-2 text-sm font-bold text-white">Go Home →</span>
-        </Link>
-          </>
+              <Link
+                href="/"
+                className="mb-6 flex items-center justify-between gap-4 rounded-2xl border-2 border-teal-200 bg-teal-50 px-5 py-4 shadow-sm transition hover:border-teal-300"
+              >
+                <div>
+                  <p className="font-extrabold text-teal-900">Daily missions</p>
+                  <p className="text-sm text-teal-700">Complete today&apos;s tasks on Home for bonus points.</p>
+                </div>
+                <span className="shrink-0 rounded-xl bg-teal-600 px-4 py-2 text-sm font-bold text-white">Go Home →</span>
+              </Link>
+
+              <div className="mb-6 space-y-4">
+                <StickerBook />
+                <AvatarCustomizer />
+                <FamilyChallengeCard />
+              </div>
+            </>
+          </Reveal>
         )}
 
         {activeTab === 'week' && (
-          <>
-        <section className="mb-6 rounded-2xl border border-[#7c3aed]/30 bg-[#ecfdf5] p-4 text-center">
-          <p className="text-[#5b21b6] font-bold">Complete any 5 activities every week to finish your weekly challenge.</p>
+          <Reveal>
+            <>
+        <section className="mb-6 rounded-2xl border border-[#0d9488]/30 bg-[#f0fdfa] p-4 text-center">
+          <p className="text-[#115e59] font-bold">Complete any 5 activities every week to finish your weekly challenge.</p>
         </section>
         <WeeklyActivitiesProgress />
 
-        <section className="mb-6 rounded-2xl border border-violet-200 bg-violet-50 p-4 text-center">
-          <p className="font-bold text-violet-900">Climb the leaderboard by being active every day (Sat–Fri).</p>
-          <Link href="/leaderboard" className="mt-3 inline-flex rounded-xl bg-violet-600 px-4 py-2 text-sm font-bold text-white hover:bg-violet-500">
+        <section className="mb-6 rounded-2xl border border-teal-200 bg-teal-50 p-4 text-center">
+          <p className="font-bold text-teal-900">Climb the leaderboard by being active every day (Sat–Fri).</p>
+          <Link href="/leaderboard" className="mt-3 inline-flex rounded-xl bg-teal-600 px-4 py-2 text-sm font-bold text-white hover:bg-teal-500">
             View leaderboard →
           </Link>
         </section>
@@ -452,11 +481,13 @@ export default function RewardsPage() {
             </div>
           )}
         </section>
-          </>
+            </>
+          </Reveal>
         )}
 
         {activeTab === 'prizes' && (
-          <>
+          <Reveal>
+            <>
         <section className="mb-6 rounded-3xl border border-amber-200 bg-gradient-to-br from-amber-50 via-white to-yellow-50 p-6 shadow-sm">
           <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
             <div className="max-w-2xl">
@@ -506,15 +537,15 @@ export default function RewardsPage() {
           </div>
         </section>
 
-        <Link href="/tasks" className="mb-6 flex items-center justify-between gap-4 rounded-2xl border-2 border-[#7c3aed]/40 bg-gradient-to-r from-[#f5f3ff] to-[#ecfdf5] px-5 py-4 shadow-sm hover:border-[#7c3aed]/70 hover:shadow-md transition">
+        <Link href="/tasks" className="mb-6 flex items-center justify-between gap-4 rounded-2xl border-2 border-[#0d9488]/40 bg-gradient-to-r from-[#fff9eb] to-[#f0fdfa] px-5 py-4 shadow-sm hover:border-[#0d9488]/70 hover:shadow-md transition">
           <div className="flex items-center gap-3">
             <span className="text-3xl">📋</span>
             <div>
-              <p className="font-extrabold text-[#5b21b6] text-base md:text-lg">Check the Tasks page to gain more points</p>
-              <p className="text-sm text-[#6d28d9]">Record stories, pledge Durood &amp; Zikr, play games and invite friends</p>
+              <p className="font-extrabold text-[#115e59] text-base md:text-lg">Check the Tasks page to gain more points</p>
+              <p className="text-sm text-[#0f766e]">Record stories, pledge Durood &amp; Zikr, play games and invite friends</p>
             </div>
           </div>
-          <span className="shrink-0 rounded-xl bg-[#7c3aed] px-4 py-2 text-sm font-bold text-white">Go to Tasks →</span>
+          <span className="shrink-0 rounded-xl bg-[#0d9488] px-4 py-2 text-sm font-bold text-white">Go to Tasks →</span>
         </Link>
 
         <section className="mb-8 grid gap-6">
@@ -878,7 +909,8 @@ export default function RewardsPage() {
             </div>
           )}
         </section>
-          </>
+            </>
+          </Reveal>
         )}
       </main>
     </div>

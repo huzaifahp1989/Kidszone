@@ -61,18 +61,18 @@ export default function StoriesListPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#f5f3ff] pattern-islamic p-8 flex justify-center items-center">
+      <div className="min-h-screen bg-[#f0fdfa] pattern-islamic p-8 flex justify-center items-center">
         <div className="w-full max-w-6xl">
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {Array.from({ length: 6 }).map((_, i) => (
-              <div key={i} className="bg-white rounded-2xl p-6 shadow-lg border border-[#c4b5fd]/20 animate-pulse">
-                <div className="h-12 w-12 rounded-xl bg-[#ede9fe] mb-4" />
-                <div className="h-6 w-3/4 rounded bg-[#ede9fe] mb-3" />
-                <div className="h-4 w-full rounded bg-[#ede9fe] mb-2" />
-                <div className="h-4 w-5/6 rounded bg-[#ede9fe] mb-6" />
+              <div key={i} className="bg-white rounded-2xl p-6 shadow-lg border border-[#5eead4]/20 animate-pulse">
+                <div className="h-12 w-12 rounded-xl bg-[#ccfbf1] mb-4" />
+                <div className="h-6 w-3/4 rounded bg-[#ccfbf1] mb-3" />
+                <div className="h-4 w-full rounded bg-[#ccfbf1] mb-2" />
+                <div className="h-4 w-5/6 rounded bg-[#ccfbf1] mb-6" />
                 <div className="flex gap-2">
-                  <div className="h-10 flex-1 rounded-xl bg-[#ede9fe]" />
-                  <div className="h-10 w-20 rounded-xl bg-[#ede9fe]" />
+                  <div className="h-10 flex-1 rounded-xl bg-[#ccfbf1]" />
+                  <div className="h-10 w-20 rounded-xl bg-[#ccfbf1]" />
                 </div>
               </div>
             ))}
@@ -83,10 +83,10 @@ export default function StoriesListPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#f5f3ff] pattern-islamic pb-24">
+    <div className="min-h-screen bg-[#f0fdfa] pattern-islamic pb-24">
       <div className="max-w-6xl mx-auto px-4 py-8 space-y-8">
-        <div className="bg-white rounded-2xl shadow-lg border border-[#c4b5fd]/30 overflow-hidden">
-          <div className="bg-gradient-to-r from-[#8b5cf6] to-[#6366f1] p-8 md:p-10 text-white">
+        <div className="bg-white rounded-2xl shadow-lg border border-[#5eead4]/30 overflow-hidden">
+          <div className="bg-gradient-to-r from-[#14b8a6] to-[#0d9488] p-8 md:p-10 text-white">
             <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6">
               <div className="space-y-3">
                 <div className="inline-flex items-center gap-2 bg-white/20 px-4 py-2 rounded-full text-sm font-bold">
@@ -128,12 +128,12 @@ export default function StoriesListPage() {
           {filteredStories.map((story, index) => (
             <div
               key={story.id}
-              className="bg-white rounded-2xl p-6 shadow-lg border border-[#c4b5fd]/20 flex flex-col"
+              className="bg-white rounded-2xl p-6 shadow-lg border border-[#5eead4]/20 flex flex-col"
             >
-              <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-[#f5f3ff] text-2xl">
+              <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-[#f0fdfa] text-2xl">
                 {storyEmojis[index % storyEmojis.length]}
               </div>
-              <h2 className="text-xl font-bold text-[#1e1b4b] mb-2">{story.title}</h2>
+              <h2 className="text-xl font-bold text-[#134e4a] mb-2">{story.title}</h2>
               <p className="text-sm text-[#475569] mb-4 flex-1 line-clamp-3">{story.summary}</p>
               <div className="mb-4 flex flex-wrap gap-2 text-xs font-semibold text-violet-700">
                 <span className="rounded-full bg-violet-50 px-2 py-1">
@@ -146,7 +146,7 @@ export default function StoriesListPage() {
               <div className="flex gap-2">
                 <Link
                   href={`/stories/${story.id}`}
-                  className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#7c3aed] to-[#6d28d9] px-4 py-2.5 text-sm font-bold text-white"
+                  className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#0d9488] to-[#0f766e] px-4 py-2.5 text-sm font-bold text-white"
                 >
                   <BookOpen size={16} /> Read
                 </Link>

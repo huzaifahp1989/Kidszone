@@ -99,6 +99,15 @@ export async function tryBumpFamilyStreak(userId: string, dateKey: string): Prom
 
     if (upsertError) throw upsertError;
 
+    if (nextStreak >= 3) {
+      try {
+        const { unlockStickersForTriggers } = await import('@/lib/stickers-server');
+        await unlockStickersForTriggers(userId, ['streak_3']);
+      } catch {
+        /* optional */
+      }
+    }
+
     return {
       familyEmail,
       streak: nextStreak,

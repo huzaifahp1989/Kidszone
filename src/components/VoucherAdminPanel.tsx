@@ -491,7 +491,7 @@ export function VoucherAdminPanel() {
       <div className="rounded-[2rem] border border-slate-200 bg-[linear-gradient(135deg,rgba(255,255,255,0.98),rgba(240,253,250,0.98))] p-6 shadow-sm">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div>
-            <p className="text-xs font-black uppercase tracking-[0.22em] text-[#5b21b6]">Voucher & Rewards Management</p>
+            <p className="text-xs font-black uppercase tracking-[0.22em] text-[#115e59]">Voucher & Rewards Management</p>
             <h3 className="mt-2 text-3xl font-black text-slate-900">Modern voucher operations for admins</h3>
             <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
               Create promotions, upload posters, control redemption rules, approve voucher usage, and monitor business performance from one screen.
@@ -515,7 +515,7 @@ export function VoucherAdminPanel() {
             <div key={item.label} className="rounded-[1.6rem] border border-slate-200 bg-white p-5 shadow-sm">
               <div className="flex items-center justify-between text-slate-500">
                 <span className="text-xs font-black uppercase tracking-[0.18em]">{item.label}</span>
-                <Icon size={18} className="text-[#5b21b6]" />
+                <Icon size={18} className="text-[#115e59]" />
               </div>
               <p className="mt-4 text-3xl font-black text-slate-900">{item.value}</p>
             </div>
@@ -559,7 +559,7 @@ export function VoucherAdminPanel() {
                   <div className="flex gap-4">
                     <img src={offer.logoUrl || offer.imageUrl || '/next.svg'} alt={offer.businessName} className="h-16 w-16 rounded-2xl object-cover ring-1 ring-slate-200" />
                     <div>
-                      <p className="text-xs font-black uppercase tracking-[0.18em] text-[#5b21b6]">{offer.businessName}</p>
+                      <p className="text-xs font-black uppercase tracking-[0.18em] text-[#115e59]">{offer.businessName}</p>
                       <h4 className="mt-1 text-xl font-black text-slate-900">{offer.title}</h4>
                       <p className="mt-2 text-sm text-slate-600">{offer.description}</p>
                       <div className="mt-3 flex flex-wrap gap-2 text-xs font-bold text-slate-600">
@@ -595,7 +595,7 @@ export function VoucherAdminPanel() {
           </div>
 
           <div className="rounded-[1.8rem] border border-slate-200 bg-white p-5 shadow-sm">
-            <div className="flex items-center gap-2 text-slate-900"><Shield size={18} className="text-[#5b21b6]" /><h4 className="text-lg font-black">Redemption review queue</h4></div>
+            <div className="flex items-center gap-2 text-slate-900"><Shield size={18} className="text-[#115e59]" /><h4 className="text-lg font-black">Redemption review queue</h4></div>
             <p className="mt-2 text-xs font-semibold text-slate-500">Each redeem creates a one-time code. Codes are valid for 24 hours and then expire automatically.</p>
             <div className="mt-4 space-y-3">
               {redemptionLoading ? (
@@ -698,7 +698,7 @@ export function VoucherAdminPanel() {
               <button
                 onClick={grantVoucherToUser}
                 disabled={grantingVoucher || !grantVoucherId || !selectedUser}
-                className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-[#5b21b6] px-5 py-3 text-sm font-black text-white hover:bg-[#5b21b6] disabled:opacity-50"
+                className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-[#115e59] px-5 py-3 text-sm font-black text-white hover:bg-[#115e59] disabled:opacity-50"
               >
                 {grantingVoucher ? <Loader2 size={16} className="animate-spin" /> : <Gift size={16} />}
                 Assign voucher to selected user
@@ -831,13 +831,13 @@ export function VoucherAdminPanel() {
           </div>
 
           <div className="rounded-[1.8rem] border border-slate-200 bg-white p-5 shadow-sm">
-            <div className="flex items-center gap-2 text-slate-900"><BarChart3 size={18} className="text-[#5b21b6]" /><h4 className="text-lg font-black">Business performance</h4></div>
+            <div className="flex items-center gap-2 text-slate-900"><BarChart3 size={18} className="text-[#115e59]" /><h4 className="text-lg font-black">Business performance</h4></div>
             <div className="mt-4 space-y-3">
               {(payload?.analytics?.businessPerformance || []).slice(0, 5).map((item: any) => (
                 <div key={item.businessName} className="rounded-2xl bg-slate-50 px-4 py-3">
                   <div className="flex items-center justify-between gap-3">
                     <p className="font-black text-slate-900">{item.businessName}</p>
-                    <p className="text-sm font-black text-[#5b21b6]">{item.redeemed} redeemed</p>
+                    <p className="text-sm font-black text-[#115e59]">{item.redeemed} redeemed</p>
                   </div>
                   <p className="mt-1 text-xs text-slate-500">{item.activeOffers} active offers · conversion {item.conversionRate}</p>
                 </div>
@@ -846,11 +846,11 @@ export function VoucherAdminPanel() {
           </div>
 
           <div className="rounded-[1.8rem] border border-slate-200 bg-white p-5 shadow-sm">
-            <div className="flex items-center gap-2 text-slate-900"><BellRing size={18} className="text-[#5b21b6]" /><h4 className="text-lg font-black">Notification feed</h4></div>
+            <div className="flex items-center gap-2 text-slate-900"><BellRing size={18} className="text-[#115e59]" /><h4 className="text-lg font-black">Notification feed</h4></div>
             <div className="mt-4 space-y-3">
               {(payload?.notifications || []).slice(0, 6).map((item: any) => (
                 <div key={item.id} className="rounded-2xl border border-slate-200 px-4 py-3">
-                  <p className="text-xs font-black uppercase tracking-[0.18em] text-[#5b21b6]">{String(item.type).replace(/_/g, ' ')}</p>
+                  <p className="text-xs font-black uppercase tracking-[0.18em] text-[#115e59]">{String(item.type).replace(/_/g, ' ')}</p>
                   <p className="mt-2 font-bold text-slate-900">{item.title}</p>
                   <p className="mt-1 text-sm text-slate-600">{item.body}</p>
                 </div>
@@ -859,7 +859,7 @@ export function VoucherAdminPanel() {
           </div>
 
           <div className="rounded-[1.8rem] border border-slate-200 bg-white p-5 shadow-sm">
-            <div className="flex items-center gap-2 text-slate-900"><ImageIcon size={18} className="text-[#5b21b6]" /><h4 className="text-lg font-black">Gallery posters</h4></div>
+            <div className="flex items-center gap-2 text-slate-900"><ImageIcon size={18} className="text-[#115e59]" /><h4 className="text-lg font-black">Gallery posters</h4></div>
             <div className="mt-4 grid gap-3 sm:grid-cols-2">
               {(payload?.gallery || []).slice(0, 4).map((item: any) => (
                 <div key={item.id} className="overflow-hidden rounded-2xl border border-slate-200">

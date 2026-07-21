@@ -10,6 +10,11 @@ const ALLOWED: DailyEarnActivity[] = [
   'hadith',
   'salah',
   'story_quiz',
+  'creative',
+  'story_choice',
+  'dua',
+  'kindness',
+  'manners',
 ];
 
 export async function POST(req: Request) {
@@ -30,6 +35,11 @@ export async function POST(req: Request) {
       hadith: '+25 points for completing Hadith learning today!',
       salah: '+25 points for logging all 5 prayers today!',
       story_quiz: '+25 points for completing a story quiz today!',
+      creative: '+25 points for Create & Play today!',
+      story_choice: '+25 points for finishing a story adventure today!',
+      dua: '+25 points for saying the dua of the day!',
+      kindness: '+25 points for completing the kindness hunt!',
+      manners: '+25 points for practising good manners!',
     };
 
     const award = await tryAwardDailyActivity(userId, activity, {

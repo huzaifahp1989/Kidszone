@@ -2,16 +2,19 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import { CreateShell } from '@/components/CreateShell';
+import { ClaimCreatePointsButton } from '@/components/ClaimCreatePointsButton';
 import { TRACE_WORDS } from '@/data/kids-create-activities';
 
 export default function TraceArabicPage() {
   const [wordIndex, setWordIndex] = useState(0);
+  const [strokeCount, setStrokeCount] = useState(0);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const drawing = useRef(false);
   const word = TRACE_WORDS[wordIndex];
 
   useEffect(() => {
     clear();
+    setStrokeCount(0);
   }, [wordIndex]);
 
   const clear = () => {
@@ -86,6 +89,7 @@ export default function TraceArabicPage() {
           onPointerDown={start}
           onPointerMove={move}
           onPointerUp={() => {
+            if (drawing.current) setStrokeCount((n) => n + 1);
             drawing.current = false;
           }}
           onPointerLeave={() => {
@@ -96,6 +100,7 @@ export default function TraceArabicPage() {
       <button type="button" onClick={clear} className="rounded-xl border border-sand-200 bg-white px-4 py-2 font-bold">
         Clear trace
       </button>
+      <ClaimCreatePointsButton activity="creative" ready={strokeCount >= 2} />
     </CreateShell>
   );
 }

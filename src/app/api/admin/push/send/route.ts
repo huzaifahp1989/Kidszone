@@ -6,8 +6,10 @@ import {
   getServerOneSignalAppId,
 } from '@/lib/onesignal-server-config';
 import {
+  getOneSignalRestKeyMeta,
   isOneSignalServerConfigured,
   sendOneSignalPushMultiApp,
+  verifyOneSignalRestAuth,
   type OneSignalMultiAppResult,
 } from '@/lib/onesignal-server';
 import {
@@ -153,9 +155,27 @@ export async function POST(request: Request) {
       );
     }
 
+    const restAuth = await verifyOneSignalRestAuth(appIdOverride);
+    // If the configured key belongs to the legacy website app, route sends there
+    // so admin pushes are not a hard no-op — and surface a clear fix hint.
+    const reusePrimaryKeyForLegacy = Boolean(restAuth.keyBelongsToLegacyApp);
+    if (!restAuth.configured) {
+      return NextResponse.json(
+        {
+          error: restAuth.error || 'ONESIGNAL_REST_API_KEY missing',
+          hint: restAuth.hint,
+          serverAppId: restAuth.appId,
+          legacyAppId: restAuth.legacyAppId,
+        },
+        { status: 500 }
+      );
+    }
+
     const baseUrl = absoluteUrl(path);
-    const targets = getOneSignalAppTargets(appIdOverride);
+    const targets = getOneSignalAppTargets(appIdOverride, { reusePrimaryKeyForLegacy });
     const legacyConfigured = targets.some((t) => t.label === 'legacy');
+    const keyMismatchWarning =
+      reusePrimaryKeyForLegacy || !restAuth.ok ? restAuth.hint : undefined;
 
     const campaignId = await createPushCampaign({
       title,
@@ -187,6 +207,7 @@ export async function POST(request: Request) {
         imageUrl,
         includedSegments: ['Subscribed Users'],
         appId: appIdOverride,
+        reusePrimaryKeyForLegacy,
         data,
       });
 
@@ -224,6 +245,7 @@ export async function POST(request: Request) {
               imageUrl,
               playerIds: chunk,
               appId: appIdOverride,
+              reusePrimaryKeyForLegacy,
               data,
             })
           );
@@ -240,6 +262,7 @@ export async function POST(request: Request) {
                 externalUserIds: chunk,
                 preferBothTargets: true,
                 appId: appIdOverride,
+                reusePrimaryKeyForLegacy,
                 data,
               })
             );
@@ -285,6 +308,7 @@ export async function POST(request: Request) {
             externalUserIds: audience === 'user' ? externalUserIds : undefined,
             preferBothTargets: audience === 'user',
             appId: appIdOverride,
+            reusePrimaryKeyForLegacy,
             data,
           })
         );
@@ -299,6 +323,7 @@ export async function POST(request: Request) {
             externalUserIds,
             preferBothTargets: true,
             appId: appIdOverride,
+            reusePrimaryKeyForLegacy,
             data,
           })
         );
@@ -325,9 +350,12 @@ export async function POST(request: Request) {
           perApp: result.perApp,
           campaignId,
           legacyConfigured,
-          hint: legacyConfigured
-            ? undefined
-            : `Legacy website app ${getLegacyOneSignalAppId()} is not configured. Set ONESIGNAL_LEGACY_REST_API_KEY in Vercel if you still need the old web app.`,
+          keyBelongsToLegacyApp: reusePrimaryKeyForLegacy,
+          hint:
+            keyMismatchWarning ||
+            (legacyConfigured
+              ? undefined
+              : `Legacy website app ${getLegacyOneSignalAppId()} is not configured. Set ONESIGNAL_LEGACY_REST_API_KEY in Vercel if you still need the old web app.`),
         },
         { status: 502 }
       );
@@ -347,6 +375,8 @@ export async function POST(request: Request) {
       title,
       url: trackedUrl,
       legacyConfigured,
+      keyBelongsToLegacyApp: reusePrimaryKeyForLegacy,
+      warning: keyMismatchWarning,
       appsTargeted: targets.map((t) => ({ label: t.label, appId: t.appId })),
       note:
         audience === 'onesignal' || audience === 'subscribed'
@@ -371,7 +401,10 @@ export async function GET(request: Request) {
   try {
     const tokens = await loadTokens();
     const userIds = Array.from(new Set(tokens.map((t) => t.user_id)));
-    const targets = getOneSignalAppTargets();
+    const restAuth = await verifyOneSignalRestAuth();
+    const targets = getOneSignalAppTargets(undefined, {
+      reusePrimaryKeyForLegacy: Boolean(restAuth.keyBelongsToLegacyApp),
+    });
     const campaigns = await listPushCampaigns(25);
 
     let usersById = new Map<string, { name: string | null; email: string | null }>();
@@ -416,6 +449,12 @@ export async function GET(request: Request) {
       legacyAppId: getLegacyOneSignalAppId(),
       legacyConfigured: targets.some((t) => t.label === 'legacy'),
       appsTargeted: targets.map((t) => ({ label: t.label, appId: t.appId })),
+      restAuthOk: restAuth.ok,
+      keyBelongsToLegacyApp: Boolean(restAuth.keyBelongsToLegacyApp),
+      restAuthError: restAuth.error,
+      restAuthHint: restAuth.hint,
+      restAuthVia: restAuth.authVia,
+      restKeyMeta: getOneSignalRestKeyMeta(),
       campaigns: campaigns.map((c) => ({
         id: c.id,
         title: c.title,

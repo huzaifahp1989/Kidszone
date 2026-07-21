@@ -11,7 +11,7 @@ export const SPIN_WHEEL_REWARDS: SpinWheelReward[] = [
   { key: 'juice4-life', label: 'Juice4 Life', weeklyLimit: 2, color: '#f59e0b' },
   { key: 'grubbins-eat-out', label: 'Grubbins Eat Out', weeklyLimit: 2, color: '#ef4444' },
   { key: 'asli-zaiqa', label: 'Asli Zaiqa', weeklyLimit: 2, color: '#22c55e' },
-  { key: 'spin-pin', label: 'Spin Pin', weeklyLimit: 2, color: '#8b5cf6' },
+  { key: 'spin-pin', label: 'Spin Pin', weeklyLimit: 2, color: '#14b8a6' },
   { key: 'munch-out-takeaway', label: 'Munch Out Takeaway', weeklyLimit: 2, color: '#06b6d4' },
   { key: 'al-qasswah', label: 'Al Qasswah', weeklyLimit: 2, color: '#ec4899' },
   { key: 'grubbins', label: 'Grubbins', weeklyLimit: 2, color: '#f97316' },

@@ -2,6 +2,8 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import { CreateShell } from '@/components/CreateShell';
+import { ClaimCreatePointsButton } from '@/components/ClaimCreatePointsButton';
+import { SaveToGalleryButton } from '@/components/SaveToGalleryButton';
 import { COLOURING_PALETTE } from '@/data/kids-create-activities';
 
 const PROMPTS = [
@@ -15,6 +17,7 @@ export default function DrawPage() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const drawing = useRef(false);
   const [color, setColor] = useState(COLOURING_PALETTE[1]);
+  const [strokeCount, setStrokeCount] = useState(0);
   const [prompt] = useState(() => PROMPTS[Math.floor(Math.random() * PROMPTS.length)]);
 
   useEffect(() => {
@@ -58,6 +61,7 @@ export default function DrawPage() {
   };
 
   const end = () => {
+    if (drawing.current) setStrokeCount((n) => n + 1);
     drawing.current = false;
   };
 
@@ -67,6 +71,7 @@ export default function DrawPage() {
     if (!canvas || !ctx) return;
     ctx.fillStyle = '#ffffff';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
+    setStrokeCount(0);
   };
 
   return (
@@ -95,9 +100,18 @@ export default function DrawPage() {
         onPointerUp={end}
         onPointerLeave={end}
       />
-      <button type="button" onClick={clear} className="rounded-xl border border-sand-200 bg-white px-4 py-2 font-bold">
-        Clear
-      </button>
+      <div className="flex flex-wrap gap-2">
+        <button type="button" onClick={clear} className="rounded-xl border border-sand-200 bg-white px-4 py-2 font-bold">
+          Clear
+        </button>
+      </div>
+      <ClaimCreatePointsButton activity="creative" ready={strokeCount >= 3} />
+      <SaveToGalleryButton
+        kind="draw"
+        title={prompt}
+        getDataUrl={() => canvasRef.current?.toDataURL('image/jpeg', 0.72) || null}
+        disabled={strokeCount < 3}
+      />
     </CreateShell>
   );
 }

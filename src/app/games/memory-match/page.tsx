@@ -195,7 +195,7 @@ export default function MemoryMatchPage() {
     : 'min-h-[4.5rem] text-sm sm:min-h-[5.5rem] sm:text-base';
 
   return (
-    <div className="min-h-screen bg-[#f5f3ff] pattern-islamic px-4 py-8">
+    <div className="min-h-screen bg-[#f0fdfa] pattern-islamic px-4 py-8">
       <div className="mx-auto max-w-3xl space-y-6">
         <Link
           href="/games"

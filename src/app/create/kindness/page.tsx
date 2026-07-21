@@ -2,6 +2,7 @@
 
 import React, { useMemo, useState } from 'react';
 import { CreateShell } from '@/components/CreateShell';
+import { ClaimCreatePointsButton } from '@/components/ClaimCreatePointsButton';
 import { KINDNESS_TASKS } from '@/data/kids-create-activities';
 
 export default function KindnessHuntPage() {
@@ -36,7 +37,7 @@ export default function KindnessHuntPage() {
   return (
     <CreateShell title="Kindness Hunt">
       <p className="text-sm text-sand-600">
-        Tick off kind deeds today ({completedCount}/{KINDNESS_TASKS.length}). Practice for barakah — no points claim.
+        Tick off kind deeds today ({completedCount}/{KINDNESS_TASKS.length}). Finish all five to claim +25 points.
       </p>
       <div className="space-y-2">
         {KINDNESS_TASKS.map((task) => (
@@ -65,6 +66,7 @@ export default function KindnessHuntPage() {
         ))}
       </div>
       {allDone && <p className="font-bold text-emerald-800">MashaAllah — keep being kind every day!</p>}
+      <ClaimCreatePointsButton activity="kindness" ready={allDone} />
     </CreateShell>
   );
 }

@@ -174,12 +174,12 @@ export default function ReferralTokenHub() {
 
   if (!user) {
     return (
-      <section className="bg-white rounded-2xl p-6 shadow-lg border border-[#c4b5fd]/20 space-y-4">
-        <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-[#eef2ff] rounded-full border border-[#6366f1]/20 text-sm font-semibold text-[#4338ca]">
+      <section className="bg-white rounded-2xl p-6 shadow-lg border border-[#5eead4]/20 space-y-4">
+        <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-[#eef2ff] rounded-full border border-[#0d9488]/20 text-sm font-semibold text-[#115e59]">
           <Users size={16} />
           Referral Tokens
         </div>
-        <h3 className="text-2xl font-bold text-[#1e1b4b]">Invite Friends, Earn Tokens</h3>
+        <h3 className="text-2xl font-bold text-[#134e4a]">Invite Friends, Earn Tokens</h3>
         <p className="text-[#475569] text-sm">
           Sign in to get your personal invite link, share Kids Zone with friends, and collect referral tokens when they join.
         </p>
@@ -196,10 +196,10 @@ export default function ReferralTokenHub() {
 
   if (loading) {
     return (
-      <section className="bg-white rounded-2xl p-6 shadow-lg border border-[#c4b5fd]/20">
+      <section className="bg-white rounded-2xl p-6 shadow-lg border border-[#5eead4]/20">
         <div className="animate-pulse space-y-3">
           <div className="h-6 w-52 rounded bg-[#f3e7d8]" />
-          <div className="h-28 rounded-2xl bg-[#ede9fe]" />
+          <div className="h-28 rounded-2xl bg-[#ccfbf1]" />
         </div>
       </section>
     );
@@ -207,12 +207,12 @@ export default function ReferralTokenHub() {
 
   if (!payload) {
     return (
-      <section className="bg-white rounded-2xl p-6 shadow-lg border border-[#c4b5fd]/20 space-y-4">
-        <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-[#eef2ff] rounded-full border border-[#6366f1]/20 text-sm font-semibold text-[#4338ca]">
+      <section className="bg-white rounded-2xl p-6 shadow-lg border border-[#5eead4]/20 space-y-4">
+        <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-[#eef2ff] rounded-full border border-[#0d9488]/20 text-sm font-semibold text-[#115e59]">
           <Users size={16} />
           Referral Tokens
         </div>
-        <h3 className="text-xl font-bold text-[#1e1b4b]">Referral Tokens Temporarily Unavailable</h3>
+        <h3 className="text-xl font-bold text-[#134e4a]">Referral Tokens Temporarily Unavailable</h3>
         <p className="text-[#475569] text-sm">
           {loadError || 'Could not load referral data right now. Please try again.'}
         </p>
@@ -228,14 +228,14 @@ export default function ReferralTokenHub() {
   }
 
   return (
-    <section className="bg-white rounded-2xl p-6 shadow-lg border border-[#c4b5fd]/20 space-y-5">
+    <section className="bg-white rounded-2xl p-6 shadow-lg border border-[#5eead4]/20 space-y-5">
       <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
         <div>
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-[#eef2ff] rounded-full border border-[#6366f1]/20 text-sm font-semibold text-[#4338ca]">
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-[#eef2ff] rounded-full border border-[#0d9488]/20 text-sm font-semibold text-[#115e59]">
             <Users size={16} />
             Referral Tokens
           </div>
-          <h3 className="mt-3 text-2xl font-bold text-[#1e1b4b]">Invite Friends, Earn Tokens</h3>
+          <h3 className="mt-3 text-2xl font-bold text-[#134e4a]">Invite Friends, Earn Tokens</h3>
           <p className="text-[#475569] text-sm mt-1 max-w-2xl">
             Share your Kids Zone invite link. You earn tokens for sharing and even more tokens when friends join through your link.
           </p>
@@ -256,13 +256,13 @@ export default function ReferralTokenHub() {
           <p className="text-xs uppercase text-[#0e7490] tracking-[0.12em]">Referral Points</p>
           <p className="text-2xl font-bold text-[#155e75]">{payload.pointsEarned}</p>
         </div>
-        <div className="rounded-2xl bg-[#f5f3ff] border border-[#8b5cf6]/20 p-4">
-          <p className="text-xs uppercase text-[#6d28d9] tracking-[0.12em]">Joins</p>
-          <p className="text-2xl font-bold text-[#5b21b6]">{payload.successfulJoins}</p>
+        <div className="rounded-2xl bg-[#f0fdfa] border border-[#14b8a6]/20 p-4">
+          <p className="text-xs uppercase text-[#0f766e] tracking-[0.12em]">Joins</p>
+          <p className="text-2xl font-bold text-[#115e59]">{payload.successfulJoins}</p>
         </div>
-        <div className="rounded-2xl bg-[#f5f3ff] border border-[#7c3aed]/20 p-4">
-          <p className="text-xs uppercase text-[#5b21b6] tracking-[0.12em]">Shares</p>
-          <p className="text-2xl font-bold text-[#5b21b6]">{payload.sharesCount}</p>
+        <div className="rounded-2xl bg-[#f0fdfa] border border-[#0d9488]/20 p-4">
+          <p className="text-xs uppercase text-[#115e59] tracking-[0.12em]">Shares</p>
+          <p className="text-2xl font-bold text-[#115e59]">{payload.sharesCount}</p>
         </div>
       </div>
 
@@ -337,7 +337,7 @@ export default function ReferralTokenHub() {
               Each successful join gives you <strong>+{payload.joinReward.tokens} tokens</strong>{' '}
               {payload.joinReward.points > 0 ? `and +${payload.joinReward.points} points` : ''}.
             </p>
-            {message ? <p className="text-xs text-[#1e1b4b] pt-1">{message}</p> : null}
+            {message ? <p className="text-xs text-[#134e4a] pt-1">{message}</p> : null}
           </div>
 
           <button
@@ -347,7 +347,7 @@ export default function ReferralTokenHub() {
             className={`px-5 py-3 rounded-xl font-bold transition-all ${
               payload.shareReward.availableToday && !claiming
                 ? 'bg-gradient-to-r from-[#f59e0b] to-[#d97706] text-white shadow-lg hover:shadow-xl hover:-translate-y-0.5'
-                : 'bg-white text-[#475569] border border-[#c4b5fd]/40 cursor-not-allowed'
+                : 'bg-white text-[#475569] border border-[#5eead4]/40 cursor-not-allowed'
             }`}
           >
             {claiming

@@ -158,7 +158,7 @@ export async function GET(request: Request) {
             subject: `Kids Zone: ${childName}'s quiz is waiting!`,
             html: `
             <div style="font-family: Arial, sans-serif; max-width: 640px; margin: 0 auto;">
-              <h2 style="color: #5b21b6;">Assalamu Alaikum!</h2>
+              <h2 style="color: #115e59;">Assalamu Alaikum!</h2>
               <p style="color: #374151; line-height: 1.6;">
                 ${childName} has not visited Kids Zone for a couple of days.
                 A quick 5-minute quiz or game can help keep their learning streak going — and they can earn up to 200 points today!
@@ -167,7 +167,7 @@ export async function GET(request: Request) {
                 Tip: remind them to try the daily quiz first — it is the fastest way to earn points.
               </p>
               <p style="margin: 24px 0;">
-                <a href="${resumeUrl}" style="background: #5b21b6; color: #ffffff; padding: 12px 20px; border-radius: 8px; text-decoration: none; display: inline-block; font-weight: 600;">Start Today's Quiz</a>
+                <a href="${resumeUrl}" style="background: #115e59; color: #ffffff; padding: 12px 20px; border-radius: 8px; text-decoration: none; display: inline-block; font-weight: 600;">Start Today's Quiz</a>
               </p>
               <p style="color: #6b7280; font-size: 13px; line-height: 1.5;">
                 You are receiving this because reminders are enabled in your account settings.

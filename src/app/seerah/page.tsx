@@ -65,7 +65,7 @@ export default function SeerahCoursePage() {
 
   const shellClass = theme === 'dark'
     ? 'min-h-screen bg-slate-950 text-slate-100'
-    : 'min-h-screen bg-[#f5f3ff] text-slate-800';
+    : 'min-h-screen bg-[#f0fdfa] text-slate-800';
 
   return (
     <div className={shellClass}>
