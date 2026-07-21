@@ -117,19 +117,60 @@ function isAuthError(raw: unknown, status: number): boolean {
 }
 
 async function probePlayersAuth(appId: string, apiKey: string): Promise<string | null> {
-  const url = `${ONESIGNAL_PLAYERS_API}?app_id=${encodeURIComponent(appId)}&limit=1`;
-  for (const mode of ['basic', 'key'] as const) {
-    try {
-      const response = await fetch(url, {
-        method: 'GET',
-        headers: authHeaders(apiKey, mode),
-        cache: 'no-store',
-      });
-      await response.json().catch(() => null);
-      if (response.ok) return `players/${mode}`;
-      if (!isAuthError(null, response.status)) break;
-    } catch {
-      /* try next */
+  const listUrl = `${ONESIGNAL_PLAYERS_API}?app_id=${encodeURIComponent(appId)}&limit=1`;
+  const byIdUrl = `${ONESIGNAL_PLAYERS_API}/00000000-0000-4000-8000-000000000099?app_id=${encodeURIComponent(appId)}`;
+
+  for (const [label, url] of [
+    ['players', listUrl],
+    ['player_id', byIdUrl],
+  ] as const) {
+    for (const mode of ['basic', 'key'] as const) {
+      try {
+        const response = await fetch(url, {
+          method: 'GET',
+          headers: authHeaders(apiKey, mode),
+          cache: 'no-store',
+        });
+        await response.json().catch(() => null);
+        // List may 401 while by-id returns 400/404 once authenticated
+        if (response.ok) return `${label}/${mode}`;
+        if (label === 'player_id' && !isAuthError(null, response.status)) {
+          return `${label}/${mode}`;
+        }
+        if (!isAuthError(null, response.status)) break;
+      } catch {
+        /* try next */
+      }
+    }
+  }
+  return null;
+}
+
+/** Dry notification create — detects keys that can read devices but cannot send. */
+async function probeNotificationAuth(appId: string, apiKey: string): Promise<string | null> {
+  const body = {
+    app_id: appId,
+    include_player_ids: ['00000000-0000-4000-8000-000000000001'],
+    headings: { en: 'auth-probe' },
+    contents: { en: 'auth-probe' },
+  };
+  for (const url of ONESIGNAL_NOTIFY_URLS) {
+    const host = url.includes('api.onesignal.com') ? 'api' : 'v1';
+    const modes = host === 'v1' ? (['basic', 'key'] as const) : (['key', 'basic'] as const);
+    for (const mode of modes) {
+      try {
+        const response = await fetch(url, {
+          method: 'POST',
+          headers: authHeaders(apiKey, mode),
+          body: JSON.stringify(body),
+          cache: 'no-store',
+        });
+        const raw = await response.json().catch(() => null);
+        // Auth OK if we get past 401/403 — 0 recipients / invalid player still means send permission works
+        if (!isAuthError(raw, response.status)) return `${host}/${mode}`;
+      } catch {
+        /* try next */
+      }
     }
   }
   return null;
@@ -161,6 +202,9 @@ async function probeAppAuth(appId: string, apiKey: string): Promise<string | nul
 /**
  * Verify ONESIGNAL_REST_API_KEY can access the primary (or override) OneSignal app.
  * If auth fails, also probes the legacy website app to detect a swapped key.
+ *
+ * Note: OneSignal can allow player lookups while denying notification creates when
+ * an App API Key has restricted permissions — so we also probe a dry notification.
  */
 export async function verifyOneSignalRestAuth(
   appIdOverride?: string | null
@@ -176,13 +220,33 @@ export async function verifyOneSignalRestAuth(
       appId,
       legacyAppId,
       error: 'ONESIGNAL_REST_API_KEY missing',
-      hint: `In OneSignal open app ${appId} → Settings → Keys & IDs → copy the App API Key / REST API Key into Vercel ONESIGNAL_REST_API_KEY (must be this app, not the old ${legacyAppId.slice(0, 8)}… app). Redeploy after saving.`,
+      hint: `In OneSignal open app ${appId} → Settings → Keys & IDs → create/copy an App API Key with Create Notifications permission into Vercel ONESIGNAL_REST_API_KEY (must be this app, not the old ${legacyAppId.slice(0, 8)}… app). Redeploy after saving.`,
     };
   }
 
   const primaryVia = await probeAppAuth(appId, apiKey);
-  if (primaryVia) {
-    return { ok: true, configured: true, appId, legacyAppId, authVia: primaryVia };
+  const canNotify = await probeNotificationAuth(appId, apiKey);
+  if (canNotify) {
+    return {
+      ok: true,
+      configured: true,
+      appId,
+      legacyAppId,
+      authVia: canNotify,
+    };
+  }
+
+  // Player/Apps lookup may succeed while Create Notification is denied
+  if (primaryVia && !canNotify) {
+    return {
+      ok: false,
+      configured: true,
+      appId,
+      legacyAppId,
+      authVia: primaryVia,
+      error: `ONESIGNAL_REST_API_KEY can read app ${appId} but cannot create notifications`,
+      hint: `Your App API Key is missing Create Notifications permission (or is revoked for sends). In OneSignal → app ${appId} → Settings → Keys & IDs → create a new App API Key with Create Notifications enabled → paste into Vercel ONESIGNAL_REST_API_KEY → redeploy.`,
+    };
   }
 
   let keyBelongsToLegacyApp = false;
@@ -194,7 +258,7 @@ export async function verifyOneSignalRestAuth(
 
   const hint = keyBelongsToLegacyApp
     ? `ONESIGNAL_REST_API_KEY authenticates the legacy website app ${legacyAppId}, not ${appId}. Move that value to ONESIGNAL_LEGACY_REST_API_KEY, then put the REST/App API Key from OneSignal app ${appId} (Settings → Keys & IDs) into ONESIGNAL_REST_API_KEY and redeploy.`
-    : `REST API key rejected for app ${appId}. In OneSignal open this app → Settings → Keys & IDs → copy REST API Key into Vercel ONESIGNAL_REST_API_KEY (must be this app, not the old ${legacyAppId.slice(0, 8)}… app). Redeploy after saving.`;
+    : `REST API key rejected for app ${appId}. In OneSignal open this app → Settings → Keys & IDs → create a new App API Key with permission to Create Notifications, paste it into Vercel ONESIGNAL_REST_API_KEY, and redeploy. (Looking up devices can work while sending is denied if the key’s permissions are restricted.)`;
 
   return {
     ok: false,
@@ -205,7 +269,7 @@ export async function verifyOneSignalRestAuth(
     authVia: legacyVia || undefined,
     error: keyBelongsToLegacyApp
       ? `ONESIGNAL_REST_API_KEY belongs to legacy app ${legacyAppId}, not ${appId}`
-      : `REST API key rejected for app ${appId}`,
+      : `REST API key rejected for creating notifications on app ${appId}`,
     hint,
   };
 }
