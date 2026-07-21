@@ -7,6 +7,8 @@ import { useAgeMode } from '@/lib/age-mode';
 import { BookOpen, Gamepad2, Sparkles, Star, Target, Zap, Trophy, Coins } from 'lucide-react';
 import DailyMissions from '@/components/DailyMissions';
 import { ComeBackNudge } from '@/components/ComeBackNudge';
+import { DailySurpriseBox } from '@/components/DailySurpriseBox';
+import { FamilyChallengeCard } from '@/components/FamilyChallengeCard';
 import { WeeklyChallengeCard } from '@/components/WeeklyChallengeCard';
 import { RamadanModeCard } from '@/components/RamadanModeCard';
 import { RamadanPopup } from '@/components/RamadanPopup';
@@ -91,6 +93,8 @@ export default function Home() {
           {progressBlock}
 
           <ComeBackNudge />
+
+          <DailySurpriseBox />
 
           <RamadanModeCard />
 
@@ -213,6 +217,10 @@ export default function Home() {
         <PointsSummaryWidget />
 
         <ComeBackNudge />
+
+        <DailySurpriseBox />
+
+        <FamilyChallengeCard />
 
         <RamadanModeCard />
 

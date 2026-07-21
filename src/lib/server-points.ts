@@ -217,6 +217,22 @@ export async function awardPointsWithDailyCapByUserId(
     console.error('[server-points] users sync failed:', usersSyncError.message);
   }
 
+  try {
+    const { addFamilyChallengeProgress } = await import('@/lib/family-challenge');
+    await addFamilyChallengeProgress(userId, pointsAwarded);
+  } catch {
+    /* optional engagement table */
+  }
+
+  if (todayPoints >= 100) {
+    try {
+      const { unlockStickersForTriggers } = await import('@/lib/stickers-server');
+      await unlockStickersForTriggers(userId, ['points_100_day']);
+    } catch {
+      /* optional */
+    }
+  }
+
   return {
     success: true,
     reason: 'awarded',

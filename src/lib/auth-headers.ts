@@ -16,3 +16,8 @@ export async function authJsonFetch(url: string, init: RequestInit = {}): Promis
   });
   return fetch(url, { ...init, headers });
 }
+
+export async function authFetch(url: string, init: RequestInit = {}): Promise<Response> {
+  const headers = await getAuthFetchHeaders(init.headers as Record<string, string> | undefined);
+  return fetch(url, { ...init, headers });
+}
