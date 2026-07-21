@@ -237,8 +237,11 @@ async function resolvePushIds(options?: { promptWtn?: boolean }): Promise<{
     }
   }
 
-  const wtnId = await getWtnOneSignalPlayerId();
-  if (wtnId) return { playerId: wtnId, firebaseToken: null };
+  // Only attempt WTN resolution in native app context to avoid browser warnings
+  if (isNativeApp()) {
+    const wtnId = await getWtnOneSignalPlayerId();
+    if (wtnId) return { playerId: wtnId, firebaseToken: null };
+  }
 
   const capacitorId = await resolveCapacitorOneSignalId();
   if (capacitorId) return { playerId: capacitorId, firebaseToken: null };
