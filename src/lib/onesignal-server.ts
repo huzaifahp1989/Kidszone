@@ -97,6 +97,25 @@ function isAuthError(raw: unknown, status: number): boolean {
   return /access denied|valid API key|unauthorized/i.test(text);
 }
 
+async function probePlayersAuth(appId: string, apiKey: string): Promise<string | null> {
+  const url = `${ONESIGNAL_PLAYERS_API}?app_id=${encodeURIComponent(appId)}&limit=1`;
+  for (const mode of ['basic', 'key'] as const) {
+    try {
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: authHeaders(apiKey, mode),
+        cache: 'no-store',
+      });
+      await response.json().catch(() => null);
+      if (response.ok) return `players/${mode}`;
+      if (!isAuthError(null, response.status)) break;
+    } catch {
+      /* try next */
+    }
+  }
+  return null;
+}
+
 async function probeAppAuth(appId: string, apiKey: string): Promise<string | null> {
   for (const buildUrl of ONESIGNAL_APPS_URLS) {
     const url = buildUrl(appId);
@@ -116,7 +135,8 @@ async function probeAppAuth(appId: string, apiKey: string): Promise<string | nul
       }
     }
   }
-  return null;
+  // Older keys sometimes fail Apps API but still work for players + notifications
+  return probePlayersAuth(appId, apiKey);
 }
 
 /**
