@@ -6,10 +6,26 @@
  * deliver when the WTN app is backgrounded/closed (not force-stopped).
  */
 
-import { getOneSignalAppTargets, getServerOneSignalAppId } from '@/lib/onesignal-server-config';
+import {
+  getLegacyOneSignalAppId,
+  getOneSignalAppTargets,
+  getServerOneSignalAppId,
+} from '@/lib/onesignal-server-config';
 
 const ONESIGNAL_API = 'https://api.onesignal.com/notifications';
+const ONESIGNAL_APPS_API = 'https://api.onesignal.com/apps';
 const ONESIGNAL_PLAYERS_API = 'https://onesignal.com/api/v1/players';
+
+export type OneSignalRestAuthStatus = {
+  ok: boolean;
+  configured: boolean;
+  appId: string;
+  /** True when ONESIGNAL_REST_API_KEY authenticates against the legacy/web app instead */
+  keyBelongsToLegacyApp?: boolean;
+  legacyAppId?: string;
+  hint?: string;
+  error?: string;
+};
 
 
 export type OneSignalPushPayload = {
@@ -61,6 +77,74 @@ function authHeaders(apiKey: string, mode: 'key' | 'basic'): Record<string, stri
   return {
     'Content-Type': 'application/json',
     Authorization: mode === 'key' ? `Key ${apiKey}` : `Basic ${apiKey}`,
+  };
+}
+
+async function probeAppAuth(appId: string, apiKey: string): Promise<boolean> {
+  const url = `${ONESIGNAL_APPS_API}/${encodeURIComponent(appId)}`;
+  for (const mode of ['key', 'basic'] as const) {
+    try {
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: authHeaders(apiKey, mode),
+        cache: 'no-store',
+      });
+      await response.json().catch(() => null);
+      if (response.ok) return true;
+      if (!isAuthError(null, response.status)) break;
+    } catch {
+      /* try next auth mode */
+    }
+  }
+  return false;
+}
+
+/**
+ * Verify ONESIGNAL_REST_API_KEY can access the primary (or override) OneSignal app.
+ * If auth fails, also probes the legacy website app to detect a swapped key.
+ */
+export async function verifyOneSignalRestAuth(
+  appIdOverride?: string | null
+): Promise<OneSignalRestAuthStatus> {
+  const appId = getServerOneSignalAppId(appIdOverride);
+  const apiKey = getRestApiKey();
+  const legacyAppId = getLegacyOneSignalAppId();
+
+  if (!apiKey) {
+    return {
+      ok: false,
+      configured: false,
+      appId,
+      legacyAppId,
+      error: 'ONESIGNAL_REST_API_KEY missing',
+      hint: `In OneSignal open app ${appId} → Settings → Keys & IDs → create/copy the App API Key into Vercel ONESIGNAL_REST_API_KEY (must be this app, not the old ${legacyAppId.slice(0, 8)}… app). Redeploy after saving.`,
+    };
+  }
+
+  const primaryOk = await probeAppAuth(appId, apiKey);
+  if (primaryOk) {
+    return { ok: true, configured: true, appId, legacyAppId };
+  }
+
+  let keyBelongsToLegacyApp = false;
+  if (legacyAppId && legacyAppId !== appId) {
+    keyBelongsToLegacyApp = await probeAppAuth(legacyAppId, apiKey);
+  }
+
+  const hint = keyBelongsToLegacyApp
+    ? `ONESIGNAL_REST_API_KEY authenticates the legacy website app ${legacyAppId}, not ${appId}. Move that value to ONESIGNAL_LEGACY_REST_API_KEY, then put the REST/App API Key from OneSignal app ${appId} (Settings → Keys & IDs) into ONESIGNAL_REST_API_KEY and redeploy.`
+    : `REST API key rejected for app ${appId}. In OneSignal open this app → Settings → Keys & IDs → copy REST API Key into Vercel ONESIGNAL_REST_API_KEY (must be this app, not the old ${legacyAppId.slice(0, 8)}… app). Redeploy after saving.`;
+
+  return {
+    ok: false,
+    configured: true,
+    appId,
+    legacyAppId,
+    keyBelongsToLegacyApp,
+    error: keyBelongsToLegacyApp
+      ? `ONESIGNAL_REST_API_KEY belongs to legacy app ${legacyAppId}, not ${appId}`
+      : `REST API key rejected for app ${appId}`,
+    hint,
   };
 }
 
