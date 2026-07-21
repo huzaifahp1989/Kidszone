@@ -6,7 +6,7 @@ A fun, safe, and educational Islamic learning platform for children aged 5-14.
 
 - 🎮 Islamic Games (Matching, Memory, Quiz) - **Unlimited Plays!**
 - 📝 Daily Quizzes with multiple difficulty levels - **Play as much as you want!**
-- 📖 Quran Learning with meanings and facts
+- 📖 Quran Learning with meanings, facts, reciter audio, and repeat practice
 - 📜 Hadith Learning with practical examples
 - ⭐ Points & Rewards System - **Earn up to 100 points daily**
 - 🏆 Badge System - **1 badge per 250 points earned**
@@ -142,6 +142,12 @@ public/               # Static assets
 - Surah Mulk
 - Surah Waqiah
 - Last 10 Surahs
+
+### Quran Audio
+- Multiple reciter support in Juz Amma learning pages
+- Repeat a single ayah by selecting "Repeat ayah" and tapping an ayah
+- Repeat a selected ayah range for memorisation practice
+- Repeat the full surah continuously when "Repeat surah" is enabled
 
 ### Points System
 - Beginner → Learner → Explorer → Young Scholar

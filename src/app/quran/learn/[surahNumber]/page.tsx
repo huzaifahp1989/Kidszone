@@ -44,7 +44,20 @@ export default function JuzAmmaSurahPage() {
     setShowFullText(!isMobile);
   }, [isMobile]);
 
-  const { playingAyah, isPlayingAll, audioError, playAyah, playFullSurah, skip, stopAudio } = useQuranPlayback(ayahs);
+  const {
+    playingAyah,
+    isPlayingAll,
+    audioError,
+    repeatMode,
+    repeatRange,
+    setRepeatMode,
+    setRepeatRange,
+    playAyah,
+    playFullSurah,
+    playRepeatRange,
+    skip,
+    stopAudio,
+  } = useQuranPlayback(ayahs);
   const hasAudio = ayahs.some((a) => a.audio);
 
   const nav = useMemo(() => {
@@ -162,15 +175,21 @@ export default function JuzAmmaSurahPage() {
             <QuranReciterPanel
               surahNumber={meta.number}
               surahName={meta.englishName}
+              ayahCount={meta.ayahCount}
               reciterId={reciterId}
               onReciterChange={handleReciterChange}
               playingAyah={playingAyah}
               isPlayingAll={isPlayingAll}
+              repeatMode={repeatMode}
+              repeatRange={repeatRange}
               hasAudio={hasAudio}
               loadingAudio={loadingAudio}
               audioError={audioError}
               onPlayFull={playFullSurah}
+              onPlayRange={playRepeatRange}
               onSkip={skip}
+              onRepeatModeChange={setRepeatMode}
+              onRepeatRangeChange={setRepeatRange}
             />
 
             <SurahRecorder
