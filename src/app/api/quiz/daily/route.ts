@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { generateDailyQuiz, getStaticQuiz } from '@/lib/quiz-generator';
 
+const UUID_V4_OR_V5_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
 export async function GET() {
   const today = new Date().toISOString().split('T')[0];
 
@@ -32,7 +34,15 @@ export async function GET() {
        return NextResponse.json(staticQuiz);
     }
 
-    const questionIds = quiz.question_ids as string[];
+    const questionIds = Array.isArray(quiz.question_ids) ? (quiz.question_ids as string[]) : [];
+
+    // Some older rows stored static IDs (e.g. "salah-1") while DB questions.id is UUID.
+    // Avoid invalid UUID SQL errors by falling back to static quiz generation.
+    const hasNonUuidQuestionId = questionIds.some((id) => !UUID_V4_OR_V5_REGEX.test(String(id)));
+    if (hasNonUuidQuestionId) {
+      const staticQuiz = getStaticQuiz(today);
+      return NextResponse.json(staticQuiz);
+    }
 
     // 2. Fetch Questions (Sanitized)
     const { data: questions, error } = await supabaseAdmin

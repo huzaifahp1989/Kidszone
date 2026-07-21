@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { isTestModeUserId } from '@/lib/test-mode-server';
-
-const MAX_DAILY_QUIZ_ATTEMPTS = 2;
+import { MAX_DAILY_QUIZ_ATTEMPTS } from '@/lib/points-policy';
+import { requireMatchingUser } from '@/lib/request-auth';
 
 function getUtcDayWindow() {
   const now = new Date();
@@ -32,11 +32,16 @@ function getUtcDayWindow() {
  */
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
-  const userId = searchParams.get('userId');
+  const userIdParam = searchParams.get('userId') || '';
 
-  if (!userId) {
+  if (!userIdParam) {
     return NextResponse.json({ locked: false, lockedUntil: null, attemptsToday: 0, maxDailyAttempts: MAX_DAILY_QUIZ_ATTEMPTS });
   }
+
+  const auth = await requireMatchingUser(req, userIdParam);
+  if (!auth.ok) return auth.response;
+
+  const userId = auth.userId;
 
   if (await isTestModeUserId(userId)) {
     return NextResponse.json({ locked: false, lockedUntil: null, attemptsToday: 0, maxDailyAttempts: MAX_DAILY_QUIZ_ATTEMPTS, testMode: true });

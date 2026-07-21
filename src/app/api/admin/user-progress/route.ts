@@ -31,6 +31,18 @@ function monthLabel(key: string) {
   });
 }
 
+function resolveFeatureChallengeTitle(challengeId: string | null): string | null {
+  if (!challengeId) return null;
+  const map: Record<string, string> = {
+    'quiz-starter': 'Quiz Starter Sprint',
+    'word-hunt': 'Word Hunt Explorer',
+    'durood-focus': 'Durood Focus Minute',
+    'leaderboard-climb': 'Leaderboard Climb',
+    'bring-a-friend': 'Bring a Friend',
+  };
+  return map[challengeId] || challengeId;
+}
+
 export async function GET(request: Request) {
   if (!checkAdminAuth(request)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -55,6 +67,27 @@ export async function GET(request: Request) {
       supabaseAdmin.from('quiz_attempts').select('score, completed_at').eq('user_id', uid).gte('completed_at', startIso),
       supabaseAdmin.from('pledges').select('count, created_at, type').eq('user_id', uid).gte('created_at', startIso),
     ]);
+
+    let featureLabRows: Array<{
+      date: string;
+      good_deeds: string[] | null;
+      challenge_id: string | null;
+      challenge_roll: number | null;
+      updated_at: string | null;
+    }> = [];
+    try {
+      const featureRes = await supabaseAdmin
+        .from('kids_zone_feature_progress')
+        .select('date, good_deeds, challenge_id, challenge_roll, updated_at')
+        .eq('user_id', uid)
+        .gte('date', `${oldestKey}-01`)
+        .order('date', { ascending: false });
+      if (!featureRes.error && featureRes.data) {
+        featureLabRows = featureRes.data as typeof featureLabRows;
+      }
+    } catch {
+      featureLabRows = [];
+    }
 
     let snapshotRows: Array<{
       month_start: string;
@@ -233,11 +266,24 @@ export async function GET(request: Request) {
       { quizAttempts: 0, pledgeLogs: 0, pledgeRecitations: 0, gameSessions: 0, certificateMonths: 0 }
     );
 
+    const featureLabSummary = {
+      trackedDays: featureLabRows.length,
+      totalGoodDeeds: featureLabRows.reduce((sum, row) => sum + (Array.isArray(row.good_deeds) ? row.good_deeds.length : 0), 0),
+      challengeDays: featureLabRows.reduce((sum, row) => sum + (row.challenge_id ? 1 : 0), 0),
+      recent: featureLabRows.slice(0, 14).map((row) => ({
+        date: row.date,
+        goodDeedsCount: Array.isArray(row.good_deeds) ? row.good_deeds.length : 0,
+        challengeId: row.challenge_id,
+        challengeTitle: resolveFeatureChallengeTitle(row.challenge_id),
+      })),
+    };
+
     return NextResponse.json({
       user: userRes.data,
       points: pointsRes.data,
       totals,
       monthlyBreakdown,
+      featureLab: featureLabSummary,
       certificateRule: '3 or more monthly activities across quizzes, games, and pledge logs',
     });
   } catch (error: any) {

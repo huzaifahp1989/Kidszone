@@ -2,7 +2,8 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
-import { awardPoints as awardPointsRpc } from '@/lib/points-service';
+import { completeGameSession } from '@/lib/complete-game-session';
+import { ACTIVITY_BONUS_POINTS } from '@/lib/points-policy';
 import { useAuth } from '@/lib/auth-context';
 
 const GW = 400;         // game width (SVG viewBox)
@@ -97,10 +98,17 @@ export default function SafaMarwahGame() {
     setGameState('playing');
   };
 
+  const pointsAwardedRef = useRef(false);
+
   useEffect(() => {
-    if (gameState === 'complete' && user?.id) {
-      awardPointsRpc(30).catch(() => {});
-    }
+    if (gameState !== 'complete' || !user?.id || pointsAwardedRef.current) return;
+    pointsAwardedRef.current = true;
+    completeGameSession({
+      userId: user.id,
+      gameId: 'hajj-safa-marwah',
+      gameTitle: 'Safa & Marwah',
+      trackCompetition: true,
+    }).catch(() => {});
   }, [gameState, user]);
 
   const px = playerX;
@@ -154,7 +162,7 @@ export default function SafaMarwahGame() {
           <div className="text-7xl mb-3">🎉</div>
           <h2 className="text-3xl font-black text-emerald-700 mb-2">Sa&apos;i Complete!</h2>
           <p className="text-gray-600 mb-1 text-lg">MashaAllah! All 7 laps completed!</p>
-          <p className="text-gray-400 text-sm mb-2">+30 points awarded 🌟</p>
+          <p className="text-gray-400 text-sm mb-2">+{ACTIVITY_BONUS_POINTS} points awarded 🌟</p>
           <p className="text-gray-400 text-sm mb-6">
             Just like Hagar (RA) searched for water — and Allah blessed her with Zamzam! 🤲
           </p>

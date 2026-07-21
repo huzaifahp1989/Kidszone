@@ -20,7 +20,7 @@ export function BiWeeklyResetPopup({ pageKey }: BiWeeklyResetPopupProps) {
   const [periodIndex] = useState(() => getBiWeeklyPeriodIndex(Date.now()));
 
   const popupStorageKey = useMemo(() => {
-    return `kidszone-weekly-reset-popup:v4:${pageKey}:${periodIndex}`;
+    return `kidszone-weekly-reset-popup:v6:${pageKey}:${periodIndex}`;
   }, [pageKey, periodIndex]);
   const [open, setOpen] = useState(() => {
     if (typeof window === 'undefined') return false;
@@ -49,29 +49,47 @@ export function BiWeeklyResetPopup({ pageKey }: BiWeeklyResetPopupProps) {
           </button>
         </div>
         <div className="px-5 py-5 sm:px-6 sm:py-6 space-y-4 text-center">
-          <p className="text-sm font-bold uppercase tracking-wide text-[#0f766e]">
+          <p className="text-sm font-bold uppercase tracking-wide text-[#5b21b6]">
             Weekly 5 Activities Challenge
           </p>
-          <p className="text-[#6a422d] font-semibold">
+          <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-left">
+            <p className="text-sm font-bold text-slate-900 text-center">Weekly winners announcement</p>
+            <p className="mt-2 text-sm font-semibold leading-relaxed text-center">
+              Winners are picked at random from everyone who qualifies — not by who is #1 on the leaderboard.
+            </p>
+          </div>
+          <p className="text-sm text-[#5b21b6] font-semibold">
+            Contact number (WhatsApp):
+            {' '}
+            <a
+              href="https://wa.me/447404644610"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline"
+            >
+              07404644610
+            </a>
+          </p>
+          <p className="text-[#1e1b4b] font-semibold">
             Please note: weekly points are reset manually by admin.
           </p>
-          <p className="text-sm text-[#a1633a]">
+          <p className="text-sm text-[#475569]">
             Winners are chosen according to 5 completed activities on Kids Zone.
           </p>
-          <p className="text-sm text-[#0f766e] font-semibold">
+          <p className="text-sm text-[#5b21b6] font-semibold">
             Complete any 5 activities every week. It is not fixed to specific activity types.
           </p>
           <div className="flex justify-center gap-3">
             <button
               onClick={closePopup}
-              className="px-4 py-2 rounded-lg border border-[#e5c9a3]/40 text-[#6a422d] font-semibold hover:bg-[#f9f0e6]"
+              className="px-4 py-2 rounded-lg border border-[#c4b5fd]/40 text-[#1e1b4b] font-semibold hover:bg-[#ede9fe]"
             >
               Close
             </button>
             <Link
               href="/leaderboard"
               onClick={closePopup}
-              className="px-4 py-2 rounded-lg bg-gradient-to-r from-[#14b8a6] to-[#0d9488] text-white font-bold"
+              className="px-4 py-2 rounded-lg bg-gradient-to-r from-[#7c3aed] to-[#6d28d9] text-white font-bold"
             >
               View Leaderboard
             </Link>

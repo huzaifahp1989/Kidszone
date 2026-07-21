@@ -2,8 +2,9 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { CheckCircle2, Gift, Sparkles, Target } from 'lucide-react';
+import { CheckCircle2, Gift, Sparkles, Target, Users } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
+import { authJsonFetch, getAuthFetchHeaders } from '@/lib/auth-headers';
 
 type Mission = {
   key: string;
@@ -34,14 +35,20 @@ type MissionPayload = {
     claimedAt: string | null;
     claimedPoints: number;
   };
+  familyStreak?: {
+    familyEmail: string;
+    streak: number;
+    lastMissionDate: string | null;
+    creditedToday: boolean;
+  } | null;
 };
 
 const accentStyles: Record<string, { badge: string; panel: string; progress: string; link: string }> = {
   teal: {
-    badge: 'bg-[#f0fdfa] text-[#0d9488] border-[#14b8a6]/20',
-    panel: 'from-[#14b8a6]/12 to-white',
-    progress: 'from-[#14b8a6] to-[#0f766e]',
-    link: 'text-[#0d9488]',
+    badge: 'bg-[#f5f3ff] text-[#6d28d9] border-[#7c3aed]/20',
+    panel: 'from-[#7c3aed]/12 to-white',
+    progress: 'from-[#7c3aed] to-[#5b21b6]',
+    link: 'text-[#6d28d9]',
   },
   amber: {
     badge: 'bg-[#fffbeb] text-[#b45309] border-[#f59e0b]/20',
@@ -87,8 +94,10 @@ export default function DailyMissions() {
     const loadMissions = async () => {
       setLoading(true);
       try {
+        const headers = await getAuthFetchHeaders();
         const res = await fetch(`/api/kids-zone/daily-missions?userId=${user.id}`, {
           cache: 'no-store',
+          headers,
         });
         const data = await res.json();
         if (!res.ok) {
@@ -123,9 +132,8 @@ export default function DailyMissions() {
     setClaiming(true);
     setClaimMessage(null);
     try {
-      const res = await fetch('/api/kids-zone/daily-missions/claim', {
+      const res = await authJsonFetch('/api/kids-zone/daily-missions/claim', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId: user.id }),
       });
       const data = await res.json();
@@ -138,6 +146,7 @@ export default function DailyMissions() {
         if (!current) return current;
         return {
           ...current,
+          familyStreak: data?.familyStreak ?? current.familyStreak,
           reward: {
             ...current.reward,
             available: false,
@@ -172,12 +181,12 @@ export default function DailyMissions() {
 
   if (loading) {
     return (
-      <section className="bg-white rounded-2xl p-6 shadow-lg border border-[#e5c9a3]/20">
+      <section className="bg-white rounded-2xl p-6 shadow-lg border border-[#c4b5fd]/20">
         <div className="animate-pulse space-y-4">
           <div className="h-6 w-48 rounded bg-[#f3e7d8]" />
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="h-36 rounded-2xl bg-[#f9f0e6]" />
-            <div className="h-36 rounded-2xl bg-[#f9f0e6]" />
+            <div className="h-36 rounded-2xl bg-[#ede9fe]" />
+            <div className="h-36 rounded-2xl bg-[#ede9fe]" />
           </div>
         </div>
       </section>
@@ -189,30 +198,45 @@ export default function DailyMissions() {
   }
 
   return (
-    <section className="bg-white rounded-2xl p-6 shadow-lg border border-[#e5c9a3]/20 space-y-5">
+    <section className="bg-white rounded-2xl p-6 shadow-lg border border-[#c4b5fd]/20 space-y-5">
       <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <div>
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-[#f0fdfa] rounded-full border border-[#14b8a6]/20 text-sm font-semibold text-[#0d9488]">
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-[#f5f3ff] rounded-full border border-[#7c3aed]/20 text-sm font-semibold text-[#6d28d9]">
             <Sparkles size={16} />
             Daily Missions
           </div>
-          <h3 className="mt-3 text-2xl font-bold text-[#6a422d]">Today&apos;s Kids Zone Challenge</h3>
-          <p className="text-[#a1633a] text-sm mt-1">
-            Finish missions across quiz, games, tracker, and rewards to build a stronger learning habit.
+          <h3 className="mt-3 text-2xl font-bold text-[#1e1b4b]">Today&apos;s Kids Zone Challenge</h3>
+          <p className="text-[#475569] text-sm mt-1">
+            Finish missions across quiz, games, tracker, and rewards. Any sibling completing all missions keeps your family streak going!
           </p>
         </div>
 
-        <div className="rounded-2xl bg-[#fdf8f3] border border-[#e5c9a3]/30 px-4 py-3 min-w-[180px]">
-          <p className="text-xs uppercase tracking-[0.2em] text-[#a1633a]">Completed</p>
-          <div className="mt-1 flex items-center gap-2 text-[#6a422d]">
-            <Target size={18} className="text-[#14b8a6]" />
+        <div className="flex flex-col gap-3 sm:flex-row">
+          {payload.familyStreak ? (
+            <div className="rounded-2xl bg-[#fffbeb] border border-[#fbbf24]/30 px-4 py-3 min-w-[160px]">
+              <p className="text-xs uppercase tracking-[0.2em] text-[#b45309] flex items-center gap-1">
+                <Users size={14} />
+                Family streak
+              </p>
+              <p className="mt-1 text-2xl font-bold text-[#92400e]">{payload.familyStreak.streak} days</p>
+              <p className="text-xs text-[#a16207] mt-1">
+                {payload.familyStreak.creditedToday ? 'Active today!' : 'Complete all missions today'}
+              </p>
+            </div>
+          ) : null}
+
+          <div className="rounded-2xl bg-[#f5f3ff] border border-[#c4b5fd]/30 px-4 py-3 min-w-[180px]">
+          <p className="text-xs uppercase tracking-[0.2em] text-[#475569]">Completed</p>
+          <div className="mt-1 flex items-center gap-2 text-[#1e1b4b]">
+            <Target size={18} className="text-[#7c3aed]" />
             <span className="text-2xl font-bold">
               {payload.summary.completedCount}/{payload.summary.totalCount}
             </span>
           </div>
-          <p className="text-sm text-[#a1633a] mt-1">
+          <p className="text-sm text-[#475569] mt-1">
             {payload.summary.allCompleted ? 'All missions complete. Amazing work today.' : 'Keep going to finish the full set.'}
           </p>
+          </div>
         </div>
       </div>
 
@@ -234,7 +258,7 @@ export default function DailyMissions() {
               </p>
             ) : null}
             {claimMessage ? (
-              <p className="text-xs text-[#6a422d] mt-2">{claimMessage}</p>
+              <p className="text-xs text-[#1e1b4b] mt-2">{claimMessage}</p>
             ) : null}
           </div>
 
@@ -245,7 +269,7 @@ export default function DailyMissions() {
             className={`px-5 py-3 rounded-xl font-bold transition-all ${
               payload.reward.available && !claiming
                 ? 'bg-gradient-to-r from-[#f59e0b] to-[#d97706] text-white shadow-lg hover:shadow-xl hover:-translate-y-0.5'
-                : 'bg-white text-[#a1633a] border border-[#e5c9a3]/40 cursor-not-allowed'
+                : 'bg-white text-[#475569] border border-[#c4b5fd]/40 cursor-not-allowed'
             }`}
           >
             {claiming ? 'Claiming...' : payload.reward.claimed ? 'Bonus Claimed' : `Claim +${payload.reward.points}`}
@@ -262,7 +286,7 @@ export default function DailyMissions() {
           return (
             <div
               key={mission.key}
-              className={`rounded-2xl border border-[#e5c9a3]/20 bg-gradient-to-br ${styles.panel} p-5 shadow-sm`}
+              className={`rounded-2xl border border-[#c4b5fd]/20 bg-gradient-to-br ${styles.panel} p-5 shadow-sm`}
             >
               <div className="flex items-start justify-between gap-3">
                 <div className="flex items-center gap-3">
@@ -270,8 +294,8 @@ export default function DailyMissions() {
                     {mission.icon}
                   </div>
                   <div>
-                    <h4 className="font-bold text-[#6a422d]">{mission.title}</h4>
-                    <p className="text-sm text-[#a1633a] mt-1">{mission.description}</p>
+                    <h4 className="font-bold text-[#1e1b4b]">{mission.title}</h4>
+                    <p className="text-sm text-[#475569] mt-1">{mission.description}</p>
                   </div>
                 </div>
 
@@ -281,7 +305,7 @@ export default function DailyMissions() {
               </div>
 
               <div className="mt-4">
-                <div className="flex items-center justify-between text-sm text-[#6a422d] mb-2">
+                <div className="flex items-center justify-between text-sm text-[#1e1b4b] mb-2">
                   <span>
                     {displayProgress} of {mission.target} {mission.unit}
                   </span>

@@ -1,8 +1,9 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 
+import { POINTS_DAILY_CAP, resolvePointsToAward } from '@/lib/points-policy';
+
 const POINTS_PER_RECORDING = 30;
-const WEEKLY_POINTS_LIMIT = 400;
 
 export async function POST(req: Request) {
   try {
@@ -42,12 +43,14 @@ export async function POST(req: Request) {
 
     const todayStr = new Date().toISOString().slice(0, 10);
     const todayPoints = currentPointsRow?.last_earned_date === todayStr ? Number(currentPointsRow?.today_points || 0) : 0;
-    const dailyLimit = 100;
-    const weeklyRemaining = Math.max(0, WEEKLY_POINTS_LIMIT - Number(currentPointsRow?.weekly_points || 0));
-    const pointsToAward = Math.max(0, Math.min(POINTS_PER_RECORDING, dailyLimit - todayPoints, weeklyRemaining));
+    const pointsToAward = resolvePointsToAward(
+      POINTS_PER_RECORDING,
+      todayPoints,
+      true
+    );
 
     const totalPoints = Number(currentPointsRow?.total_points || 0) + pointsToAward;
-    const weeklyPoints = Math.min(WEEKLY_POINTS_LIMIT, Number(currentPointsRow?.weekly_points || 0) + pointsToAward);
+    const weeklyPoints = Number(currentPointsRow?.weekly_points || 0) + pointsToAward;
     const monthlyPoints = Number(currentPointsRow?.monthly_points || 0) + pointsToAward;
     const updatedTodayPoints = todayPoints + pointsToAward;
     const badges = Math.floor(totalPoints / 100);

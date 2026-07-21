@@ -53,6 +53,9 @@ const userMatchesSearch = (user: any, q: string) => {
   const searchableText = [
     user.name,
     user.email,
+    user.username,
+    user.family_email,
+    user.familyEmail,
     user.parentEmailNormalized,
     user.parent_email,
     user.parentEmail,
@@ -274,9 +277,14 @@ export async function GET(request: Request) {
         user.city,
         user.town,
         user.location,
+        user.city_name,
+        user.address_city,
         meta.city,
         meta.town,
-        meta.location
+        meta.location,
+        meta.cityName,
+        meta.addressCity,
+        meta.address_city
       );
 
       const normalizedAge = normalizeAge(
@@ -334,95 +342,185 @@ export async function POST(request: Request) {
 
   try {
     const body = await request.json();
-    const { name, email, password, points, weeklypoints, monthlypoints } = body;
+    const {
+      name,
+      email,
+      password,
+      username,
+      age,
+      city,
+      points,
+      weeklypoints,
+      monthlypoints,
+    } = body;
 
-    if (!name) {
+    const trimmedName = String(name || '').trim();
+    if (!trimmedName) {
       return NextResponse.json({ error: 'Name is required' }, { status: 400 });
     }
 
-    // Generate dummy credentials if not provided
-    const userEmail = email || `${name.toLowerCase().replace(/[^a-z0-9]/g, '')}_${Math.floor(Math.random() * 1000)}@temp.com`;
-    const userPassword = password || 'temp123456';
+    const { assertValidUsername, normalizeFamilyEmail, normalizeUsername } = await import(
+      '@/lib/family-accounts'
+    );
+
+    const emailNormalized = normalizeFamilyEmail(String(email || ''));
+    if (!emailNormalized || !emailNormalized.includes('@')) {
+      return NextResponse.json({ error: 'A valid email is required' }, { status: 400 });
+    }
+
+    const userPassword = String(password || '');
+    if (userPassword.length < 6) {
+      return NextResponse.json({ error: 'Password must be at least 6 characters' }, { status: 400 });
+    }
+
+    let normalizedUsername = '';
+    if (username) {
+      const check = assertValidUsername(String(username));
+      if (!check.ok) {
+        return NextResponse.json({ error: check.error }, { status: 400 });
+      }
+      normalizedUsername = check.username;
+
+      const takenRes = await supabaseAdmin
+        .from('users')
+        .select('uid')
+        .eq('username', normalizedUsername)
+        .maybeSingle();
+      if (takenRes.error && takenRes.error.code !== '42703' && !/family_email|username|column/i.test(takenRes.error.message || '')) {
+        console.warn('[admin/users] username check error:', takenRes.error.message);
+      } else if (takenRes.data?.uid) {
+        return NextResponse.json({ error: 'That username is already taken' }, { status: 409 });
+      }
+    } else {
+      // Derive a usable username from the name if admin skips it
+      const base = normalizeUsername(trimmedName).replace(/[^a-z0-9_]/g, '').slice(0, 16) || 'learner';
+      normalizedUsername = `${base}_${Math.floor(Math.random() * 900 + 100)}`;
+    }
+
+    const safeAge = normalizeAge(age) ?? 10;
+    const safeCity = typeof city === 'string' ? city.trim() : '';
+    const safePoints = Number(points || 0) || 0;
+    const safeWeekly = Number(weeklypoints || 0) || 0;
+    const safeMonthly = Number(monthlypoints || 0) || 0;
 
     // 1. Create Auth User
     const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
-      email: userEmail,
+      email: emailNormalized,
       password: userPassword,
       email_confirm: true,
-      user_metadata: { name }
+      user_metadata: {
+        name: trimmedName,
+        username: normalizedUsername,
+        family_email: emailNormalized,
+        age: safeAge,
+        city: safeCity || undefined,
+      },
     });
 
-    if (authError) throw authError;
+    if (authError) {
+      const msg = authError.message || 'Failed to create auth user';
+      if (/already|registered|exists/i.test(msg)) {
+        return NextResponse.json(
+          {
+            error:
+              'That email is already registered in Auth. Use a different email, or add a sibling from the family profile after signing in.',
+          },
+          { status: 409 }
+        );
+      }
+      throw authError;
+    }
     const userId = authData.user.id;
 
-    // 2. Check if profile exists (if trigger created it)
-    // Wait a brief moment for trigger
-    await new Promise(resolve => setTimeout(resolve, 500));
+    // 2. Upsert profile — strip optional columns if schema is older
+    await new Promise((resolve) => setTimeout(resolve, 300));
 
-    const { data: existingProfile } = await supabaseAdmin
-      .from('users')
-      .select('*')
-      .eq('uid', userId)
-      .single();
+    const isMissingColumnError = (err: { code?: string; message?: string } | null) => {
+      if (!err) return false;
+      if (err.code === '42703') return true;
+      return /Could not find the '[\w_]+' column|column .* does not exist/i.test(err.message || '');
+    };
 
-    let profile = existingProfile;
+    const baseProfile: Record<string, unknown> = {
+      uid: userId,
+      email: emailNormalized,
+      name: trimmedName,
+      age: safeAge,
+      role: 'kid',
+      points: safePoints,
+      weeklypoints: safeWeekly,
+      monthlypoints: safeMonthly,
+      level: 'Beginner',
+    };
 
-    if (!existingProfile) {
-      // 3. Create Profile manually if trigger didn't work
-      const { data: newProfile, error: profileError } = await supabaseAdmin
-        .from('users')
-        .insert({
-          uid: userId,
-          email: userEmail,
-          name: name,
-          points: points || 0,
-          weeklypoints: weeklypoints || 0,
-          monthlypoints: monthlypoints || 0,
-          role: 'kid' // Use kid role for standard learner accounts
-        })
-        .select()
-        .single();
-      
-      if (profileError) {
-        // Cleanup auth user if profile creation fails
-        await supabaseAdmin.auth.admin.deleteUser(userId);
-        throw profileError;
+    const attempts: Record<string, unknown>[] = [
+      {
+        ...baseProfile,
+        family_email: emailNormalized,
+        username: normalizedUsername,
+        ...(safeCity ? { city: safeCity } : {}),
+      },
+      {
+        ...baseProfile,
+        username: normalizedUsername,
+        ...(safeCity ? { city: safeCity } : {}),
+      },
+      {
+        ...baseProfile,
+        ...(safeCity ? { city: safeCity } : {}),
+      },
+      baseProfile,
+    ];
+
+    let profile: any = null;
+    let lastProfileError: { code?: string; message?: string } | null = null;
+
+    for (const payload of attempts) {
+      const res = await supabaseAdmin.from('users').upsert(payload, { onConflict: 'uid' }).select().single();
+      if (!res.error) {
+        profile = res.data;
+        lastProfileError = null;
+        break;
       }
-      profile = newProfile;
-    } else {
-      // Update points if provided and profile already existed (via trigger)
-      if (points !== undefined || weeklypoints !== undefined || monthlypoints !== undefined) {
-        const resolvedPoints = points ?? existingProfile.points ?? 0;
-        const resolvedWeekly = weeklypoints ?? existingProfile.weeklypoints ?? 0;
-        const resolvedMonthly = monthlypoints ?? existingProfile.monthlypoints ?? 0;
+      lastProfileError = res.error;
+      if (!isMissingColumnError(res.error)) break;
+    }
 
-        const { data: updatedProfile, error: updateError } = await supabaseAdmin
-          .from('users')
-          .update({
-            points: resolvedPoints,
-            weeklypoints: resolvedWeekly,
-            monthlypoints: resolvedMonthly
-          })
-          .eq('uid', userId)
-          .select()
-          .single();
-        
-        if (!updateError) profile = updatedProfile;
+    // Older schemas: city may be town/location
+    if (profile && safeCity) {
+      const hasCity =
+        Boolean(profile.city) || Boolean(profile.town) || Boolean(profile.location);
+      if (!hasCity) {
+        for (const col of ['city', 'town', 'location'] as const) {
+          const alt = await supabaseAdmin
+            .from('users')
+            .update({ [col]: safeCity })
+            .eq('uid', userId)
+            .select()
+            .single();
+          if (!alt.error) {
+            profile = alt.data;
+            break;
+          }
+          if (!isMissingColumnError(alt.error)) break;
+        }
       }
     }
 
-    // Always ensure leaderboard source row exists for admin-created users.
-    await syncUsersPointsSnapshot(
-      userId,
-      Number(profile?.points || 0),
-      Number(profile?.weeklypoints || 0),
-      Number(profile?.monthlypoints || 0)
-    );
+    if (lastProfileError || !profile) {
+      await supabaseAdmin.auth.admin.deleteUser(userId);
+      throw lastProfileError || new Error('Failed to create user profile');
+    }
 
-    return NextResponse.json({ user: profile, auth: { email: userEmail, password: userPassword } });
+    await syncUsersPointsSnapshot(userId, safePoints, safeWeekly, safeMonthly);
+
+    return NextResponse.json({
+      user: profile,
+      auth: { email: emailNormalized, username: normalizedUsername, password: userPassword },
+    });
   } catch (error: any) {
     console.error('Error creating user:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: error.message || 'Failed to create user' }, { status: 500 });
   }
 }
 
@@ -433,7 +531,20 @@ export async function PUT(request: Request) {
 
   try {
     const body = await request.json();
-    const { uid, name, points, weeklypoints, monthlypoints, password, winnerTick, city, age } = body;
+    const {
+      uid,
+      name,
+      points,
+      weeklypoints,
+      monthlypoints,
+      pointsDelta,
+      weeklypointsDelta,
+      monthlypointsDelta,
+      password,
+      winnerTick,
+      city,
+      age,
+    } = body;
 
     if (!uid) {
       return NextResponse.json({ error: 'User ID is required' }, { status: 400 });
@@ -441,9 +552,14 @@ export async function PUT(request: Request) {
 
     const updates: any = {};
     if (name !== undefined) updates.name = name;
-    if (points !== undefined) updates.points = points;
-    if (weeklypoints !== undefined) updates.weeklypoints = weeklypoints;
-    if (monthlypoints !== undefined) updates.monthlypoints = monthlypoints;
+    if (age !== undefined) {
+      const safeAge = normalizeAge(age);
+      updates.age = safeAge;
+    }
+    if (city !== undefined) {
+      const safeCity = typeof city === 'string' ? city.trim() : '';
+      updates.city = safeCity || null;
+    }
 
     // Ensure a users row exists for admin edits and point synchronization.
     let existingUser = null as any;
@@ -481,6 +597,26 @@ export async function PUT(request: Request) {
       existingUser = createdUser;
     }
 
+    const hasPointDelta = pointsDelta !== undefined || weeklypointsDelta !== undefined || monthlypointsDelta !== undefined;
+    if (
+      points !== undefined ||
+      weeklypoints !== undefined ||
+      monthlypoints !== undefined ||
+      hasPointDelta
+    ) {
+      const basePoints = Number(points !== undefined ? points : existingUser?.points || 0);
+      const baseWeekly = Number(weeklypoints !== undefined ? weeklypoints : existingUser?.weeklypoints || 0);
+      const baseMonthly = Number(monthlypoints !== undefined ? monthlypoints : existingUser?.monthlypoints || 0);
+
+      const safePointsDelta = Number(pointsDelta || 0);
+      const safeWeeklyDelta = Number(weeklypointsDelta || 0);
+      const safeMonthlyDelta = Number(monthlypointsDelta || 0);
+
+      updates.points = Math.max(0, basePoints + safePointsDelta);
+      updates.weeklypoints = Math.max(0, baseWeekly + safeWeeklyDelta);
+      updates.monthlypoints = Math.max(0, baseMonthly + safeMonthlyDelta);
+    }
+
     // Update profile fields if provided
     let updatedUser = null as any;
     if (Object.keys(updates).length > 0) {
@@ -490,8 +626,33 @@ export async function PUT(request: Request) {
         .eq('uid', uid)
         .select()
         .single();
-      if (error) throw error;
-      updatedUser = data;
+
+      if (error) {
+        // Older schemas may use town/location instead of city
+        if (error.code === '42703' && updates.city !== undefined) {
+          const { city: cityValue, ...rest } = updates;
+          let saved = false;
+          for (const col of ['town', 'location'] as const) {
+            const { data: altData, error: altErr } = await supabaseAdmin
+              .from('users')
+              .update({ ...rest, [col]: cityValue })
+              .eq('uid', uid)
+              .select()
+              .single();
+            if (!altErr) {
+              updatedUser = altData;
+              saved = true;
+              break;
+            }
+            if (altErr.code !== '42703') throw altErr;
+          }
+          if (!saved) throw error;
+        } else {
+          throw error;
+        }
+      } else {
+        updatedUser = data;
+      }
     } else {
       // If no profile updates, fetch current user to return
       const { data } = await supabaseAdmin

@@ -9,10 +9,13 @@ type KidProfile = {
   uid: string;
   role: 'kid' | 'admin' | string;
   name: string;
+  username?: string;
   age: number;
+  city?: string;
   madrasahName?: string;
   contactNumber?: string;
   email: string;
+  familyEmail?: string;
   points: number;
   weeklyPoints?: number;
   monthlyPoints?: number;
@@ -47,7 +50,10 @@ const AuthContext = createContext<AuthContextValue>({
   updateLocalProfile: () => {},
 });
 
-const DAILY_LIMIT = 100;
+import { POINTS_DAILY_CAP, resolveTodayPoints } from './points-policy';
+
+const POINTS_SELECT =
+  'total_points, weekly_points, monthly_points, today_points, last_earned_date, badges, level';
 
 const isPlaceholderName = (name: string | null | undefined): boolean => {
   if (!name) return true;
@@ -71,7 +77,7 @@ const getBestName = async (currentName: string | undefined | null, email: string
 };
 
 const mapProfile = (userRow: any, pointsRow?: any): KidProfile => {
-  const todayPoints = pointsRow?.today_points ?? 0;
+  const todayPoints = resolveTodayPoints(pointsRow?.today_points, pointsRow?.last_earned_date);
   const points = pointsRow?.total_points ?? userRow.points ?? 0;
   const weeklyPoints = pointsRow?.weekly_points ?? userRow.weeklyPoints ?? userRow.weeklypoints ?? 0;
   const monthlyPoints = pointsRow?.monthly_points ?? userRow.monthlyPoints ?? userRow.monthlypoints ?? 0;
@@ -83,15 +89,18 @@ const mapProfile = (userRow: any, pointsRow?: any): KidProfile => {
     uid: userRow.uid,
     role: userRow.role,
     name: userRow.name,
-    age: userRow.age,
+    username: userRow.username ? String(userRow.username) : undefined,
+    age: typeof userRow.age === 'number' ? userRow.age : Number(userRow.age) || 0,
+    city: String(userRow.city || userRow.town || userRow.location || '').trim() || undefined,
     madrasahName: userRow.madrasahName ?? userRow.madrasahname ?? userRow.madrasah_name,
     contactNumber: userRow.contactNumber ?? userRow.contactnumber ?? userRow.contact_number,
     email: userRow.email,
+    familyEmail: userRow.family_email ?? userRow.familyEmail ?? undefined,
     points,
     weeklyPoints,
     monthlyPoints,
     todayPoints,
-    dailyLimit: DAILY_LIMIT,
+    dailyLimit: POINTS_DAILY_CAP,
     badges,
     level,
     streak: userRow.streak || 0,
@@ -125,7 +134,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } else if (data) {
       const { data: pointsRow, error: pointsError } = await supabase
         .from('users_points')
-        .select('total_points, weekly_points, monthly_points, today_points, badges, level')
+        .select(POINTS_SELECT)
         .eq('user_id', user.id)
         .maybeSingle();
 
@@ -153,7 +162,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (refetched) {
           const { data: pointsRow, error: pointsError } = await supabase
             .from('users_points')
-            .select('total_points, weekly_points, monthly_points, today_points, badges, level')
+            .select(POINTS_SELECT)
             .eq('user_id', user.id)
             .maybeSingle();
 
@@ -264,7 +273,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 if (newData) {
                   const { data: pointsRow, error: pointsError } = await supabase
                     .from('users_points')
-                    .select('total_points, weekly_points, monthly_points, today_points, badges, level')
+                    .select(POINTS_SELECT)
                     .eq('user_id', u.id)
                     .maybeSingle();
                   
@@ -284,7 +293,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             } else if (data) {
               const { data: pointsRow, error: pointsError } = await supabase
                 .from('users_points')
-                .select('total_points, weekly_points, monthly_points, today_points, badges, level')
+                .select(POINTS_SELECT)
                 .eq('user_id', u.id)
                 .maybeSingle();
               
@@ -420,7 +429,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         // Clear state immediately for faster UI feedback
         setUser(null);
         setProfile(null);
-        
+
+        import('@/lib/onesignal').then((m) => m.oneSignalLogout()).catch(() => {});
+
         // Sign out from Supabase auth
         try {
           const { error } = await supabase.auth.signOut({ scope: 'local' });

@@ -1,7 +1,11 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
+import { guardDebugRoute } from '@/lib/debug-gate';
 
-export async function POST() {
+export async function POST(request: Request) {
+  const blocked = guardDebugRoute(request);
+  if (blocked) return blocked;
+
   try {
     // 1. Check if we have the service role key
     if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {

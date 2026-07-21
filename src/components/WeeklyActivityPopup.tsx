@@ -83,10 +83,10 @@ export function WeeklyActivityPopup({ userId }: WeeklyActivityPopupProps) {
       <div className="space-y-5">
         <div className={`rounded-2xl border p-5 text-center ${qualified ? 'border-amber-200 bg-amber-50' : 'border-teal-200 bg-teal-50'}`}>
           <p className="text-4xl mb-2">{qualified ? '⭐' : '🏆'}</p>
-          <p className="text-lg font-bold text-[#6a422d]">
+          <p className="text-lg font-bold text-[#1e1b4b]">
             {qualified ? 'Amazing! You completed all 5 weekly activities.' : `You have ${remaining} activit${remaining === 1 ? 'y' : 'ies'} left to complete this week.`}
           </p>
-          <p className="mt-2 text-sm text-[#a1633a]">
+          <p className="mt-2 text-sm text-[#475569]">
             {qualified ? 'You now have a star on the weekly leaderboard.' : 'Finish any 5 weekly activities to get a star on the weekly leaderboard.'}
           </p>
         </div>
@@ -97,12 +97,12 @@ export function WeeklyActivityPopup({ userId }: WeeklyActivityPopupProps) {
               const Icon = item.icon;
               const external = item.href.startsWith('http');
               const content = (
-                <div className="flex items-center justify-between rounded-xl border border-[#e5c9a3]/30 bg-white px-4 py-3">
-                  <div className="flex items-center gap-3 text-[#6a422d]">
+                <div className="flex items-center justify-between rounded-xl border border-[#c4b5fd]/30 bg-white px-4 py-3">
+                  <div className="flex items-center gap-3 text-[#1e1b4b]">
                     <Icon size={18} />
                     <span className="font-semibold">{item.label}</span>
                   </div>
-                  <span className="text-sm font-bold text-[#14b8a6]">Open →</span>
+                  <span className="text-sm font-bold text-[#7c3aed]">Open →</span>
                 </div>
               );
               return external ? (

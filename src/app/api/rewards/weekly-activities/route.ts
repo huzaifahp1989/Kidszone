@@ -1,28 +1,12 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
+import { isEligibleForWeeklyDraw } from '@/lib/leaderboard-rules';
+import {
+  getCurrentWeekRangeUtc,
+  getWeeklyActivityCountsForUsers,
+} from '@/lib/weekly-activity';
 
 export const dynamic = 'force-dynamic';
-
-function getCurrentWeekRangeUtc() {
-  const now = new Date();
-  const utcDay = now.getUTCDay();
-  const daysSinceMonday = (utcDay + 6) % 7;
-
-  const weekStart = new Date(Date.UTC(
-    now.getUTCFullYear(),
-    now.getUTCMonth(),
-    now.getUTCDate() - daysSinceMonday,
-    0,
-    0,
-    0,
-    0
-  ));
-
-  const weekEnd = new Date(weekStart);
-  weekEnd.setUTCDate(weekEnd.getUTCDate() + 7);
-
-  return { weekStartIso: weekStart.toISOString(), weekEndIso: weekEnd.toISOString() };
-}
 
 type WeeklyActivitySummary = {
   quizCount: number;
@@ -33,53 +17,28 @@ type WeeklyActivitySummary = {
 
 async function getWeeklyActivitySummary(userId: string): Promise<WeeklyActivitySummary> {
   const { weekStartIso, weekEndIso } = getCurrentWeekRangeUtc();
-
-  const [quizRes, gameRes, pledgeRes, recordingRes] = await Promise.all([
-    supabaseAdmin
-      .from('quiz_attempts')
-      .select('*', { count: 'exact', head: true })
-      .eq('user_id', userId)
-      .gte('completed_at', weekStartIso)
-      .lt('completed_at', weekEndIso),
-    supabaseAdmin
-      .from('game_progress')
-      .select('*', { count: 'exact', head: true })
-      .eq('uid', userId)
-      .gte('playedat', weekStartIso)
-      .lt('playedat', weekEndIso),
-    supabaseAdmin
-      .from('pledges')
-      .select('*', { count: 'exact', head: true })
-      .eq('user_id', userId)
-      .gte('created_at', weekStartIso)
-      .lt('created_at', weekEndIso),
-    supabaseAdmin
-      .from('recordings')
-      .select('*', { count: 'exact', head: true })
-      .eq('user_id', userId)
-      .gte('submitted_at', weekStartIso)
-      .lt('submitted_at', weekEndIso),
-  ]);
-
-  if (quizRes.error) throw new Error(quizRes.error.message);
-  if (gameRes.error) throw new Error(gameRes.error.message);
-  if (pledgeRes.error) throw new Error(pledgeRes.error.message);
-  if (recordingRes.error) throw new Error(recordingRes.error.message);
+  const counts = await getWeeklyActivityCountsForUsers([userId], weekStartIso, weekEndIso);
+  const summary = counts.get(userId) || {
+    quizCount: 0,
+    gameCount: 0,
+    pledgeCount: 0,
+    recordingCount: 0,
+    totalCount: 0,
+  };
 
   return {
-    quizCount: Number(quizRes.count || 0),
-    gameCount: Number(gameRes.count || 0),
-    pledgeCount: Number(pledgeRes.count || 0),
-    recordingCount: Number(recordingRes.count || 0),
+    quizCount: summary.quizCount,
+    gameCount: summary.gameCount,
+    pledgeCount: summary.pledgeCount,
+    recordingCount: summary.recordingCount,
   };
 }
 
-function buildWeeklyChallenge(summary: WeeklyActivitySummary) {
-  const total = 5;
-  const completed = Math.min(
-    total,
-    summary.quizCount + summary.gameCount + summary.pledgeCount + summary.recordingCount
-  );
+function buildWeeklyChallenge(summary: WeeklyActivitySummary, weeklyPoints = 0) {
+  const totalActivities =
+    summary.quizCount + summary.gameCount + summary.pledgeCount + summary.recordingCount;
+  const challengeTarget = 5;
+  const completedTowardChallenge = Math.min(challengeTarget, totalActivities);
 
   return {
     activities: {
@@ -88,10 +47,12 @@ function buildWeeklyChallenge(summary: WeeklyActivitySummary) {
       pledge: summary.pledgeCount,
       recording: summary.recordingCount,
     },
-    completed,
-    total,
-    remaining: Math.max(0, total - completed),
-    qualifiedForDraw: completed >= total,
+    completed: totalActivities,
+    completedTowardChallenge,
+    total: challengeTarget,
+    remaining: Math.max(0, challengeTarget - completedTowardChallenge),
+    qualifiedForDraw: isEligibleForWeeklyDraw(weeklyPoints),
+    weeklyPoints,
   };
 }
 
@@ -104,9 +65,16 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: 'Missing userId' }, { status: 400 });
     }
 
-    const summary = await getWeeklyActivitySummary(userId);
-    const challenge = buildWeeklyChallenge(summary);
     const { weekStartIso, weekEndIso } = getCurrentWeekRangeUtc();
+    const { data: pointsRow } = await supabaseAdmin
+      .from('users_points')
+      .select('weekly_points')
+      .eq('user_id', userId)
+      .maybeSingle();
+
+    const weeklyPoints = Number(pointsRow?.weekly_points || 0);
+    const summary = await getWeeklyActivitySummary(userId);
+    const challenge = buildWeeklyChallenge(summary, weeklyPoints);
 
     return NextResponse.json({
       ...challenge,

@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
+import { QUIZ_POINTS_PER_COMPLETION } from '@/lib/points-policy';
+import { getKidLevelTitle } from '@/lib/level-names';
 
 // POST /api/admin/send-reminder
 // Body: { userId: string } — sends a personalised progress email to that user.
@@ -9,21 +11,21 @@ const FROM_ADDRESS = 'Kids Zone <onboarding@resend.dev>';
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://islamic-kids-platform.vercel.app';
 
 function buildEmailHtml(name: string, points: number, weeklyPoints: number, level: string | number, streak: number) {
-  const levelLabel = level || 'Beginner';
+  const levelLabel = getKidLevelTitle(level);
   const motivational = getMotivationalMessage(points, weeklyPoints, streak);
   return `
 <!DOCTYPE html>
 <html lang="en">
 <head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" /></head>
-<body style="margin:0;padding:0;background:#fdf8f3;font-family:'Segoe UI',Arial,sans-serif;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background:#fdf8f3;padding:32px 0;">
+<body style="margin:0;padding:0;background:#f5f3ff;font-family:'Segoe UI',Arial,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f5f3ff;padding:32px 0;">
     <tr>
       <td align="center">
         <table width="600" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:20px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);max-width:600px;">
 
           <!-- Header -->
           <tr>
-            <td style="background:linear-gradient(135deg,#0d9488 0%,#14b8a6 50%,#0d9488 100%);padding:36px 32px;text-align:center;">
+            <td style="background:linear-gradient(135deg,#6d28d9 0%,#7c3aed 50%,#6d28d9 100%);padding:36px 32px;text-align:center;">
               <div style="font-size:48px;line-height:1;">🌙</div>
               <h1 style="color:#ffffff;margin:12px 0 6px;font-size:26px;font-weight:700;">Kids Zone</h1>
               <p style="color:rgba(255,255,255,0.85);margin:0;font-size:14px;">Islamic Learning Platform</p>
@@ -33,9 +35,9 @@ function buildEmailHtml(name: string, points: number, weeklyPoints: number, leve
           <!-- Greeting -->
           <tr>
             <td style="padding:32px 32px 0;">
-              <p style="font-size:18px;color:#6a422d;font-weight:700;margin:0 0 8px;">Assalamu Alaikum, ${escapeHtml(name)}! 👋</p>
-              <p style="font-size:15px;color:#a1633a;margin:0 0 24px;line-height:1.6;">
-                We miss you on Kids Zone! Here is a quick look at your Islamic learning journey so far.
+              <p style="font-size:18px;color:#1e1b4b;font-weight:700;margin:0 0 8px;">Assalamu Alaikum, ${escapeHtml(name)}! 👋</p>
+              <p style="font-size:15px;color:#475569;margin:0 0 24px;line-height:1.6;">
+                Your quiz is waiting! Here is a quick look at how you are doing on Kids Zone.
               </p>
             </td>
           </tr>
@@ -46,9 +48,9 @@ function buildEmailHtml(name: string, points: number, weeklyPoints: number, leve
               <table width="100%" cellpadding="0" cellspacing="0">
                 <tr>
                   <td width="33%" style="padding:4px;">
-                    <div style="background:#f0fdfa;border-radius:14px;padding:16px;text-align:center;border:1px solid rgba(20,184,166,0.2);">
-                      <div style="font-size:28px;font-weight:800;color:#0d9488;">${points.toLocaleString()}</div>
-                      <div style="font-size:12px;color:#0f766e;margin-top:4px;">⭐ Total Points</div>
+                    <div style="background:#f5f3ff;border-radius:14px;padding:16px;text-align:center;border:1px solid rgba(20,184,166,0.2);">
+                      <div style="font-size:28px;font-weight:800;color:#6d28d9;">${points.toLocaleString()}</div>
+                      <div style="font-size:12px;color:#5b21b6;margin-top:4px;">⭐ Total Points</div>
                     </div>
                   </td>
                   <td width="33%" style="padding:4px;">
@@ -65,8 +67,8 @@ function buildEmailHtml(name: string, points: number, weeklyPoints: number, leve
                   </td>
                 </tr>
               </table>
-              <div style="background:#f9f0e6;border-radius:14px;padding:14px;margin-top:8px;text-align:center;border:1px solid rgba(229,201,163,0.3);">
-                <span style="font-size:13px;color:#6a422d;">🏅 Current Level: <strong>${escapeHtml(String(levelLabel))}</strong></span>
+              <div style="background:#ede9fe;border-radius:14px;padding:14px;margin-top:8px;text-align:center;border:1px solid rgba(229,201,163,0.3);">
+                <span style="font-size:13px;color:#1e1b4b;">🏅 Current Level: <strong>${escapeHtml(String(levelLabel))}</strong></span>
               </div>
             </td>
           </tr>
@@ -74,7 +76,7 @@ function buildEmailHtml(name: string, points: number, weeklyPoints: number, leve
           <!-- Motivational Message -->
           <tr>
             <td style="padding:0 32px 24px;">
-              <div style="background:linear-gradient(135deg,#0f4c35 0%,#1a7a52 100%);border-radius:16px;padding:24px;color:#ffffff;">
+              <div style="background:linear-gradient(135deg,#4c1d95 0%,#7c3aed 100%);border-radius:16px;padding:24px;color:#ffffff;">
                 <p style="font-size:18px;font-weight:700;margin:0 0 10px;">💬 A Message For You</p>
                 <p style="font-size:14px;line-height:1.7;margin:0;color:rgba(255,255,255,0.9);">${motivational}</p>
               </div>
@@ -84,14 +86,14 @@ function buildEmailHtml(name: string, points: number, weeklyPoints: number, leve
           <!-- What to do next -->
           <tr>
             <td style="padding:0 32px 24px;">
-              <p style="font-size:16px;font-weight:700;color:#6a422d;margin:0 0 14px;">Continue Your Journey</p>
+              <p style="font-size:16px;font-weight:700;color:#1e1b4b;margin:0 0 14px;">Continue Your Journey</p>
               <table width="100%" cellpadding="0" cellspacing="0">
                 <tr>
                   <td style="padding:4px;">
-                    <a href="${SITE_URL}/quiz" style="display:block;background:#f0fdfa;border:1px solid rgba(20,184,166,0.25);border-radius:12px;padding:14px 16px;text-decoration:none;">
+                    <a href="${SITE_URL}/quiz" style="display:block;background:#f5f3ff;border:1px solid rgba(20,184,166,0.25);border-radius:12px;padding:14px 16px;text-decoration:none;">
                       <span style="font-size:20px;">🧠</span>
-                      <span style="display:inline-block;margin-left:10px;font-size:14px;font-weight:700;color:#0d9488;vertical-align:middle;">Take Today&apos;s Quiz</span>
-                      <span style="float:right;font-size:12px;color:#0f766e;font-weight:600;line-height:2;">+50 pts</span>
+                      <span style="display:inline-block;margin-left:10px;font-size:14px;font-weight:700;color:#6d28d9;vertical-align:middle;">Take Today&apos;s Quiz</span>
+                      <span style="float:right;font-size:12px;color:#5b21b6;font-weight:600;line-height:2;">+${QUIZ_POINTS_PER_COMPLETION} pts</span>
                     </a>
                   </td>
                 </tr>
@@ -120,10 +122,10 @@ function buildEmailHtml(name: string, points: number, weeklyPoints: number, leve
           <!-- CTA Button -->
           <tr>
             <td style="padding:0 32px 32px;text-align:center;">
-              <a href="${SITE_URL}" style="display:inline-block;background:linear-gradient(135deg,#14b8a6,#0d9488);color:#ffffff;font-size:16px;font-weight:700;padding:14px 40px;border-radius:14px;text-decoration:none;box-shadow:0 4px 14px rgba(13,148,136,0.4);">
+              <a href="${SITE_URL}" style="display:inline-block;background:linear-gradient(135deg,#7c3aed,#6d28d9);color:#ffffff;font-size:16px;font-weight:700;padding:14px 40px;border-radius:14px;text-decoration:none;box-shadow:0 4px 14px rgba(13,148,136,0.4);">
                 Continue Learning →
               </a>
-              <p style="font-size:12px;color:#a1633a;margin:20px 0 0;">
+              <p style="font-size:12px;color:#475569;margin:20px 0 0;">
                 New winner announced 1 May 2026 — take part at least 3 times a week to enter the draw!
               </p>
             </td>
@@ -131,8 +133,8 @@ function buildEmailHtml(name: string, points: number, weeklyPoints: number, leve
 
           <!-- Footer -->
           <tr>
-            <td style="background:#f9f0e6;padding:20px 32px;text-align:center;border-top:1px solid rgba(229,201,163,0.4);">
-              <p style="font-size:12px;color:#a1633a;margin:0;">© 2026 Kids Zone — Islam Media Central</p>
+            <td style="background:#ede9fe;padding:20px 32px;text-align:center;border-top:1px solid rgba(229,201,163,0.4);">
+              <p style="font-size:12px;color:#475569;margin:0;">© 2026 Kids Zone — Islam Media Central</p>
               <p style="font-size:11px;color:#c4956a;margin:6px 0 0;">This is an automated progress reminder. Keep learning!</p>
             </td>
           </tr>
@@ -157,18 +159,18 @@ function escapeHtml(str: string): string {
 
 function getMotivationalMessage(points: number, weeklyPoints: number, streak: number): string {
   if (streak >= 7) {
-    return `MashaAllah! You have been learning for ${streak} days in a row. Your dedication to gaining Islamic knowledge is truly inspiring. Keep up the incredible work — every day brings you closer to being a Young Scholar!`;
+    return `Wow — ${streak} days in a row! You are a Streak Master. Keep going and try a prophet story quiz or a game today!`;
   }
   if (weeklyPoints >= 100) {
-    return `You have earned ${weeklyPoints} points this week — that is excellent work! The Prophet ﷺ said: "Seeking knowledge is an obligation upon every Muslim." You are fulfilling that obligation and we are so proud of you!`;
+    return `You earned ${weeklyPoints} points this week — amazing! Can you finish today's quiz and get closer to 200 daily points?`;
   }
   if (points >= 500) {
-    return `SubhanAllah — you have earned over ${points.toLocaleString()} points on your learning journey! You are well on your way to becoming a Young Islamic Scholar. Every quiz, every pledge, and every game is building your knowledge and bringing blessings.`;
+    return `You have ${points.toLocaleString()} points — you are a Young Scholar! Play a game or log salah to keep your streak alive.`;
   }
   if (points > 0) {
-    return `Every point you earn is a step forward in your Islamic knowledge journey. You have already started — and that is the hardest part! Come back today, take a quiz, pledge Durood, and keep climbing the leaderboard. We believe in you!`;
+    return `Every quiz and game helps you learn. You still have activities left today — try the daily quiz for +${QUIZ_POINTS_PER_COMPLETION} points!`;
   }
-  return `Your Islamic learning journey is waiting for you on Kids Zone! Take a daily quiz, pledge Durood &amp; Zikr, and play games to earn points and climb the leaderboard. The Prophet ﷺ said: "Whoever treads a path in search of knowledge, Allah will make easy for them the path to Paradise." Let&apos;s start today!`;
+  return `Your learning adventure starts with one quiz! Sign in, take today's quiz, and start earning points. Little steps every day make a big difference!`;
 }
 
 export async function POST(req: Request) {
@@ -262,7 +264,7 @@ export async function POST(req: Request) {
           body: JSON.stringify({
             from: FROM_ADDRESS,
             to: [user.email!],
-            subject: `${name}, your Kids Zone learning update 📚`,
+            subject: `${name}, your quiz is waiting on Kids Zone! 📚`,
             html,
           }),
         });

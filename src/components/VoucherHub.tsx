@@ -30,7 +30,7 @@ type VoucherHubProps = {
 
 type DashboardState = VoucherDashboardResponse & { notifications: VoucherDashboardResponse['notifications'] };
 
-const currencyAccent = 'from-[#0f766e] via-[#0d9488] to-[#115e59]';
+const currencyAccent = 'from-[#5b21b6] via-[#6d28d9] to-[#5b21b6]';
 
 const buildDeviceFingerprint = () => {
   if (typeof window === 'undefined') return 'server';
@@ -182,7 +182,7 @@ export function VoucherHub({ initialView = 'offers' }: VoucherHubProps) {
   if (loading) {
     return (
       <section className="rounded-[2rem] border border-white/60 bg-white/80 p-8 shadow-[0_30px_80px_rgba(15,118,110,0.12)] backdrop-blur">
-        <div className="flex items-center gap-3 text-[#0f766e]">
+        <div className="flex items-center gap-3 text-[#5b21b6]">
           <Loader2 className="animate-spin" />
           <span className="font-bold">Loading voucher rewards...</span>
         </div>
@@ -196,7 +196,7 @@ export function VoucherHub({ initialView = 'offers' }: VoucherHubProps) {
         <div className="absolute inset-y-0 right-0 hidden w-1/3 bg-[linear-gradient(135deg,rgba(251,191,36,0.18),rgba(20,184,166,0.05))] md:block" />
         <div className="relative z-10 grid gap-6 md:grid-cols-[1.7fr_1fr] md:items-end">
           <div>
-            <div className="inline-flex items-center gap-2 rounded-full bg-white/85 px-3 py-1 text-xs font-black uppercase tracking-[0.24em] text-[#0f766e] shadow-sm">
+            <div className="inline-flex items-center gap-2 rounded-full bg-white/85 px-3 py-1 text-xs font-black uppercase tracking-[0.24em] text-[#5b21b6] shadow-sm">
               <Sparkles size={14} /> Islam Media Central Rewards
             </div>
             <h2 className="mt-4 max-w-3xl text-3xl font-black tracking-tight text-slate-900 md:text-4xl dark:text-white">
@@ -208,13 +208,13 @@ export function VoucherHub({ initialView = 'offers' }: VoucherHubProps) {
             <div className="mt-5 flex flex-wrap gap-3">
               <button
                 onClick={() => setView('offers')}
-                className="rounded-2xl bg-[#0f766e] px-5 py-3 text-sm font-black text-white shadow-lg shadow-emerald-900/15 transition hover:bg-[#115e59]"
+                className="rounded-2xl bg-[#5b21b6] px-5 py-3 text-sm font-black text-white shadow-lg shadow-emerald-900/15 transition hover:bg-[#5b21b6]"
               >
                 Browse offers
               </button>
               <Link
                 href="/my-vouchers"
-                className="rounded-2xl border border-[#99f6e4] bg-white px-5 py-3 text-sm font-black text-[#0f766e] transition hover:bg-[#f0fdfa]"
+                className="rounded-2xl border border-[#99f6e4] bg-white px-5 py-3 text-sm font-black text-[#5b21b6] transition hover:bg-[#f5f3ff]"
               >
                 Open My Vouchers
               </Link>
@@ -233,18 +233,18 @@ export function VoucherHub({ initialView = 'offers' }: VoucherHubProps) {
       </div>
 
       {error && <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">{error}</div>}
-      {actionMessage && <div className="rounded-2xl border border-[#99f6e4] bg-[#f0fdfa] px-4 py-3 text-sm font-semibold text-[#0f766e]">{actionMessage}</div>}
+      {actionMessage && <div className="rounded-2xl border border-[#99f6e4] bg-[#f5f3ff] px-4 py-3 text-sm font-semibold text-[#5b21b6]">{actionMessage}</div>}
 
       {notifications.length > 0 && (
         <div className="rounded-[1.8rem] border border-[#e2e8f0] bg-white/90 p-5 shadow-sm">
           <div className="flex items-center gap-2 text-slate-900">
-            <BellRing size={18} className="text-[#0f766e]" />
+            <BellRing size={18} className="text-[#5b21b6]" />
             <h3 className="text-lg font-black">Reward updates</h3>
           </div>
           <div className="mt-4 grid gap-3 md:grid-cols-3">
             {notifications.slice(0, 3).map((item) => (
               <div key={item.id} className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
-                <p className="text-xs font-black uppercase tracking-[0.18em] text-[#0f766e]">{item.type.replace(/_/g, ' ')}</p>
+                <p className="text-xs font-black uppercase tracking-[0.18em] text-[#5b21b6]">{item.type.replace(/_/g, ' ')}</p>
                 <p className="mt-2 font-bold text-slate-900">{item.title}</p>
                 <p className="mt-1 text-sm text-slate-600">{item.body}</p>
               </div>
@@ -328,7 +328,7 @@ export function VoucherHub({ initialView = 'offers' }: VoucherHubProps) {
                   )}
 
                   <div className="flex-1">
-                    <p className="text-sm font-black uppercase tracking-[0.18em] text-[#0f766e]">{offer.discountLabel || offer.discountType.replace('_', ' ')}</p>
+                    <p className="text-sm font-black uppercase tracking-[0.18em] text-[#5b21b6]">{offer.discountLabel || offer.discountType.replace('_', ' ')}</p>
                     {!offer.imageOnly && <p className="mt-2 text-sm leading-6 text-slate-600">{offer.description}</p>}
                   </div>
 
@@ -405,7 +405,7 @@ export function VoucherHub({ initialView = 'offers' }: VoucherHubProps) {
                           <div>
                             <p className="font-black text-slate-900">{item.voucherTitle}</p>
                             <p className="mt-1 text-sm text-slate-500">{item.businessName}</p>
-                            <p className="mt-3 text-xs font-black uppercase tracking-[0.18em] text-[#0f766e]">{item.voucherCode}</p>
+                            <p className="mt-3 text-xs font-black uppercase tracking-[0.18em] text-[#5b21b6]">{item.voucherCode}</p>
                           </div>
                           <div className="text-right text-xs text-slate-500">
                             <p>{item.status.replace(/_/g, ' ')}</p>
@@ -493,7 +493,7 @@ export function VoucherHub({ initialView = 'offers' }: VoucherHubProps) {
               <article key={item.id} className="overflow-hidden rounded-[1.8rem] border border-slate-200 bg-white shadow-sm">
                 <img src={item.imageUrl} alt={item.title} className="h-56 w-full object-cover" />
                 <div className="p-5">
-                  <p className="text-xs font-black uppercase tracking-[0.18em] text-[#0f766e]">{item.businessName}</p>
+                  <p className="text-xs font-black uppercase tracking-[0.18em] text-[#5b21b6]">{item.businessName}</p>
                   <h4 className="mt-2 text-lg font-black text-slate-900">{item.title}</h4>
                   <div className="mt-4 flex items-center justify-between text-sm text-slate-500">
                     <span>Expires {new Date(item.expiryDate).toLocaleDateString()}</span>
@@ -513,15 +513,15 @@ export function VoucherHub({ initialView = 'offers' }: VoucherHubProps) {
 
       <div className="grid gap-4 md:grid-cols-3">
         <div className="rounded-[1.8rem] border border-slate-200 bg-white p-5 shadow-sm">
-          <div className="flex items-center gap-2 text-slate-900"><Clock3 size={18} className="text-[#0f766e]" /><h4 className="font-black">24-hour live window</h4></div>
+          <div className="flex items-center gap-2 text-slate-900"><Clock3 size={18} className="text-[#5b21b6]" /><h4 className="font-black">24-hour live window</h4></div>
           <p className="mt-3 text-sm leading-6 text-slate-600">Every redeemed voucher activates with a secure one-time code and expires automatically 24 hours later.</p>
         </div>
         <div className="rounded-[1.8rem] border border-slate-200 bg-white p-5 shadow-sm">
-          <div className="flex items-center gap-2 text-slate-900"><QrCode size={18} className="text-[#0f766e]" /><h4 className="font-black">QR-ready checkout</h4></div>
+          <div className="flex items-center gap-2 text-slate-900"><QrCode size={18} className="text-[#5b21b6]" /><h4 className="font-black">QR-ready checkout</h4></div>
           <p className="mt-3 text-sm leading-6 text-slate-600">Each active code has a scan-friendly QR payload for quick verification at the counter or takeaway desk.</p>
         </div>
         <div className="rounded-[1.8rem] border border-slate-200 bg-white p-5 shadow-sm">
-          <div className="flex items-center gap-2 text-slate-900"><ShieldCheck size={18} className="text-[#0f766e]" /><h4 className="font-black">Anti-fraud checks</h4></div>
+          <div className="flex items-center gap-2 text-slate-900"><ShieldCheck size={18} className="text-[#5b21b6]" /><h4 className="font-black">Anti-fraud checks</h4></div>
           <p className="mt-3 text-sm leading-6 text-slate-600">The system tracks per-user limits, device fingerprints, automatic expiry, and admin approval states to reduce duplicate redemption attempts.</p>
         </div>
       </div>

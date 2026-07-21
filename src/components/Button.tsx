@@ -12,12 +12,12 @@ interface ButtonProps {
 }
 
 const variantClasses = {
-  primary: 'bg-gradient-to-r from-[#14b8a6] to-[#0d9488] text-white hover:from-[#0fb0a0] hover:to-[#0b8278] border border-white/30',
-  secondary: 'bg-gradient-to-r from-[#6366f1] to-[#4338ca] text-white hover:from-[#585de6] hover:to-[#3b30b8] border border-white/30',
-  success: 'bg-gradient-to-r from-[#22c55e] to-[#16a34a] text-white hover:from-[#1fb357] hover:to-[#15803d] border border-white/30',
-  danger: 'bg-gradient-to-r from-[#ef4444] to-[#dc2626] text-white hover:from-[#dc3e3e] hover:to-[#c72222] border border-white/30',
-  warning: 'bg-gradient-to-r from-[#fbbf24] to-[#f59e0b] text-[#6a422d] hover:from-[#f5b524] hover:to-[#df900a] border border-white/40',
-  outline: 'bg-white/85 border-2 border-[#e5c9a3] text-[#6a422d] hover:border-[#14b8a6] hover:bg-[#f0fdfa]',
+  primary: 'bg-gradient-to-r from-violet-500 to-violet-700 text-white hover:from-violet-400 hover:to-violet-600 border border-white/30',
+  secondary: 'bg-gradient-to-r from-indigo-500 to-indigo-700 text-white hover:from-indigo-400 hover:to-indigo-600 border border-white/30',
+  success: 'bg-gradient-to-r from-emerald-500 to-emerald-700 text-white hover:from-emerald-400 hover:to-emerald-600 border border-white/30',
+  danger: 'bg-gradient-to-r from-coral-400 to-coral-600 text-white hover:from-coral-300 hover:to-coral-500 border border-white/30',
+  warning: 'bg-gradient-to-r from-gold-400 to-gold-600 text-sand-900 hover:from-gold-300 hover:to-gold-500 border border-white/40',
+  outline: 'bg-white/90 border-2 border-sand-200 text-sand-800 hover:border-violet-400 hover:bg-violet-50/50',
 };
 
 const sizeClasses = {
@@ -48,7 +48,7 @@ export const Button: React.FC<ButtonProps> = ({
         ${variantClasses[variant]}
         ${sizeClasses[size]}
         rounded-3xl font-bold transition-all duration-200 transition-bouncy
-        shadow-[0_10px_18px_rgba(106,66,45,0.16)] hover:shadow-[0_14px_24px_rgba(106,66,45,0.2)] active:shadow-[0_6px_12px_rgba(106,66,45,0.15)] active:translate-y-1
+        shadow-card hover:shadow-panel active:shadow-sm active:translate-y-0.5
         interactive-focus touch-target
         ${disabled ? 'opacity-50 cursor-not-allowed shadow-none active:translate-y-0' : 'cursor-pointer'}
         ${className}

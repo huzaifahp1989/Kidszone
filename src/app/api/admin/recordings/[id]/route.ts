@@ -1,5 +1,6 @@
 import { NextResponse, NextRequest } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
+import { deleteObject, getReadableObjectUrl } from '@/lib/object-storage';
 
 export const dynamic = 'force-dynamic';
 
@@ -24,23 +25,11 @@ export async function GET(
       return NextResponse.json({ error: error.message }, { status: 404 });
     }
 
-    // Generate signed URL for audio
     if (data.audio_path) {
-      const { data: signedData, error: signedError } = await supabaseAdmin
-        .storage
-        .from('story-recordings') // Correct bucket name
-        .createSignedUrl(data.audio_path, 86400); // 24 hour expiry
-
-      if (!signedError && signedData) {
-        data.audio_url = signedData.signedUrl;
-      } else {
-        const { data: publicUrlData } = supabaseAdmin
-          .storage
-          .from('story-recordings')
-          .getPublicUrl(data.audio_path);
-        if (publicUrlData?.publicUrl) {
-          data.audio_url = publicUrlData.publicUrl;
-        }
+      try {
+        data.audio_url = await getReadableObjectUrl('story-recordings', data.audio_path, 86400);
+      } catch {
+        /* ignore */
       }
     }
 
@@ -68,16 +57,18 @@ export async function DELETE(
       return NextResponse.json({ error: 'Recording not found' }, { status: 404 });
     }
 
-    // 2. Delete file from storage
+    // 2. Delete file from storage (R2 and/or Supabase)
     if (recording.audio_path) {
-      const { error: storageError } = await supabaseAdmin
-        .storage
-        .from('story-recordings')
-        .remove([recording.audio_path]);
-
-      if (storageError) {
+      try {
+        await deleteObject('story-recordings', recording.audio_path);
+      } catch (storageError) {
         console.warn('Failed to delete audio file:', storageError);
-        // Continue to delete record anyway
+        // Also try legacy Supabase remove
+        try {
+          await supabaseAdmin.storage.from('story-recordings').remove([recording.audio_path]);
+        } catch {
+          /* ignore */
+        }
       }
     }
 

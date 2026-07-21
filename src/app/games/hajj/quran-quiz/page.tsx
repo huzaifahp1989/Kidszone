@@ -1,8 +1,9 @@
 'use client';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
-import { awardPoints as awardPointsRpc } from '@/lib/points-service';
+import { completeGameSession } from '@/lib/complete-game-session';
+import { ACTIVITY_BONUS_POINTS } from '@/lib/points-policy';
 import { useAuth } from '@/lib/auth-context';
 
 interface Question {
@@ -88,8 +89,10 @@ export default function HajjQuizGame() {
   const [answered, setAnswered] = useState<number | null>(null);
   const [showFact, setShowFact] = useState(false);
   const [shuffled, setShuffled] = useState<Question[]>([]);
+  const pointsAwardedRef = useRef(false);
 
   const startQuiz = () => {
+    pointsAwardedRef.current = false;
     const plays = parseInt(localStorage.getItem(getPlayKey()) || '0', 10);
     if (plays >= DAILY_LIMIT) { setGameState('limited'); return; }
     localStorage.setItem(getPlayKey(), String(plays + 1));
@@ -121,10 +124,15 @@ export default function HajjQuizGame() {
   };
 
   useEffect(() => {
-    if (gameState === 'complete' && user?.id) {
-      awardPointsRpc(Math.round(score / 10)).catch(() => {});
-    }
-  }, [gameState, user, score]);
+    if (gameState !== 'complete' || !user?.id || pointsAwardedRef.current) return;
+    pointsAwardedRef.current = true;
+    completeGameSession({
+      userId: user.id,
+      gameId: 'hajj-quiz',
+      gameTitle: 'Hajj Quiz',
+      trackCompetition: true,
+    }).catch(() => {});
+  }, [gameState, user]);
 
   const plays = typeof window !== 'undefined'
     ? parseInt(localStorage.getItem(getPlayKey()) || '0', 10)
@@ -196,7 +204,9 @@ export default function HajjQuizGame() {
               ? '👍 Great job! Keep learning!'
               : '📖 Keep studying and try again tomorrow!'}
           </p>
-          <p className="text-gray-400 text-sm mb-6">Points have been added to your account.</p>
+          <p className="text-gray-400 text-sm mb-6">
+            +{ACTIVITY_BONUS_POINTS} points added for completing the quiz!
+          </p>
           <button onClick={() => router.back()} className="bg-purple-600 text-white font-bold px-6 py-3 rounded-2xl hover:bg-purple-700">
             ← Back to Games
           </button>

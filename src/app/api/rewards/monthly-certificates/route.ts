@@ -12,6 +12,7 @@ type MonthlySummary = {
   gameSessions: number;
   pointsFromQuiz: number;
   pointsFromGames: number;
+  monthlyPoints: number;
   totalActivities: number;
   qualified: boolean;
 };
@@ -55,7 +56,7 @@ export async function GET(req: Request) {
     const oldestKey = monthKeys[monthKeys.length - 1];
     const oldestStart = new Date(`${oldestKey}-01T00:00:00.000Z`).toISOString();
 
-    const [userRes, quizRes, pledgeRes] = await Promise.all([
+    const [userRes, quizRes, pledgeRes, pointsRes] = await Promise.all([
       supabaseAdmin.from('users').select('uid, name, email').eq('uid', userId).maybeSingle(),
       supabaseAdmin
         .from('quiz_attempts')
@@ -67,6 +68,11 @@ export async function GET(req: Request) {
         .select('count, created_at')
         .eq('user_id', userId)
         .gte('created_at', oldestStart),
+      supabaseAdmin
+        .from('users_points')
+        .select('monthly_points')
+        .eq('user_id', userId)
+        .maybeSingle(),
     ]);
 
     // Prefer persisted monthly snapshots when available (includes historical backfill).
@@ -79,12 +85,13 @@ export async function GET(req: Request) {
       points_from_quiz: number;
       points_from_games: number;
       total_activities: number;
+      total_points: number;
       certificate_qualified: boolean;
     }> = [];
     try {
       const snapshotRes = await supabaseAdmin
         .from('user_monthly_progress')
-        .select('month_start, quiz_attempts, pledge_logs, pledge_recitations, game_sessions, points_from_quiz, points_from_games, total_activities, certificate_qualified')
+        .select('month_start, quiz_attempts, pledge_logs, pledge_recitations, game_sessions, points_from_quiz, points_from_games, total_activities, total_points, certificate_qualified')
         .eq('user_id', userId)
         .gte('month_start', `${oldestKey}-01`)
         .order('month_start', { ascending: false });
@@ -133,6 +140,7 @@ export async function GET(req: Request) {
         gameSessions: 0,
         pointsFromQuiz: 0,
         pointsFromGames: 0,
+        monthlyPoints: 0,
         totalActivities: 0,
         qualified: false,
       });
@@ -152,6 +160,7 @@ export async function GET(req: Request) {
         target.gameSessions = Number(row.game_sessions || 0);
         target.pointsFromQuiz = Number(row.points_from_quiz || 0);
         target.pointsFromGames = Number(row.points_from_games || 0);
+        target.monthlyPoints = Number(row.total_points || 0) || target.pointsFromQuiz + target.pointsFromGames;
         target.totalActivities = Number(row.total_activities || 0);
         target.qualified = Boolean(row.certificate_qualified);
       }
@@ -215,8 +224,21 @@ export async function GET(req: Request) {
         target.pointsFromQuiz = live.pointsFromQuiz;
         target.pointsFromGames = live.pointsFromGames;
         target.totalActivities = live.quizAttempts + live.pledgeLogs + live.gameSessions;
+        target.monthlyPoints = live.pointsFromQuiz + live.pointsFromGames;
         target.qualified = target.totalActivities >= 3;
       }
+    }
+
+    const liveMonthlyPoints = Number(pointsRes.data?.monthly_points ?? 0);
+    const currentTarget = byMonth.get(currentMonthKey);
+    if (currentTarget && liveMonthlyPoints > 0) {
+      currentTarget.monthlyPoints = Math.max(currentTarget.monthlyPoints, liveMonthlyPoints);
+    }
+
+    for (const key of monthKeys) {
+      const target = byMonth.get(key);
+      if (!target || target.monthlyPoints > 0) continue;
+      target.monthlyPoints = target.pointsFromQuiz + target.pointsFromGames;
     }
 
     const certificates = monthKeys

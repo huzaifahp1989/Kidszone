@@ -26,8 +26,26 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
 ```bash
 SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key  # For admin operations
 RESEND_API_KEY=your_resend_api_key                      # For email functionality
-NEXT_PUBLIC_APP_URL=https://your-app.vercel.app         # Your deployed app URL
+NEXT_PUBLIC_APP_URL=https://islamic-kids-platform.vercel.app  # Required for Stripe checkout redirects
 ```
+
+### Stripe (Kids Sadaqah online payments)
+
+Add these in Vercel → Project → Settings → Environment Variables:
+
+```bash
+STRIPE_SECRET_KEY=sk_test_...                           # Stripe Dashboard → Developers → API keys
+NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_...          # Optional, if you add client-side Stripe later
+NEXT_PUBLIC_APP_URL=https://islamic-kids-platform.vercel.app
+```
+
+**Webhook:** Stripe webhooks should **not** point at Vercel for this project. Use the Supabase Edge Function instead:
+
+```text
+https://jlqrbbqsuksncrxjcmbc.supabase.co/functions/v1/stripe-webhook
+```
+
+Set `STRIPE_WEBHOOK_SECRET` in **Supabase secrets**, not Vercel. See `SETUP_STRIPE_WEBHOOK.md`.
 
 ## Step 2: Supabase Configuration
 
@@ -52,6 +70,17 @@ CREATE POLICY "Users can view their own profile" ON users
 CREATE POLICY "Users can update their own profile" ON users
   FOR UPDATE USING (auth.uid() = uid);
 ```
+
+### SQL migration run order
+
+Apply migrations in `supabase/migrations/` in filename order (oldest first). Critical migrations for current features:
+
+1. All existing dated migrations through `20260707_*`
+2. **`20260708_family_usernames.sql`** — family email login, unique usernames, updated `handle_new_user` trigger (required for sibling accounts)
+
+You can apply via Supabase CLI (`supabase db push`) or paste each file into the Supabase SQL editor. The root `SETUP_FAMILY_USERNAMES.sql` is kept in sync with the migration file.
+
+After applying family usernames migration, verify: signup with username + family email, sign-in with email or username, add sibling from Profile.
 
 ## Step 3: Vercel Deployment
 

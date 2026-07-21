@@ -11,6 +11,7 @@ import {
   shuffleQuestions,
   type MasjidAlAqsaQuestion,
 } from '@/lib/masjid-al-aqsa-competition';
+import { trackCompetitionJoined } from '@/lib/analytics';
 
 type LeaderboardEntry = {
   rank: number;
@@ -121,6 +122,7 @@ export default function MasjidAlAqsaCompetitionPage() {
     setStartedAt(Date.now());
     setTimeLeft(MASJID_AL_AQSA_TIMER_SECONDS);
     setPhase('quiz');
+    trackCompetitionJoined({ competition: 'masjid-al-aqsa' });
   };
 
   const setAnswerForCurrent = (value: string) => {

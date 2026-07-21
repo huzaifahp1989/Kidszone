@@ -2,10 +2,12 @@
 
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '@/lib/auth-context';
-import { Navbar, BiWeeklyResetPopup, Button, WeeklyActivitiesProgress } from '@/components';
-import { Trophy, Star, Award, Lock, Crown, Mic, Sparkles } from 'lucide-react';
+import { BiWeeklyResetPopup, Button, WeeklyActivitiesProgress } from '@/components';
+import { Trophy, Star, Award, Lock, Crown, Mic, Sparkles, CheckCircle2, MessageCircle, CalendarDays } from 'lucide-react';
 import Link from 'next/link';
 import { SurveyPopup } from '@/components';
+import { SpinWheel } from '@/components/SpinWheel';
+import { WonPrizeVouchers } from '@/components/WonPrizeVouchers';
 
 type MonthlyCertificate = {
   key: string;
@@ -16,19 +18,52 @@ type MonthlyCertificate = {
   pledgeLogs: number;
   pledgeRecitations: number;
   gameSessions: number;
+  pointsFromQuiz: number;
+  pointsFromGames: number;
+  monthlyPoints: number;
   totalActivities: number;
   qualified: boolean;
   certificateTitle: string | null;
   certificateId: string | null;
 };
 
+type FeatureLabWeeklyData = {
+  week?: {
+    startDate: string;
+    endDate: string;
+  };
+  summary?: {
+    activeDays: number;
+    totalGoodDeeds: number;
+    challengeDays: number;
+  };
+  days?: Array<{
+    date: string;
+    goodDeedsCount: number;
+    challengeId: string | null;
+    challengeTitle: string | null;
+  }>;
+};
+
+type SeerahProgressData = {
+  completionCount: number;
+  passedCount: number;
+  allCompleted: boolean;
+  allPassed: boolean;
+  certificate: { id: string } | null;
+};
+
 export default function RewardsPage() {
   const { profile, loading, user } = useAuth() as any;
   const [mounted, setMounted] = useState(false);
+  const [activeTab, setActiveTab] = useState<'today' | 'week' | 'prizes'>('today');
   const [certificates, setCertificates] = useState<MonthlyCertificate[]>([]);
   const [certLoading, setCertLoading] = useState(false);
   const [weeklyQuizAttempts, setWeeklyQuizAttempts] = useState(0);
   const [weeklyQuizLoading, setWeeklyQuizLoading] = useState(false);
+  const [featureWeek, setFeatureWeek] = useState<FeatureLabWeeklyData | null>(null);
+  const [featureWeekLoading, setFeatureWeekLoading] = useState(false);
+  const [seerahProgress, setSeerahProgress] = useState<SeerahProgressData | null>(null);
 
   useEffect(() => {
     setMounted(true);
@@ -60,6 +95,33 @@ export default function RewardsPage() {
   }, [user?.id]);
 
   useEffect(() => {
+    const loadFeatureLabWeek = async () => {
+      if (!user?.id) {
+        setFeatureWeek(null);
+        return;
+      }
+
+      setFeatureWeekLoading(true);
+      try {
+        const res = await fetch(`/api/kids-zone/feature-lab/weekly?userId=${user.id}`, {
+          cache: 'no-store',
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          throw new Error(data?.error || 'Failed to load weekly feature progress');
+        }
+        setFeatureWeek(data);
+      } catch {
+        setFeatureWeek(null);
+      } finally {
+        setFeatureWeekLoading(false);
+      }
+    };
+
+    loadFeatureLabWeek();
+  }, [user?.id]);
+
+  useEffect(() => {
     const loadWeeklyQuizAttempts = async () => {
       if (!user?.id) {
         setWeeklyQuizAttempts(0);
@@ -88,12 +150,41 @@ export default function RewardsPage() {
     loadWeeklyQuizAttempts();
   }, [user?.id]);
 
+  useEffect(() => {
+    const loadSeerahProgress = async () => {
+      if (!user?.id) {
+        setSeerahProgress(null);
+        return;
+      }
+      try {
+        const res = await fetch(`/api/seerah/progress?userId=${encodeURIComponent(user.id)}`, {
+          cache: 'no-store',
+        });
+        const data = await res.json();
+        if (!res.ok || data?.setupRequired) {
+          setSeerahProgress(null);
+          return;
+        }
+        setSeerahProgress({
+          completionCount: Number(data?.completionCount || 0),
+          passedCount: Number(data?.passedCount || 0),
+          allCompleted: Boolean(data?.allCompleted),
+          allPassed: Boolean(data?.allPassed),
+          certificate: data?.certificate || null,
+        });
+      } catch {
+        setSeerahProgress(null);
+      }
+    };
+
+    loadSeerahProgress();
+  }, [user?.id]);
+
   if (!mounted || loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-islamic-light to-white">
+      <div className="page-inner">
         <BiWeeklyResetPopup pageKey="rewards" />
-        <Navbar />
-        <div className="flex items-center justify-center h-[80vh]">
+        <div className="flex h-[60vh] items-center justify-center">
           <div className="animate-pulse text-xl text-islamic-blue">Loading Rewards...</div>
         </div>
       </div>
@@ -104,6 +195,13 @@ export default function RewardsPage() {
   const badgeCount = Number(profile?.badges ?? 0);
   const streakCount = Number(profile?.streak ?? 0);
   const unlockedCertificates = certificates.filter((cert) => cert.qualified).length;
+  const currentMonthKey = `${new Date().getUTCFullYear()}-${String(new Date().getUTCMonth() + 1).padStart(2, '0')}`;
+  const currentMonthRecord = certificates.find((cert) => cert.key === currentMonthKey);
+  const currentMonthPoints = Math.max(
+    Number(currentMonthRecord?.monthlyPoints ?? 0),
+    Number(profile?.monthlyPoints ?? 0)
+  );
+  const monthsWithPoints = certificates.filter((cert) => Number(cert.monthlyPoints || 0) > 0);
   const pointsPerBadge = 100;
   const nextBadgePoints = (badgeCount + 1) * pointsPerBadge;
   const pointsToNext = Math.max(0, nextBadgePoints - totalPoints);
@@ -174,16 +272,15 @@ export default function RewardsPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-rose-50 to-white">
+    <div className="page-inner">
       <SurveyPopup />
       <BiWeeklyResetPopup pageKey="rewards" />
-      <Navbar />
 
-      <main className="max-w-4xl mx-auto px-4 py-8">
+      <main className="mx-auto max-w-4xl">
         <section className="mb-6 rounded-3xl border border-slate-200 bg-white/80 p-5 shadow-sm">
           <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
             <div>
-              <p className="text-xs font-black uppercase tracking-[0.18em] text-[#0f766e]">Kids Zone Progress</p>
+              <p className="text-xs font-black uppercase tracking-[0.18em] text-[#5b21b6]">Kids Zone Progress</p>
               <h2 className="mt-2 text-2xl font-black text-slate-900">Points, badges, and competitions</h2>
               <p className="mt-1 text-sm text-slate-600">Earn points through quizzes, games, and activities. Check your badges, level progress, and monthly certificates below.</p>
             </div>
@@ -198,16 +295,169 @@ export default function RewardsPage() {
           </div>
         </section>
 
-        <section className="mb-4 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-center">
-          <p className="text-amber-900 font-bold">Weekly points are capped at 400 and reset manually by admin.</p>
-          <p className="text-amber-800 text-sm mt-1">Accounts above 400 are normalized to 300 so there is still 100 points to achieve during the week.</p>
+        <div className="mb-6 flex flex-wrap gap-2 rounded-2xl border border-slate-200 bg-white p-2">
+          {([
+            { id: 'today' as const, label: 'Today' },
+            { id: 'week' as const, label: 'This week' },
+            { id: 'prizes' as const, label: 'My prizes' },
+          ]).map((tab) => (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => setActiveTab(tab.id)}
+              className={`flex-1 rounded-xl px-4 py-3 text-sm font-bold transition touch-target ${
+                activeTab === tab.id
+                  ? 'bg-violet-600 text-white shadow'
+                  : 'bg-slate-50 text-slate-700 hover:bg-violet-50'
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+
+        {activeTab === 'today' && (
+          <>
+        <WonPrizeVouchers />
+
+        <section className="mb-6">
+          <SpinWheel />
         </section>
-        <section className="mb-6 rounded-2xl border border-[#14b8a6]/30 bg-[#ecfdf5] p-4 text-center">
-          <p className="text-[#0f766e] font-bold">Complete any 5 activities every week to finish your weekly challenge.</p>
+
+        <Link href="/" className="mb-6 flex items-center justify-between gap-4 rounded-2xl border-2 border-violet-200 bg-violet-50 px-5 py-4 shadow-sm hover:border-violet-300 transition">
+          <div>
+            <p className="font-extrabold text-violet-900">Daily missions</p>
+            <p className="text-sm text-violet-700">Complete today&apos;s tasks on Home for bonus points.</p>
+          </div>
+          <span className="shrink-0 rounded-xl bg-violet-600 px-4 py-2 text-sm font-bold text-white">Go Home →</span>
+        </Link>
+          </>
+        )}
+
+        {activeTab === 'week' && (
+          <>
+        <section className="mb-6 rounded-2xl border border-[#7c3aed]/30 bg-[#ecfdf5] p-4 text-center">
+          <p className="text-[#5b21b6] font-bold">Complete any 5 activities every week to finish your weekly challenge.</p>
         </section>
         <WeeklyActivitiesProgress />
 
-        <section className="mb-6 rounded-3xl border border-teal-200 bg-gradient-to-br from-teal-50 via-white to-emerald-50 p-6 shadow-sm">
+        <section className="mb-6 rounded-2xl border border-violet-200 bg-violet-50 p-4 text-center">
+          <p className="font-bold text-violet-900">Climb the leaderboard by being active every day (Sat–Fri).</p>
+          <Link href="/leaderboard" className="mt-3 inline-flex rounded-xl bg-violet-600 px-4 py-2 text-sm font-bold text-white hover:bg-violet-500">
+            View leaderboard →
+          </Link>
+        </section>
+
+        <section className="mb-6 rounded-3xl border border-violet-200 bg-gradient-to-br from-violet-50 via-white to-fuchsia-50 p-6 shadow-sm">
+          <div className="flex items-center gap-2 mb-4">
+            <CalendarDays className="text-violet-600" />
+            <h3 className="text-xl font-bold text-gray-800">This month&apos;s points</h3>
+          </div>
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="text-4xl font-black text-violet-700">{certLoading ? '…' : currentMonthPoints}</p>
+              <p className="mt-1 text-sm text-gray-600">
+                {currentMonthRecord?.label || 'Current month'} — quiz, games, and more
+              </p>
+            </div>
+            <Link
+              href="/leaderboard"
+              className="inline-flex items-center justify-center rounded-xl border border-violet-300 bg-white px-4 py-2 text-sm font-bold text-violet-800 hover:bg-violet-50"
+            >
+              Monthly leaderboard →
+            </Link>
+          </div>
+        </section>
+
+        <section className="mb-6 rounded-3xl border border-indigo-200 bg-gradient-to-br from-indigo-50 via-white to-cyan-50 p-6 shadow-sm">
+          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div>
+              <p className="text-xs font-black uppercase tracking-[0.18em] text-amber-700">Seerah Course</p>
+              <h3 className="mt-2 text-2xl font-black text-amber-950">Seerah of Prophet Muhammad ﷺ</h3>
+              <p className="mt-1 text-sm text-amber-800">
+                Study 5 chapters, complete one typed quiz per chapter, and unlock your digital completion certificate.
+              </p>
+              <p className="mt-2 text-sm font-semibold text-amber-900">
+                Progress: {seerahProgress?.completionCount || 0}/5 completed • Passed: {seerahProgress?.passedCount || 0}/5
+              </p>
+            </div>
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <Link href="/seerah" className="inline-flex items-center justify-center rounded-xl bg-amber-600 px-4 py-2 text-sm font-bold text-white hover:bg-amber-500">
+                Open Seerah Course
+              </Link>
+              {seerahProgress?.certificate && user?.id ? (
+                <a
+                  href={`/api/seerah/certificate?userId=${encodeURIComponent(user.id)}`}
+                  className="inline-flex items-center justify-center rounded-xl border border-amber-300 bg-white px-4 py-2 text-sm font-bold text-amber-800 hover:bg-amber-50"
+                >
+                  Download Certificate
+                </a>
+              ) : null}
+            </div>
+          </div>
+        </section>
+
+        <section className="mb-6 rounded-3xl border border-indigo-200 bg-gradient-to-br from-indigo-50 via-white to-cyan-50 p-6 shadow-sm">
+          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div>
+              <p className="text-xs font-black uppercase tracking-[0.18em] text-indigo-700">Feature Lab Weekly Summary</p>
+              <h3 className="mt-2 text-xl font-black text-indigo-950">Good Deeds and Mystery Challenges</h3>
+              <p className="mt-1 text-sm text-indigo-700">Track your last 7 days from the Kids Zone Feature Lab cards on the home page.</p>
+            </div>
+            <Link href="/" className="inline-flex items-center justify-center rounded-xl bg-indigo-600 px-4 py-2 text-sm font-bold text-white hover:bg-indigo-500">
+              Open Kids Zone Home
+            </Link>
+          </div>
+
+          <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div className="rounded-xl border border-indigo-100 bg-white p-3">
+              <p className="text-xs uppercase tracking-[0.14em] text-indigo-500">Active Days</p>
+              <p className="mt-1 text-2xl font-black text-indigo-900">{featureWeekLoading ? '...' : featureWeek?.summary?.activeDays ?? 0}</p>
+            </div>
+            <div className="rounded-xl border border-indigo-100 bg-white p-3">
+              <p className="text-xs uppercase tracking-[0.14em] text-indigo-500">Good Deeds</p>
+              <p className="mt-1 text-2xl font-black text-indigo-900">{featureWeekLoading ? '...' : featureWeek?.summary?.totalGoodDeeds ?? 0}</p>
+            </div>
+            <div className="rounded-xl border border-indigo-100 bg-white p-3">
+              <p className="text-xs uppercase tracking-[0.14em] text-indigo-500">Challenge Days</p>
+              <p className="mt-1 text-2xl font-black text-indigo-900">{featureWeekLoading ? '...' : featureWeek?.summary?.challengeDays ?? 0}</p>
+            </div>
+          </div>
+
+          {(featureWeek?.days?.length || 0) > 0 ? (
+            <div className="mt-4 rounded-xl border border-indigo-100 bg-white overflow-hidden">
+              <table className="w-full text-sm">
+                <thead className="bg-indigo-50">
+                  <tr>
+                    <th className="px-3 py-2 text-left text-indigo-700">Date</th>
+                    <th className="px-3 py-2 text-left text-indigo-700">Good Deeds</th>
+                    <th className="px-3 py-2 text-left text-indigo-700">Challenge</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(featureWeek?.days || []).map((row) => (
+                    <tr key={row.date} className="border-t border-indigo-50">
+                      <td className="px-3 py-2 font-semibold text-slate-800">{row.date}</td>
+                      <td className="px-3 py-2 text-slate-700">{row.goodDeedsCount}</td>
+                      <td className="px-3 py-2 text-slate-700">{row.challengeTitle || row.challengeId || '-'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <div className="mt-4 rounded-xl border border-indigo-100 bg-white px-4 py-3 text-sm text-indigo-700 inline-flex items-center gap-2">
+              <CheckCircle2 size={16} />
+              No feature-lab activity yet this week. Visit Home and start today.
+            </div>
+          )}
+        </section>
+          </>
+        )}
+
+        {activeTab === 'prizes' && (
+          <>
+        <section className="mb-6 rounded-3xl border border-amber-200 bg-gradient-to-br from-amber-50 via-white to-yellow-50 p-6 shadow-sm">
           <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
             <div className="max-w-2xl">
               <div className="inline-flex items-center gap-2 rounded-full bg-teal-100 px-3 py-1 text-xs font-bold uppercase tracking-[0.18em] text-teal-800">
@@ -256,15 +506,15 @@ export default function RewardsPage() {
           </div>
         </section>
 
-        <Link href="/tasks" className="mb-6 flex items-center justify-between gap-4 rounded-2xl border-2 border-[#14b8a6]/40 bg-gradient-to-r from-[#f0fdfa] to-[#ecfdf5] px-5 py-4 shadow-sm hover:border-[#14b8a6]/70 hover:shadow-md transition">
+        <Link href="/tasks" className="mb-6 flex items-center justify-between gap-4 rounded-2xl border-2 border-[#7c3aed]/40 bg-gradient-to-r from-[#f5f3ff] to-[#ecfdf5] px-5 py-4 shadow-sm hover:border-[#7c3aed]/70 hover:shadow-md transition">
           <div className="flex items-center gap-3">
             <span className="text-3xl">📋</span>
             <div>
-              <p className="font-extrabold text-[#0f766e] text-base md:text-lg">Check the Tasks page to gain more points</p>
-              <p className="text-sm text-[#0d9488]">Record stories, pledge Durood &amp; Zikr, play games and invite friends</p>
+              <p className="font-extrabold text-[#5b21b6] text-base md:text-lg">Check the Tasks page to gain more points</p>
+              <p className="text-sm text-[#6d28d9]">Record stories, pledge Durood &amp; Zikr, play games and invite friends</p>
             </div>
           </div>
-          <span className="shrink-0 rounded-xl bg-[#14b8a6] px-4 py-2 text-sm font-bold text-white">Go to Tasks →</span>
+          <span className="shrink-0 rounded-xl bg-[#7c3aed] px-4 py-2 text-sm font-bold text-white">Go to Tasks →</span>
         </Link>
 
         <section className="mb-8 grid gap-6">
@@ -349,12 +599,14 @@ export default function RewardsPage() {
 
         <div className="mb-10 text-center">
           <a
-            href="https://chat.whatsapp.com/E7bJY8Hz5lEEDscBXKtsSM?mode=gi_t"
+            href="https://chat.whatsapp.com/BxmFkYb0b4CCMSQwLQdF4k"
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center justify-center rounded-xl border border-[#14b8a6]/30 bg-[#f0fdfa] px-4 py-3 text-sm font-bold text-[#0d9488] hover:bg-[#ccfbf1] transition"
+            className="inline-flex items-center justify-center gap-2 rounded-xl border border-[#128c7e] bg-[#25D366] px-5 py-3 text-sm font-bold text-white shadow-sm hover:bg-[#1ebe5d] transition"
+            aria-label="Join WhatsApp Group"
           >
-            Join kids zone group on whatsapp to stay updated
+            <MessageCircle size={18} />
+            Join WhatsApp Group
           </a>
         </div>
 
@@ -522,6 +774,62 @@ export default function RewardsPage() {
 
         <section className="mt-16">
           <div className="flex items-center gap-2 mb-6">
+            <CalendarDays className="text-violet-600" />
+            <h3 className="text-2xl font-bold text-gray-800">Monthly points</h3>
+          </div>
+          <p className="text-sm text-gray-600 mb-5">
+            Points you earned each month from quizzes, games, and activities.
+          </p>
+
+          {certLoading ? (
+            <div className="bg-white rounded-2xl border border-gray-100 p-6 text-gray-500">Loading monthly points…</div>
+          ) : monthsWithPoints.length === 0 ? (
+            <div className="bg-white rounded-2xl border border-gray-100 p-6 text-gray-500">
+              No monthly points yet. Start with the daily quiz and games!
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {certificates.map((month) => {
+                const isCurrent = month.key === currentMonthKey;
+                const pts = Number(month.monthlyPoints || 0);
+                const hasActivity = pts > 0 || month.totalActivities > 0;
+                if (!hasActivity && !isCurrent) return null;
+
+                return (
+                  <div
+                    key={`pts-${month.key}`}
+                    className={`rounded-2xl border p-5 transition ${
+                      isCurrent
+                        ? 'border-violet-300 bg-gradient-to-br from-violet-50 to-white shadow-sm ring-1 ring-violet-200'
+                        : 'border-gray-200 bg-white'
+                    }`}
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div>
+                        <h4 className="text-lg font-bold text-gray-800">{month.label}</h4>
+                        {isCurrent ? (
+                          <span className="mt-1 inline-block rounded-full bg-violet-100 px-2 py-0.5 text-[10px] font-bold uppercase text-violet-700">
+                            This month
+                          </span>
+                        ) : null}
+                      </div>
+                      <p className="text-3xl font-black text-violet-700">{pts}</p>
+                    </div>
+                    <p className="mt-3 text-xs text-gray-500">
+                      Quiz {month.pointsFromQuiz ?? 0} · Games {month.pointsFromGames ?? 0}
+                    </p>
+                    <p className="mt-1 text-xs text-gray-500">
+                      {month.totalActivities} activit{month.totalActivities === 1 ? 'y' : 'ies'} this month
+                    </p>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </section>
+
+        <section className="mt-16">
+          <div className="flex items-center gap-2 mb-6">
             <Crown className="text-amber-500" />
             <h3 className="text-2xl font-bold text-gray-800">Monthly Certificates</h3>
           </div>
@@ -550,6 +858,7 @@ export default function RewardsPage() {
                   </div>
 
                   <div className="mt-4 text-sm text-gray-700">
+                    <p>Monthly points: <strong className="text-violet-700">{cert.monthlyPoints ?? 0}</strong></p>
                     <p>Total activities: <strong>{cert.totalActivities}</strong></p>
                     <p>Pledge recitations: <strong>{cert.pledgeRecitations}</strong></p>
                   </div>
@@ -569,6 +878,8 @@ export default function RewardsPage() {
             </div>
           )}
         </section>
+          </>
+        )}
       </main>
     </div>
   );

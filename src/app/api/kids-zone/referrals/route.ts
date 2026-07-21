@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getReferralSnapshot } from '@/lib/referral-tokens';
+import { requireMatchingUser } from '@/lib/request-auth';
 
 function getAppUrl(request: Request) {
   const fromEnv = process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_SITE_URL;
@@ -11,13 +12,10 @@ function getAppUrl(request: Request) {
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
-    const userId = searchParams.get('userId');
+    const auth = await requireMatchingUser(request, searchParams.get('userId') || '');
+    if (!auth.ok) return auth.response;
 
-    if (!userId) {
-      return NextResponse.json({ error: 'userId is required' }, { status: 400 });
-    }
-
-    const snapshot = await getReferralSnapshot(userId, getAppUrl(request));
+    const snapshot = await getReferralSnapshot(auth.userId, getAppUrl(request));
     return NextResponse.json({ success: true, ...snapshot });
   } catch (error: any) {
     return NextResponse.json({ error: error?.message || 'Unexpected error' }, { status: 500 });

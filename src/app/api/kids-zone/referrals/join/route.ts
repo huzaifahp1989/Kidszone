@@ -1,21 +1,20 @@
 import { NextResponse } from 'next/server';
 import { applyReferralJoin } from '@/lib/referral-tokens';
+import { requireMatchingUser } from '@/lib/request-auth';
 
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const userId = body?.userId as string | undefined;
-    const referralCode = body?.referralCode as string | undefined;
+    const auth = await requireMatchingUser(request, String(body?.userId || ''));
+    if (!auth.ok) return auth.response;
 
-    if (!userId) {
-      return NextResponse.json({ error: 'userId is required' }, { status: 400 });
-    }
+    const referralCode = body?.referralCode as string | undefined;
 
     if (!referralCode) {
       return NextResponse.json({ error: 'referralCode is required' }, { status: 400 });
     }
 
-    const result = await applyReferralJoin(userId, referralCode);
+    const result = await applyReferralJoin(auth.userId, referralCode);
 
     if (!result.success) {
       return NextResponse.json({ error: result.message }, { status: 400 });

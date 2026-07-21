@@ -1,7 +1,11 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
+import { guardDebugRoute } from '@/lib/debug-gate';
 
-export async function GET() {
+export async function GET(request: Request) {
+  const blocked = guardDebugRoute(request);
+  if (blocked) return blocked;
+
   try {
     console.log('Debug: Fetching users...');
     const { data: users, error } = await supabaseAdmin

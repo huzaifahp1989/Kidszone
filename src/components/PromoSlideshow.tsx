@@ -17,18 +17,18 @@ type Slide = {
 const SLIDES: Slide[] = [
   {
     id: 1,
-    gradient: 'linear-gradient(135deg,#0f4c35 0%,#1a7a52 50%,#0d3d2c 100%)',
+    gradient: 'linear-gradient(135deg,#5b21b6 0%,#7c3aed 50%,#4c1d95 100%)',
     emoji: '🏆',
     eyebrow: 'Weekly Competition',
     headline: 'Win Amazing Prizes!',
-    sub: 'Top scorers every week win exciting rewards. Play quizzes & games to climb the leaderboard!',
+    sub: 'Qualify with 150+ weekly points and you could be picked at random for exciting rewards. Play quizzes & games to enter the draw!',
     cta: { label: 'View Leaderboard', href: '/leaderboard' },
     pattern:
       "url(\"data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E\")",
   },
   {
     id: 2,
-    gradient: 'linear-gradient(135deg,#4c2889 0%,#7c3aed 50%,#3b1a6e 100%)',
+    gradient: 'linear-gradient(135deg,#4338ca 0%,#6366f1 50%,#312e81 100%)',
     emoji: '⭐',
     eyebrow: 'Daily Quiz Challenge',
     headline: 'Earn Points Every Day',
@@ -39,7 +39,7 @@ const SLIDES: Slide[] = [
   },
   {
     id: 3,
-    gradient: 'linear-gradient(135deg,#b45309 0%,#f59e0b 50%,#92400e 100%)',
+    gradient: 'linear-gradient(135deg,#b45309 0%,#fbbf24 50%,#d97706 100%)',
     emoji: '🎁',
     eyebrow: 'Prize Pool',
     headline: 'Great Prizes Await You!',
@@ -50,7 +50,7 @@ const SLIDES: Slide[] = [
   },
   {
     id: 4,
-    gradient: 'linear-gradient(135deg,#0e4d6b 0%,#0ea5e9 50%,#083457 100%)',
+    gradient: 'linear-gradient(135deg,#5b21b6 0%,#6d28d9 50%,#4c1d95 100%)',
     emoji: '📿',
     eyebrow: 'Pledge Durood & Zikr',
     headline: 'Earn Blessings & Points',
@@ -61,18 +61,18 @@ const SLIDES: Slide[] = [
   },
   {
     id: 5,
-    gradient: 'linear-gradient(135deg,#7f1d1d 0%,#ef4444 50%,#6b1111 100%)',
+    gradient: 'linear-gradient(135deg,#b8323e 0%,#ff6b6b 50%,#962d36 100%)',
     emoji: '🌟',
-    eyebrow: 'Climb the Rankings',
-    headline: 'Be the Top Learner!',
-    sub: 'Check who is leading this week. Every quiz, game, and pledge earns you points towards the #1 spot!',
+    eyebrow: 'Weekly Prize Draw',
+    headline: 'Anyone Can Win!',
+    sub: 'Stay active and earn 150+ points to enter the random draw. The leaderboard shows progress — winners are not picked by rank.',
     cta: { label: 'Check Leaderboard', href: '/leaderboard' },
     pattern:
       "url(\"data:image/svg+xml,%3Csvg width='20' height='20' viewBox='0 0 20 20' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23ffffff' fill-opacity='0.05' fill-rule='evenodd'%3E%3Ccircle cx='3' cy='3' r='3'/%3E%3Ccircle cx='13' cy='13' r='3'/%3E%3C/g%3E%3C/svg%3E\")",
   },
   {
     id: 6,
-    gradient: 'linear-gradient(135deg,#312e81 0%,#4f46e5 50%,#1e1b4b 100%)',
+    gradient: 'linear-gradient(135deg,#3730a3 0%,#6366f1 50%,#312e81 100%)',
     emoji: '📝',
     eyebrow: 'Tasks & Rewards',
     headline: 'Invite Friends & Earn Points!',
@@ -83,7 +83,7 @@ const SLIDES: Slide[] = [
   },
   {
     id: 7,
-    gradient: 'linear-gradient(135deg,#134e4a 0%,#14b8a6 50%,#0f3d3a 100%)',
+    gradient: 'linear-gradient(135deg,#4c1d95 0%,#7c3aed 50%,#312e81 100%)',
     emoji: '📞',
     eyebrow: 'Need Help?',
     headline: "We're Here for You",
@@ -126,8 +126,8 @@ export function PromoSlideshow() {
 
   return (
     <div
-      className="relative w-full overflow-hidden select-none"
-      style={{ minHeight: 170 }}
+      className="relative w-full overflow-hidden select-none border-b border-black/5"
+      style={{ minHeight: 180 }}
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
       onTouchStart={() => setPaused(true)}
@@ -152,7 +152,7 @@ export function PromoSlideshow() {
         <span className="text-white/70 text-xs sm:text-sm font-semibold uppercase tracking-widest mb-1">
           {slide.eyebrow}
         </span>
-        <h2 className="text-white text-xl sm:text-2xl md:text-3xl font-extrabold leading-tight drop-shadow-md mb-2">
+        <h2 className="font-heading text-white text-xl sm:text-2xl md:text-3xl font-extrabold leading-tight drop-shadow-md mb-2">
           {slide.headline}
         </h2>
         <p className="text-white/85 text-xs sm:text-sm max-w-xl leading-relaxed mb-4 drop-shadow">
@@ -164,14 +164,14 @@ export function PromoSlideshow() {
               href={slide.cta.href}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 bg-white/15 hover:bg-white/25 active:bg-white/30 border border-white/30 text-white text-sm font-bold px-5 py-2 rounded-full backdrop-blur-sm transition-all duration-200 shadow"
+              className="inline-flex items-center gap-1.5 rounded-full border border-white/35 bg-white/18 px-5 py-2.5 text-sm font-bold text-white shadow-lg backdrop-blur-md transition-all duration-200 hover:bg-white/28 active:bg-white/35"
             >
               {slide.cta.label} →
             </a>
           ) : (
             <Link
               href={slide.cta.href}
-              className="inline-flex items-center gap-1.5 bg-white/15 hover:bg-white/25 active:bg-white/30 border border-white/30 text-white text-sm font-bold px-5 py-2 rounded-full backdrop-blur-sm transition-all duration-200 shadow"
+              className="inline-flex items-center gap-1.5 rounded-full border border-white/35 bg-white/18 px-5 py-2.5 text-sm font-bold text-white shadow-lg backdrop-blur-md transition-all duration-200 hover:bg-white/28 active:bg-white/35"
             >
               {slide.cta.label} →
             </Link>

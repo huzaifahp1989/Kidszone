@@ -1,8 +1,9 @@
 'use client';
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
-import { awardPoints as awardPointsRpc } from '@/lib/points-service';
+import { completeGameSession } from '@/lib/complete-game-session';
+import { ACTIVITY_BONUS_POINTS } from '@/lib/points-policy';
 import { useAuth } from '@/lib/auth-context';
 
 interface Step {
@@ -69,8 +70,10 @@ export default function HajjStepsGame() {
   const [selected, setSelected] = useState<number | null>(null); // index in steps[]
   const [wrongIds, setWrongIds] = useState<Set<number>>(new Set());
   const [attempts, setAttempts] = useState(0);
+  const pointsAwardedRef = useRef(false);
 
   const startGame = () => {
+    pointsAwardedRef.current = false;
     setSteps(shuffleArray(CORRECT_ORDER));
     setSelected(null);
     setWrongIds(new Set());
@@ -108,7 +111,15 @@ export default function HajjStepsGame() {
     setWrongIds(wrong);
     if (wrong.size === 0) {
       setGameState('success');
-      if (user?.id) awardPointsRpc(50).catch(() => {});
+      if (user?.id && !pointsAwardedRef.current) {
+        pointsAwardedRef.current = true;
+        completeGameSession({
+          userId: user.id,
+          gameId: 'hajj-steps',
+          gameTitle: 'Hajj Steps',
+          trackCompetition: true,
+        }).catch(() => {});
+      }
     } else {
       setGameState('fail');
     }
@@ -165,7 +176,7 @@ export default function HajjStepsGame() {
           <div className="text-7xl mb-3">🎉</div>
           <h2 className="text-3xl font-black text-green-700 mb-2">Correct Order!</h2>
           <p className="text-gray-600 mb-1 text-lg">MashaAllah! You arranged all 6 steps correctly!</p>
-          <p className="text-gray-400 text-sm mb-2">+50 points awarded 🌟</p>
+          <p className="text-gray-400 text-sm mb-2">+{ACTIVITY_BONUS_POINTS} points awarded 🌟</p>
           <p className="text-gray-400 text-sm mb-2">Attempts: {attempts}</p>
           <p className="text-gray-400 text-sm mb-6">
             You now know the order of Hajj rituals. May Allah grant you Hajj one day! 🤲

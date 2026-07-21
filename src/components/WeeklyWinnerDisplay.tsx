@@ -1,49 +1,96 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { formatWeekLabel, groupWinnersByWeek, type WeeklyWinnerAnnouncement } from '@/lib/weekly-winner-display';
 
 export function WeeklyWinnerDisplay() {
-  const [today, setToday] = React.useState<string>('');
-  React.useEffect(() => {
-    setToday(new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }));
+  const [winners, setWinners] = useState<WeeklyWinnerAnnouncement[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let active = true;
+    fetch('/api/weekly-winners', { cache: 'no-store' })
+      .then((res) => res.json())
+      .then((data) => {
+        if (!active) return;
+        setWinners(Array.isArray(data?.winners) ? data.winners : []);
+      })
+      .catch(() => {
+        if (active) setWinners([]);
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+    return () => {
+      active = false;
+    };
   }, []);
+
+  const latestWeek = useMemo(() => {
+    const grouped = groupWinnersByWeek(winners);
+    return grouped[0] ?? null;
+  }, [winners]);
+
+  const winnerLine = latestWeek
+    ? latestWeek.winners.map((w) => w.winner_name).join(' & ')
+    : null;
+
+  const madrasahLine = latestWeek
+    ? latestWeek.winners
+        .map((w) => w.madrasah_name)
+        .filter(Boolean)
+        .join(' · ')
+    : null;
+
+  const weekLabel = latestWeek ? formatWeekLabel(latestWeek.weekStartDate) : null;
 
   return (
     <div className="w-full max-w-4xl mx-auto p-4">
       <div className="bg-gradient-to-r from-sky-100 to-blue-100 rounded-xl p-8 shadow-lg border-2 border-sky-300 relative overflow-hidden text-center">
-        {/* Confetti Background Effect */}
-        <div className="absolute inset-0 opacity-10 pointer-events-none" style={{
+        <div
+          className="absolute inset-0 opacity-10 pointer-events-none"
+          style={{
             backgroundImage: 'radial-gradient(circle, #7DD3FC 10%, transparent 10%)',
-            backgroundSize: '20px 20px'
-        }}></div>
+            backgroundSize: '20px 20px',
+          }}
+        />
 
         <div className="relative z-10 flex flex-col items-center gap-6">
-          <div className="text-6xl animate-bounce drop-shadow-md">
-            🏆
-          </div>
+          <div className="text-6xl animate-bounce drop-shadow-md">🏆</div>
 
           <div className="space-y-4 max-w-2xl">
             <div className="bg-white/70 rounded-2xl border border-sky-200 p-4">
               <p className="text-sm font-bold text-slate-600 uppercase tracking-wider">
-                Winners{today ? ` • ${today}` : ''}
+                Weekly Winners{weekLabel ? ` • ${weekLabel}` : ''}
               </p>
-              <p className="mt-2 text-2xl md:text-3xl font-black text-sky-900">Ammaan &amp; Sara</p>
+              {loading ? (
+                <p className="mt-2 text-lg text-slate-500">Loading winners…</p>
+              ) : winnerLine ? (
+                <>
+                  <p className="mt-2 text-2xl md:text-3xl font-black text-sky-900">{winnerLine}</p>
+                  {madrasahLine ? (
+                    <p className="mt-2 text-sm font-semibold text-sky-700">{madrasahLine}</p>
+                  ) : null}
+                </>
+              ) : (
+                <p className="mt-2 text-lg font-semibold text-sky-800">
+                  Winners will be announced here each week — keep learning!
+                </p>
+              )}
             </div>
 
-            <h2 className="text-3xl md:text-4xl font-extrabold text-sky-900">
-              Enter Our Competitions!
-            </h2>
-            
+            <h2 className="text-3xl md:text-4xl font-extrabold text-sky-900">Enter Our Competitions!</h2>
+
             <p className="text-xl md:text-2xl font-bold text-sky-800 leading-relaxed">
               To enter our competitions please fill in this form so we can easily update the winners.
             </p>
-            
+
             <p className="text-lg md:text-xl font-semibold text-red-600 bg-white/50 p-2 rounded-lg inline-block">
-              ⚠️ If you don't fill in then your answers won't be counted.
+              ⚠️ If you don&apos;t fill in then your answers won&apos;t be counted.
             </p>
 
             <div className="pt-4">
-              <a 
+              <a
                 href="https://docs.google.com/forms/d/e/1FAIpQLSeEVZHFkbYB6isXFrKrdsJszF3rho_3_NqlMHFYdIQ5SypKXg/viewform?usp=publish-editor"
                 target="_blank"
                 rel="noopener noreferrer"

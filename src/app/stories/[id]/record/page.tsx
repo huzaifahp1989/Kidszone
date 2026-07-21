@@ -7,6 +7,7 @@ import { supabase } from '@/lib/supabase';
 import { Story } from '@/types/stories';
 import { Mic, Square, RotateCcw, ArrowLeft, Send, Play, Pause, AlertCircle } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
+import { getAuthFetchHeaders } from '@/lib/auth-headers';
 
 export default function StoryRecordingPage({ params }: { params: Promise<{ id: string }> | { id: string } }) {
   const { user } = useAuth();
@@ -157,7 +158,6 @@ export default function StoryRecordingPage({ params }: { params: Promise<{ id: s
 
     setUploading(true);
     try {
-      // 1. Upload to Storage
       const blobType = audioBlob.type || 'audio/webm';
       const extension = blobType.includes('mp4')
         ? 'm4a'
@@ -166,44 +166,36 @@ export default function StoryRecordingPage({ params }: { params: Promise<{ id: s
           : blobType.includes('ogg')
             ? 'ogg'
             : 'webm';
-      const filename = `${user.id}/${Date.now()}_${story.id}.${extension}`;
-      const { error: uploadError } = await supabase.storage
-        .from('story-recordings')
-        .upload(filename, audioBlob, { contentType: blobType });
+      const form = new FormData();
+      form.append('recording', audioBlob, `recording.${extension}`);
+      form.append('duration', String(recordingTime));
 
-      if (uploadError) throw uploadError;
+      const headers = await getAuthFetchHeaders();
+      const res = await fetch(`/api/stories/${story.id}/recordings/upload`, {
+        method: 'POST',
+        headers,
+        body: form,
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data?.error || 'Upload failed');
 
-      // 2. Insert into DB
-      const { data: insertedRecord, error: dbError } = await supabase
-        .from('recordings')
-        .insert({
-          user_id: user.id,
-          story_id: story.id,
-          audio_path: filename,
-          duration: recordingTime,
-          status: 'submitted'
-        })
-        .select()
-        .single();
+      const insertedRecord = data.recording;
+      const filename = insertedRecord?.audio_path;
 
-      if (dbError) throw dbError;
-
-      // 3. Send Email Notification (Non-blocking)
       fetch('/api/stories/submit-notification', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          childName: user.email?.split('@')[0] || 'Kid', // Fallback name
+          childName: user.email?.split('@')[0] || 'Kid',
           storyTitle: story.title,
           duration: recordingTime,
           audioPath: filename,
-          recordingId: insertedRecord.id
-        })
-      }).catch(err => console.error('Failed to send notification:', err));
+          recordingId: insertedRecord?.id,
+        }),
+      }).catch((err) => console.error('Failed to send notification:', err));
 
       alert('JazakAllah Khair! Your recording has been sent for review. Points will be added after approval.');
       router.push('/my-recordings');
-
     } catch (error) {
       console.error('Upload failed:', error);
       alert('Failed to submit recording. Please try again.');

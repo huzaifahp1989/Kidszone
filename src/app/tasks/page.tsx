@@ -7,6 +7,7 @@ import { Modal } from '@/components';
 import { useAuth } from '@/lib/auth-context';
 import { APP_STORE_LINKS, StorePlatform } from '@/lib/app-store-links';
 import { openStoreReview, requestInAppReviewWithFallback } from '@/lib/in-app-review';
+import { trackReferralShared } from '@/lib/analytics';
 
 type ReferralPayload = {
   referralCode: string;
@@ -241,19 +242,20 @@ export default function TasksPage() {
     const body = encodeURIComponent(
       `Assalamu Alaikum!\n\nPlease sign up to Kids Zone using my referral link: ${payload.inviteLink}\n\nApp Store: ${APP_STORE_LINKS.ios}\nGoogle Play: ${APP_STORE_LINKS.android}\n\nJazakAllahu Khair.`
     );
+    trackReferralShared({ method: 'email' });
     window.location.href = `mailto:${task.email}?subject=${subject}&body=${body}`;
   };
 
   return (
-    <div className="min-h-screen bg-[#fdf8f3] pattern-islamic">
+    <div className="min-h-screen bg-[#f5f3ff] pattern-islamic">
       <div className="max-w-5xl mx-auto px-4 py-8 space-y-8">
         <div className="text-center space-y-4">
           <div className="inline-flex items-center gap-2 px-4 py-2 bg-[#eef2ff] rounded-full border border-[#6366f1]/20">
             <ClipboardList size={16} className="text-[#4f46e5]" />
             <span className="text-sm font-semibold text-[#4338ca]">Tasks & Referrals</span>
           </div>
-          <h1 className="text-4xl md:text-5xl font-bold text-[#6a422d]">Invite a Friend Task</h1>
-          <p className="text-[#a1633a] text-lg max-w-2xl mx-auto">
+          <h1 className="text-4xl md:text-5xl font-bold text-[#1e1b4b]">Invite a Friend Task</h1>
+          <p className="text-[#475569] text-lg max-w-2xl mx-auto">
             Add a friend name or email, share your Kids Zone signup link, and earn points when they join.
           </p>
         </div>
@@ -277,8 +279,8 @@ export default function TasksPage() {
               <div className="inline-flex rounded-full bg-purple-100 px-3 py-1 text-xs font-bold uppercase tracking-wide text-purple-800">
                 Record &amp; Earn Points
               </div>
-              <h2 className="mt-3 text-2xl font-bold text-[#6a422d]">Record Quran, Nasheeds, Stories &amp; Hadith</h2>
-              <div className="mt-3 space-y-2 text-sm leading-6 text-[#a1633a] md:text-base">
+              <h2 className="mt-3 text-2xl font-bold text-[#1e1b4b]">Record Quran, Nasheeds, Stories &amp; Hadith</h2>
+              <div className="mt-3 space-y-2 text-sm leading-6 text-[#475569] md:text-base">
                 <p>Use this recorder to record Quran recitation, nasheeds, Islamic stories, Hadith and more.</p>
                 <p className="font-semibold text-purple-700">We will check your recordings and give more points!</p>
               </div>
@@ -299,35 +301,35 @@ export default function TasksPage() {
 
         {/* Activity shortcuts */}
         <section className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <Link href="/studio" className="group flex flex-col items-center gap-3 bg-white rounded-2xl border border-[#e5c9a3]/20 shadow-lg p-6 text-center hover:border-[#14b8a6]/40 hover:shadow-xl transition">
+          <Link href="/studio" className="group flex flex-col items-center gap-3 bg-white rounded-2xl border border-[#c4b5fd]/20 shadow-lg p-6 text-center hover:border-[#7c3aed]/40 hover:shadow-xl transition">
             <div className="text-4xl">🎙️</div>
             <div>
-              <p className="font-black text-[#6a422d] text-lg">Record a Story</p>
-              <p className="text-sm text-[#a1633a] mt-1">Record an Islamic story and earn points</p>
+              <p className="font-black text-[#1e1b4b] text-lg">Record a Story</p>
+              <p className="text-sm text-[#475569] mt-1">Record an Islamic story and earn points</p>
             </div>
           </Link>
-          <Link href="/pledge" className="group flex flex-col items-center gap-3 bg-white rounded-2xl border border-[#e5c9a3]/20 shadow-lg p-6 text-center hover:border-[#14b8a6]/40 hover:shadow-xl transition">
+          <Link href="/pledge" className="group flex flex-col items-center gap-3 bg-white rounded-2xl border border-[#c4b5fd]/20 shadow-lg p-6 text-center hover:border-[#7c3aed]/40 hover:shadow-xl transition">
             <div className="text-4xl">📿</div>
             <div>
-              <p className="font-black text-[#6a422d] text-lg">Durood &amp; Zikr Pledge</p>
-              <p className="text-sm text-[#a1633a] mt-1">Complete pledges to gain points</p>
+              <p className="font-black text-[#1e1b4b] text-lg">Durood &amp; Zikr Pledge</p>
+              <p className="text-sm text-[#475569] mt-1">Complete pledges to gain points</p>
             </div>
           </Link>
-          <Link href="/games" className="group flex flex-col items-center gap-3 bg-white rounded-2xl border border-[#e5c9a3]/20 shadow-lg p-6 text-center hover:border-[#14b8a6]/40 hover:shadow-xl transition">
+          <Link href="/games" className="group flex flex-col items-center gap-3 bg-white rounded-2xl border border-[#c4b5fd]/20 shadow-lg p-6 text-center hover:border-[#7c3aed]/40 hover:shadow-xl transition">
             <div className="text-4xl">🎮</div>
             <div>
-              <p className="font-black text-[#6a422d] text-lg">Play Games</p>
-              <p className="text-sm text-[#a1633a] mt-1">Play Islamic games to earn points</p>
+              <p className="font-black text-[#1e1b4b] text-lg">Play Games</p>
+              <p className="text-sm text-[#475569] mt-1">Play Islamic games to earn points</p>
             </div>
           </Link>
         </section>
 
-        <section className="bg-white rounded-2xl border border-[#e5c9a3]/20 shadow-lg p-6 space-y-4">
+        <section className="bg-white rounded-2xl border border-[#c4b5fd]/20 shadow-lg p-6 space-y-4">
           <div className="flex items-center gap-2">
             <Star size={18} className="text-[#f59e0b]" />
-            <h2 className="text-2xl font-bold text-[#6a422d]">Leave a Review</h2>
+            <h2 className="text-2xl font-bold text-[#1e1b4b]">Leave a Review</h2>
           </div>
-          <p className="text-sm text-[#a1633a]">
+          <p className="text-sm text-[#475569]">
             Open the review popup to leave a review on Apple App Store or Google Play.
           </p>
           <button
@@ -339,69 +341,69 @@ export default function TasksPage() {
         </section>
 
         {!user ? (
-          <div className="bg-white rounded-2xl border border-[#e5c9a3]/20 shadow-lg p-8 text-center space-y-4">
+          <div className="bg-white rounded-2xl border border-[#c4b5fd]/20 shadow-lg p-8 text-center space-y-4">
             <Users size={42} className="mx-auto text-[#6366f1]" />
-            <h2 className="text-2xl font-bold text-[#6a422d]">Sign in to use referral tasks</h2>
-            <p className="text-[#a1633a]">You need an account to get your invite link and track your referral tasks.</p>
+            <h2 className="text-2xl font-bold text-[#1e1b4b]">Sign in to use referral tasks</h2>
+            <p className="text-[#475569]">You need an account to get your invite link and track your referral tasks.</p>
             <div className="flex justify-center gap-3">
-              <Link href="/signin?next=%2Ftasks" className="px-5 py-3 rounded-xl bg-gradient-to-r from-[#14b8a6] to-[#0d9488] text-white font-bold">
+              <Link href="/signin?next=%2Ftasks" className="px-5 py-3 rounded-xl bg-gradient-to-r from-[#7c3aed] to-[#6d28d9] text-white font-bold">
                 Sign In
               </Link>
-              <Link href="/signup" className="px-5 py-3 rounded-xl border border-[#e5c9a3]/40 text-[#6a422d] font-bold bg-white">
+              <Link href="/signup" className="px-5 py-3 rounded-xl border border-[#c4b5fd]/40 text-[#1e1b4b] font-bold bg-white">
                 Join Kids Zone
               </Link>
             </div>
           </div>
         ) : loading ? (
-          <div className="bg-white rounded-2xl border border-[#e5c9a3]/20 shadow-lg p-8 text-[#a1633a]">Loading referral task tools...</div>
+          <div className="bg-white rounded-2xl border border-[#c4b5fd]/20 shadow-lg p-8 text-[#475569]">Loading referral task tools...</div>
         ) : !payload ? (
-          <div className="bg-white rounded-2xl border border-[#e5c9a3]/20 shadow-lg p-8 text-center space-y-3">
-            <p className="text-[#6a422d] font-bold">Referral tools are unavailable right now.</p>
-            <p className="text-[#a1633a]">{loadError || 'Please try again later.'}</p>
+          <div className="bg-white rounded-2xl border border-[#c4b5fd]/20 shadow-lg p-8 text-center space-y-3">
+            <p className="text-[#1e1b4b] font-bold">Referral tools are unavailable right now.</p>
+            <p className="text-[#475569]">{loadError || 'Please try again later.'}</p>
           </div>
         ) : (
           <>
             <section className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="bg-white rounded-2xl border border-[#e5c9a3]/20 shadow-lg p-5">
+              <div className="bg-white rounded-2xl border border-[#c4b5fd]/20 shadow-lg p-5">
                 <p className="text-xs uppercase tracking-[0.12em] text-[#6366f1]">Referral Code</p>
                 <p className="text-3xl font-black text-[#312e81] mt-2">{payload.referralCode}</p>
               </div>
-              <div className="bg-white rounded-2xl border border-[#e5c9a3]/20 shadow-lg p-5">
-                <p className="text-xs uppercase tracking-[0.12em] text-[#0f766e]">Successful Joins</p>
-                <p className="text-3xl font-black text-[#115e59] mt-2">{payload.successfulJoins}</p>
+              <div className="bg-white rounded-2xl border border-[#c4b5fd]/20 shadow-lg p-5">
+                <p className="text-xs uppercase tracking-[0.12em] text-[#5b21b6]">Successful Joins</p>
+                <p className="text-3xl font-black text-[#5b21b6] mt-2">{payload.successfulJoins}</p>
               </div>
-              <div className="bg-white rounded-2xl border border-[#e5c9a3]/20 shadow-lg p-5">
+              <div className="bg-white rounded-2xl border border-[#c4b5fd]/20 shadow-lg p-5">
                 <p className="text-xs uppercase tracking-[0.12em] text-[#b45309]">Pending Referral Tasks</p>
                 <p className="text-3xl font-black text-[#92400e] mt-2">{pendingCount}</p>
               </div>
             </section>
 
-            <section className="bg-white rounded-2xl border border-[#e5c9a3]/20 shadow-lg p-6 space-y-4">
+            <section className="bg-white rounded-2xl border border-[#c4b5fd]/20 shadow-lg p-6 space-y-4">
               <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
                 <div>
-                  <h2 className="text-2xl font-bold text-[#6a422d]">Create Referral Task</h2>
-                  <p className="text-[#a1633a] text-sm mt-1">Add your friend&apos;s name or email, then send them your Kids Zone signup link.</p>
+                  <h2 className="text-2xl font-bold text-[#1e1b4b]">Create Referral Task</h2>
+                  <p className="text-[#475569] text-sm mt-1">Add your friend&apos;s name or email, then send them your Kids Zone signup link.</p>
                 </div>
-                <p className="text-sm font-semibold text-[#0f766e]">{referralRewardText}</p>
+                <p className="text-sm font-semibold text-[#5b21b6]">{referralRewardText}</p>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-bold text-[#6a422d] mb-2">Friend Name</label>
+                  <label className="block text-sm font-bold text-[#1e1b4b] mb-2">Friend Name</label>
                   <input
                     value={friendName}
                     onChange={(event) => setFriendName(event.target.value)}
                     placeholder="Enter friend name"
-                    className="w-full rounded-xl border border-[#e5c9a3]/40 px-4 py-3 text-[#6a422d] bg-[#fffdf9]"
+                    className="w-full rounded-xl border border-[#c4b5fd]/40 px-4 py-3 text-[#1e1b4b] bg-[#fffdf9]"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-bold text-[#6a422d] mb-2">Friend Email</label>
+                  <label className="block text-sm font-bold text-[#1e1b4b] mb-2">Friend Email</label>
                   <input
                     value={friendEmail}
                     onChange={(event) => setFriendEmail(event.target.value)}
                     placeholder="Enter friend email"
-                    className="w-full rounded-xl border border-[#e5c9a3]/40 px-4 py-3 text-[#6a422d] bg-[#fffdf9]"
+                    className="w-full rounded-xl border border-[#c4b5fd]/40 px-4 py-3 text-[#1e1b4b] bg-[#fffdf9]"
                   />
                 </div>
               </div>
@@ -428,15 +430,15 @@ export default function TasksPage() {
                 </a>
               </div>
 
-              {message ? <p className="text-sm font-semibold text-[#0f766e]">{message}</p> : null}
+              {message ? <p className="text-sm font-semibold text-[#5b21b6]">{message}</p> : null}
             </section>
 
-            <section className="bg-white rounded-2xl border border-[#e5c9a3]/20 shadow-lg p-6 space-y-5">
+            <section className="bg-white rounded-2xl border border-[#c4b5fd]/20 shadow-lg p-6 space-y-5">
               <div className="flex items-center gap-2">
                 <Star size={18} className="text-[#f59e0b]" />
-                <h2 className="text-2xl font-bold text-[#6a422d]">Leave a Review — Earn 30 Points</h2>
+                <h2 className="text-2xl font-bold text-[#1e1b4b]">Leave a Review — Earn 30 Points</h2>
               </div>
-              <p className="text-sm text-[#a1633a]">
+              <p className="text-sm text-[#475569]">
                 Leave a review for Kids Zone on the Apple App Store or Google Play and earn +30 bonus points. Click &ldquo;Submit for Review&rdquo; after leaving your review — the admin will approve and add your points.
               </p>
               <button
@@ -447,29 +449,29 @@ export default function TasksPage() {
               </button>
               {feedbackMessage ? (
                 <p className={`text-sm font-semibold ${
-                  iosFeedback === 'error' || androidFeedback === 'error' ? 'text-[#be123c]' : 'text-[#0f766e]'
+                  iosFeedback === 'error' || androidFeedback === 'error' ? 'text-[#be123c]' : 'text-[#5b21b6]'
                 }`}>{feedbackMessage}</p>
               ) : null}
             </section>
 
-            <section className="bg-white rounded-2xl border border-[#e5c9a3]/20 shadow-lg p-6 space-y-4">
+            <section className="bg-white rounded-2xl border border-[#c4b5fd]/20 shadow-lg p-6 space-y-4">
               <div className="flex items-center gap-2">
-                <CheckCircle2 size={18} className="text-[#14b8a6]" />
-                <h2 className="text-2xl font-bold text-[#6a422d]">Your Referral Tasks</h2>
+                <CheckCircle2 size={18} className="text-[#7c3aed]" />
+                <h2 className="text-2xl font-bold text-[#1e1b4b]">Your Referral Tasks</h2>
               </div>
-              <p className="text-sm text-[#a1633a]">After you refer someone, add their name or email here and click <strong>Claim +30 Points</strong>. The admin will approve it and add your points.</p>
+              <p className="text-sm text-[#475569]">After you refer someone, add their name or email here and click <strong>Claim +30 Points</strong>. The admin will approve it and add your points.</p>
 
               {tasks.length === 0 ? (
-                <div className="rounded-2xl bg-[#fffdf9] border border-dashed border-[#e5c9a3]/40 p-6 text-center text-[#a1633a]">
+                <div className="rounded-2xl bg-[#fffdf9] border border-dashed border-[#c4b5fd]/40 p-6 text-center text-[#475569]">
                   No referral tasks added yet. Add a friend name or email to start inviting.
                 </div>
               ) : (
                 <div className="space-y-3">
                   {tasks.map((task) => (
-                    <div key={task.id} className="rounded-2xl border border-[#e5c9a3]/20 bg-[#fffdf9] p-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                    <div key={task.id} className="rounded-2xl border border-[#c4b5fd]/20 bg-[#fffdf9] p-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
                       <div>
-                        <p className="font-bold text-[#6a422d]">{task.name}</p>
-                        <p className="text-sm text-[#a1633a]">{task.email || 'No email saved'}</p>
+                        <p className="font-bold text-[#1e1b4b]">{task.name}</p>
+                        <p className="text-sm text-[#475569]">{task.email || 'No email saved'}</p>
                         <p className="text-xs text-[#94a3b8] mt-1">Added {new Date(task.createdAt).toLocaleDateString()}</p>
                       </div>
                       <div className="flex flex-wrap gap-2">
@@ -503,7 +505,7 @@ export default function TasksPage() {
                           );
                         })()}
                         {referralClaimMessages[task.id] ? (
-                          <p className="text-xs font-semibold text-[#0f766e] w-full">{referralClaimMessages[task.id]}</p>
+                          <p className="text-xs font-semibold text-[#5b21b6] w-full">{referralClaimMessages[task.id]}</p>
                         ) : null}
                         <button onClick={() => removeTask(task.id)} className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#fff1f2] text-[#be123c] font-semibold border border-[#fecdd3]">
                           Remove
@@ -519,11 +521,11 @@ export default function TasksPage() {
 
         <Modal isOpen={isReviewPopupOpen} onClose={() => setIsReviewPopupOpen(false)} title="Leave a Review" size="lg">
           <div className="space-y-4">
-            <p className="text-sm text-[#a1633a]">
+            <p className="text-sm text-[#475569]">
               Choose your platform, leave a review, then click submit so admin can approve +30 points.
             </p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="rounded-2xl border border-[#e5c9a3]/30 bg-[#f8fafc] p-5 flex flex-col gap-3">
+              <div className="rounded-2xl border border-[#c4b5fd]/30 bg-[#f8fafc] p-5 flex flex-col gap-3">
                 <div className="flex items-center gap-2">
                   <Smartphone size={20} className="text-[#1d4ed8]" />
                   <p className="font-bold text-[#1e293b]">Apple App Store</p>
@@ -558,7 +560,7 @@ export default function TasksPage() {
                   </button>
                 </div>
               </div>
-              <div className="rounded-2xl border border-[#e5c9a3]/30 bg-[#f8fafc] p-5 flex flex-col gap-3">
+              <div className="rounded-2xl border border-[#c4b5fd]/30 bg-[#f8fafc] p-5 flex flex-col gap-3">
                 <div className="flex items-center gap-2">
                   <Smartphone size={20} className="text-[#15803d]" />
                   <p className="font-bold text-[#1e293b]">Google Play</p>

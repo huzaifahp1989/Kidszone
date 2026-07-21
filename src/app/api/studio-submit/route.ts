@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
+import { deleteObject, uploadObject } from '@/lib/object-storage';
 
 export async function POST(request: NextRequest) {
   try {
@@ -26,17 +27,20 @@ export async function POST(request: NextRequest) {
     if (buffer.byteLength === 0) {
       return NextResponse.json({ error: 'Recording is empty. Please try recording again.' }, { status: 400 });
     }
-    
-    // 1. Upload to Supabase Storage and DB
+
     const safeChildName = childName && childName.trim().length > 0 ? childName.trim() : null;
     const safeTitle = title && title.trim().length > 0 ? title.trim() : 'Untitled';
     const timestamp = Date.now();
 
-    const uploadedFile = file as any;
+    const uploadedFile = file as File;
     const mimeType =
-      typeof uploadedFile.type === 'string' && uploadedFile.type.length > 0 ? uploadedFile.type : 'audio/webm';
+      typeof uploadedFile.type === 'string' && uploadedFile.type.length > 0
+        ? uploadedFile.type
+        : 'audio/webm';
     const originalName = typeof uploadedFile.name === 'string' ? uploadedFile.name : '';
-    const extFromName = originalName.includes('.') ? originalName.split('.').pop()?.toLowerCase() : undefined;
+    const extFromName = originalName.includes('.')
+      ? originalName.split('.').pop()?.toLowerCase()
+      : undefined;
     const extFromMime = mimeType.includes('mp4')
       ? 'm4a'
       : mimeType.includes('mpeg')
@@ -47,20 +51,19 @@ export async function POST(request: NextRequest) {
     const extension = extFromName || extFromMime || 'webm';
 
     const filename = `studio/${userId || 'guest'}_${timestamp}_${category || 'rec'}_${safeTitle.replace(/[^a-zA-Z0-9]/g, '-')}.${extension}`;
-    
-    const { error: uploadError } = await supabaseAdmin.storage
-      .from('story-recordings')
-      .upload(filename, buffer, {
-         contentType: mimeType,
-         upsert: false
+
+    try {
+      await uploadObject({
+        bucket: 'story-recordings',
+        path: filename,
+        body: buffer,
+        contentType: mimeType,
       });
-      
-    if (uploadError) {
-        console.error('Storage upload error:', uploadError);
-        return NextResponse.json({ error: 'Failed to upload recording to storage' }, { status: 500 });
+    } catch (uploadError) {
+      console.error('Storage upload error:', uploadError);
+      return NextResponse.json({ error: 'Failed to upload recording to storage' }, { status: 500 });
     }
-  
-    // 2. Insert into DB
+
     const { data: insertedRecord, error: dbError } = await supabaseAdmin
       .from('recordings')
       .insert({
@@ -77,12 +80,15 @@ export async function POST(request: NextRequest) {
       })
       .select()
       .single();
-  
+
     if (dbError) {
-        console.error('DB insert error:', dbError);
-        // Clean up uploaded file?
-        await supabaseAdmin.storage.from('story-recordings').remove([filename]);
-        return NextResponse.json({ error: 'Failed to save recording record' }, { status: 500 });
+      console.error('DB insert error:', dbError);
+      try {
+        await deleteObject('story-recordings', filename);
+      } catch {
+        /* ignore */
+      }
+      return NextResponse.json({ error: 'Failed to save recording record' }, { status: 500 });
     }
 
     // 3. Send Email

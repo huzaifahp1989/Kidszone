@@ -5,16 +5,19 @@ import { useRouter } from 'next/navigation';
 import { AdminRecording } from '@/types/admin';
 import { formatDate } from '@/lib/utils';
 import { SearchIcon, FilterIcon, ChevronRightIcon, ArrowLeftIcon, PlayIcon, PauseIcon, DownloadIcon } from 'lucide-react';
+import { AdminNotificationBadge } from '@/components/AdminNotificationBadge';
+import { RECORDING_APPROVE_PRESETS, RECORDING_REJECT_PRESETS } from '@/lib/recording-feedback-presets';
 
 export default function AdminRecordingsList() {
   const router = useRouter();
   const [recordings, setRecordings] = useState<AdminRecording[]>([]);
   const [loading, setLoading] = useState(true);
-  const [statusFilter, setStatusFilter] = useState<string>('');
+  const [statusFilter, setStatusFilter] = useState<string>('submitted');
   const [categoryFilter, setCategoryFilter] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [selectedRecordings, setSelectedRecordings] = useState<Set<string>>(new Set());
   const [bulkActionLoading, setBulkActionLoading] = useState(false);
+  const [rowActionId, setRowActionId] = useState<string | null>(null);
   const [playingId, setPlayingId] = useState<string | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [stats, setStats] = useState({
@@ -78,6 +81,52 @@ export default function AdminRecordingsList() {
       newSelected.delete(id);
     }
     setSelectedRecordings(newSelected);
+  };
+
+  const handleQuickApprove = async (id: string, presetId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const preset = RECORDING_APPROVE_PRESETS.find((p) => p.id === presetId);
+    if (!preset) return;
+
+    setRowActionId(id);
+    try {
+      const res = await fetch(`/api/admin/recordings/${id}/approve`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          points: preset.points,
+          feedback: preset.feedback,
+          publish: preset.publish,
+        }),
+      });
+      if (!res.ok) throw new Error('Approve failed');
+      fetchRecordings();
+    } catch {
+      alert('Could not approve recording');
+    } finally {
+      setRowActionId(null);
+    }
+  };
+
+  const handleQuickReject = async (id: string, presetId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const preset = RECORDING_REJECT_PRESETS.find((p) => p.id === presetId);
+    if (!preset) return;
+
+    setRowActionId(id);
+    try {
+      const res = await fetch(`/api/admin/recordings/${id}/reject`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ feedback: preset.feedback }),
+      });
+      if (!res.ok) throw new Error('Reject failed');
+      fetchRecordings();
+    } catch {
+      alert('Could not reject recording');
+    } finally {
+      setRowActionId(null);
+    }
   };
 
   const handleBulkApprove = async () => {
@@ -198,8 +247,11 @@ export default function AdminRecordingsList() {
                 <ArrowLeftIcon size={20} className="text-gray-600" />
             </button>
             <div className="flex-1">
-                <h1 className="text-3xl font-bold text-gray-900">Story Recordings</h1>
-                <p className="text-gray-500 mt-1">Manage and review student submissions — auto-refreshes every 30s</p>
+                <h1 className="flex items-center gap-2 text-3xl font-bold text-gray-900">
+                  Story Recordings
+                  <AdminNotificationBadge count={stats.pending} />
+                </h1>
+                <p className="text-gray-500 mt-1">Review queue — pending first, with quick approve/reject presets</p>
             </div>
             <button
               onClick={() => fetchRecordings()}
@@ -323,6 +375,7 @@ export default function AdminRecordingsList() {
                     <th className="px-6 py-4">Status</th>
                     <th className="px-6 py-4">Submitted</th>
                     <th className="px-6 py-4">Audio</th>
+                    <th className="px-6 py-4">Quick review</th>
                     <th className="px-6 py-4"></th>
                   </tr>
                 </thead>
@@ -395,6 +448,46 @@ export default function AdminRecordingsList() {
                             <span className="text-xs text-gray-400">No audio</span>
                           )}
                         </div>
+                      </td>
+                      <td className="px-6 py-4" onClick={(e) => e.stopPropagation()}>
+                        {rec.status === 'submitted' ? (
+                          <div className="flex min-w-[220px] flex-col gap-1">
+                            <select
+                              defaultValue=""
+                              disabled={rowActionId === rec.id}
+                              onChange={(e) => {
+                                const value = e.target.value;
+                                if (!value) return;
+                                handleQuickApprove(rec.id, value, e as unknown as React.MouseEvent);
+                                e.target.value = '';
+                              }}
+                              className="rounded-lg border border-emerald-200 bg-emerald-50 px-2 py-1 text-xs font-semibold text-emerald-800"
+                            >
+                              <option value="">Approve…</option>
+                              {RECORDING_APPROVE_PRESETS.map((p) => (
+                                <option key={p.id} value={p.id}>{p.label}</option>
+                              ))}
+                            </select>
+                            <select
+                              defaultValue=""
+                              disabled={rowActionId === rec.id}
+                              onChange={(e) => {
+                                const value = e.target.value;
+                                if (!value) return;
+                                handleQuickReject(rec.id, value, e as unknown as React.MouseEvent);
+                                e.target.value = '';
+                              }}
+                              className="rounded-lg border border-red-200 bg-red-50 px-2 py-1 text-xs font-semibold text-red-800"
+                            >
+                              <option value="">Reject…</option>
+                              {RECORDING_REJECT_PRESETS.map((p) => (
+                                <option key={p.id} value={p.id}>{p.label}</option>
+                              ))}
+                            </select>
+                          </div>
+                        ) : (
+                          <span className="text-xs text-gray-400">Reviewed</span>
+                        )}
                       </td>
                       <td className="px-6 py-4 text-right text-gray-400">
                         <ChevronRightIcon size={18} />

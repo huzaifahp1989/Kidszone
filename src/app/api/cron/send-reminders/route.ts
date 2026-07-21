@@ -1,6 +1,9 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { createReminderToken } from '@/lib/reminder-token';
+import { isOneSignalServerConfigured, sendOneSignalPush } from '@/lib/onesignal-server';
+import { runDuePushSchedules } from '@/lib/push-schedules';
+import { authorizeCron } from '@/lib/cron-auth';
 
 export const dynamic = 'force-dynamic';
 
@@ -24,9 +27,6 @@ function getMinDaysBetweenReminders(freq: ReminderUser['reminder_frequency']): n
 function shouldSendReminder(user: ReminderUser): boolean {
   if (!user.reminder_opt_in) return false;
   if (user.reminder_unsubscribed_at) return false;
-  const targetEmail = user.parent_email || user.email;
-  if (!targetEmail) return false;
-
   if (!user.reminder_last_sent_at) return true;
 
   const lastSent = new Date(user.reminder_last_sent_at);
@@ -34,15 +34,53 @@ function shouldSendReminder(user: ReminderUser): boolean {
   return daysSinceLast >= getMinDaysBetweenReminders(user.reminder_frequency);
 }
 
+async function sendPushReminder(userId: string, childName: string, resumeUrl: string) {
+  if (!isOneSignalServerConfigured()) return { sent: false, reason: 'not_configured' as const };
+
+  const { data } = await supabaseAdmin
+    .from('push_notification_tokens')
+    .select('token')
+    .eq('user_id', userId)
+    .eq('provider', 'onesignal')
+    .limit(20);
+
+  const playerIds = Array.from(
+    new Set((data || []).map((row) => String(row.token || '').trim()).filter(Boolean))
+  );
+
+  const result = await sendOneSignalPush({
+    title: 'Daily Quiz is ready!',
+    body: `${childName}, open Kids Zone and keep your learning streak going!`,
+    url: resumeUrl,
+    playerIds: playerIds.length ? playerIds : undefined,
+    externalUserIds: playerIds.length ? undefined : [userId],
+  });
+
+  return { sent: result.ok, reason: result.error || null };
+}
+
 export async function GET(request: Request) {
-  const authHeader = request.headers.get('authorization');
-  if (authHeader !== `Bearer ${process.env.CRON_SECRET}` && process.env.NODE_ENV === 'production') {
+  if (!authorizeCron(request)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
+  // Also process admin push schedules (backup when dedicated cron is delayed)
+  let scheduledPush: Awaited<ReturnType<typeof runDuePushSchedules>> | null = null;
+  try {
+    scheduledPush = await runDuePushSchedules();
+  } catch (err) {
+    console.warn('[cron/send-reminders] scheduled pushes failed:', err);
+  }
+
   const RESEND_API_KEY = process.env.RESEND_API_KEY;
-  if (!RESEND_API_KEY) {
-    return NextResponse.json({ error: 'RESEND_API_KEY is missing' }, { status: 500 });
+  const canEmail = Boolean(RESEND_API_KEY);
+  const canPush = isOneSignalServerConfigured();
+
+  if (!canEmail && !canPush) {
+    return NextResponse.json(
+      { error: 'Neither RESEND_API_KEY nor ONESIGNAL_REST_API_KEY is configured' },
+      { status: 500 }
+    );
   }
 
   try {
@@ -52,7 +90,9 @@ export async function GET(request: Request) {
 
     const { data, error } = await supabaseAdmin
       .from('users')
-      .select('uid,name,email,parent_email,reminder_opt_in,reminder_frequency,reminder_last_sent_at,reminder_unsubscribed_at')
+      .select(
+        'uid,name,email,parent_email,reminder_opt_in,reminder_frequency,reminder_last_sent_at,reminder_unsubscribed_at'
+      )
       .eq('reminder_opt_in', true)
       .is('reminder_unsubscribed_at', null)
       .limit(500);
@@ -61,7 +101,7 @@ export async function GET(request: Request) {
 
     const users = (data || []) as ReminderUser[];
     if (!users.length) {
-      return NextResponse.json({ success: true, sent: 0, scanned: 0 });
+      return NextResponse.json({ success: true, sent: 0, emails: 0, pushes: 0, scanned: 0 });
     }
 
     const userIds = users.map((u) => u.uid);
@@ -77,7 +117,8 @@ export async function GET(request: Request) {
       lastEarnedByUser.set(row.user_id as string, (row.last_earned_date as string | null) || null);
     }
 
-    let sent = 0;
+    let emails = 0;
+    let pushes = 0;
     const failures: Array<{ uid: string; reason: string }> = [];
 
     for (const user of users) {
@@ -85,34 +126,48 @@ export async function GET(request: Request) {
       if (!lastEarnedDate || lastEarnedDate > cutoffDate) continue;
       if (!shouldSendReminder(user)) continue;
 
-      const toEmail = user.parent_email || user.email;
-      if (!toEmail) continue;
-
       const childName = (user.name || 'your child').trim();
       const token = createReminderToken(user.uid);
       const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
       const unsubscribeUrl = `${appUrl}/api/reminders/unsubscribe?token=${encodeURIComponent(token)}`;
-      const resumeUrl = `${appUrl}/quiz`;
+      const resumeUrl = `${appUrl}/quiz?reminder=1`;
 
-      const response = await fetch('https://api.resend.com/emails', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${RESEND_API_KEY}`,
-        },
-        body: JSON.stringify({
-          from: 'Islamic Kids Platform <onboarding@resend.dev>',
-          to: [toEmail],
-          subject: `Kids Zone reminder for ${childName}`,
-          html: `
+      let delivered = false;
+
+      if (canPush) {
+        const push = await sendPushReminder(user.uid, childName, resumeUrl);
+        if (push.sent) {
+          pushes += 1;
+          delivered = true;
+        } else if (push.reason && push.reason !== 'not_configured') {
+          failures.push({ uid: user.uid, reason: `push:${push.reason}` });
+        }
+      }
+
+      const toEmail = user.parent_email || user.email;
+      if (canEmail && toEmail) {
+        const response = await fetch('https://api.resend.com/emails', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${RESEND_API_KEY}`,
+          },
+          body: JSON.stringify({
+            from: 'Islamic Kids Platform <onboarding@resend.dev>',
+            to: [toEmail],
+            subject: `Kids Zone: ${childName}'s quiz is waiting!`,
+            html: `
             <div style="font-family: Arial, sans-serif; max-width: 640px; margin: 0 auto;">
-              <h2 style="color: #0f766e;">Assalamu Alaikum</h2>
+              <h2 style="color: #5b21b6;">Assalamu Alaikum!</h2>
               <p style="color: #374151; line-height: 1.6;">
-                ${childName} has not been active on Kids Zone for a couple of days.
-                A quick 5-minute session can help keep their Islamic learning habit strong.
+                ${childName} has not visited Kids Zone for a couple of days.
+                A quick 5-minute quiz or game can help keep their learning streak going — and they can earn up to 200 points today!
+              </p>
+              <p style="color: #374151; line-height: 1.6; font-size: 14px;">
+                Tip: remind them to try the daily quiz first — it is the fastest way to earn points.
               </p>
               <p style="margin: 24px 0;">
-                <a href="${resumeUrl}" style="background: #0f766e; color: #ffffff; padding: 12px 20px; border-radius: 8px; text-decoration: none; display: inline-block; font-weight: 600;">Resume Learning</a>
+                <a href="${resumeUrl}" style="background: #5b21b6; color: #ffffff; padding: 12px 20px; border-radius: 8px; text-decoration: none; display: inline-block; font-weight: 600;">Start Today's Quiz</a>
               </p>
               <p style="color: #6b7280; font-size: 13px; line-height: 1.5;">
                 You are receiving this because reminders are enabled in your account settings.
@@ -121,28 +176,34 @@ export async function GET(request: Request) {
               </p>
             </div>
           `,
-        }),
-      });
+          }),
+        });
 
-      if (!response.ok) {
-        const reason = await response.text();
-        failures.push({ uid: user.uid, reason });
-        continue;
+        if (response.ok) {
+          emails += 1;
+          delivered = true;
+        } else {
+          const reason = await response.text();
+          failures.push({ uid: user.uid, reason: `email:${reason}` });
+        }
       }
 
-      await supabaseAdmin
-        .from('users')
-        .update({ reminder_last_sent_at: new Date().toISOString() })
-        .eq('uid', user.uid);
-
-      sent += 1;
+      if (delivered) {
+        await supabaseAdmin
+          .from('users')
+          .update({ reminder_last_sent_at: new Date().toISOString() })
+          .eq('uid', user.uid);
+      }
     }
 
     return NextResponse.json({
       success: true,
       scanned: users.length,
-      sent,
+      sent: emails + pushes,
+      emails,
+      pushes,
       failures,
+      scheduledPushes: scheduledPush,
     });
   } catch (error: any) {
     console.error('send-reminders cron error:', error);

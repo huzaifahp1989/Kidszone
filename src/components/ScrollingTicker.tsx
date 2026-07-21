@@ -14,7 +14,7 @@ const messages = [
   "🤝 Invite a friend and learn together!",
   "💎 Collect badges by completing activities!",
   "🌸 Say Bismillah and start learning today!",
-  "🏅 Top scorers earn special rewards — play now!",
+  "🏅 Qualify with 150+ points — winners picked at random!",
   "📿 Recite and record your Quran — earn stars!",
   "🌍 Join kids from around the world learning Islam!",
   "✨ Every good deed counts — keep going!",
@@ -25,10 +25,10 @@ export function ScrollingTicker() {
   const doubled = [...messages, ...messages];
 
   return (
-    <div className="scrolling-ticker-wrap overflow-hidden bg-gradient-to-r from-kids-primary via-kids-secondary to-kids-primary text-white py-2 relative">
+    <div className="scrolling-ticker-wrap relative overflow-hidden border-b border-violet-900/15 bg-gradient-to-r from-violet-900 via-violet-700 to-violet-900 py-1.5 text-white">
       <div className="scrolling-ticker-track flex whitespace-nowrap" style={{ animation: 'tickerScroll 60s linear infinite' }}>
         {doubled.map((msg, i) => (
-          <span key={i} className="inline-block mx-8 text-sm font-bold tracking-wide shrink-0">
+          <span key={i} className="mx-8 inline-block shrink-0 text-xs font-semibold tracking-wide sm:text-sm">
             {msg}
           </span>
         ))}

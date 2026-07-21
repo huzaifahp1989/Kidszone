@@ -100,13 +100,13 @@ BEGIN
     END IF;
 
     -- Check if there are any users with points
-    SELECT count(*) INTO v_count FROM public.users_points WHERE weekly_points > 0;
+    SELECT count(*) INTO v_count FROM public.users_points WHERE weekly_points > 100;
     
     IF v_count = 0 THEN
          RETURN jsonb_build_object(
             'success', false, 
             'is_new', false,
-            'message', 'No eligible players found (0 players with weekly_points > 0)'
+            'message', 'No eligible players found (0 players with weekly_points > 100)'
         );
     END IF;
 
@@ -114,7 +114,7 @@ BEGIN
     SELECT user_id, weekly_points, badges, level
     INTO v_winner_id, v_winning_score, v_badges, v_level
     FROM public.users_points
-    WHERE weekly_points > 0
+    WHERE weekly_points > 100
     ORDER BY weekly_points DESC
     LIMIT 1
     OFFSET floor(random() * LEAST(v_count, 20));

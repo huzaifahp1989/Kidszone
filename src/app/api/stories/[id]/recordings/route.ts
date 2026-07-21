@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
+import { getReadableObjectUrl } from '@/lib/object-storage';
 
 export const dynamic = 'force-dynamic';
 
@@ -10,12 +11,13 @@ export async function GET(
   try {
     const { id } = await context.params;
 
-    const baseQuery = () => supabaseAdmin
-      .from('recordings')
-      .select('id, audio_path, duration, duration_seconds, child_name')
-      .eq('story_id', id)
-      .eq('status', 'approved')
-      .eq('is_published', true);
+    const baseQuery = () =>
+      supabaseAdmin
+        .from('recordings')
+        .select('id, audio_path, duration, duration_seconds, child_name')
+        .eq('story_id', id)
+        .eq('status', 'approved')
+        .eq('is_published', true);
 
     let { data, error } = await baseQuery().order('submitted_at', { ascending: false });
     if (error && error.message?.includes('submitted_at')) {
@@ -32,24 +34,13 @@ export async function GET(
     const recordingsWithUrls = await Promise.all(
       (data || []).map(async (recording) => {
         let audioUrl: string | undefined;
-
         if (recording.audio_path) {
-          const { data: signedData, error: signedError } = await supabaseAdmin
-            .storage
-            .from('story-recordings')
-            .createSignedUrl(recording.audio_path, 3600);
-
-          if (!signedError && signedData?.signedUrl) {
-            audioUrl = signedData.signedUrl;
-          } else {
-            const { data: publicUrlData } = supabaseAdmin
-              .storage
-              .from('story-recordings')
-              .getPublicUrl(recording.audio_path);
-            audioUrl = publicUrlData.publicUrl;
+          try {
+            audioUrl = await getReadableObjectUrl('story-recordings', recording.audio_path, 3600);
+          } catch {
+            audioUrl = undefined;
           }
         }
-
         return {
           ...recording,
           audio_url: audioUrl,
@@ -58,7 +49,8 @@ export async function GET(
     );
 
     return NextResponse.json({ recordings: recordingsWithUrls });
-  } catch (error) {
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Failed to load recordings';
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

@@ -4,8 +4,10 @@
  */
 
 import { supabase } from './supabase'
+import { POINTS_DAILY_CAP } from './points-policy'
 import { ensureUserProfile } from './user-profile'
 import { isTestModeEmail } from './test-mode'
+import { getAuthFetchHeaders } from './auth-headers'
 
 async function syncUserSnapshot(userId: string, totals: {
   total_points?: number
@@ -76,7 +78,7 @@ export async function awardPoints(
   options: AwardPointsOptions = {}
 ): Promise<AwardPointsResponse> {
   try {
-    const countTowardDailyLimit = options.countTowardDailyLimit !== false
+    const countTowardDailyLimit = options.countTowardDailyLimit !== false;
     // CRITICAL: Verify user is authenticated BEFORE calling RPC
     const {
       data: { user },
@@ -129,170 +131,59 @@ export async function awardPoints(
     // Ensure profile and points rows exist for new users before awarding.
     await ensureUserProfile(user.id)
 
-    // STRICT LIMIT CHECK: Check daily allowance BEFORE calling RPC
-    const allowance = await checkDailyAllowance()
-    if (countTowardDailyLimit && allowance.remaining < points) {
-      console.warn('[awardPoints] 🛑 Client-side limit check: Daily limit reached', allowance)
-      return {
-        success: false,
-        message: 'No points can be awarded right now. Please try again later.',
-        points_awarded: 0,
-        today_points: allowance.today_points,
-        daily_limit: 100,
-      }
-    }
+    // Let the server apply the daily cap (including partial awards).
+    // Do not hard-block here when remaining < requested — that dropped valid points.
 
-    // Call the RPC function
-    console.log('[awardPoints] Calling RPC award_points with:', { p_points: points })
-    const { data, error } = await supabase.rpc('award_points', {
-      p_points: points,
-    })
-
-    console.log('[awardPoints] RPC response:', { data, error: error?.message })
-
-    if (!error && data) {
-      if (data.success) {
-        console.log('[awardPoints] RPC success, syncing users table')
+    try {
+      const headers = await getAuthFetchHeaders({ 'Content-Type': 'application/json' })
+      const apiRes = await fetch('/api/points/award', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          userId: user.id,
+          points,
+          countTowardDailyLimit,
+        }),
+      })
+      const apiData = await apiRes.json()
+      if (apiRes.ok && apiData?.success) {
         await syncUserSnapshot(user.id, {
-          total_points: data.total_points,
-          weekly_points: data.weekly_points,
-          monthly_points: data.monthly_points,
+          total_points: apiData.total_points,
+          weekly_points: apiData.weekly_points,
+          monthly_points: apiData.monthly_points,
         })
-        return data as AwardPointsResponse
-      } 
-      
-      // If RPC failed, check if it's the deprecated "game limit" error
-      // If so, we ignore it and fall through to the direct upsert fallback
-      const isGameLimit = data.message && (
-        data.message.toLowerCase().includes('game limit') || 
-        data.message.toLowerCase().includes('3 games')
-      );
-      
-      if (!isGameLimit) {
-        const currentToday = data.today_points ?? 0
-        const currentLimit = data.daily_limit ?? 100
-        const remaining = Math.max(0, currentLimit - currentToday)
-
-        if (remaining > 0) {
-          console.warn('[awardPoints] RPC denied but partial points possible. Forcing fallback to award remaining:', remaining)
-          // Fall through to fallback logic
-        } else if (!countTowardDailyLimit) {
-          // Activity explicitly bypasses the daily cap (e.g. pledge/durood).
-          // The RPC enforces the cap regardless, so fall through to the fallback
-          // upsert which respects countTowardDailyLimit=false.
-          console.warn('[awardPoints] Daily limit reached but countTowardDailyLimit=false — falling through to fallback to bypass cap')
-          // Fall through to fallback logic
-        } else {
-          console.log('[awardPoints] RPC denied points (likely daily points limit):', data.message)
-          return data as AwardPointsResponse
+        return {
+          success: true,
+          message: apiData.message || 'Points awarded successfully',
+          points_awarded: Number(apiData.points_awarded || 0),
+          total_points: apiData.total_points,
+          today_points: apiData.today_points,
+          weekly_points: apiData.weekly_points,
+          monthly_points: apiData.monthly_points,
+          badges: apiData.badges,
+          level: apiData.level,
+          badges_earned_now: undefined,
+          daily_limit: apiData.daily_limit,
         }
       }
-      
-      console.warn('[awardPoints] RPC enforced deprecated game limit. Ignoring and using fallback upsert.');
-    }
-
-    // Fallback: direct upsert with daily cap
-    console.warn('[awardPoints] RPC unavailable or failed, using fallback upsert', error?.message)
-
-    const todayStr = new Date().toISOString().slice(0, 10)
-    const dailyLimit = 100
-
-    console.log('[awardPoints] Fallback: checking existing row for user:', user.id)
-    // Ensure row exists
-    const { data: existingRow, error: fetchErr } = await supabase
-      .from('users_points')
-      .select('*')
-      .eq('user_id', user.id)
-      .maybeSingle()
-
-    console.log('[awardPoints] Fallback: existing row:', { existingRow, fetchErr })
-
-    if (fetchErr) {
-      console.error('[awardPoints] fallback fetch error', fetchErr)
-      return {
-        success: false,
-        message: fetchErr.message || 'Failed to award points',
-        points_awarded: 0,
+      if (apiData?.message || apiData?.error) {
+        console.warn('[awardPoints] Server award declined:', apiData.message || apiData.error)
+        return {
+          success: false,
+          message: apiData.message || apiData.error,
+          points_awarded: 0,
+          today_points: apiData.today_points,
+          daily_limit: apiData.daily_limit ?? POINTS_DAILY_CAP,
+        }
       }
+    } catch (apiErr) {
+      console.warn('[awardPoints] Server award route failed', apiErr)
     }
 
-    const isNewDay = !existingRow?.last_earned_date || existingRow.last_earned_date !== todayStr
-    const todayPoints = isNewDay ? 0 : existingRow?.today_points ?? 0
-
-    let pointsToAward = points
-    if (countTowardDailyLimit && todayPoints + pointsToAward > dailyLimit) {
-      pointsToAward = Math.max(0, dailyLimit - todayPoints)
-    }
-
-    if (pointsToAward <= 0) {
-      console.warn('[awardPoints] Fallback: daily limit reached (0 remaining)')
-      return {
-        success: false,
-        message: 'No points can be awarded right now. Please try again later.',
-        points_awarded: 0,
-        today_points: todayPoints,
-        daily_limit: dailyLimit,
-      }
-    }
-
-    const newDailyTotal = countTowardDailyLimit ? todayPoints + pointsToAward : todayPoints
-    console.log('[awardPoints] Fallback: daily check:', { isNewDay, todayPoints, newDailyTotal, dailyLimit, pointsToAward, countTowardDailyLimit })
-
-    const total = (existingRow?.total_points ?? 0) + pointsToAward
-    const weekly = (existingRow?.weekly_points ?? 0) + pointsToAward
-    const monthly = (existingRow?.monthly_points ?? 0) + pointsToAward
-    
-    // Calculate badges/level for response purposes.
-    const badges = Math.floor(total / 100)
-    const level = 1 + Math.floor(badges / 5)
-    const badgesEarnedNow = badges - Math.floor((existingRow?.total_points ?? 0) / 100)
-
-    console.log('[awardPoints] Fallback: upserting with:', { user_id: user.id, total, weekly, monthly, today: newDailyTotal, badges, level })
-
-    const { error: upsertErr } = await supabase
-      .from('users_points')
-      .upsert({
-        user_id: user.id,
-        total_points: total,
-        weekly_points: weekly,
-        monthly_points: monthly,
-        today_points: newDailyTotal,
-        last_earned_date: todayStr,
-        badges: badges,
-        level: level,
-      }, { onConflict: 'user_id' })
-
-    console.log('[awardPoints] Fallback: upsert result:', { upsertErr })
-
-    if (upsertErr) {
-      console.error('[awardPoints] fallback upsert error:', upsertErr)
-      return {
-        success: false,
-        message: 'Could not update points. Please try again.',
-        points_awarded: 0,
-      }
-    }
-
-    console.log('[awardPoints] Fallback: syncing users table')
-    await syncUserSnapshot(user.id, {
-      total_points: total,
-      weekly_points: weekly,
-      monthly_points: monthly,
-    })
-
-    console.log('[awardPoints] Fallback: complete, returning success')
     return {
-      success: true,
-      message: countTowardDailyLimit ? 'Points awarded successfully' : 'Bonus points awarded successfully',
-      points_awarded: pointsToAward,
-      total_points: total,
-      today_points: newDailyTotal,
-      weekly_points: weekly,
-      monthly_points: monthly,
-      badges: badges,
-      level: level,
-      badges_earned_now: badgesEarnedNow,
-      daily_limit: dailyLimit,
+      success: false,
+      message: 'Could not award points. Please try again.',
+      points_awarded: 0,
     }
   } catch (error) {
     console.error('[awardPoints] Exception caught:', error)
@@ -380,8 +271,8 @@ export async function checkDailyAllowance(): Promise<{
   if (!userPoints) {
     return {
       today_points: 0,
-      remaining: 100,
-      daily_limit: 100,
+      remaining: POINTS_DAILY_CAP,
+      daily_limit: POINTS_DAILY_CAP,
     }
   }
 
@@ -393,8 +284,8 @@ export async function checkDailyAllowance(): Promise<{
 
   return {
     today_points: actualTodayPoints,
-    remaining: Math.max(0, 100 - actualTodayPoints),
-    daily_limit: 100,
+    remaining: Math.max(0, POINTS_DAILY_CAP - actualTodayPoints),
+    daily_limit: POINTS_DAILY_CAP,
   }
 }
 

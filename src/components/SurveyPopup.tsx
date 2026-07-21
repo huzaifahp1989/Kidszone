@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { canShowSessionPopup, markSessionPopupShown } from '@/lib/popup-session-cap';
 
 const SURVEY_URL =
   'https://docs.google.com/forms/d/e/1FAIpQLSeEVZHFkbYB6isXFrKrdsJszF3rho_3_NqlMHFYdIQ5SypKXg/viewform?usp=header';
@@ -9,16 +10,16 @@ const STORAGE_KEY = 'survey_popup_dismissed_date';
 
 export function SurveyPopup() {
   const [visible, setVisible] = useState(false);
-  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    setMounted(true);
     const timer = setTimeout(() => {
       try {
         const dismissed = localStorage.getItem(STORAGE_KEY);
         const today = new Date().toISOString().slice(0, 10);
         if (dismissed !== today) {
+          if (!canShowSessionPopup('survey')) return;
           setVisible(true);
+          markSessionPopupShown('survey');
         }
       } catch {
         setVisible(true);
@@ -35,7 +36,8 @@ export function SurveyPopup() {
     setVisible(false);
   };
 
-  if (!mounted || !visible) return null;
+  if (typeof document === 'undefined') return null;
+  if (!visible) return null;
 
   return createPortal(
     <div
@@ -64,7 +66,7 @@ export function SurveyPopup() {
         }}
       >
         {/* Header */}
-        <div style={{ background: 'linear-gradient(to right, #14b8a6, #0d9488)', padding: '16px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div style={{ background: 'linear-gradient(to right, #7c3aed, #6d28d9)', padding: '16px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <span style={{ fontSize: '24px' }}>📋</span>
             <span style={{ color: '#fff', fontWeight: 700, fontSize: '16px' }}>Quick Survey</span>
@@ -80,7 +82,7 @@ export function SurveyPopup() {
 
         {/* Body */}
         <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-          <p style={{ color: '#6a422d', fontSize: '14px', fontWeight: 500, margin: 0 }}>
+          <p style={{ color: '#1e1b4b', fontSize: '14px', fontWeight: 500, margin: 0 }}>
             Assalamu Alaikum! 🌙
           </p>
           <p style={{ color: '#374151', fontSize: '14px', lineHeight: 1.6, margin: 0 }}>
@@ -92,7 +94,7 @@ export function SurveyPopup() {
               target="_blank"
               rel="noopener noreferrer"
               onClick={dismiss}
-              style={{ flex: 1, textAlign: 'center', padding: '10px 16px', background: 'linear-gradient(to right, #14b8a6, #0d9488)', color: '#fff', fontWeight: 700, fontSize: '14px', borderRadius: '12px', textDecoration: 'none' }}
+              style={{ flex: 1, textAlign: 'center', padding: '10px 16px', background: 'linear-gradient(to right, #7c3aed, #6d28d9)', color: '#fff', fontWeight: 700, fontSize: '14px', borderRadius: '12px', textDecoration: 'none' }}
             >
               Fill Survey ✍️
             </a>

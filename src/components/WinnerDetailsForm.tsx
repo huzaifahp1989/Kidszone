@@ -12,6 +12,7 @@ type WinnerDetailsFormProps = {
 
 const MADRASAH_COLUMNS = ['madrasahname', 'madrasah_name', 'madrasahName'];
 const CONTACT_COLUMNS = ['contactnumber', 'contact_number', 'contactNumber'];
+const CITY_COLUMNS = ['city', 'town', 'location'];
 const ABOUT_COLUMNS = ['winner_note', 'winner_notes', 'about_me', 'about_text'];
 
 const ABOUT_CACHE_KEY_PREFIX = 'winner-about-';
@@ -21,6 +22,7 @@ export function WinnerDetailsForm({ compact = false, sectionId }: WinnerDetailsF
 
   const [name, setName] = useState('');
   const [age, setAge] = useState<number | ''>('');
+  const [city, setCity] = useState('');
   const [madrasahName, setMadrasahName] = useState('');
   const [parentEmail, setParentEmail] = useState('');
   const [contactNumber, setContactNumber] = useState('');
@@ -33,6 +35,7 @@ export function WinnerDetailsForm({ compact = false, sectionId }: WinnerDetailsF
   useEffect(() => {
     setName(profile?.name ?? '');
     setAge(typeof profile?.age === 'number' ? profile.age : '');
+    setCity((profile as any)?.city ?? (profile as any)?.town ?? (profile as any)?.location ?? '');
     setMadrasahName(profile?.madrasahName ?? '');
     setParentEmail((profile as any)?.parentEmail ?? profile?.email ?? user?.email ?? '');
     setContactNumber(profile?.contactNumber ?? '');
@@ -70,6 +73,7 @@ export function WinnerDetailsForm({ compact = false, sectionId }: WinnerDetailsF
     if (!user?.id) return;
 
     const cleanName = name.trim();
+    const cleanCity = city.trim();
     const cleanMadrasah = madrasahName.trim();
     const cleanParentEmail = parentEmail.trim().toLowerCase();
     const cleanContact = contactNumber.trim();
@@ -99,6 +103,7 @@ export function WinnerDetailsForm({ compact = false, sectionId }: WinnerDetailsF
         data: {
           name: cleanName,
           age: age === '' ? null : Number(age),
+          city: cleanCity || null,
           madrasahName: cleanMadrasah || null,
           contactNumber: cleanContact,
           parentEmail: cleanParentEmail || null,
@@ -121,26 +126,30 @@ export function WinnerDetailsForm({ compact = false, sectionId }: WinnerDetailsF
 
       for (const madrasahColumn of MADRASAH_COLUMNS) {
         for (const contactColumn of CONTACT_COLUMNS) {
-          const payload: Record<string, any> = {
-            ...basePayload,
-            [madrasahColumn]: cleanMadrasah || null,
-            [contactColumn]: cleanContact,
-          };
+          for (const cityColumn of CITY_COLUMNS) {
+            const payload: Record<string, any> = {
+              ...basePayload,
+              [madrasahColumn]: cleanMadrasah || null,
+              [contactColumn]: cleanContact,
+              [cityColumn]: cleanCity || null,
+            };
 
-          const { error: updateError } = await supabase
-            .from('users')
-            .update(payload)
-            .eq('uid', user.id);
+            const { error: updateError } = await supabase
+              .from('users')
+              .update(payload)
+              .eq('uid', user.id);
 
-          if (!updateError) {
-            profileUpdated = true;
-            break;
+            if (!updateError) {
+              profileUpdated = true;
+              break;
+            }
+
+            lastColumnError = updateError;
+            if (updateError.code !== '42703') {
+              throw updateError;
+            }
           }
-
-          lastColumnError = updateError;
-          if (updateError.code !== '42703') {
-            throw updateError;
-          }
+          if (profileUpdated) break;
         }
         if (profileUpdated) break;
       }
@@ -266,6 +275,16 @@ export function WinnerDetailsForm({ compact = false, sectionId }: WinnerDetailsF
         </label>
 
         <label className="block">
+          <span className="mb-1 block text-sm font-semibold text-gray-700">City / Town</span>
+          <input
+            value={city}
+            onChange={(e) => setCity(e.target.value)}
+            className="w-full rounded-lg border border-gray-300 px-3 py-2"
+            placeholder="e.g. Birmingham"
+          />
+        </label>
+
+        <label className="block">
           <span className="mb-1 block text-sm font-semibold text-gray-700">Parent Email</span>
           <input
             type="email"
@@ -303,7 +322,7 @@ export function WinnerDetailsForm({ compact = false, sectionId }: WinnerDetailsF
           <button
             type="submit"
             disabled={!canSubmit || saving}
-            className="rounded-lg bg-gradient-to-r from-[#14b8a6] to-[#0d9488] px-5 py-2.5 font-bold text-white disabled:cursor-not-allowed disabled:opacity-60"
+            className="rounded-lg bg-gradient-to-r from-[#7c3aed] to-[#6d28d9] px-5 py-2.5 font-bold text-white disabled:cursor-not-allowed disabled:opacity-60"
           >
             {saving ? 'Saving...' : 'Save Winner Details'}
           </button>

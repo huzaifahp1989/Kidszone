@@ -23,9 +23,10 @@ export interface KidProfile {
   updatedAt: string;
 }
 
+import { POINTS_DAILY_CAP, resolveTodayPoints } from './points-policy';
+
 function mapUser(row: any, pointsRow?: any): KidProfile {
-  const dailyLimit = 100;
-  const todayPoints = pointsRow?.today_points ?? 0;
+  const todayPoints = resolveTodayPoints(pointsRow?.today_points, pointsRow?.last_earned_date);
 
   const totalPoints = pointsRow?.total_points ?? row.points ?? 0;
   const weeklyPoints = pointsRow?.weekly_points ?? row.weeklyPoints ?? row.weeklypoints ?? 0;
@@ -43,7 +44,7 @@ function mapUser(row: any, pointsRow?: any): KidProfile {
     weeklyPoints,
     monthlyPoints,
     todayPoints,
-    dailyLimit,
+    dailyLimit: POINTS_DAILY_CAP,
     badges: row.badges ?? 0,
     level: row.level ?? 'Beginner',
     streak: row.streak ?? 0,
@@ -72,7 +73,7 @@ export async function getProfile(uid: string): Promise<KidProfile | null> {
 
     const { data: pointsRow, error: pointsError } = await supabase
       .from('users_points')
-      .select('total_points, weekly_points, monthly_points, today_points')
+      .select('total_points, weekly_points, monthly_points, today_points, last_earned_date')
       .eq('user_id', uid)
       .maybeSingle();
 
@@ -122,7 +123,7 @@ export async function createProfile(
 
     const { data: pointsRow, error: pointsError } = await supabase
       .from('users_points')
-      .select('total_points, weekly_points, monthly_points, today_points')
+      .select('total_points, weekly_points, monthly_points, today_points, last_earned_date')
       .eq('user_id', uid)
       .maybeSingle();
 

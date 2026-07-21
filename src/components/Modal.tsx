@@ -40,7 +40,7 @@ export const Modal: React.FC<ModalProps> = ({
     <AnimatePresence>
       {isOpen && (
       <motion.div
-        className="fixed inset-0 bg-black/70 flex items-center justify-center z-[100] p-3 sm:p-4"
+        className="fixed inset-0 z-[100] flex items-end justify-center bg-black/70 p-0 sm:items-center sm:p-4"
         initial={reduceMotion ? undefined : { opacity: 0 }}
         animate={reduceMotion ? undefined : { opacity: 1 }}
         exit={reduceMotion ? undefined : { opacity: 0 }}
@@ -59,13 +59,13 @@ export const Modal: React.FC<ModalProps> = ({
           animate={reduceMotion ? undefined : { opacity: 1, y: 0, scale: 1 }}
           exit={reduceMotion ? undefined : { opacity: 0, y: 8, scale: 0.98 }}
           transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
-          className={`${sizeClasses[size]} w-full bg-white rounded-2xl shadow-2xl max-h-[90vh] overflow-y-auto`}
+          className={`${sizeClasses[size]} surface-card max-h-[92dvh] w-full overflow-y-auto rounded-t-3xl shadow-panel sm:max-h-[90vh] sm:rounded-3xl`}
         >
-          <div className="flex justify-between items-center px-4 py-4 sm:p-6 border-b-4 border-islamic-blue">
-            <h2 className="text-lg sm:text-2xl font-bold text-islamic-dark">{title}</h2>
+          <div className="sticky top-0 z-10 flex items-center justify-between border-b border-sand-200/80 bg-gradient-to-r from-violet-50/95 to-sand-50/95 px-4 py-3 backdrop-blur-sm sm:px-6 sm:py-5">
+            <h2 className="font-heading text-base font-bold text-violet-900 sm:text-2xl">{title}</h2>
             <button
               onClick={onClose}
-              className="text-gray-500 hover:text-red-500 transition interactive-focus touch-target"
+              className="rounded-xl p-1 text-sand-500 transition hover:bg-coral-50 hover:text-coral-500 interactive-focus touch-target"
               aria-label="Close modal"
             >
               <X size={28} />

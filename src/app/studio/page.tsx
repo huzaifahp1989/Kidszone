@@ -4,6 +4,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components';
 import { useAuth } from '@/lib/auth-context';
+import { trackQuranRecordingSubmitted } from '@/lib/analytics';
 
 type Category = 'quran' | 'nasheed' | 'story';
 
@@ -291,6 +292,9 @@ export default function StudioPage() {
         setSubmitError(data.error || 'Failed to submit recording. Please try again.');
       } else {
         setSubmitSuccess('Recording sent successfully. JazakAllahu khayran!');
+        if (category === 'quran') {
+          trackQuranRecordingSubmitted({ source: 'studio' });
+        }
       }
     } catch (err) {
       setSubmitError('Failed to submit recording. Please try again.');

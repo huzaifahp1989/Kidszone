@@ -1,9 +1,12 @@
 'use client';
 import { useRouter } from 'next/navigation';
 import React, { useEffect, useRef, useState } from 'react';
-import { BiWeeklyResetPopup, Modal } from '@/components';
+import { BiWeeklyResetPopup } from '@/components';
+import { usePointsProgress } from '@/lib/points-progress-context';
 import { useAuth } from '@/lib/auth-context';
-import { awardPoints as awardPointsRpc } from '@/lib/points-service';
+import { completeGameSession } from '@/lib/complete-game-session';
+import { ACTIVITY_BONUS_POINTS, MAX_DAILY_GAME_COMPLETIONS } from '@/lib/points-policy';
+import { getAuthFetchHeaders } from '@/lib/auth-headers';
 import {
   hangmanTopics,
   crosswordPuzzles,
@@ -13,6 +16,9 @@ import {
 } from '@/data/games';
 import type { CrosswordPuzzle } from '@/data/games';
 import { Star, Trophy, Target, Sparkles, ArrowLeft, Puzzle } from 'lucide-react';
+import Link from 'next/link';
+import { useAgeMode } from '@/lib/age-mode';
+import { EarnMorePointsLinks } from '@/components/EarnMorePointsLinks';
 
 type GameId = 'hangman' | 'crossword' | 'scramble' | 'true-or-false' | 'names-of-allah';
 type TaskKind = 'mcq' | 'hangman' | 'crossword' | 'scramble';
@@ -24,11 +30,10 @@ interface Task {
   meta?: Record<string, any>;
 }
 interface GameSession { id: GameId; title: string; icon: string; tasks: Task[]; }
-type CompletionSummary = { gameTitle: string; pointsEarned: number; };
 
 const gameCatalog: { id: GameId; title: string; description: string; icon: string; color: string }[] = [
   { id: 'hangman',        title: 'Islamic Hangman',   description: 'Guess Islamic words letter by letter',        icon: '🏗️', color: 'from-[#ec4899] to-[#db2777]' },
-  { id: 'crossword',      title: 'Islamic Crossword', description: 'Fill in the Islamic crossword puzzle',        icon: '🔤', color: 'from-[#14b8a6] to-[#0d9488]' },
+  { id: 'crossword',      title: 'Islamic Crossword', description: 'Fill in the Islamic crossword puzzle',        icon: '🔤', color: 'from-[#7c3aed] to-[#6d28d9]' },
   { id: 'scramble',       title: 'Word Scramble',     description: 'Unscramble mixed-up Islamic words',           icon: '🔀', color: 'from-[#8b5cf6] to-[#6366f1]' },
   { id: 'true-or-false',  title: 'True or False',     description: 'Test your Islamic knowledge with T/F',       icon: '✅', color: 'from-[#f59e0b] to-[#d97706]' },
   { id: 'names-of-allah', title: '99 Names of Allah', description: "Match Allah's beautiful names to meanings",  icon: '☪️', color: 'from-[#3b82f6] to-[#2563eb]' },
@@ -77,6 +82,8 @@ const getCrosswordCellMeta = (puzzle: CrosswordPuzzle, r: number, c: number) => 
 export default function GamesPage() {
   const router = useRouter();
   const { user, refreshProfile, profile, updateLocalProfile } = useAuth() as any;
+  const { showPointsProgress } = usePointsProgress();
+  const { isYounger } = useAgeMode();
   const [selectedGameId, setSelectedGameId] = useState<GameId | null>(null);
   const [session, setSession] = useState<GameSession | null>(null);
   const [taskIndex, setTaskIndex] = useState(0);
@@ -97,8 +104,24 @@ export default function GamesPage() {
   const [mcqAnswered, setMcqAnswered] = useState(false);
   const [loading, setLoading] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
-  const [completion, setCompletion] = useState<CompletionSummary | null>(null);
-  const [competitionMessage, setCompetitionMessage] = useState<string | null>(null);
+  const [gamesUsedToday, setGamesUsedToday] = useState(0);
+  const gameBonusAwardedRef = useRef(false);
+
+  useEffect(() => {
+    if (!user?.id) {
+      setGamesUsedToday(0);
+      return;
+    }
+    getAuthFetchHeaders().then((headers) =>
+      fetch(`/api/activities/daily-status?userId=${encodeURIComponent(user.id)}`, { headers })
+    )
+      .then((res) => res.json())
+      .then((data) => {
+        const gameRow = (data?.activities || []).find((row: { activity: string }) => row.activity === 'game');
+        setGamesUsedToday(Number(gameRow?.used ?? 0));
+      })
+      .catch(() => setGamesUsedToday(0));
+  }, [user?.id, profile?.todayPoints]);
 
   const showToast = (msg: string, ms = 2500) => { setToast(msg); setTimeout(() => setToast(null), ms); };
   const applyPointGain = (earned: number) => { setPoints(p => { const n = p + earned; pointsRef.current = n; return n; }); };
@@ -111,42 +134,59 @@ export default function GamesPage() {
     setScrambleInput(''); setScrambleCorrect(false); setScrambleRevealed(false);
     setPoints(0); pointsRef.current = 0; setFeedback(null);
     setMcqAnswered(false);
-  };
-
-  const awardPointsForGame = async (base: number) => {
-    if (!user?.id) return;
-    setLoading(true);
-    try {
-      const result = await awardPointsRpc(base);
-      if (!result.success) { showToast(result.message || 'No points awarded.'); return; }
-      applyPointGain(result.points_awarded ?? base);
-      if (result.total_points !== undefined || result.weekly_points !== undefined) {
-        updateLocalProfile({ points: result.total_points, weeklyPoints: result.weekly_points, monthlyPoints: result.monthly_points, todayPoints: result.today_points });
-      }
-      showToast(`⭐ +${result.points_awarded} points!`);
-      await refreshProfile();
-    } catch { showToast('Points not saved. Try again.'); }
-    finally { setLoading(false); }
+    gameBonusAwardedRef.current = false;
   };
 
   const finishGame = async () => {
-    const finalPoints = pointsRef.current;
-    try {
-      if (user?.id) await fetch('/api/games/track', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: user.id, gameId: selectedGameId, gameTitle: session?.title || 'Game', pointsEarned: finalPoints, difficulty: 'medium', tasksPlayed: session?.tasks.length || 0 }) });
-    } catch {}
-    try {
-      if (user?.id) {
-        const res = await fetch('/api/competition/track', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ userId: user.id, activity: 'game' }),
+    const gameTitle = session?.title || 'Game';
+    let earnedBonus = 0;
+
+    if (user?.id && !gameBonusAwardedRef.current) {
+      gameBonusAwardedRef.current = true;
+      setLoading(true);
+      try {
+        const result = await completeGameSession({
+          userId: user.id,
+          gameId: selectedGameId || 'game',
+          gameTitle,
+          difficulty: 'medium',
+          tasksPlayed: session?.tasks.length || 0,
+          trackCompetition: true,
         });
-        const data = await res.json().catch(() => null);
-        if (res.ok && data?.message) setCompetitionMessage(String(data.message));
+        earnedBonus = result.pointsAwarded;
+        if (result.profile) {
+          updateLocalProfile({
+            points: result.profile.points,
+            weeklyPoints: result.profile.weeklyPoints,
+            monthlyPoints: result.profile.monthlyPoints,
+            todayPoints: result.profile.todayPoints,
+          });
+        }
+        if (earnedBonus > 0) {
+          showToast(`⭐ +${earnedBonus} points for finishing the game!`);
+          setGamesUsedToday((prev) => Math.min(MAX_DAILY_GAME_COMPLETIONS, prev + 1));
+        } else if (result.message) {
+          showToast(result.message);
+        }
+        await refreshProfile();
+      } catch {
+        gameBonusAwardedRef.current = false;
+        showToast('Points not saved. Try again.');
+      } finally {
+        setLoading(false);
       }
-    } catch {}
-    setCompletion({ gameTitle: session?.title || 'Game', pointsEarned: finalPoints });
-    setSelectedGameId(null); setSession(null); resetState();
+    }
+
+    setSelectedGameId(null);
+    setSession(null);
+    resetState();
+    if (user?.id && earnedBonus > 0) {
+      showPointsProgress({
+        activity: 'game',
+        activityLabel: gameTitle,
+        pointsEarned: earnedBonus,
+      });
+    }
   };
 
   const quitGame = () => { setSelectedGameId(null); setSession(null); resetState(); };
@@ -211,7 +251,7 @@ export default function GamesPage() {
     setSelectedOption(optionId);
     setMcqAnswered(true);
     const isCorrect = optionId === currentTask.correctOptionId;
-    if (isCorrect) { setFeedback('✅ Correct! MashaAllah 🎉'); await awardPointsForGame(currentTask.points); }
+    if (isCorrect) { setFeedback('✅ Correct! MashaAllah 🎉'); applyPointGain(currentTask.points); }
     else { setFeedback(`❌ Not quite. The answer was: ${currentTask.options.find(o => o.id === currentTask.correctOptionId)?.text}`); }
   };
 
@@ -230,7 +270,7 @@ export default function GamesPage() {
       const isComplete = [...word].every(ch => newGuesses.has(ch));
       if (isComplete) {
         setFeedback('🎉 MashaAllah! You guessed it!');
-        await awardPointsForGame(20);
+        applyPointGain(20);
         setTimeout(async () => { setFeedback(null); await finishGame(); }, 1500);
       }
     } else {
@@ -261,7 +301,7 @@ export default function GamesPage() {
     setCrosswordErrors(errors); setCrosswordChecked(true);
     if (allCorrect) {
       setCrosswordSolved(true); setFeedback('🎉 MashaAllah! Crossword completed!');
-      await awardPointsForGame(20);
+      applyPointGain(20);
       setTimeout(async () => { setFeedback(null); await finishGame(); }, 1800);
     } else { setFeedback('Some answers are incorrect. Keep trying!'); setTimeout(() => setFeedback(null), 2000); }
   };
@@ -273,7 +313,7 @@ export default function GamesPage() {
     if (isCorrect) {
       setScrambleCorrect(true);
       setFeedback('Correct! MashaAllah 🎉');
-      await awardPointsForGame(currentTask.points);
+      applyPointGain(currentTask.points);
     }
     else setFeedback(`Not quite! The answer was ${correct}`);
     setTimeout(async () => {
@@ -291,7 +331,7 @@ export default function GamesPage() {
     return (
       <div className="page-canvas py-8 px-4">
         <div className="max-w-3xl mx-auto">
-          <button onClick={quitGame} className="flex items-center gap-2 text-[#6a422d] hover:text-[#14b8a6] font-semibold mb-6">
+          <button onClick={quitGame} className="flex items-center gap-2 text-[#1e1b4b] hover:text-[#7c3aed] font-semibold mb-6">
             <ArrowLeft size={20} /> Back to Games
           </button>
           <div className="hero-panel p-6">
@@ -299,19 +339,19 @@ export default function GamesPage() {
               <div className="flex items-center gap-3">
                 <span className="text-3xl">{session.icon}</span>
                 <div>
-                  <h2 className="text-xl font-bold text-[#6a422d]">{session.title}</h2>
-                  {session.tasks.length > 1 && <p className="text-sm text-[#a1633a]">Question {taskIndex + 1} of {session.tasks.length}</p>}
+                  <h2 className="text-xl font-bold text-[#1e1b4b]">{session.title}</h2>
+                  {session.tasks.length > 1 && <p className="text-sm text-[#475569]">Question {taskIndex + 1} of {session.tasks.length}</p>}
                 </div>
               </div>
-              <div className="bg-[#f0fdfa] px-4 py-2 rounded-xl">
-                <p className="text-sm font-bold text-[#14b8a6]">⭐ {points} pts</p>
+              <div className="bg-[#f5f3ff] px-4 py-2 rounded-xl">
+                <p className="text-sm font-bold text-[#7c3aed]">⭐ {points} pts</p>
               </div>
             </div>
 
             {currentTask?.kind === 'hangman' && (
               <div className="space-y-6">
                 <div className="flex justify-center">
-                  <svg width="120" height="130" viewBox="0 0 120 130" className="stroke-[#6a422d] fill-none stroke-2">
+                  <svg width="120" height="130" viewBox="0 0 120 130" className="stroke-[#1e1b4b] fill-none stroke-2">
                     <line x1="10" y1="125" x2="110" y2="125" />
                     <line x1="40" y1="125" x2="40" y2="10" />
                     <line x1="40" y1="10" x2="80" y2="10" />
@@ -324,10 +364,10 @@ export default function GamesPage() {
                     {hangmanWrongCount >= 6 && <line x1="80" y1="85" x2="100" y2="110" />}
                   </svg>
                 </div>
-                <p className="text-center text-[#a1633a] font-medium">Hint: {currentTask.prompt}</p>
+                <p className="text-center text-[#475569] font-medium">Hint: {currentTask.prompt}</p>
                 <div className="flex gap-2 justify-center flex-wrap">
                   {(currentTask.meta?.word as string)?.split('').map((char, idx) => (
-                    <div key={idx} className="w-10 h-12 border-b-4 border-[#6a422d] flex items-center justify-center text-2xl font-bold text-[#6a422d]">
+                    <div key={idx} className="w-10 h-12 border-b-4 border-[#1e1b4b] flex items-center justify-center text-2xl font-bold text-[#1e1b4b]">
                       {hangmanGuesses.has(char.toUpperCase()) ? char.toUpperCase() : ''}
                     </div>
                   ))}
@@ -336,12 +376,12 @@ export default function GamesPage() {
                   {'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').map(char => (
                     <button key={char} onClick={() => handleHangmanGuess(char)}
                       disabled={hangmanGuesses.has(char) || hangmanWrongCount >= 6}
-                      className={`p-2 rounded-lg font-bold text-sm transition ${hangmanGuesses.has(char) ? ((currentTask.meta?.word as string)?.toUpperCase().includes(char) ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-400') : 'bg-[#f9f0e6] text-[#6a422d] hover:bg-[#14b8a6] hover:text-white'}`}>
+                      className={`p-2 rounded-lg font-bold text-sm transition ${hangmanGuesses.has(char) ? ((currentTask.meta?.word as string)?.toUpperCase().includes(char) ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-400') : 'bg-[#ede9fe] text-[#1e1b4b] hover:bg-[#7c3aed] hover:text-white'}`}>
                       {char}
                     </button>
                   ))}
                 </div>
-                <p className="text-center text-sm text-[#a1633a]">Wrong guesses: {hangmanWrongCount}/6</p>
+                <p className="text-center text-sm text-[#475569]">Wrong guesses: {hangmanWrongCount}/6</p>
               </div>
             )}
 
@@ -349,7 +389,7 @@ export default function GamesPage() {
               const solvedGrid = buildCrosswordGrid(crosswordPuzzleState);
               return (
                 <div className="space-y-6">
-                  <p className="text-lg font-semibold text-[#6a422d] text-center">{crosswordPuzzleState.title}</p>
+                  <p className="text-lg font-semibold text-[#1e1b4b] text-center">{crosswordPuzzleState.title}</p>
                   <div className="overflow-x-auto">
                     <div className="inline-grid gap-0.5 mx-auto" style={{ gridTemplateColumns: `repeat(${crosswordPuzzleState.cols}, 2.5rem)` }}>
                       {Array.from({ length: crosswordPuzzleState.rows }, (_, r) =>
@@ -359,12 +399,12 @@ export default function GamesPage() {
                           const val = crosswordInputs[key] || '';
                           const hasError = crosswordChecked && crosswordErrors[key];
                           const isCorrectCell = crosswordChecked && !crosswordErrors[key] && inGrid && !!val;
-                          if (!inGrid) return <div key={key} className="w-10 h-10 bg-[#6a422d]" />;
+                          if (!inGrid) return <div key={key} className="w-10 h-10 bg-[#1e1b4b]" />;
                           return (
                             <div key={key} className="relative w-10 h-10">
-                              {clueNumber && <span className="absolute top-0.5 left-0.5 text-[9px] font-bold text-[#6a422d] z-10 leading-none">{clueNumber}</span>}
+                              {clueNumber && <span className="absolute top-0.5 left-0.5 text-[9px] font-bold text-[#1e1b4b] z-10 leading-none">{clueNumber}</span>}
                               <input type="text" maxLength={1} value={val} onChange={e => handleCrosswordInput(r, c, e.target.value)} disabled={crosswordSolved}
-                                className={`w-10 h-10 border-2 text-center font-bold uppercase text-[#6a422d] text-base focus:outline-none focus:border-[#14b8a6] transition ${hasError ? 'border-red-400 bg-red-50' : isCorrectCell ? 'border-emerald-400 bg-emerald-50' : 'border-[#e5c9a3] bg-[#fffdf9]'}`} />
+                                className={`w-10 h-10 border-2 text-center font-bold uppercase text-[#1e1b4b] text-base focus:outline-none focus:border-[#7c3aed] transition ${hasError ? 'border-red-400 bg-red-50' : isCorrectCell ? 'border-emerald-400 bg-emerald-50' : 'border-[#c4b5fd] bg-[#fffdf9]'}`} />
                             </div>
                           );
                         })
@@ -373,20 +413,20 @@ export default function GamesPage() {
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                      <p className="font-bold text-[#6a422d] mb-2">Across</p>
+                      <p className="font-bold text-[#1e1b4b] mb-2">Across</p>
                       {crosswordPuzzleState.words.filter(w => w.direction === 'across').map(w => (
-                        <p key={w.id} className="text-sm text-[#a1633a]"><span className="font-semibold text-[#6a422d]">{w.number}.</span> {w.clue}</p>
+                        <p key={w.id} className="text-sm text-[#475569]"><span className="font-semibold text-[#1e1b4b]">{w.number}.</span> {w.clue}</p>
                       ))}
                     </div>
                     <div>
-                      <p className="font-bold text-[#6a422d] mb-2">Down</p>
+                      <p className="font-bold text-[#1e1b4b] mb-2">Down</p>
                       {crosswordPuzzleState.words.filter(w => w.direction === 'down').map(w => (
-                        <p key={w.id} className="text-sm text-[#a1633a]"><span className="font-semibold text-[#6a422d]">{w.number}.</span> {w.clue}</p>
+                        <p key={w.id} className="text-sm text-[#475569]"><span className="font-semibold text-[#1e1b4b]">{w.number}.</span> {w.clue}</p>
                       ))}
                     </div>
                   </div>
                   {!crosswordSolved && (
-                    <button onClick={checkCrossword} disabled={loading} className="w-full py-3 bg-gradient-to-r from-[#14b8a6] to-[#0d9488] text-white font-bold rounded-xl hover:opacity-90 transition disabled:opacity-60">
+                    <button onClick={checkCrossword} disabled={loading} className="w-full py-3 bg-gradient-to-r from-[#7c3aed] to-[#6d28d9] text-white font-bold rounded-xl hover:opacity-90 transition disabled:opacity-60">
                       Check Answers
                     </button>
                   )}
@@ -397,8 +437,8 @@ export default function GamesPage() {
             {currentTask?.kind === 'scramble' && (
               <div className="space-y-6">
                 <div className="text-center space-y-2">
-                  <p className="text-sm text-[#a1633a]">Word {taskIndex + 1} of {session.tasks.length}</p>
-                  <p className="text-[#6a422d] font-medium">Hint: <span className="font-semibold">{currentTask.prompt}</span></p>
+                  <p className="text-sm text-[#475569]">Word {taskIndex + 1} of {session.tasks.length}</p>
+                  <p className="text-[#1e1b4b] font-medium">Hint: <span className="font-semibold">{currentTask.prompt}</span></p>
                   <div className="flex gap-2 justify-center flex-wrap mt-4">
                     {(currentTask.meta?.scrambled as string)?.split('').map((ch, idx) => (
                       <div key={idx} className="w-10 h-10 bg-[#fbbf24] rounded-lg flex items-center justify-center text-xl font-bold text-white shadow">{ch}</div>
@@ -409,20 +449,20 @@ export default function GamesPage() {
                   <input type="text" value={scrambleInput} onChange={e => setScrambleInput(e.target.value.toUpperCase().replace(/[^A-Z]/g, ''))}
                     onKeyDown={e => e.key === 'Enter' && handleScrambleSubmit()} placeholder="Type your answer…"
                     disabled={scrambleCorrect}
-                    className="flex-1 border-2 border-[#e5c9a3] rounded-xl px-4 py-3 text-[#6a422d] font-bold uppercase text-center focus:outline-none focus:border-[#14b8a6]" />
+                    className="flex-1 border-2 border-[#c4b5fd] rounded-xl px-4 py-3 text-[#1e1b4b] font-bold uppercase text-center focus:outline-none focus:border-[#7c3aed]" />
                   <button onClick={handleScrambleSubmit} disabled={!scrambleInput || loading}
-                    className="px-4 py-3 bg-[#14b8a6] text-white font-bold rounded-xl hover:bg-[#0d9488] transition disabled:opacity-50">Go!</button>
+                    className="px-4 py-3 bg-[#7c3aed] text-white font-bold rounded-xl hover:bg-[#6d28d9] transition disabled:opacity-50">Go!</button>
                 </div>
                 <div className="flex justify-center">
-                  <button onClick={revealScramble} disabled={scrambleRevealed} className="text-sm text-[#a1633a] hover:text-[#6a422d] underline disabled:opacity-40">Reveal answer (skip)</button>
+                  <button onClick={revealScramble} disabled={scrambleRevealed} className="text-sm text-[#475569] hover:text-[#1e1b4b] underline disabled:opacity-40">Reveal answer (skip)</button>
                 </div>
               </div>
             )}
 
             {currentTask?.kind === 'mcq' && (
               <div className="space-y-4">
-                <p className="text-sm text-[#a1633a]">Question {taskIndex + 1} of {session.tasks.length}</p>
-                <p className="text-lg font-semibold text-[#6a422d]">{currentTask.prompt}</p>
+                <p className="text-sm text-[#475569]">Question {taskIndex + 1} of {session.tasks.length}</p>
+                <p className="text-lg font-semibold text-[#1e1b4b]">{currentTask.prompt}</p>
                 <div className="space-y-3">
                   {currentTask.options.map(opt => {
                     const isSelected = selectedOption === opt.id;
@@ -431,7 +471,7 @@ export default function GamesPage() {
                     if (selectedOption && isSelected && isCorrect) cls += ' border-emerald-500 bg-emerald-50 text-emerald-700';
                     else if (selectedOption && isSelected && !isCorrect) cls += ' border-red-400 bg-red-50 text-red-700';
                     else if (selectedOption && isCorrect) cls += ' border-emerald-300 bg-emerald-50 text-emerald-700';
-                    else cls += ' border-[#e5c9a3]/50 bg-white text-[#6a422d] hover:border-[#14b8a6] hover:bg-[#f0fdfa]';
+                    else cls += ' border-[#c4b5fd]/50 bg-white text-[#1e1b4b] hover:border-[#7c3aed] hover:bg-[#f5f3ff]';
                     return <button key={opt.id} disabled={!!selectedOption || loading} onClick={() => handleMcqAnswer(opt.id)} className={cls}>{opt.text}</button>;
                   })}
                 </div>
@@ -439,7 +479,7 @@ export default function GamesPage() {
                   <button
                     onClick={handleMcqNext}
                     disabled={loading}
-                    className="w-full py-3 bg-gradient-to-r from-[#14b8a6] to-[#0d9488] text-white font-bold rounded-xl hover:opacity-90 transition disabled:opacity-60"
+                    className="w-full py-3 bg-gradient-to-r from-[#7c3aed] to-[#6d28d9] text-white font-bold rounded-xl hover:opacity-90 transition disabled:opacity-60"
                   >
                     {taskIndex < (session?.tasks.length ?? 0) - 1 ? 'Next Question →' : 'See Results 🏆'}
                   </button>
@@ -450,7 +490,7 @@ export default function GamesPage() {
             {feedback && <div className="mt-4 p-4 bg-[#fffbeb] rounded-xl text-[#b45309] font-semibold text-center">{feedback}</div>}
           </div>
         </div>
-        {toast && <div className="fixed bottom-4 left-1/2 -translate-x-1/2 bg-[#6a422d] text-white px-6 py-3 rounded-xl shadow-lg z-50">{toast}</div>}
+        {toast && <div className="fixed bottom-4 left-1/2 -translate-x-1/2 bg-[#1e1b4b] text-white px-6 py-3 rounded-xl shadow-lg z-50">{toast}</div>}
       </div>
     );
   }
@@ -460,35 +500,154 @@ export default function GamesPage() {
       <BiWeeklyResetPopup pageKey="games" />
       <div className="page-canvas pattern-islamic">
         <div className="page-wrap max-w-5xl space-y-8">
+          <EarnMorePointsLinks title="Earn more points today" />
           <div className="hero-panel text-center space-y-4 p-8 stagger-in">
             <div className="inline-flex items-center gap-2 px-4 py-2 bg-[#fffbeb] rounded-full border border-[#fbbf24]/30 mx-auto">
               <Sparkles size={16} className="text-[#f59e0b]" />
               <span className="text-sm font-semibold text-[#b45309]">Learn Through Play</span>
             </div>
-            <h1 className="text-4xl md:text-5xl font-bold text-[#6a422d]">Islamic Games</h1>
-            <p className="text-[#a1633a] text-lg max-w-2xl mx-auto">Play fun games while learning about Islam. Earn points for every correct answer!</p>
+            <h1 className="text-4xl md:text-5xl font-bold text-[#1e1b4b]">Islamic Games</h1>
+            <p className="text-[#475569] text-lg max-w-2xl mx-auto">
+              Finish up to {MAX_DAILY_GAME_COMPLETIONS} full games per day — +{ACTIVITY_BONUS_POINTS} points each ({gamesUsedToday}/{MAX_DAILY_GAME_COMPLETIONS} used today).
+            </p>
           </div>
-          <div className="feature-tile bg-gradient-to-r from-[#ecfeff] to-[#f0fdfa] border-[#14b8a6]/30 p-5 text-center">
-            <p className="text-[#0f766e] font-bold text-base md:text-lg">New winner will be announced every Friday.</p>
-            <p className="text-[#115e59] mt-2 text-sm md:text-base">
+          <div className="feature-tile bg-gradient-to-r from-[#ecfeff] to-[#f5f3ff] border-[#7c3aed]/30 p-5 text-center">
+            <p className="text-[#5b21b6] font-bold text-base md:text-lg">
+              Weekly competition updates are posted in Rewards and Leaderboard.
+            </p>
+            <p className="text-[#5b21b6] mt-2 text-sm md:text-base">
               Please continue taking part most days to win prizes. New games are added to help you gain more points.
             </p>
-            <p className="text-[#0f766e] mt-2 text-sm md:text-base font-semibold">
-              Complete any 5 activities every week to enter the winner draw.
+            <p className="text-[#5b21b6] mt-2 text-sm md:text-base font-semibold">
+              Earn above 150 points during the week to enter the random winners draw. Leaderboard rank is for fun — winners are not chosen by who is #1.
             </p>
-            <p className="text-[#0f766e] mt-2 text-sm md:text-base font-semibold">
+            <p className="text-[#5b21b6] mt-2 text-sm md:text-base font-semibold">
               Check the Rewards page for important announcements and your weekly and monthly achievements.
             </p>
           </div>
           <div className="grid grid-cols-3 gap-4 max-w-md mx-auto stagger-in">
-            {[{ icon: Star, label: 'Your Points', value: profile?.points || 0, color: 'text-[#f59e0b]' }, { icon: Trophy, label: 'Badges', value: profile?.badges || 0, color: 'text-[#14b8a6]' }, { icon: Target, label: 'Games Played', value: profile?.gamesPlayed || 0, color: 'text-[#8b5cf6]' }].map((stat, idx) => (
+            {[{ icon: Star, label: 'Your Points', value: profile?.points || 0, color: 'text-[#f59e0b]' }, { icon: Trophy, label: 'Badges', value: profile?.badges || 0, color: 'text-[#7c3aed]' }, { icon: Target, label: 'Games Played', value: profile?.gamesPlayed || 0, color: 'text-[#8b5cf6]' }].map((stat, idx) => (
               <div key={idx} className="stat-pill rounded-xl p-4 text-center">
                 <stat.icon size={24} className={`mx-auto mb-2 ${stat.color}`} />
-                <p className="text-2xl font-bold text-[#6a422d]">{stat.value}</p>
-                <p className="text-xs text-[#a1633a]">{stat.label}</p>
+                <p className="text-2xl font-bold text-[#1e1b4b]">{stat.value}</p>
+                <p className="text-xs text-[#475569]">{stat.label}</p>
               </div>
             ))}
           </div>
+          {/* ── Quran Memory Match ── */}
+          <div
+            className="rounded-2xl overflow-hidden border border-purple-300/40 shadow-sm cursor-pointer hover:shadow-lg hover:-translate-y-1 transition-all"
+            onClick={() => router.push('/quran-match')}
+            role="link"
+          >
+            <div className="bg-gradient-to-r from-purple-600 to-violet-700 p-5 flex items-center gap-5">
+              <span className="text-5xl shrink-0">🧩</span>
+              <div className="flex-1 text-white">
+                <div className="flex items-center gap-2 mb-1">
+                  <h3 className="font-black text-xl">Quran Memory Match</h3>
+                  <span className="bg-yellow-400 text-yellow-900 text-xs font-black px-2 py-0.5 rounded-full">NEW</span>
+                </div>
+                <p className="text-purple-100 text-sm">Flip cards and match Quranic terms with their meanings — earn daily points!</p>
+              </div>
+              <span className="text-white text-2xl shrink-0">→</span>
+            </div>
+          </div>
+
+          {/* ── Salah Steps ── */}
+          <div
+            className="rounded-2xl overflow-hidden border border-emerald-300/40 shadow-sm cursor-pointer hover:shadow-lg hover:-translate-y-1 transition-all"
+            onClick={() => router.push('/games/salah-steps')}
+            role="link"
+          >
+            <div className="bg-gradient-to-r from-emerald-600 to-teal-700 p-5 flex items-center gap-5">
+              <span className="text-5xl shrink-0">🕌</span>
+              <div className="flex-1 text-white">
+                <div className="flex items-center gap-2 mb-1">
+                  <h3 className="font-black text-xl">Salah Steps</h3>
+                  <span className="bg-yellow-400 text-yellow-900 text-xs font-black px-2 py-0.5 rounded-full">NEW</span>
+                </div>
+                <p className="text-emerald-100 text-sm">Put Fajr through Isha in the right order — a fun way to learn the daily prayers!</p>
+              </div>
+              <span className="text-white text-2xl shrink-0">→</span>
+            </div>
+          </div>
+
+          {/* ── Wudu Steps ── */}
+          <div
+            className="rounded-2xl overflow-hidden border border-sky-300/40 shadow-sm cursor-pointer hover:shadow-lg hover:-translate-y-1 transition-all"
+            onClick={() => router.push('/games/wudu-steps')}
+            role="link"
+          >
+            <div className="bg-gradient-to-r from-sky-600 to-cyan-700 p-5 flex items-center gap-5">
+              <span className="text-5xl shrink-0">💧</span>
+              <div className="flex-1 text-white">
+                <div className="flex items-center gap-2 mb-1">
+                  <h3 className="font-black text-xl">Wudu Steps</h3>
+                  <span className="bg-yellow-400 text-yellow-900 text-xs font-black px-2 py-0.5 rounded-full">NEW</span>
+                </div>
+                <p className="text-sky-100 text-sm">Put the steps of wudu in the correct order and earn game points!</p>
+              </div>
+              <span className="text-white text-2xl shrink-0">→</span>
+            </div>
+          </div>
+
+          {/* ── Names of Allah ── */}
+          <div
+            className="rounded-2xl overflow-hidden border border-blue-300/40 shadow-sm cursor-pointer hover:shadow-lg hover:-translate-y-1 transition-all"
+            onClick={() => router.push('/games/names-flashcards')}
+            role="link"
+          >
+            <div className="bg-gradient-to-r from-blue-600 to-indigo-700 p-5 flex items-center gap-5">
+              <span className="text-5xl shrink-0">☪️</span>
+              <div className="flex-1 text-white">
+                <div className="flex items-center gap-2 mb-1">
+                  <h3 className="font-black text-xl">Names of Allah</h3>
+                  <span className="bg-yellow-400 text-yellow-900 text-xs font-black px-2 py-0.5 rounded-full">NEW</span>
+                </div>
+                <p className="text-blue-100 text-sm">Flashcards and match beautiful names to their meanings.</p>
+              </div>
+              <span className="text-white text-2xl shrink-0">→</span>
+            </div>
+          </div>
+
+          {/* ── Prophet Facts ── */}
+          <div
+            className="rounded-2xl overflow-hidden border border-amber-300/40 shadow-sm cursor-pointer hover:shadow-lg hover:-translate-y-1 transition-all"
+            onClick={() => router.push('/games/prophet-facts')}
+            role="link"
+          >
+            <div className="bg-gradient-to-r from-amber-500 to-orange-600 p-5 flex items-center gap-5">
+              <span className="text-5xl shrink-0">🌟</span>
+              <div className="flex-1 text-white">
+                <div className="flex items-center gap-2 mb-1">
+                  <h3 className="font-black text-xl">Prophet ﷺ Facts</h3>
+                  <span className="bg-yellow-400 text-yellow-900 text-xs font-black px-2 py-0.5 rounded-full">NEW</span>
+                </div>
+                <p className="text-amber-50 text-sm">Answer Seerah questions for kids — score 3/5 to earn points!</p>
+              </div>
+              <span className="text-white text-2xl shrink-0">→</span>
+            </div>
+          </div>
+
+          {/* ── Word Search hunts ── */}
+          <div
+            className="rounded-2xl overflow-hidden border border-violet-300/40 shadow-sm cursor-pointer hover:shadow-lg hover:-translate-y-1 transition-all"
+            onClick={() => router.push('/games/word-search')}
+            role="link"
+          >
+            <div className="bg-gradient-to-r from-violet-600 to-indigo-700 p-5 flex items-center gap-5">
+              <span className="text-5xl shrink-0">🔍</span>
+              <div className="flex-1 text-white">
+                <div className="flex items-center gap-2 mb-1">
+                  <h3 className="font-black text-xl">Islamic Word Hunts</h3>
+                  <span className="bg-gold-400 text-gold-900 text-xs font-black px-2 py-0.5 rounded-full">NEW</span>
+                </div>
+                <p className="text-violet-100 text-sm">Ramadan, Seerah &amp; Quran themed word searches with bonus quizzes!</p>
+              </div>
+              <span className="text-white text-2xl shrink-0">→</span>
+            </div>
+          </div>
+
           {/* ── Hajj Learning Games featured banner ── */}
           <div
             className="rounded-2xl overflow-hidden border border-[#3b82f6]/30 shadow-sm cursor-pointer hover:shadow-lg hover:-translate-y-1 transition-all"
@@ -509,44 +668,48 @@ export default function GamesPage() {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 stagger-in">
+            <Link
+              href="/games/memory-match"
+              className="feature-tile group rounded-2xl border-2 border-amber-200 bg-gradient-to-br from-amber-50 to-orange-50 p-6 text-left"
+            >
+              <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 shadow-md transition-transform group-hover:scale-110">
+                <span className="text-3xl">🃏</span>
+              </div>
+              <h3 className="mb-1 text-lg font-bold text-[#1e1b4b]">Islamic Memory Match</h3>
+              <p className="mb-3 text-sm text-[#475569]">
+                {isYounger
+                  ? 'Big picture cards — find the matching pairs!'
+                  : 'Match Arabic terms with English meanings. Optional timer.'}
+              </p>
+              <span className="inline-block rounded-full border border-amber-300 bg-white px-3 py-1 text-xs font-semibold text-amber-800">
+                🌟 Earn +{ACTIVITY_BONUS_POINTS} pts
+              </span>
+            </Link>
             {gameCatalog.map(game => (
               <button key={game.id} onClick={() => startGame(game.id)} className="feature-tile group rounded-2xl p-6 text-left">
                 <div className={`w-14 h-14 rounded-xl bg-gradient-to-br ${game.color} flex items-center justify-center shadow-md group-hover:scale-110 transition-transform mb-4`}>
                   <span className="text-3xl">{game.icon}</span>
                 </div>
-                <h3 className="font-bold text-[#6a422d] text-lg mb-1">{game.title}</h3>
-                <p className="text-sm text-[#a1633a] mb-3">{game.description}</p>
-                <span className="inline-block text-xs font-semibold text-[#0d9488] bg-[#f0fdfa] px-3 py-1 rounded-full border border-[#14b8a6]/30">🌟 Earn points</span>
+                <h3 className="font-bold text-[#1e1b4b] text-lg mb-1">{game.title}</h3>
+                <p className="text-sm text-[#475569] mb-3">{game.description}</p>
+                <span className="inline-block text-xs font-semibold text-[#6d28d9] bg-[#f5f3ff] px-3 py-1 rounded-full border border-[#7c3aed]/30">🌟 Earn points</span>
               </button>
             ))}
           </div>
-          <div className="feature-tile bg-[#f0fdfa] rounded-2xl p-6 border-[#14b8a6]/20">
+          <div className="feature-tile bg-[#f5f3ff] rounded-2xl p-6 border-[#7c3aed]/20">
             <div className="flex items-start gap-4">
-              <div className="w-12 h-12 rounded-xl bg-[#14b8a6] flex items-center justify-center flex-shrink-0">
+              <div className="w-12 h-12 rounded-xl bg-[#7c3aed] flex items-center justify-center flex-shrink-0">
                 <Puzzle size={24} className="text-white" />
               </div>
               <div>
-                <h4 className="font-bold text-[#0d9488] mb-1">Pro Tip</h4>
-                <p className="text-[#115e59]">Try all 5 games to learn different aspects of Islam — hangman improves vocabulary, the crossword tests spelling, word scramble sharpens recognition, and the quizzes deepen your knowledge of Allah's names and Islamic facts!</p>
+                <h4 className="font-bold text-[#6d28d9] mb-1">Pro Tip</h4>
+                <p className="text-[#5b21b6]">Try all 5 games to learn different aspects of Islam — hangman improves vocabulary, the crossword tests spelling, word scramble sharpens recognition, and the quizzes deepen your knowledge of Allah's names and Islamic facts!</p>
               </div>
             </div>
           </div>
         </div>
       </div>
-      {toast && <div className="fixed bottom-4 left-1/2 -translate-x-1/2 bg-[#6a422d] text-white px-6 py-3 rounded-xl shadow-lg z-50">{toast}</div>}
-      <Modal isOpen={Boolean(completion)} onClose={() => setCompletion(null)} title="Great Job!">
-        <div className="space-y-4 text-center">
-          <p className="text-[#6a422d] font-semibold">You completed <strong>{completion?.gameTitle}</strong> and earned <strong>{completion?.pointsEarned ?? 0}</strong> points.</p>
-          {competitionMessage ? (
-            <p className="text-sm font-semibold text-[#0f766e]">{competitionMessage}</p>
-          ) : null}
-          <p className="text-sm text-[#a1633a]">Please open Rewards to see your progress and fill the winner contact form so we can contact you if your child wins.</p>
-          <div className="flex gap-3 justify-center">
-            <button onClick={() => setCompletion(null)} className="px-4 py-2 rounded-lg border border-[#e5c9a3]/40 text-[#6a422d] font-semibold hover:bg-[#f9f0e6]">Close</button>
-            <button onClick={() => { setCompletion(null); router.push('/rewards#winner-contact-form'); }} className="px-4 py-2 rounded-lg bg-gradient-to-r from-[#14b8a6] to-[#0d9488] text-white font-bold">Open Rewards + Form</button>
-          </div>
-        </div>
-      </Modal>
+      {toast && <div className="fixed bottom-4 left-1/2 -translate-x-1/2 bg-[#1e1b4b] text-white px-6 py-3 rounded-xl shadow-lg z-50">{toast}</div>}
     </>
   );
 }

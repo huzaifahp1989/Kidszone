@@ -46,7 +46,6 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
-    const WEEKLY_POINTS_LIMIT = 400;
     const body = await request.json();
     const { userId, date, items, goodDeed } = body;
 
@@ -65,9 +64,6 @@ export async function POST(request: Request) {
       newPoints += 2;
     }
 
-    // Cap at 30? User said 20-30.
-    // Salah (5*2=10) + Dhikr (4*2=8) + Deed (2) = 20.
-    // So 20 is the natural max. Let's cap at 20 just in case.
     if (newPoints > 20) newPoints = 20;
 
     // 1. Get previous points to calculate delta
@@ -96,63 +92,52 @@ export async function POST(request: Request) {
 
     // 3. Update User Total Points (only if there is a difference)
     if (pointDelta !== 0 && !isTestMode) {
-      try {
-        // Try RPC first (best way - handles both tables atomically)
-        await supabaseAdmin.rpc('increment_points', { 
-          row_id: userId, 
-          amount: pointDelta 
-        });
-      } catch (rpcError) {
-        console.warn('RPC increment_points failed, falling back to manual update:', rpcError);
-        
-        // Fallback: Manually update both tables
-        
-        // 1. Update legacy users table
-        const { data: user } = await supabaseAdmin
-          .from('users')
-          .select('points, weeklypoints, monthlypoints')
-          .eq('uid', userId)
-          .maybeSingle();
-          
-        if (user) {
-           const nextWeekly = Math.min(WEEKLY_POINTS_LIMIT, (user.weeklypoints || 0) + pointDelta);
-           const weeklyDelta = nextWeekly - Number(user.weeklypoints || 0);
-           const safeDelta = pointDelta >= 0 ? Math.max(0, weeklyDelta) : pointDelta;
-           await supabaseAdmin.from('users').update({
-             points: (user.points || 0) + safeDelta,
-             weeklypoints: nextWeekly,
-             monthlypoints: (user.monthlypoints || 0) + safeDelta
-           }).eq('uid', userId);
-        }
+      const { data: user } = await supabaseAdmin
+        .from('users')
+        .select('points, weeklypoints, monthlypoints')
+        .eq('uid', userId)
+        .maybeSingle();
 
-        // 2. Update users_points table
-        const { data: up } = await supabaseAdmin
+      if (user) {
+        await supabaseAdmin
+          .from('users')
+          .update({
+            points: Number(user.points || 0) + pointDelta,
+            weeklypoints: Number(user.weeklypoints || 0) + pointDelta,
+            monthlypoints: Number(user.monthlypoints || 0) + pointDelta,
+          })
+          .eq('uid', userId);
+      }
+
+      const { data: up } = await supabaseAdmin
+        .from('users_points')
+        .select('total_points, weekly_points, monthly_points, today_points, last_earned_date')
+        .eq('user_id', userId)
+        .maybeSingle();
+
+      if (up) {
+        const todayStr = new Date().toISOString().slice(0, 10);
+        const isNewDay = String(up.last_earned_date || '') !== todayStr;
+        const currentToday = isNewDay ? 0 : Number(up.today_points || 0);
+        await supabaseAdmin
           .from('users_points')
-          .select('total_points, weekly_points, monthly_points')
-          .eq('user_id', userId)
-          .maybeSingle();
-          
-        if (up) {
-           const nextWeekly = Math.min(WEEKLY_POINTS_LIMIT, (up.weekly_points || 0) + pointDelta);
-           const weeklyDelta = nextWeekly - Number(up.weekly_points || 0);
-           const safeDelta = pointDelta >= 0 ? Math.max(0, weeklyDelta) : pointDelta;
-           await supabaseAdmin.from('users_points').update({
-               total_points: (up.total_points || 0) + safeDelta,
-               weekly_points: nextWeekly,
-               monthly_points: (up.monthly_points || 0) + safeDelta
-           }).eq('user_id', userId);
-        } else if (user) {
-          const nextWeekly = Math.min(WEEKLY_POINTS_LIMIT, Number(user.weeklypoints || 0) + pointDelta);
-          const weeklyDelta = nextWeekly - Number(user.weeklypoints || 0);
-          const safeDelta = pointDelta >= 0 ? Math.max(0, weeklyDelta) : pointDelta;
-          await supabaseAdmin.from('users_points').upsert({
-            user_id: userId,
-            total_points: Number(user.points || 0) + safeDelta,
-            weekly_points: nextWeekly,
-            monthly_points: Number(user.monthlypoints || 0) + safeDelta,
-            last_earned_date: new Date().toISOString().slice(0, 10),
-          });
-        }
+          .update({
+            total_points: Number(up.total_points || 0) + pointDelta,
+            weekly_points: Number(up.weekly_points || 0) + pointDelta,
+            monthly_points: Number(up.monthly_points || 0) + pointDelta,
+            today_points: Math.max(0, currentToday + pointDelta),
+            last_earned_date: todayStr,
+          })
+          .eq('user_id', userId);
+      } else if (user) {
+        await supabaseAdmin.from('users_points').upsert({
+          user_id: userId,
+          total_points: Number(user.points || 0) + pointDelta,
+          weekly_points: Number(user.weeklypoints || 0) + pointDelta,
+          monthly_points: Number(user.monthlypoints || 0) + pointDelta,
+          today_points: Math.max(0, pointDelta),
+          last_earned_date: new Date().toISOString().slice(0, 10),
+        });
       }
     }
 

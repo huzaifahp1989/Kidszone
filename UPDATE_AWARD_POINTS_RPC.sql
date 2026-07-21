@@ -17,6 +17,7 @@ AS $$
 DECLARE
   v_uid UUID;
   v_daily_limit INTEGER := 100;
+  v_weekly_limit INTEGER := 500;
   v_current_points INTEGER;
   v_today_points INTEGER;
   v_total_points INTEGER;
@@ -70,7 +71,24 @@ BEGIN
     );
   END IF;
 
-  v_points_to_award := LEAST(p_points, v_daily_limit - v_today_points);
+  v_points_to_award := GREATEST(
+    0,
+    LEAST(
+      p_points,
+      v_daily_limit - v_today_points,
+      v_weekly_limit - LEAST(COALESCE(v_weekly_points, 0), v_weekly_limit)
+    )
+  );
+
+  IF v_points_to_award <= 0 THEN
+    RETURN json_build_object(
+      'success', false,
+      'message', 'Weekly limit of 500 points reached',
+      'weekly_points', LEAST(COALESCE(v_weekly_points, 0), v_weekly_limit),
+      'weekly_limit', v_weekly_limit
+    );
+  END IF;
+
   v_new_today_points := v_today_points + v_points_to_award;
 
   -- Update users_points
@@ -78,7 +96,7 @@ BEGIN
   SET 
     today_points = v_new_today_points,
     total_points = v_total_points + v_points_to_award,
-    weekly_points = v_weekly_points + v_points_to_award,
+    weekly_points = LEAST(v_weekly_limit, LEAST(COALESCE(v_weekly_points, 0), v_weekly_limit) + v_points_to_award),
     monthly_points = v_monthly_points + v_points_to_award,
     last_earned_date = v_today_date,
     updated_at = NOW()
@@ -88,7 +106,7 @@ BEGIN
   UPDATE public.users
   SET
     points = COALESCE(points, 0) + v_points_to_award,
-    weeklypoints = COALESCE(weeklypoints, 0) + v_points_to_award,
+    weeklypoints = LEAST(v_weekly_limit, LEAST(COALESCE(weeklypoints, 0), v_weekly_limit) + v_points_to_award),
     monthlypoints = COALESCE(monthlypoints, 0) + v_points_to_award,
     updatedat = NOW()
   WHERE uid = v_uid;
@@ -98,7 +116,8 @@ BEGIN
     'points_awarded', v_points_to_award,
     'total_points', v_total_points + v_points_to_award,
     'today_points', v_new_today_points,
-    'weekly_points', v_weekly_points + v_points_to_award,
+    'weekly_points', LEAST(v_weekly_limit, LEAST(COALESCE(v_weekly_points, 0), v_weekly_limit) + v_points_to_award),
+    'weekly_limit', v_weekly_limit,
     'monthly_points', v_monthly_points + v_points_to_award,
     'daily_limit', v_daily_limit
   );

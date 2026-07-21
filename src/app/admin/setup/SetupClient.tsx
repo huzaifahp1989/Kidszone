@@ -7,6 +7,9 @@ export default function SetupClient({ initialSql }: { initialSql: string }) {
   const [status, setStatus] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [seerahExists, setSeerahExists] = useState<boolean | null>(null);
+  const [seerahSetupLoading, setSeerahSetupLoading] = useState(false);
+  const [seerahMessage, setSeerahMessage] = useState('');
 
   const checkStatus = async () => {
     setLoading(true);
@@ -28,6 +31,31 @@ export default function SetupClient({ initialSql }: { initialSql: string }) {
     const interval = setInterval(checkStatus, 5000);
     return () => clearInterval(interval);
   }, []);
+
+  useEffect(() => {
+    fetch('/api/admin/setup-seerah', { headers: { 'x-admin-auth': 'true' } })
+      .then((r) => r.json())
+      .then((d) => setSeerahExists(Boolean(d?.exists)))
+      .catch(() => setSeerahExists(false));
+  }, []);
+
+  const createSeerahTables = async () => {
+    setSeerahSetupLoading(true);
+    setSeerahMessage('');
+    try {
+      const res = await fetch('/api/admin/setup-seerah', {
+        method: 'POST',
+        headers: { 'x-admin-auth': 'true' },
+      });
+      const d = await res.json();
+      setSeerahMessage(d.message || (d.success ? 'Done.' : 'Failed.'));
+      if (d.success) setSeerahExists(true);
+    } catch {
+      setSeerahMessage('Request failed.');
+    } finally {
+      setSeerahSetupLoading(false);
+    }
+  };
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
@@ -101,6 +129,99 @@ $$;
   return (
     <div className="p-8 max-w-4xl mx-auto">
       <h1 className="text-3xl font-bold mb-6 text-gray-800">🛠️ Database Setup & Diagnostics</h1>
+
+      {/* Seerah Tables Setup */}
+      <div className={`bg-white rounded-xl shadow-md p-6 mb-8 border ${seerahExists ? 'border-emerald-200' : 'border-red-200'}`}>
+        <div className="flex items-center justify-between mb-3">
+          <div>
+            <h2 className={`text-xl font-bold ${seerahExists ? 'text-emerald-700' : 'text-red-700'}`}>
+              {seerahExists === null ? '⏳ Checking Seerah tables…' : seerahExists ? '✅ Seerah Tables Ready' : '❌ Seerah Tables Missing'}
+            </h2>
+            <p className="text-sm text-gray-600 mt-1">
+              {seerahExists
+                ? 'seerah_quiz_submissions and seerah_certificates tables exist.'
+                : 'Seerah competition tables are missing. Users will get an error when submitting chapters.'}
+            </p>
+          </div>
+          {!seerahExists && seerahExists !== null && (
+            <button
+              onClick={createSeerahTables}
+              disabled={seerahSetupLoading}
+              className="shrink-0 rounded-lg bg-teal-600 text-white px-4 py-2 font-bold text-sm hover:bg-teal-700 disabled:opacity-60"
+            >
+              {seerahSetupLoading ? 'Creating…' : 'Create Tables'}
+            </button>
+          )}
+        </div>
+        {seerahMessage && (
+          <p className={`mt-2 text-sm font-semibold ${seerahMessage.toLowerCase().includes('success') || seerahMessage.toLowerCase().includes('exist') ? 'text-emerald-700' : 'text-red-700'}`}>
+            {seerahMessage}
+          </p>
+        )}
+        {!seerahExists && seerahExists !== null && (
+          <div className="mt-4 p-4 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-900">
+            <p className="font-bold mb-2">Manual SQL (run in Supabase SQL Editor if the button above fails):</p>
+            <div className="relative bg-slate-900 rounded-lg p-3 overflow-x-auto">
+              <button
+                onClick={() => copyToClipboard(`create table if not exists public.seerah_quiz_submissions (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  user_name text,
+  email text,
+  chapter_number int not null check (chapter_number between 1 and 5),
+  answers jsonb not null,
+  auto_marks int[] not null default '{}',
+  manual_marks int[],
+  auto_score int not null default 0,
+  final_score int not null default 0,
+  status text not null default 'needs_improvement' check (status in ('passed','needs_improvement')),
+  admin_notes text,
+  submitted_at timestamptz not null default timezone('utc'::text,now()),
+  reviewed_at timestamptz,
+  unique(user_id, chapter_number)
+);
+create table if not exists public.seerah_certificates (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null unique references auth.users(id) on delete cascade,
+  user_name text,
+  email text,
+  issued_at timestamptz not null default timezone('utc'::text,now())
+);
+alter table public.seerah_quiz_submissions enable row level security;
+alter table public.seerah_certificates enable row level security;
+drop policy if exists "Users can read own seerah submissions" on public.seerah_quiz_submissions;
+create policy "Users can read own seerah submissions" on public.seerah_quiz_submissions for select to authenticated using (auth.uid()=user_id);
+drop policy if exists "Users can insert own seerah submissions" on public.seerah_quiz_submissions;
+create policy "Users can insert own seerah submissions" on public.seerah_quiz_submissions for insert to authenticated with check (auth.uid()=user_id);
+drop policy if exists "Users can read own seerah certificates" on public.seerah_certificates;
+create policy "Users can read own seerah certificates" on public.seerah_certificates for select to authenticated using (auth.uid()=user_id);
+grant select, insert on public.seerah_quiz_submissions to authenticated;
+grant select on public.seerah_certificates to authenticated;
+grant all on public.seerah_quiz_submissions to service_role;
+grant all on public.seerah_certificates to service_role;`)}
+                className="absolute top-2 right-2 p-1.5 bg-white/10 hover:bg-white/20 rounded text-white flex items-center gap-1 text-xs"
+              >
+                {copied ? <Check size={12} /> : <Copy size={12} />}
+                {copied ? 'Copied' : 'Copy'}
+              </button>
+              <pre className="text-xs text-teal-300 font-mono whitespace-pre-wrap pr-16">{`create table if not exists public.seerah_quiz_submissions (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  user_name text, email text,
+  chapter_number int not null check (chapter_number between 1 and 5),
+  answers jsonb not null, auto_marks int[] not null default '{}',
+  manual_marks int[], auto_score int not null default 0,
+  final_score int not null default 0,
+  status text not null default 'needs_improvement' check (status in ('passed','needs_improvement')),
+  admin_notes text, submitted_at timestamptz not null default timezone('utc'::text,now()),
+  reviewed_at timestamptz, unique(user_id,chapter_number)
+);
+create table if not exists public.seerah_certificates (...);
+-- (copy full SQL using the button)`}</pre>
+            </div>
+          </div>
+        )}
+      </div>
 
       {/* New Section for Points RPC Setup */}
       <div className="bg-white rounded-xl shadow-md p-6 mb-8 border border-green-100">

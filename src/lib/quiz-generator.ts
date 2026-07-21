@@ -1,5 +1,5 @@
 import { supabaseAdmin } from '@/lib/supabase-admin';
-import { quizzes } from '@/data/quizzes';
+import { getQuizQuestionPool } from '@/lib/quiz-question-pool';
 
 const REQUESTED_TOPICS = ['Seerah', 'Hadith', 'Quran', 'Prophets', 'Sahabah', 'Hajj'] as const;
 
@@ -56,7 +56,7 @@ function isValidQuizQuestion(q: any): boolean {
 }
 
 function pickBalancedDailyQuestions(date: string) {
-  const validQuestions = quizzes.filter(isValidQuizQuestion);
+  const validQuestions = getQuizQuestionPool().filter(isValidQuizQuestion);
   const byCategory = new Map<string, any[]>();
 
   for (const q of validQuestions) {

@@ -29,11 +29,21 @@ export const generateVoucherCode = () => {
 };
 
 export const getVoucherStatus = (offer: Pick<VoucherOffer, 'status' | 'startDate' | 'expiryDate' | 'publicVisible'>): VoucherStatus => {
-  if (!offer.publicVisible || offer.status === 'inactive') return 'inactive';
+  if (!offer.publicVisible || offer.status === 'inactive' || offer.status === 'draft') return 'inactive';
 
   const now = new Date();
   const startDate = offer.startDate ? parseISO(offer.startDate) : null;
   const expiryDate = parseISO(offer.expiryDate);
+
+  if (offer.status === 'expired') {
+    return 'expired';
+  }
+
+  if (offer.status === 'scheduled') {
+    if (isAfter(now, expiryDate)) return 'expired';
+    if (!startDate) return 'scheduled';
+    return isBefore(now, startDate) ? 'scheduled' : 'active';
+  }
 
   if (isBefore(now, expiryDate) && startDate && isBefore(now, startDate)) {
     return 'scheduled';

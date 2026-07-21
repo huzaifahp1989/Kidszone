@@ -4,6 +4,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { MASJID_AL_AQSA_BONUS_QUESTION, MASJID_AL_AQSA_MAIN_QUESTION_COUNT, MASJID_AL_AQSA_QUESTIONS, MASJID_AL_AQSA_MAX_TOTAL_SCORE, type MasjidAlAqsaSubmission } from '@/lib/masjid-al-aqsa-competition';
 import { ArrowLeft, CheckCircle2, RefreshCw, ShieldCheck, XCircle } from 'lucide-react';
+import { AdminNotificationBadge } from '@/components/AdminNotificationBadge';
 
 type ReviewDraft = {
   questionMarks: number[];
@@ -141,7 +142,10 @@ export default function AdminMasjidAlAqsaCompetitionPage() {
             </button>
             <div>
               <p className="text-xs font-bold uppercase tracking-[0.2em] text-teal-700">Islam Media Central</p>
-              <h1 className="text-3xl font-black text-slate-900">Masjid Al-Aqsa Competition Review</h1>
+              <h1 className="flex flex-wrap items-center gap-2 text-3xl font-black text-slate-900">
+                Masjid Al-Aqsa Competition Review
+                <AdminNotificationBadge count={stats.submitted} />
+              </h1>
               <p className="text-sm text-slate-600">Manual marking, bonus marks, and winner approval</p>
             </div>
           </div>

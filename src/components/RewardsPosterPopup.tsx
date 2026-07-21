@@ -42,7 +42,7 @@ export function RewardsPosterPopup() {
           <img
             src="/posters/weekly-winners-2026-05-08.png"
             alt="Weekly winners poster"
-            className="w-full rounded-2xl border border-[#e5c9a3]/30 shadow-lg"
+            className="w-full rounded-2xl border border-[#c4b5fd]/30 shadow-lg"
             onError={() => setImgError(true)}
           />
         )}

@@ -2,7 +2,8 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
-import { awardPoints as awardPointsRpc } from '@/lib/points-service';
+import { completeGameSession } from '@/lib/complete-game-session';
+import { ACTIVITY_BONUS_POINTS } from '@/lib/points-policy';
 import { useAuth } from '@/lib/auth-context';
 
 const C = 200;          // SVG center x & y
@@ -79,10 +80,17 @@ export default function TawafGame() {
     setGameState('playing');
   };
 
+  const pointsAwardedRef = useRef(false);
+
   const handleComplete = useCallback(async () => {
-    if (user?.id) {
-      try { await awardPointsRpc(30); } catch {}
-    }
+    if (!user?.id || pointsAwardedRef.current) return;
+    pointsAwardedRef.current = true;
+    await completeGameSession({
+      userId: user.id,
+      gameId: 'hajj-tawaf',
+      gameTitle: 'Hajj Tawaf',
+      trackCompetition: true,
+    });
   }, [user]);
 
   useEffect(() => {
@@ -137,7 +145,7 @@ export default function TawafGame() {
           <div className="text-7xl mb-3">🎉</div>
           <h2 className="text-3xl font-black text-green-700 mb-2">Tawaf Complete!</h2>
           <p className="text-gray-600 mb-1 text-lg">MashaAllah! All 7 rounds completed!</p>
-          <p className="text-gray-400 text-sm mb-2">+30 points awarded 🌟</p>
+          <p className="text-gray-400 text-sm mb-2">+{ACTIVITY_BONUS_POINTS} points awarded 🌟</p>
           <p className="text-gray-400 text-sm mb-6">May Allah accept your Tawaf 🤲</p>
           <div className="flex gap-3 justify-center flex-wrap">
             <button onClick={startGame} className="bg-blue-600 text-white font-bold px-6 py-3 rounded-2xl hover:bg-blue-700">

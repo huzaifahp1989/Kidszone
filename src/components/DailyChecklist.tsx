@@ -8,7 +8,7 @@ type ChecklistItem = {
   id: string;
   label: string;
   icon: string;
-  section: 'salah' | 'dhikr';
+  section: 'salah' | 'dhikr' | 'quran' | 'sunnah';
 };
 
 const ITEMS: ChecklistItem[] = [
@@ -19,10 +19,22 @@ const ITEMS: ChecklistItem[] = [
   { id: 'maghrib', label: 'Maghrib', icon: '🌇', section: 'salah' },
   { id: 'isha', label: 'Isha', icon: '🌙', section: 'salah' },
   // Dhikr
-  { id: 'durood', label: 'Durood Recited', icon: '📿', section: 'dhikr' },
-  { id: 'mulk', label: 'Surah Al-Mulk', icon: '📖', section: 'dhikr' },
-  { id: 'waqiah', label: 'Surah Al-Waqiah', icon: '💰', section: 'dhikr' },
-  { id: 'yaseen', label: 'Surah Yaseen', icon: '❤️', section: 'dhikr' },
+  { id: 'durood', label: 'Durood / Salawat', icon: '📿', section: 'dhikr' },
+  { id: 'istighfar', label: 'Istighfar', icon: '🌿', section: 'dhikr' },
+  { id: 'tasbih', label: 'SubhanAllah / Alhamdulillah / Allahu Akbar', icon: '✨', section: 'dhikr' },
+  { id: 'dua_parents', label: 'Make dua for parents', icon: '🤲', section: 'dhikr' },
+  // Quran & Duas
+  { id: 'quran_read', label: 'Read Quran (5 minutes)', icon: '📖', section: 'quran' },
+  { id: 'ayat_kursi', label: 'Ayat-ul-Kursi', icon: '🕌', section: 'quran' },
+  { id: 'surah_ikhlas', label: 'Surah Al-Ikhlas', icon: '💛', section: 'quran' },
+  { id: 'surah_falaq', label: 'Surah Al-Falaq', icon: '🌙', section: 'quran' },
+  { id: 'surah_naas', label: 'Surah An-Naas', icon: '🛡️', section: 'quran' },
+  // Sunnah & Good habits
+  { id: 'give_salam', label: 'Greet someone with Salam', icon: '👋', section: 'sunnah' },
+  { id: 'help_parents', label: 'Help parents at home', icon: '🏡', section: 'sunnah' },
+  { id: 'kind_words', label: 'Speak kind words', icon: '💬', section: 'sunnah' },
+  { id: 'share', label: 'Share with someone', icon: '🎁', section: 'sunnah' },
+  { id: 'charity', label: 'Give a small charity / sadaqah', icon: '🪙', section: 'sunnah' },
 ];
 
 export default function DailyChecklist() {
@@ -190,7 +202,7 @@ export default function DailyChecklist() {
         {/* Dhikr Section */}
         <section>
           <h3 className="flex items-center text-lg font-bold text-islamic-dark mb-4">
-            <span className="bg-teal-100 p-2 rounded-lg mr-2">📿</span> Dhikr & Quran
+            <span className="bg-teal-100 p-2 rounded-lg mr-2">📿</span> Dhikr
             <span className="ml-auto text-xs font-normal text-teal-600 bg-teal-50 px-2 py-1 rounded-full">2 pts each</span>
           </h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -210,6 +222,66 @@ export default function DailyChecklist() {
                 </span>
                 <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${
                   completedItems.includes(item.id) ? 'bg-teal-500 border-teal-500' : 'border-slate-300'
+                }`}>
+                  {completedItems.includes(item.id) && <Check size={14} className="text-white" />}
+                </div>
+              </button>
+            ))}
+          </div>
+        </section>
+
+        <section>
+          <h3 className="flex items-center text-lg font-bold text-islamic-dark mb-4">
+            <span className="bg-indigo-100 p-2 rounded-lg mr-2">📖</span> Quran & Duas
+            <span className="ml-auto text-xs font-normal text-indigo-600 bg-indigo-50 px-2 py-1 rounded-full">2 pts each</span>
+          </h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {ITEMS.filter(i => i.section === 'quran').map(item => (
+              <button
+                key={item.id}
+                onClick={() => toggleItem(item.id)}
+                className={`p-3 rounded-xl border-2 transition-all duration-200 flex items-center gap-3 text-left ${
+                  completedItems.includes(item.id)
+                    ? 'border-indigo-500 bg-indigo-50 shadow-sm'
+                    : 'border-slate-100 bg-slate-50 hover:border-indigo-200'
+                }`}
+              >
+                <span className="text-2xl">{item.icon}</span>
+                <span className={`font-medium flex-1 ${completedItems.includes(item.id) ? 'text-indigo-700' : 'text-slate-600'}`}>
+                  {item.label}
+                </span>
+                <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${
+                  completedItems.includes(item.id) ? 'bg-indigo-500 border-indigo-500' : 'border-slate-300'
+                }`}>
+                  {completedItems.includes(item.id) && <Check size={14} className="text-white" />}
+                </div>
+              </button>
+            ))}
+          </div>
+        </section>
+
+        <section>
+          <h3 className="flex items-center text-lg font-bold text-islamic-dark mb-4">
+            <span className="bg-rose-100 p-2 rounded-lg mr-2">🌙</span> Sunnah & Good Habits
+            <span className="ml-auto text-xs font-normal text-rose-600 bg-rose-50 px-2 py-1 rounded-full">2 pts each</span>
+          </h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {ITEMS.filter(i => i.section === 'sunnah').map(item => (
+              <button
+                key={item.id}
+                onClick={() => toggleItem(item.id)}
+                className={`p-3 rounded-xl border-2 transition-all duration-200 flex items-center gap-3 text-left ${
+                  completedItems.includes(item.id)
+                    ? 'border-rose-500 bg-rose-50 shadow-sm'
+                    : 'border-slate-100 bg-slate-50 hover:border-rose-200'
+                }`}
+              >
+                <span className="text-2xl">{item.icon}</span>
+                <span className={`font-medium flex-1 ${completedItems.includes(item.id) ? 'text-rose-700' : 'text-slate-600'}`}>
+                  {item.label}
+                </span>
+                <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${
+                  completedItems.includes(item.id) ? 'bg-rose-500 border-rose-500' : 'border-slate-300'
                 }`}>
                   {completedItems.includes(item.id) && <Check size={14} className="text-white" />}
                 </div>

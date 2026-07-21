@@ -5,33 +5,51 @@ import { useRouter } from 'next/navigation';
 import { supabase, supabaseConfigured } from '@/lib/supabase';
 import { ensureUserProfile } from '@/lib/user-profile';
 import { mobileAuthHelper } from '@/lib/mobile-auth';
+import { looksLikeEmail, normalizeUsername } from '@/lib/family-accounts';
 import Link from 'next/link';
-import { Button } from '@/components/Button';
 import { Eye, EyeOff, Shield } from 'lucide-react';
 import { motion } from 'framer-motion';
+
+const ONBOARDING_FORM_PATH = '/onboarding-form';
+
+type FamilyPickMember = {
+  username: string;
+  name: string;
+  age: number;
+  email: string;
+};
+
+const shouldShowOnboardingForm = (meta: any): boolean => {
+  const needs = meta?.needsSignupForm === true || meta?.needs_signup_form === true;
+  const completedAt = meta?.signupFormCompletedAt || meta?.signup_form_completed_at;
+  return needs && !completedAt;
+};
 
 export default function SignInPage() {
   const router = useRouter();
   const authInFlightRef = useRef(false);
 
-  const [email, setEmail]           = useState('');
-  const [password, setPassword]     = useState('');
-  const [loading, setLoading]       = useState(false);
-  const [error, setError]           = useState<string | null>(null);
-  const [info, setInfo]             = useState<string | null>(null);
-  const [progress, setProgress]     = useState<string | null>(null);
+  const [loginId, setLoginId] = useState('');
+  const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [info, setInfo] = useState<string | null>(null);
+  const [progress, setProgress] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
-  const [offline, setOffline]       = useState(false);
+  const [offline, setOffline] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
-  const [touched, setTouched]       = useState<{ email: boolean; password: boolean; mfa: boolean }>({
-    email: false, password: false, mfa: false,
+  const [touched, setTouched] = useState<{ login: boolean; password: boolean; mfa: boolean }>({
+    login: false, password: false, mfa: false,
   });
 
-  const [mfaRequired, setMfaRequired]       = useState(false);
-  const [mfaFactorId, setMfaFactorId]       = useState<string | null>(null);
+  const [mfaRequired, setMfaRequired] = useState(false);
+  const [mfaFactorId, setMfaFactorId] = useState<string | null>(null);
   const [mfaChallengeId, setMfaChallengeId] = useState<string | null>(null);
-  const [mfaCode, setMfaCode]               = useState('');
-  const [retryIn, setRetryIn]               = useState<number | null>(null);
+  const [mfaCode, setMfaCode] = useState('');
+  const [retryIn, setRetryIn] = useState<number | null>(null);
+
+  const [pendingMembers, setPendingMembers] = useState<FamilyPickMember[] | null>(null);
+  const [familyEmailHint, setFamilyEmailHint] = useState<string | null>(null);
 
   const sanitizeNextPath = useCallback((raw: string | null): string => {
     if (!raw) return '/';
@@ -49,7 +67,11 @@ export default function SignInPage() {
     } catch { return '/'; }
   }, [sanitizeNextPath]);
 
-  /* ── Manual-retry countdown (counts down, does NOT auto-submit) ── */
+  const getPostSignInPath = useCallback((meta: any, fallbackPath: string) => {
+    if (shouldShowOnboardingForm(meta)) return ONBOARDING_FORM_PATH;
+    return fallbackPath;
+  }, []);
+
   useEffect(() => {
     if (retryIn === null || retryIn <= 0) { setRetryIn(null); return; }
     const id = window.setInterval(() => {
@@ -58,7 +80,6 @@ export default function SignInPage() {
     return () => clearInterval(id);
   }, [retryIn]);
 
-  /* ── On mount: check if a client-side cooldown is still active ── */
   useEffect(() => {
     try {
       const until = parseInt(window.localStorage.getItem('iklp_signin_locked_until') ?? '0', 10);
@@ -73,16 +94,14 @@ export default function SignInPage() {
       const raw = window.localStorage.getItem(key);
       const attempts: number[] = raw ? JSON.parse(raw) : [];
       const now = Date.now();
-      // Keep only attempts in the last 5 minutes
       const recent = attempts.filter((t) => now - t < 5 * 60 * 1000);
       recent.push(now);
       window.localStorage.setItem(key, JSON.stringify(recent));
-      // After 4 failed attempts, enforce a 2-minute client-side cooldown
       if (recent.length >= 4) {
         const lockUntil = now + 2 * 60 * 1000;
         window.localStorage.setItem('iklp_signin_locked_until', String(lockUntil));
         setRetryIn(120);
-        return true; // locked
+        return true;
       }
     } catch {}
     return false;
@@ -95,7 +114,6 @@ export default function SignInPage() {
     } catch {}
   };
 
-  /* ── Bootstrap ──────────────────────────────────────── */
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const update = () => setOffline(!navigator.onLine);
@@ -115,10 +133,11 @@ export default function SignInPage() {
     (async () => {
       const { data } = await supabase.auth.getSession();
       if (data.session?.user?.id) {
-        router.replace(getNextPath());
+        const next = getPostSignInPath(data.session.user.user_metadata || {}, getNextPath());
+        router.replace(next);
       }
     })();
-  }, [getNextPath, router]);
+  }, [getNextPath, getPostSignInPath, router]);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -139,10 +158,14 @@ export default function SignInPage() {
     } catch {}
   }, []);
 
-  /* ── Derived ─────────────────────────────────────────── */
-  const normalizedEmail = useMemo(() => email.trim().toLowerCase(), [email]);
-  const emailValid      = useMemo(() => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail), [normalizedEmail]);
-  const passwordValid   = useMemo(() => password.length >= 6, [password]);
+  const trimmedLogin = useMemo(() => loginId.trim(), [loginId]);
+  const loginIsEmail = useMemo(() => looksLikeEmail(trimmedLogin), [trimmedLogin]);
+  const loginValid = useMemo(() => {
+    if (!trimmedLogin) return false;
+    if (loginIsEmail) return true;
+    return normalizeUsername(trimmedLogin).length >= 3;
+  }, [trimmedLogin, loginIsEmail]);
+  const passwordValid = useMemo(() => password.length >= 6, [password]);
 
   const parseRetrySeconds = (msg: string): number | null => {
     const secMatch = msg.match(/try again in (\d+)\s*second/i);
@@ -192,7 +215,6 @@ export default function SignInPage() {
     ]);
   };
 
-  /* ── MFA ─────────────────────────────────────────────── */
   const beginMfaIfNeeded = async () => {
     try {
       const api: any = (supabase.auth as any).mfa;
@@ -259,55 +281,268 @@ export default function SignInPage() {
     }
   };
 
-  /* ── Social login ────────────────────────────────────── */
-  const onSocialLogin = async (provider: 'google' | 'github' | 'apple') => {
-    if (authInFlightRef.current || loading) return;
-    authInFlightRef.current = true;
-    setError(null);
-    setLoading(true);
-    try {
-      const redirectTo =
-        typeof window !== 'undefined'
-          ? `${window.location.origin}/signin?next=${encodeURIComponent(getNextPath())}`
-          : undefined;
-      const { error: oauthErr } = await supabase.auth.signInWithOAuth({ provider, options: { redirectTo } });
-      if (oauthErr) setError(oauthErr.message || 'Social sign-in failed. Please try again.');
-    } catch (e: any) {
-      setError(e?.message || 'Social sign-in failed. Please try again.');
-    } finally {
-      setLoading(false);
-      authInFlightRef.current = false;
-    }
-  };
-
-  /* ── Forgot password ─────────────────────────────────── */
   const onForgotPassword = async () => {
     setError(null);
     setInfo(null);
-    if (!email.trim()) { setError('Enter your email above, then click "Forgot password?" again.'); return; }
+    const target = familyEmailHint || (loginIsEmail ? trimmedLogin.toLowerCase() : '');
+    if (!target) {
+      setError('Enter your family email above, then click "Forgot password?" again.');
+      return;
+    }
     try {
       const redirectTo = typeof window !== 'undefined' ? `${window.location.origin}/reset-password` : undefined;
-      const { error: resetErr } = await supabase.auth.resetPasswordForEmail(email.trim().toLowerCase(), { redirectTo });
+      const { error: resetErr } = await supabase.auth.resetPasswordForEmail(target, { redirectTo });
       if (resetErr) { setError(resetErr.message || 'Could not send reset email.'); return; }
       setInfo('Password reset email sent. Check your inbox.');
     } catch (e: any) { setError(e?.message || 'Could not send reset email.'); }
   };
 
-  /* ── Main sign-in ────────────────────────────────────── */
+  const resolveAuthEmail = async (identifier: string, selectedUsername?: string): Promise<string | null> => {
+    setProgress('Looking up account…');
+    const { res, json } = await fetchJsonWithTimeout(
+      '/api/auth/resolve-login',
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          identifier,
+          selectedUsername: selectedUsername || undefined,
+        }),
+      },
+      8000
+    );
+
+    if (!res.ok) {
+      setError(json?.error || 'Could not find that account.');
+      return null;
+    }
+
+    if (json?.needsMemberPick && Array.isArray(json.members)) {
+      setPendingMembers(json.members as FamilyPickMember[]);
+      setFamilyEmailHint(json.familyEmail || (loginIsEmail ? trimmedLogin.toLowerCase() : null));
+      setInfo('Who is learning today? Pick a name, then we will sign you in.');
+      return null;
+    }
+
+    if (json?.authEmail) {
+      setFamilyEmailHint(json.familyEmail || null);
+      setPendingMembers(null);
+      return String(json.authEmail);
+    }
+
+    setError('Could not find that account.');
+    return null;
+  };
+
+  const signInWithAuthEmail = async (authEmail: string) => {
+    const isMobile =
+      (() => {
+        try {
+          return mobileAuthHelper.isMobileBrowser() || mobileAuthHelper.isWebView();
+        } catch {
+          return false;
+        }
+      })();
+
+    const finishSuccess = async (uid: string) => {
+      setProgress('Finalizing sign-in…');
+
+      if (!isMobile) {
+        try {
+          await withTimeout(supabase.auth.getUser(), 3500);
+        } catch {}
+
+        const session = await waitForSession();
+        if (!session) {
+          setError('Sign-in succeeded but your browser blocked the session. Please enable cookies/local storage and try again.');
+          setLoading(false);
+          setProgress(null);
+          authInFlightRef.current = false;
+          return;
+        }
+      }
+
+      clearFailedAttempts();
+      ensureUserProfile(uid).catch(() => {});
+
+      let authMeta: any = {};
+      try {
+        const { data: authData } = await withTimeout(supabase.auth.getUser(), 3500);
+        authMeta = authData.user?.user_metadata || {};
+      } catch {}
+
+      let needsMfa = false;
+      try {
+        needsMfa = await withTimeout(beginMfaIfNeeded(), isMobile ? 2500 : 7000);
+      } catch {
+        needsMfa = false;
+      }
+      if (needsMfa) {
+        setInfo('Enter your 2FA code to continue.');
+        setLoading(false);
+        setProgress(null);
+        authInFlightRef.current = false;
+        return;
+      }
+      setInfo('Signed in! Redirecting…');
+      setProgress('Redirecting…');
+      const next = getPostSignInPath(authMeta, getNextPath());
+      router.replace(next);
+      router.refresh();
+
+      if (isMobile && typeof window !== 'undefined') {
+        window.setTimeout(() => {
+          try {
+            window.location.replace(next);
+          } catch {}
+        }, 650);
+      }
+
+      if (typeof window !== 'undefined') {
+        window.setTimeout(() => {
+          try {
+            if (window.location.pathname.startsWith('/signin')) {
+              window.location.href = next;
+            }
+          } catch {}
+        }, 900);
+      }
+    };
+
+    if (isMobile) {
+      try {
+        setProgress('Contacting server…');
+        const { res, json } = await fetchJsonWithTimeout(
+          '/api/auth/signin',
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: authEmail, password }),
+          },
+          7000
+        );
+
+        if (res.ok) {
+          const access_token = json?.access_token;
+          const refresh_token = json?.refresh_token;
+          const uid = json?.user?.id;
+          if (access_token && refresh_token && uid) {
+            setProgress('Saving session…');
+            supabase.auth.setSession({ access_token, refresh_token }).catch(() => {});
+            await finishSuccess(uid);
+            return;
+          }
+          setError('Sign-in succeeded but session tokens were missing. Please try again.');
+          setProgress(null);
+          return;
+        } else {
+          const raw: string = json?.error ?? '';
+          const waitFromApi: number | null = typeof json?.retryAfter === 'number' ? json.retryAfter : null;
+          const wait = waitFromApi ?? parseRetrySeconds(raw) ?? (res.status === 429 ? 60 : null);
+          if (wait && wait > 0) {
+            const lockUntil = Date.now() + wait * 1000;
+            try { window.localStorage.setItem('iklp_signin_locked_until', String(lockUntil)); } catch {}
+            setRetryIn(wait);
+            setError(`Too many requests. Please wait ${wait} seconds then try again.`);
+            return;
+          }
+          setError(raw || 'Sign-in failed. Please check your details and password.');
+          setProgress(null);
+          return;
+        }
+      } catch (err: any) {
+        if (err?.name === 'AbortError') {
+          setError('Sign-in is taking too long on this connection. Please try again.');
+          setProgress(null);
+          return;
+        }
+      }
+    }
+
+    setProgress('Signing in…');
+    const { data: directData, error: directErr } = await withTimeout(
+      supabase.auth.signInWithPassword({
+        email: authEmail,
+        password,
+      }),
+      isMobile ? 5000 : 8000
+    );
+
+    if (!directErr && directData.session?.user?.id) {
+      await finishSuccess(directData.session.user.id);
+      return;
+    }
+
+    const directMsg = directErr?.message || '';
+    const directWait = parseRetrySeconds(directMsg) ?? ((directErr as any)?.status === 429 ? 60 : null);
+    if (directWait && directWait > 0) {
+      setProgress('Contacting server…');
+      const { res, json } = await fetchJsonWithTimeout(
+        '/api/auth/signin',
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: authEmail, password }),
+        },
+        7000
+      );
+
+      if (!res.ok) {
+        const raw: string = json?.error ?? directMsg;
+        const waitFromApi: number | null =
+          typeof json?.retryAfter === 'number' ? json.retryAfter : null;
+        const wait = waitFromApi ?? parseRetrySeconds(raw) ?? directWait;
+        const lockUntil = Date.now() + wait * 1000;
+        try { window.localStorage.setItem('iklp_signin_locked_until', String(lockUntil)); } catch {}
+        setRetryIn(wait);
+        setError(`Too many requests. Please wait ${wait} seconds then try again.`);
+        return;
+      }
+
+      const access_token = json?.access_token;
+      const refresh_token = json?.refresh_token;
+      const uid = json?.user?.id;
+      if (!access_token || !refresh_token || !uid) {
+        const lockUntil = Date.now() + directWait * 1000;
+        try { window.localStorage.setItem('iklp_signin_locked_until', String(lockUntil)); } catch {}
+        setRetryIn(directWait);
+        setError(`Too many requests. Please wait ${directWait} seconds then try again.`);
+        setProgress(null);
+        return;
+      }
+
+      setProgress('Saving session…');
+      if (isMobile) {
+        supabase.auth.setSession({ access_token, refresh_token }).catch(() => {});
+        await finishSuccess(uid);
+        return;
+      }
+      await withTimeout(supabase.auth.setSession({ access_token, refresh_token }), 4000);
+      await finishSuccess(uid);
+      return;
+    }
+
+    recordFailedAttempt();
+    setError(directMsg || 'Sign-in failed. Please check your details and password.');
+  };
+
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (authInFlightRef.current || loading) return;
     setError(null);
     setInfo(null);
     setProgress(null);
-    setTouched({ email: true, password: true, mfa: false });
+    setTouched({ login: true, password: true, mfa: false });
 
     if (!supabaseConfigured) {
       setError('Sign-in is temporarily unavailable because Supabase is not configured.');
       return;
     }
-    if (!normalizedEmail || !emailValid) { setError('Please enter a valid email address.'); return; }
-    if (!password || !passwordValid)     { setError('Password must be at least 6 characters.'); return; }
+    if (!loginValid) {
+      setError(loginIsEmail ? 'Please enter a valid email address.' : 'Please enter your email or username.');
+      return;
+    }
+    if (!password || !passwordValid) { setError('Password must be at least 6 characters.'); return; }
     if (offline) { setError('You appear to be offline. Please reconnect and try again.'); return; }
     try {
       const storage = mobileAuthHelper.checkStorageAvailability();
@@ -316,7 +551,6 @@ export default function SignInPage() {
         return;
       }
     } catch {}
-    // Client-side cooldown check
     try {
       const until = parseInt(window.localStorage.getItem('iklp_signin_locked_until') ?? '0', 10);
       const remaining = Math.ceil((until - Date.now()) / 1000);
@@ -328,234 +562,69 @@ export default function SignInPage() {
     setLoading(true);
 
     try {
-      const isMobile =
-        (() => {
-          try {
-            return mobileAuthHelper.isMobileBrowser() || mobileAuthHelper.isWebView();
-          } catch {
-            return false;
-          }
-        })();
-
-      const finishSuccess = async (uid: string) => {
-        setProgress('Finalizing sign-in…');
-
-        // On mobile, always proceed even if getSession isn't immediately readable
-        // because WebView storage can lag. The tokens were already set via setSession.
-        if (!isMobile) {
-          // Prime auth state quickly before route transition (desktop only).
-          try {
-            await withTimeout(supabase.auth.getUser(), 3500);
-          } catch {}
-
-          const session = await waitForSession();
-          if (!session) {
-            setError('Sign-in succeeded but your browser blocked the session. Please enable cookies/local storage and try again.');
-            setLoading(false);
-            setProgress(null);
-            authInFlightRef.current = false;
-            return;
-          }
-        }
-
-        clearFailedAttempts();
-        // Do not block redirect on profile provisioning.
-        ensureUserProfile(uid).catch(() => {});
-
-        let needsMfa = false;
-        try {
-          needsMfa = await withTimeout(beginMfaIfNeeded(), isMobile ? 2500 : 7000);
-        } catch {
-          needsMfa = false;
-        }
-        if (needsMfa) {
-          setInfo('Enter your 2FA code to continue.');
-          setLoading(false);
-          setProgress(null);
-          authInFlightRef.current = false;
-          return;
-        }
-        setInfo('Signed in! Redirecting…');
-        setProgress('Redirecting…');
-        const next = getNextPath();
-        router.replace(next);
-        router.refresh();
-
-        // Mobile/webview safeguard: do one hard navigation so authenticated UI state
-        // is guaranteed without requiring the user to manually refresh.
-        if (isMobile && typeof window !== 'undefined') {
-          window.setTimeout(() => {
-            try {
-              window.location.replace(next);
-            } catch {}
-          }, 650);
-        }
-
-        // Fallback for stubborn clients that may ignore client routing.
-        if (typeof window !== 'undefined') {
-          window.setTimeout(() => {
-            try {
-              if (window.location.pathname.startsWith('/signin')) {
-                window.location.href = next;
-              }
-            } catch {}
-          }, 900);
-        }
-      };
-
-      if (isMobile) {
-        try {
-          setProgress('Contacting server…');
-          const { res, json } = await fetchJsonWithTimeout(
-            '/api/auth/signin',
-            {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ email: normalizedEmail, password }),
-            },
-            7000
-          );
-
-          if (res.ok) {
-            const access_token = json?.access_token;
-            const refresh_token = json?.refresh_token;
-            const uid = json?.user?.id;
-            if (access_token && refresh_token && uid) {
-              setProgress('Saving session…');
-              // On mobile, don't block on setSession — it can hang in WebViews.
-              // Fire-and-forget and proceed immediately to redirect.
-              if (isMobile) {
-                supabase.auth.setSession({ access_token, refresh_token }).catch(() => {});
-                await finishSuccess(uid);
-                return;
-              }
-              await withTimeout(supabase.auth.setSession({ access_token, refresh_token }), 4000);
-              await finishSuccess(uid);
-              return;
-            }
-            // Tokens missing from API response — show error instead of falling through
-            setError('Sign-in succeeded but session tokens were missing. Please try again.');
-            setProgress(null);
-            return;
-          } else {
-            const raw: string = json?.error ?? '';
-            const waitFromApi: number | null = typeof json?.retryAfter === 'number' ? json.retryAfter : null;
-            const wait = waitFromApi ?? parseRetrySeconds(raw) ?? (res.status === 429 ? 60 : null);
-            if (wait && wait > 0) {
-              const lockUntil = Date.now() + wait * 1000;
-              try { window.localStorage.setItem('iklp_signin_locked_until', String(lockUntil)); } catch {}
-              setRetryIn(wait);
-              setError(`Too many requests. Please wait ${wait} seconds then try again.`);
-              return;
-            }
-            // Show the server error directly instead of falling through to direct sign-in
-            setError(raw || 'Sign-in failed. Please check your email and password.');
-            setProgress(null);
-            return;
-          }
-        } catch (err: any) {
-          if (err?.name === 'AbortError') {
-            setError('Sign-in is taking too long on this connection. Please try again.');
-            setProgress(null);
-            return;
-          }
-          // On network errors, fall through to direct Supabase sign-in as a fallback
-        }
-      }
-
-      setProgress('Signing in…');
-      const { data: directData, error: directErr } = await withTimeout(
-        supabase.auth.signInWithPassword({
-          email: normalizedEmail,
-          password,
-        }),
-        isMobile ? 5000 : 8000
-      );
-
-      if (!directErr && directData.session?.user?.id) {
-        const directUid = directData.session.user.id;
-        await finishSuccess(directUid);
+      const authEmail = await resolveAuthEmail(trimmedLogin);
+      if (!authEmail) {
+        setLoading(false);
+        setProgress(null);
+        authInFlightRef.current = false;
         return;
       }
-
-      const directMsg = directErr?.message || '';
-      const directWait = parseRetrySeconds(directMsg) ?? ((directErr as any)?.status === 429 ? 60 : null);
-      if (directWait && directWait > 0) {
-        setProgress('Contacting server…');
-        const { res, json } = await fetchJsonWithTimeout(
-          '/api/auth/signin',
-          {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email: normalizedEmail, password }),
-          },
-          7000
-        );
-
-        if (!res.ok) {
-          const raw: string = json?.error ?? directMsg;
-          const waitFromApi: number | null =
-            typeof json?.retryAfter === 'number' ? json.retryAfter : null;
-          const wait = waitFromApi ?? parseRetrySeconds(raw) ?? directWait;
-          const lockUntil = Date.now() + wait * 1000;
-          try { window.localStorage.setItem('iklp_signin_locked_until', String(lockUntil)); } catch {}
-          setRetryIn(wait);
-          setError(`Too many requests. Please wait ${wait} seconds then try again.`);
-          return;
-        }
-
-        const access_token = json?.access_token;
-        const refresh_token = json?.refresh_token;
-        const uid = json?.user?.id;
-        if (!access_token || !refresh_token || !uid) {
-          const lockUntil = Date.now() + directWait * 1000;
-          try { window.localStorage.setItem('iklp_signin_locked_until', String(lockUntil)); } catch {}
-          setRetryIn(directWait);
-          setError(`Too many requests. Please wait ${directWait} seconds then try again.`);
-          setProgress(null);
-          return;
-        }
-
-        setProgress('Saving session…');
-        // On mobile, don't block on setSession — it can hang in WebViews.
-        if (isMobile) {
-          supabase.auth.setSession({ access_token, refresh_token }).catch(() => {});
-          await finishSuccess(uid);
-          return;
-        }
-        await withTimeout(supabase.auth.setSession({ access_token, refresh_token }), 4000);
-        await finishSuccess(uid);
-        return;
-      }
-
-      recordFailedAttempt();
-      setError(directMsg || 'Sign-in failed. Please check your email and password.');
-      setLoading(false);
-      setProgress(null);
-      authInFlightRef.current = false;
+      await signInWithAuthEmail(authEmail);
     } catch (err: any) {
       recordFailedAttempt();
       setError(err?.message || 'An unexpected error occurred. Please try again.');
+    } finally {
       setLoading(false);
       setProgress(null);
       authInFlightRef.current = false;
     }
   };
 
-  /* ── Render ──────────────────────────────────────────── */
+  const onPickMember = async (member: FamilyPickMember) => {
+    if (authInFlightRef.current || loading) return;
+    setError(null);
+    setInfo(null);
+    if (!password || !passwordValid) {
+      setError('Enter the family password, then pick who is learning.');
+      return;
+    }
+
+    persistRemember(rememberMe);
+    authInFlightRef.current = true;
+    setLoading(true);
+
+    try {
+      const authEmail = await resolveAuthEmail(familyEmailHint || trimmedLogin, member.username);
+      if (!authEmail) {
+        // Fallback: member email from resolve list
+        if (member.email) {
+          await signInWithAuthEmail(member.email);
+        }
+        return;
+      }
+      await signInWithAuthEmail(authEmail);
+    } catch (err: any) {
+      recordFailedAttempt();
+      setError(err?.message || 'Could not sign in as that learner.');
+    } finally {
+      setLoading(false);
+      setProgress(null);
+      authInFlightRef.current = false;
+    }
+  };
+
   return (
-    <div className="min-h-[80vh] flex items-center justify-center px-4 sm:px-6 py-10 bg-[#fdf8f3] pattern-islamic">
+    <div className="min-h-[80vh] flex items-center justify-center px-4 sm:px-6 py-10 bg-[#f5f3ff] pattern-islamic">
       <div className="w-full max-w-5xl grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-10 items-stretch">
 
-        {/* Left panel */}
-        <div className="hidden md:flex flex-col justify-between rounded-2xl p-8 bg-gradient-to-br from-[#0d9488] to-[#115e59] text-white shadow-xl">
+        <div className="hidden md:flex flex-col justify-between rounded-2xl p-8 bg-gradient-to-br from-[#6d28d9] to-[#5b21b6] text-white shadow-xl">
           <div>
             <div className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-xs font-semibold">
               <Shield size={14} /> Secure Sign In
             </div>
             <h1 className="mt-5 text-3xl font-extrabold leading-tight">Welcome back</h1>
             <p className="mt-3 text-white/80">
-              Sign in to continue your Islamic learning journey. Your progress and points are saved to your account.
+              Sign in with your email or username. Brothers and sisters can share one family email.
             </p>
           </div>
           <div className="mt-8 flex gap-4 text-4xl">
@@ -563,16 +632,15 @@ export default function SignInPage() {
           </div>
         </div>
 
-        {/* Right panel */}
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.26, ease: [0.22, 1, 0.36, 1] }}
-          className="w-full rounded-2xl bg-white shadow-xl border border-[#e5c9a3]/30 p-6 sm:p-8"
+          className="w-full rounded-2xl bg-white shadow-xl border border-[#c4b5fd]/30 p-6 sm:p-8"
         >
           <div className="md:hidden mb-6">
-            <h1 className="text-2xl font-extrabold text-[#6a422d]">Sign in</h1>
-            <p className="mt-1 text-sm text-[#a1633a]">Continue learning where you left off.</p>
+            <h1 className="text-2xl font-extrabold text-[#1e1b4b]">Sign in</h1>
+            <p className="mt-1 text-sm text-[#475569]">Use your email or username.</p>
           </div>
 
           {offline && (
@@ -603,35 +671,68 @@ export default function SignInPage() {
             </div>
           )}
 
-          {/* Social buttons removed */}
-
-          {!mfaRequired ? (
-            <form id="signin-form" onSubmit={onSubmit} className="space-y-4" noValidate>
-              {/* Email */}
+          {pendingMembers && pendingMembers.length > 0 && !mfaRequired ? (
+            <div className="space-y-4">
               <div>
-                <label htmlFor="email" className="block text-sm font-semibold text-[#6a422d] mb-1">Email</label>
+                <p className="text-sm font-semibold text-[#1e1b4b]">Who is learning today?</p>
+                <p className="mt-1 text-xs text-[#475569]">
+                  Same family password for everyone. Pick your name to continue.
+                </p>
+              </div>
+              <div className="space-y-2">
+                {pendingMembers.map((member) => (
+                  <button
+                    key={member.username || member.email}
+                    type="button"
+                    disabled={loading || retryIn !== null}
+                    onClick={() => onPickMember(member)}
+                    className="w-full rounded-xl border-2 border-[#c4b5fd]/40 px-4 py-3 text-left hover:border-[#7c3aed] hover:bg-[#f5f3ff] transition disabled:opacity-50"
+                  >
+                    <span className="block font-bold text-[#1e1b4b]">{member.name}</span>
+                    <span className="block text-xs text-[#475569]">
+                      @{member.username || 'learner'} · age {member.age || '?'}
+                    </span>
+                  </button>
+                ))}
+              </div>
+              <button
+                type="button"
+                onClick={() => { setPendingMembers(null); setInfo(null); }}
+                className="w-full text-sm text-slate-600 hover:underline"
+              >
+                Use a different email or username
+              </button>
+              {loading && progress && (
+                <div className="text-center text-xs text-[#475569]">{progress}</div>
+              )}
+            </div>
+          ) : !mfaRequired ? (
+            <form id="signin-form" onSubmit={onSubmit} className="space-y-4" noValidate>
+              <div>
+                <label htmlFor="loginId" className="block text-sm font-semibold text-[#1e1b4b] mb-1">
+                  Email or username
+                </label>
                 <input
-                  id="email"
-                  type="email"
-                  autoComplete="email"
-                  placeholder="kid@example.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  onBlur={() => setTouched((t) => ({ ...t, email: true }))}
+                  id="loginId"
+                  type="text"
+                  autoComplete="username"
+                  placeholder="family@email.com or aisha_k"
+                  value={loginId}
+                  onChange={(e) => setLoginId(e.target.value)}
+                  onBlur={() => setTouched((t) => ({ ...t, login: true }))}
                   className={`w-full rounded-xl border-2 px-4 py-3 interactive-focus touch-target transition ${
-                    touched.email && !emailValid ? 'border-[#ff6b6b] bg-[#fff5f5]' : 'border-[#e5c9a3]/40'
+                    touched.login && !loginValid ? 'border-[#ff6b6b] bg-[#fff5f5]' : 'border-[#c4b5fd]/40'
                   }`}
                 />
-                {touched.email && !emailValid && (
-                  <p className="mt-1 text-xs text-red-700">Enter a valid email address.</p>
+                {touched.login && !loginValid && (
+                  <p className="mt-1 text-xs text-red-700">Enter a valid email or username.</p>
                 )}
               </div>
 
-              {/* Password */}
               <div>
                 <div className="flex items-center justify-between mb-1">
-                  <label htmlFor="password" className="block text-sm font-semibold text-[#6a422d]">Password</label>
-                  <button type="button" onClick={onForgotPassword} className="text-xs font-semibold text-[#14b8a6] hover:underline interactive-focus touch-target">
+                  <label htmlFor="password" className="block text-sm font-semibold text-[#1e1b4b]">Password</label>
+                  <button type="button" onClick={onForgotPassword} className="text-xs font-semibold text-[#7c3aed] hover:underline interactive-focus touch-target">
                     Forgot password?
                   </button>
                 </div>
@@ -645,7 +746,7 @@ export default function SignInPage() {
                     onChange={(e) => setPassword(e.target.value)}
                     onBlur={() => setTouched((t) => ({ ...t, password: true }))}
                     className={`w-full rounded-xl border-2 px-4 py-3 pr-11 interactive-focus touch-target transition ${
-                      touched.password && !passwordValid ? 'border-[#ff6b6b] bg-[#fff5f5]' : 'border-[#e5c9a3]/40'
+                      touched.password && !passwordValid ? 'border-[#ff6b6b] bg-[#fff5f5]' : 'border-[#c4b5fd]/40'
                     }`}
                   />
                   <button
@@ -662,13 +763,12 @@ export default function SignInPage() {
                 )}
               </div>
 
-              {/* Remember me */}
-              <label className="flex items-center gap-2 text-sm text-[#6a422d] select-none cursor-pointer">
+              <label className="flex items-center gap-2 text-sm text-[#1e1b4b] select-none cursor-pointer">
                 <input
                   type="checkbox"
                   checked={rememberMe}
                   onChange={(e) => setRememberMe(e.target.checked)}
-                  className="h-4 w-4 rounded border-[#e5c9a3] text-[#14b8a6] interactive-focus"
+                  className="h-4 w-4 rounded border-[#c4b5fd] text-[#7c3aed] interactive-focus"
                 />
                 Keep me signed in
               </label>
@@ -676,28 +776,27 @@ export default function SignInPage() {
               <button
                 type="submit"
                 disabled={!supabaseConfigured || loading || retryIn !== null}
-                className="w-full py-3 rounded-xl font-bold text-white bg-gradient-to-r from-[#14b8a6] to-[#0d9488] shadow-lg hover:shadow-xl transition-all transition-bouncy interactive-focus touch-target disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full py-3 rounded-xl font-bold text-white bg-gradient-to-r from-[#7c3aed] to-[#6d28d9] shadow-lg hover:shadow-xl transition-all transition-bouncy interactive-focus touch-target disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {loading ? 'Signing in…' : retryIn !== null ? `Please wait ${retryIn}s…` : 'Sign In'}
               </button>
               {loading && progress && (
-                <div className="text-center text-xs text-[#a1633a]">{progress}</div>
+                <div className="text-center text-xs text-[#475569]">{progress}</div>
               )}
 
-              <p className="text-sm text-center text-[#6a422d]">
+              <p className="text-sm text-center text-[#1e1b4b]">
                 New here?{' '}
-                <Link href="/signup" className="text-[#14b8a6] font-semibold hover:underline">Create an account</Link>
+                <Link href="/signup" className="text-[#7c3aed] font-semibold hover:underline">Create an account</Link>
               </p>
             </form>
           ) : (
-            /* MFA form */
             <form onSubmit={onVerifyMfa} className="space-y-4">
-              <div className="rounded-xl border border-[#e5c9a3]/30 bg-[#f9f0e6] px-4 py-3">
-                <p className="text-sm font-semibold text-[#6a422d]">Two-factor authentication</p>
-                <p className="mt-1 text-sm text-[#a1633a]">Enter the 6-digit code from your authenticator app.</p>
+              <div className="rounded-xl border border-[#c4b5fd]/30 bg-[#ede9fe] px-4 py-3">
+                <p className="text-sm font-semibold text-[#1e1b4b]">Two-factor authentication</p>
+                <p className="mt-1 text-sm text-[#475569]">Enter the 6-digit code from your authenticator app.</p>
               </div>
               <div>
-                <label htmlFor="mfa" className="block text-sm font-semibold text-[#6a422d] mb-1">2FA code</label>
+                <label htmlFor="mfa" className="block text-sm font-semibold text-[#1e1b4b] mb-1">2FA code</label>
                 <input
                   id="mfa"
                   type="text"
@@ -706,13 +805,13 @@ export default function SignInPage() {
                   value={mfaCode}
                   onChange={(e) => setMfaCode(e.target.value)}
                   onBlur={() => setTouched((t) => ({ ...t, mfa: true }))}
-                  className="w-full rounded-xl border-2 border-[#e5c9a3]/40 px-4 py-3 outline-none focus:ring-2 focus:ring-[#14b8a6] focus:border-[#14b8a6]"
+                  className="w-full rounded-xl border-2 border-[#c4b5fd]/40 px-4 py-3 outline-none focus:ring-2 focus:ring-[#7c3aed] focus:border-[#7c3aed]"
                 />
               </div>
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full py-3 rounded-xl font-bold text-white bg-gradient-to-r from-[#14b8a6] to-[#0d9488] shadow-lg hover:shadow-xl transition-all transition-bouncy interactive-focus touch-target disabled:opacity-50"
+                className="w-full py-3 rounded-xl font-bold text-white bg-gradient-to-r from-[#7c3aed] to-[#6d28d9] shadow-lg hover:shadow-xl transition-all transition-bouncy interactive-focus touch-target disabled:opacity-50"
               >
                 {loading ? 'Verifying…' : 'Verify & Continue'}
               </button>

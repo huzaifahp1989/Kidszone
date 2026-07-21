@@ -1,32 +1,31 @@
-@import url('https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Nunito:wght@400;600;700;800;900&display=swap');
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 :root {
-  /* Warm Islamic Color Palette */
-  --sand-50: #fdf8f3;
-  --sand-100: #f9f0e6;
-  --sand-200: #f0dec8;
-  --sand-300: #e5c9a3;
-  --sand-400: #d9ad7a;
-  --sand-500: #cd9456;
-  --sand-600: #c27d45;
-  --sand-700: #a1633a;
-  --sand-800: #825035;
-  --sand-900: #6a422d;
+  /* Celestial Violet — cool neutrals */
+  --sand-50: #f8fafc;
+  --sand-100: #f1f5f9;
+  --sand-200: #e2e8f0;
+  --sand-300: #cbd5e1;
+  --sand-400: #94a3b8;
+  --sand-500: #64748b;
+  --sand-600: #475569;
+  --sand-700: #334155;
+  --sand-800: #1e293b;
+  --sand-900: #0f172a;
 
-  --teal-50: #f0fdfa;
-  --teal-100: #ccfbf1;
-  --teal-200: #99f6e4;
-  --teal-300: #5eead4;
-  --teal-400: #2dd4bf;
-  --teal-500: #14b8a6;
-  --teal-600: #0d9488;
-  --teal-700: #0f766e;
-  --teal-800: #115e59;
-  --teal-900: #134e4a;
+  /* Primary violet scale (teal token names kept for compat) */
+  --teal-50: #f5f3ff;
+  --teal-100: #ede9fe;
+  --teal-200: #ddd6fe;
+  --teal-300: #c4b5fd;
+  --teal-400: #a78bfa;
+  --teal-500: #8b5cf6;
+  --teal-600: #7c3aed;
+  --teal-700: #6d28d9;
+  --teal-800: #5b21b6;
+  --teal-900: #4c1d95;
 
   --coral-50: #fff5f5;
   --coral-100: #ffe0e0;
@@ -67,15 +66,19 @@
   --primary-dark: var(--teal-800);
   --secondary: var(--coral-500);
   --accent: var(--gold-500);
-  --background: var(--sand-50);
+  --background: #f5f3ff;
   --surface: #ffffff;
-  --surface-soft: rgba(255, 255, 255, 0.78);
-  --surface-strong: rgba(255, 255, 255, 0.92);
+  --surface-soft: rgba(255, 255, 255, 0.9);
+  --surface-strong: rgba(255, 255, 255, 0.97);
   --text-primary: var(--sand-900);
-  --text-secondary: var(--sand-600);
-  --text-muted: var(--sand-400);
-  --ring-soft: rgba(20, 184, 166, 0.18);
-  --ring-strong: rgba(20, 184, 166, 0.34);
+  --text-secondary: var(--sand-700);
+  --text-muted: var(--sand-500);
+  --ring-soft: rgba(124, 58, 237, 0.2);
+  --ring-strong: rgba(124, 58, 237, 0.38);
+  --ink: #1e1b4b;
+  --ink-soft: #4338ca;
+  --panel-shadow: 0 20px 44px rgba(76, 29, 149, 0.1), 0 4px 12px rgba(76, 29, 149, 0.05);
+  --nav-shadow: 0 10px 30px rgba(76, 29, 149, 0.1);
 }
 
 @layer base {
@@ -84,21 +87,31 @@
   }
   
   body {
-    font-family: 'Nunito', sans-serif;
+    font-family: var(--font-nunito), 'Nunito', system-ui, sans-serif;
     background:
-      radial-gradient(circle at 8% 10%, rgba(20, 184, 166, 0.15) 0%, transparent 34%),
-      radial-gradient(circle at 92% 16%, rgba(245, 158, 11, 0.16) 0%, transparent 28%),
-      radial-gradient(circle at 50% 120%, rgba(255, 71, 87, 0.10) 0%, transparent 44%),
-      linear-gradient(180deg, #fefaf5 0%, #f8eddc 52%, #f6e6d3 100%);
+      radial-gradient(ellipse 80% 60% at 8% 0%, rgba(139, 92, 246, 0.14) 0%, transparent 55%),
+      radial-gradient(ellipse 70% 50% at 92% 8%, rgba(245, 158, 11, 0.08) 0%, transparent 50%),
+      radial-gradient(ellipse 60% 40% at 50% 100%, rgba(99, 102, 241, 0.1) 0%, transparent 55%),
+      linear-gradient(168deg, #f5f3ff 0%, #ede9fe 40%, #e0e7ff 100%);
     color: var(--text-primary);
     min-height: 100vh;
     text-rendering: optimizeLegibility;
     -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    background-attachment: fixed;
+    line-height: 1.6;
   }
 
   h1, h2, h3, h4, h5, h6 {
-    font-family: 'Amiri', serif;
+    font-family: var(--font-amiri), 'Amiri', Georgia, serif;
     font-weight: 700;
+    line-height: 1.25;
+    letter-spacing: -0.01em;
+  }
+
+  ::selection {
+    background: rgba(124, 58, 237, 0.22);
+    color: var(--ink);
   }
 
   :focus-visible {
@@ -127,7 +140,9 @@
     position: relative;
     isolation: isolate;
     overflow: hidden;
-    background: linear-gradient(180deg, rgba(255, 255, 255, 0.28) 0%, rgba(255, 255, 255, 0.16) 100%);
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.4) 0%, rgba(255, 255, 255, 0.2) 100%),
+      radial-gradient(circle at 12% 0%, rgba(139, 92, 246, 0.1) 0%, transparent 30%);
   }
 
   .app-shell-backdrop {
@@ -136,11 +151,11 @@
     z-index: -1;
     pointer-events: none;
     background:
-      radial-gradient(circle at 12% 14%, rgba(13, 148, 136, 0.20) 0%, transparent 42%),
-      radial-gradient(circle at 86% 20%, rgba(251, 191, 36, 0.24) 0%, transparent 38%),
-      radial-gradient(circle at 50% 96%, rgba(255, 71, 87, 0.14) 0%, transparent 46%),
-      linear-gradient(180deg, rgba(255, 253, 250, 0.82) 0%, rgba(249, 240, 230, 0.48) 100%);
-    animation: backdrop-drift 20s ease-in-out infinite;
+      radial-gradient(ellipse 55% 45% at 10% 12%, rgba(139, 92, 246, 0.12) 0%, transparent 55%),
+      radial-gradient(ellipse 50% 40% at 88% 18%, rgba(245, 158, 11, 0.06) 0%, transparent 50%),
+      radial-gradient(ellipse 60% 35% at 50% 98%, rgba(99, 102, 241, 0.08) 0%, transparent 55%),
+      linear-gradient(180deg, rgba(245, 243, 255, 0.75) 0%, rgba(237, 233, 254, 0.45) 100%);
+    animation: backdrop-drift 24s ease-in-out infinite;
   }
 
   .app-shell-grid {
@@ -149,11 +164,11 @@
     z-index: -1;
     pointer-events: none;
     background-image:
-      linear-gradient(to right, rgba(161, 99, 58, 0.07) 1px, transparent 1px),
-      linear-gradient(to bottom, rgba(161, 99, 58, 0.07) 1px, transparent 1px);
-    background-size: 42px 42px;
+      linear-gradient(to right, rgba(124, 58, 237, 0.06) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(124, 58, 237, 0.06) 1px, transparent 1px);
+    background-size: 34px 34px;
     mask-image: radial-gradient(circle at center, rgba(0, 0, 0, 0.7) 0%, transparent 72%);
-    opacity: 0.38;
+    opacity: 0.32;
   }
 
   .app-shell-aurora {
@@ -171,7 +186,7 @@
   .app-shell-aurora-left {
     top: -80px;
     left: -120px;
-    background: radial-gradient(circle at 35% 35%, rgba(20, 184, 166, 0.36) 0%, rgba(20, 184, 166, 0) 68%);
+    background: radial-gradient(circle at 35% 35%, rgba(139, 92, 246, 0.32) 0%, rgba(139, 92, 246, 0) 68%);
   }
 
   .app-shell-aurora-right {
@@ -192,22 +207,20 @@
     position: relative;
     z-index: 1;
     width: 100%;
-    padding: 0.5rem clamp(0.75rem, 2.5vw, 2rem) 0;
+    padding: 0.8rem clamp(0.7rem, 2.6vw, 2.2rem) 0;
   }
 
   .route-frame {
-    max-width: 1160px;
+    max-width: 1240px;
     margin: 0 auto;
   }
 
   .page-stage {
     position: relative;
-    border-radius: 1.8rem;
-    background: linear-gradient(175deg, var(--surface-strong), var(--surface-soft));
-    box-shadow:
-      0 16px 34px rgba(106, 66, 45, 0.14),
-      inset 0 1px 0 rgba(255, 255, 255, 0.82);
-    border: 1px solid rgba(255, 255, 255, 0.64);
+    border-radius: 2rem;
+    background: linear-gradient(175deg, var(--surface-strong) 0%, var(--surface-soft) 100%);
+    box-shadow: var(--panel-shadow), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+    border: 1px solid rgba(255, 255, 255, 0.75);
     overflow: clip;
   }
 
@@ -216,8 +229,8 @@
     position: absolute;
     inset: 0;
     pointer-events: none;
-    background: linear-gradient(120deg, rgba(20, 184, 166, 0.08) 0%, transparent 38%, rgba(245, 158, 11, 0.08) 100%);
-    opacity: 0.95;
+    background: linear-gradient(125deg, rgba(139, 92, 246, 0.07) 0%, transparent 42%, rgba(245, 158, 11, 0.05) 100%);
+    opacity: 1;
   }
 
   .page-stage > * {
@@ -229,9 +242,9 @@
     background: var(--surface-strong);
     border: 1px solid rgba(255, 255, 255, 0.72);
     box-shadow:
-      0 8px 24px rgba(106, 66, 45, 0.11),
+      0 8px 24px rgba(76, 29, 149, 0.1),
       inset 0 1px 0 rgba(255, 255, 255, 0.86);
-    border-radius: 1.25rem;
+    border-radius: 1.35rem;
   }
 
   .surface-card-hover {
@@ -241,53 +254,53 @@
   .surface-card-hover:hover {
     transform: translateY(-2px);
     box-shadow:
-      0 14px 26px rgba(106, 66, 45, 0.16),
+      0 14px 26px rgba(76, 29, 149, 0.14),
       inset 0 1px 0 rgba(255, 255, 255, 0.9);
   }
 
   .page-canvas {
     min-height: 100vh;
-    background: linear-gradient(180deg, rgba(255, 255, 255, 0.34) 0%, rgba(240, 222, 200, 0.2) 100%);
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.45) 0%, rgba(237, 233, 254, 0.3) 100%);
   }
 
   .page-wrap {
-    max-width: 1160px;
+    max-width: 1220px;
     margin: 0 auto;
-    padding: 1.25rem 1rem 2rem;
+    padding: 1.3rem clamp(0.95rem, 2vw, 1.4rem) 2.4rem;
   }
 
   .hero-panel {
     position: relative;
     overflow: hidden;
-    border-radius: 1.6rem;
+    border-radius: 1.7rem;
     border: 1px solid rgba(255, 255, 255, 0.7);
     background:
-      radial-gradient(circle at 85% 5%, rgba(20, 184, 166, 0.18) 0%, transparent 28%),
-      radial-gradient(circle at 12% 110%, rgba(245, 158, 11, 0.16) 0%, transparent 36%),
-      linear-gradient(170deg, rgba(255, 255, 255, 0.95) 0%, rgba(249, 240, 230, 0.82) 100%);
+      radial-gradient(circle at 85% 5%, rgba(139, 92, 246, 0.16) 0%, transparent 28%),
+      radial-gradient(circle at 12% 110%, rgba(245, 158, 11, 0.12) 0%, transparent 36%),
+      linear-gradient(170deg, rgba(255, 255, 255, 0.96) 0%, rgba(245, 243, 255, 0.85) 100%);
     box-shadow:
-      0 16px 34px rgba(106, 66, 45, 0.16),
+      0 16px 34px rgba(76, 29, 149, 0.12),
       inset 0 1px 0 rgba(255, 255, 255, 0.9);
   }
 
   .feature-tile {
-    border-radius: 1.1rem;
-    border: 1px solid rgba(229, 201, 163, 0.34);
-    background: linear-gradient(165deg, rgba(255, 255, 255, 0.9) 0%, rgba(249, 240, 230, 0.7) 100%);
-    box-shadow: 0 10px 24px rgba(106, 66, 45, 0.11);
+    border-radius: 1.2rem;
+    border: 1px solid rgba(196, 181, 253, 0.45);
+    background: linear-gradient(165deg, rgba(255, 255, 255, 0.92) 0%, rgba(245, 243, 255, 0.75) 100%);
+    box-shadow: 0 10px 24px rgba(76, 29, 149, 0.08);
     transition: transform 0.25s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.25s ease;
   }
 
   .feature-tile:hover {
     transform: translateY(-4px);
-    box-shadow: 0 16px 28px rgba(106, 66, 45, 0.16);
+    box-shadow: 0 16px 28px rgba(76, 29, 149, 0.12);
   }
 
   .stat-pill {
     border-radius: 1rem;
-    border: 1px solid rgba(229, 201, 163, 0.34);
-    background: linear-gradient(160deg, rgba(255, 255, 255, 0.9) 0%, rgba(249, 240, 230, 0.66) 100%);
-    box-shadow: 0 8px 18px rgba(106, 66, 45, 0.1);
+    border: 1px solid rgba(196, 181, 253, 0.4);
+    background: linear-gradient(160deg, rgba(255, 255, 255, 0.92) 0%, rgba(245, 243, 255, 0.7) 100%);
+    box-shadow: 0 8px 18px rgba(76, 29, 149, 0.08);
   }
 
   .badge-chip {
@@ -295,19 +308,19 @@
     align-items: center;
     gap: 0.45rem;
     border-radius: 999px;
-    border: 1px solid rgba(20, 184, 166, 0.24);
-    background: rgba(240, 253, 250, 0.9);
+    border: 1px solid rgba(139, 92, 246, 0.28);
+    background: rgba(245, 243, 255, 0.95);
     padding: 0.45rem 0.75rem;
     font-size: 0.74rem;
     line-height: 1;
     font-weight: 800;
     letter-spacing: 0.08em;
     text-transform: uppercase;
-    color: #0f766e;
+    color: var(--teal-700);
   }
 
   .cta-panel {
-    border-radius: 1.1rem;
+    border-radius: 1.2rem;
     padding: 1.4rem;
     border: 1px solid rgba(255, 255, 255, 0.35);
     box-shadow: 0 16px 26px rgba(21, 29, 40, 0.18);
@@ -318,7 +331,7 @@
   }
 
   .interactive-focus {
-    @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#14b8a6] focus-visible:ring-offset-2;
+    @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2;
   }
 
   /* Glass Card Effect */
@@ -337,12 +350,12 @@
     @apply px-6 py-3 rounded-2xl font-bold transition-all duration-300;
     background: linear-gradient(135deg, var(--teal-500), var(--teal-600));
     color: white;
-    box-shadow: 0 4px 14px rgba(13, 148, 136, 0.35);
+    box-shadow: 0 4px 14px rgba(124, 58, 237, 0.35);
   }
   
   .btn-primary:hover {
     transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(13, 148, 136, 0.45);
+    box-shadow: 0 6px 20px rgba(124, 58, 237, 0.45);
   }
 
   .btn-secondary {
@@ -371,7 +384,7 @@
 
   /* Islamic Pattern Background */
   .pattern-islamic {
-    background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23d4a574' fill-opacity='0.08'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+    background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%238b5cf6' fill-opacity='0.07'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
   }
 
   /* Decorative Border */
@@ -431,6 +444,59 @@
   .section-divider {
     height: 2px;
     background: linear-gradient(90deg, transparent, var(--sand-300), transparent);
+  }
+
+  .global-page-frame {
+    background: transparent;
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+    overflow: visible;
+  }
+
+  .page-inner {
+    padding: 1.5rem clamp(1rem, 2.5vw, 2rem) 2.5rem;
+  }
+
+  .page-header {
+    text-align: center;
+    margin-bottom: 2rem;
+  }
+
+  .page-header h1 {
+    font-size: clamp(1.75rem, 4vw, 2.5rem);
+    color: var(--sand-900);
+    margin-bottom: 0.5rem;
+  }
+
+  .page-header p {
+    color: var(--sand-700);
+    font-size: 1.05rem;
+    max-width: 36rem;
+    margin: 0 auto;
+  }
+
+  .form-input {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border-radius: 0.875rem;
+    border: 1.5px solid var(--sand-200);
+    background: var(--surface);
+    color: var(--sand-900);
+    font-size: 1rem;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .form-input:focus {
+    outline: none;
+    border-color: var(--teal-500);
+    box-shadow: 0 0 0 3px var(--ring-soft);
+  }
+
+  .section-title {
+    font-size: 1.5rem;
+    color: var(--sand-900);
+    margin-bottom: 1rem;
   }
 }
 
@@ -498,10 +564,10 @@
 
 @keyframes glow {
   0%, 100% {
-    box-shadow: 0 0 20px rgba(20, 184, 166, 0.3);
+    box-shadow: 0 0 20px rgba(139, 92, 246, 0.3);
   }
   50% {
-    box-shadow: 0 0 30px rgba(20, 184, 166, 0.5);
+    box-shadow: 0 0 30px rgba(139, 92, 246, 0.5);
   }
 }
 
@@ -594,11 +660,66 @@
   animation-delay: 0.12s;
 }
 
-/* Responsive text */
+/* Responsive text - keep a comfortable minimum size for young readers */
 @media (max-width: 640px) {
   html {
-    font-size: 14px;
+    font-size: 16px;
   }
+}
+
+/* --- Native app safe-area handling (Capacitor edge-to-edge Android / iOS notch) --- */
+
+/* Reserve room under the fixed mobile tab bar so its tap targets sit above the
+   system navigation / gesture bar. */
+.mobile-tabbar-inset {
+  padding-bottom: max(0.35rem, env(safe-area-inset-bottom, 0px));
+}
+
+/* Push the sticky top navbar below the status bar when the webview runs
+   edge-to-edge. Resolves to 0 on desktop and non-cover contexts. */
+.app-navbar-safe {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+
+/* Clearance so the fixed mobile tab bar never covers page content (phones). */
+@media (max-width: 639px) {
+  .mobile-tabbar-clearance {
+    margin-bottom: calc(4.75rem + env(safe-area-inset-bottom, 0px));
+  }
+
+  /* Floating elements (e.g. chat button) must sit above the tab bar. */
+  .above-mobile-tabbar {
+    bottom: calc(5.75rem + env(safe-area-inset-bottom, 0px));
+  }
+}
+
+/* Kid-friendly readable text: larger, relaxed line-height for younger users */
+.kid-text {
+  font-size: 1.0625rem;
+  line-height: 1.7;
+}
+
+.kid-text-lg {
+  font-size: 1.1875rem;
+  line-height: 1.7;
+}
+
+/* When "Younger" age mode is active, gently scale up body copy site-wide */
+.age-younger {
+  --kid-scale: 1.06;
+}
+
+.age-younger p,
+.age-younger li,
+.age-younger .kid-text {
+  font-size: clamp(1.05rem, 0.98rem + 0.5vw, 1.2rem);
+  line-height: 1.7;
+}
+
+.age-younger .btn-primary,
+.age-younger .btn-secondary,
+.age-younger .btn-accent {
+  font-size: 1.0625rem;
 }
 
 /* Islamic theme text shadow */
@@ -650,5 +771,37 @@
 
   .page-stage {
     border-radius: 1.2rem;
+  }
+}
+
+/* Tajweed-coloured Quran text */
+.tajweed-ayah {
+  word-spacing: 0.12em;
+  text-align: right;
+  unicode-bidi: plaintext;
+}
+
+.tajweed-ayah .tajweed-mark {
+  font-weight: 600;
+}
+
+.tajweed-ayah .tajweed-mark:hover {
+  outline: 1px dashed currentColor;
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+@media (max-width: 639px) {
+  .quran-learn-mobile {
+    padding-bottom: calc(5.5rem + env(safe-area-inset-bottom, 0px));
+  }
+
+  .tajweed-ayah {
+    word-spacing: 0.06em;
+    overflow-wrap: anywhere;
+  }
+
+  .tajweed-ayah .tajweed-mark:hover {
+    outline: none;
   }
 }

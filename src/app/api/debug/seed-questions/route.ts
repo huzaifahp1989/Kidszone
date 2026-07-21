@@ -1,8 +1,12 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { quizzes } from '@/data/quizzes';
+import { guardDebugRoute } from '@/lib/debug-gate';
 
-export async function GET() {
+export async function GET(request: Request) {
+  const blocked = guardDebugRoute(request);
+  if (blocked) return blocked;
+
   try {
     if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
       return NextResponse.json({ error: 'Service Role Key missing' }, { status: 500 });

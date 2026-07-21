@@ -8,44 +8,107 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        'islamic-blue': '#2563EB', // Royal Blue
-        'islamic-green': '#10B981', // Emerald
-        'islamic-gold': '#FBBF24', // Amber
-        'islamic-light': '#EFF6FF', // Blue-50
-        'islamic-dark': '#1E3A8A', // Dark Blue
-        
-        // Explicit Kids Palette
-        'kids-primary': '#3B82F6', // Bright Blue
-        'kids-secondary': '#60A5FA', // Sky Blue
-        'kids-accent': '#FBBF24', // Amber/Gold
-        'kids-purple': '#8B5CF6', // Violet
-        'kids-pink': '#EC4899', // Pink
-        'kids-bg': '#EFF6FF', // Light Blue Background
+        sand: {
+          50: 'var(--sand-50)',
+          100: 'var(--sand-100)',
+          200: 'var(--sand-200)',
+          300: 'var(--sand-300)',
+          400: 'var(--sand-400)',
+          500: 'var(--sand-500)',
+          600: 'var(--sand-600)',
+          700: 'var(--sand-700)',
+          800: 'var(--sand-800)',
+          900: 'var(--sand-900)',
+        },
+        teal: {
+          50: 'var(--teal-50)',
+          100: 'var(--teal-100)',
+          200: 'var(--teal-200)',
+          300: 'var(--teal-300)',
+          400: 'var(--teal-400)',
+          500: 'var(--teal-500)',
+          600: 'var(--teal-600)',
+          700: 'var(--teal-700)',
+          800: 'var(--teal-800)',
+          900: 'var(--teal-900)',
+        },
+        violet: {
+          50: 'var(--teal-50)',
+          100: 'var(--teal-100)',
+          200: 'var(--teal-200)',
+          300: 'var(--teal-300)',
+          400: 'var(--teal-400)',
+          500: 'var(--teal-500)',
+          600: 'var(--teal-600)',
+          700: 'var(--teal-700)',
+          800: 'var(--teal-800)',
+          900: 'var(--teal-900)',
+        },
+        coral: {
+          50: 'var(--coral-50)',
+          100: 'var(--coral-100)',
+          200: 'var(--coral-200)',
+          300: 'var(--coral-300)',
+          400: 'var(--coral-400)',
+          500: 'var(--coral-500)',
+          600: 'var(--coral-600)',
+          700: 'var(--coral-700)',
+          800: 'var(--coral-800)',
+          900: 'var(--coral-900)',
+        },
+        gold: {
+          50: 'var(--gold-50)',
+          100: 'var(--gold-100)',
+          200: 'var(--gold-200)',
+          300: 'var(--gold-300)',
+          400: 'var(--gold-400)',
+          500: 'var(--gold-500)',
+          600: 'var(--gold-600)',
+          700: 'var(--gold-700)',
+          800: 'var(--gold-800)',
+          900: 'var(--gold-900)',
+        },
+        'islamic-blue': '#7c3aed',
+        'islamic-green': '#8b5cf6',
+        'islamic-gold': '#f59e0b',
+        'islamic-light': '#f5f3ff',
+        'islamic-dark': '#4c1d95',
+        'islamic-primary': '#7c3aed',
+        'kids-primary': '#7c3aed',
+        'kids-secondary': '#8b5cf6',
+        'kids-accent': '#f59e0b',
+        'kids-purple': '#6366f1',
+        'kids-pink': '#f472b6',
+        'kids-bg': '#f5f3ff',
       },
       fontFamily: {
-        'sans': ['Fredoka', 'system-ui', 'sans-serif'],
+        sans: ['var(--font-nunito)', 'Nunito', 'system-ui', 'sans-serif'],
+        heading: ['var(--font-amiri)', 'Amiri', 'Georgia', 'serif'],
+        arabic: ['var(--font-amiri)', 'Amiri', 'serif'],
       },
       borderRadius: {
-        'xl': '1rem',
+        xl: '1rem',
         '2xl': '1.5rem',
         '3xl': '2rem',
         '4xl': '2.5rem',
       },
       boxShadow: {
-        'kids': '0 4px 0 rgba(0,0,0,0.15)',
-        'kids-hover': '0 6px 0 rgba(0,0,0,0.15)',
-        'kids-active': '0 0 0 rgba(0,0,0,0.15)',
-        'modern': '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
-        'glow': '0 0 20px rgba(147, 51, 234, 0.3)',
-        'glow-yellow': '0 0 20px rgba(251, 191, 36, 0.3)',
-        'glow-pink': '0 0 20px rgba(236, 72, 153, 0.3)',
+        kids: '0 4px 0 rgba(76, 29, 149, 0.12)',
+        'kids-hover': '0 6px 0 rgba(76, 29, 149, 0.12)',
+        'kids-active': '0 0 0 rgba(76, 29, 149, 0.12)',
+        modern: '0 20px 25px -5px rgba(76, 29, 149, 0.08), 0 10px 10px -5px rgba(76, 29, 149, 0.04)',
+        glow: '0 0 24px rgba(139, 92, 246, 0.3)',
+        'glow-yellow': '0 0 24px rgba(245, 158, 11, 0.25)',
+        'glow-pink': '0 0 24px rgba(244, 114, 182, 0.25)',
+        panel: 'var(--panel-shadow)',
+        card: '0 8px 24px rgba(76, 29, 149, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.85)',
       },
       animation: {
         'bounce-slow': 'bounce 3s infinite',
         'pulse-slow': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
-        'float': 'float 3s ease-in-out infinite',
-        'glow': 'glow 2s ease-in-out infinite',
-        'rainbow': 'rainbow 3s ease infinite',
+        float: 'float 3s ease-in-out infinite',
+        glow: 'glow 2s ease-in-out infinite',
+        rainbow: 'rainbow 3s ease infinite',
       },
       keyframes: {
         float: {
@@ -53,8 +116,8 @@ module.exports = {
           '50%': { transform: 'translateY(-10px)' },
         },
         glow: {
-          '0%, 100%': { boxShadow: '0 0 20px rgba(147, 51, 234, 0.3)' },
-          '50%': { boxShadow: '0 0 30px rgba(147, 51, 234, 0.6)' },
+          '0%, 100%': { boxShadow: '0 0 20px rgba(139, 92, 246, 0.3)' },
+          '50%': { boxShadow: '0 0 32px rgba(139, 92, 246, 0.5)' },
         },
         rainbow: {
           '0%': { backgroundPosition: '0% 50%' },
@@ -65,4 +128,4 @@ module.exports = {
     },
   },
   plugins: [],
-}
+};

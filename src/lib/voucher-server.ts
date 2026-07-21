@@ -34,16 +34,16 @@ export const isVoucherSetupMissing = (error: { code?: string } | null | undefine
 
 const generateSecureVoucherCode = () => `IMC-${randomBytes(3).toString('base64url').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6)}`;
 
-const isJpgAssetUrl = (value: string | null | undefined) => {
+const isAllowedAssetUrl = (value: string | null | undefined) => {
   const trimmed = String(value || '').trim();
   if (!trimmed) return true;
 
   try {
     const parsed = new URL(trimmed);
-    return /\.jpe?g$/i.test(parsed.pathname);
+    return /\.(jpe?g|png|webp)$/i.test(parsed.pathname);
   } catch {
     const normalized = trimmed.split(/[?#]/)[0];
-    return /\.jpe?g$/i.test(normalized);
+    return /\.(jpe?g|png|webp)$/i.test(normalized);
   }
 };
 
@@ -72,10 +72,10 @@ const normalizeImageOnlyVoucherInput = (input: VoucherFormInput): VoucherFormInp
   return normalized;
 };
 
-const assertJpgVoucherAssets = (input: VoucherFormInput) => {
+const assertAllowedVoucherAssets = (input: VoucherFormInput) => {
   const imageFields = [input.logoUrl, input.imageUrl, input.bannerUrl].filter(Boolean);
-  if (imageFields.some((url) => !isJpgAssetUrl(url))) {
-    throw new Error('Only JPG image URLs are allowed for vouchers.');
+  if (imageFields.some((url) => !isAllowedAssetUrl(url))) {
+    throw new Error('Only JPG/JPEG, PNG, or WebP image URLs are allowed for vouchers.');
   }
 };
 
@@ -231,7 +231,7 @@ export async function fetchVoucherOffers(options?: { includeHidden?: boolean; in
     .order('expiry_date', { ascending: true });
 
   if (!options?.includeHidden) {
-    query.eq('public_visible', true);
+    query.eq('public_visible', true).neq('status', 'draft').neq('status', 'inactive');
   }
 
   const { data, error } = await query;
@@ -619,7 +619,7 @@ export async function createVoucherOffer(input: VoucherFormInput) {
     throw new Error('At least one image is required (logo, promotional image, or banner).');
   }
 
-  assertJpgVoucherAssets(normalizedInput);
+  assertAllowedVoucherAssets(normalizedInput);
 
   const now = new Date().toISOString();
   const titleSlug = createVoucherSlug(`${normalizedInput.businessName}-${normalizedInput.title}`) || createVoucherSlug(normalizedInput.title) || `voucher-${Date.now()}`;
@@ -688,7 +688,7 @@ export async function updateVoucherOffer(id: string, input: VoucherFormInput) {
     throw new Error('At least one image is required (logo, promotional image, or banner).');
   }
 
-  assertJpgVoucherAssets(normalizedInput);
+  assertAllowedVoucherAssets(normalizedInput);
 
   const payload = {
     title: normalizedInput.title,

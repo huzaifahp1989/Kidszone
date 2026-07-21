@@ -1,4 +1,7 @@
 import { supabaseAdmin } from '@/lib/supabase-admin';
+import { ensureUserRecords } from '@/lib/ensure-user-records';
+import { POINTS_DAILY_CAP, resolvePointsToAward } from '@/lib/points-policy';
+import { shouldResetMonthlyPoints } from '@/lib/weekly-activity';
 import { isTestModeUserId } from '@/lib/test-mode-server';
 
 export type ServerAwardReason = 'awarded' | 'daily_limit_reached' | 'test_mode' | 'invalid_points' | 'update_failed';
@@ -27,8 +30,6 @@ export async function awardPointsWithDailyCapByUserId(
   requestedPoints: number,
   options: ServerAwardOptions = {}
 ): Promise<ServerAwardPointsResult> {
-  const dailyLimit = 100;
-  const weeklyLimit = 400;
   const countTowardDailyLimit = options.countTowardDailyLimit !== false;
 
   if (!requestedPoints || requestedPoints <= 0) {
@@ -41,7 +42,7 @@ export async function awardPointsWithDailyCapByUserId(
       weeklyPoints: 0,
       monthlyPoints: 0,
       todayPoints: 0,
-      dailyLimit,
+      dailyLimit: POINTS_DAILY_CAP,
       badges: 0,
       level: 1,
     };
@@ -58,7 +59,24 @@ export async function awardPointsWithDailyCapByUserId(
       weeklyPoints: 0,
       monthlyPoints: 0,
       todayPoints: 0,
-      dailyLimit,
+      dailyLimit: POINTS_DAILY_CAP,
+      badges: 0,
+      level: 1,
+    };
+  }
+
+  const ensured = await ensureUserRecords(userId);
+  if (!ensured.ok) {
+    return {
+      success: false,
+      reason: 'update_failed',
+      message: ensured.error || 'Could not prepare user profile for points.',
+      pointsAwarded: 0,
+      totalPoints: 0,
+      weeklyPoints: 0,
+      monthlyPoints: 0,
+      todayPoints: 0,
+      dailyLimit: POINTS_DAILY_CAP,
       badges: 0,
       level: 1,
     };
@@ -89,7 +107,7 @@ export async function awardPointsWithDailyCapByUserId(
       weeklyPoints: 0,
       monthlyPoints: 0,
       todayPoints: 0,
-      dailyLimit,
+      dailyLimit: POINTS_DAILY_CAP,
       badges: 0,
       level: 1,
     };
@@ -105,7 +123,7 @@ export async function awardPointsWithDailyCapByUserId(
       weeklyPoints: 0,
       monthlyPoints: 0,
       todayPoints: 0,
-      dailyLimit,
+      dailyLimit: POINTS_DAILY_CAP,
       badges: 0,
       level: 1,
     };
@@ -116,34 +134,42 @@ export async function awardPointsWithDailyCapByUserId(
 
   const baseTotal = Number(existingRow?.total_points ?? userRow?.points ?? 0);
   const baseWeekly = Number(existingRow?.weekly_points ?? userRow?.weeklypoints ?? 0);
-  const baseMonthly = Number(existingRow?.monthly_points ?? userRow?.monthlypoints ?? 0);
+  let baseMonthly = Number(existingRow?.monthly_points ?? userRow?.monthlypoints ?? 0);
+  if (shouldResetMonthlyPoints(existingRow?.last_earned_date)) {
+    baseMonthly = 0;
+  }
   const isNewDay = !existingRow?.last_earned_date || existingRow.last_earned_date !== todayStr;
   const currentTodayPoints = isNewDay ? 0 : Number(existingRow?.today_points ?? 0);
-  const cappedByDaily = countTowardDailyLimit
-    ? Math.max(0, Math.min(requestedPoints, dailyLimit - currentTodayPoints))
-    : requestedPoints;
-  const pointsAwarded = Math.max(0, Math.min(cappedByDaily, weeklyLimit - baseWeekly));
+
+  const pointsAwarded = resolvePointsToAward(
+    requestedPoints,
+    currentTodayPoints,
+    countTowardDailyLimit
+  );
 
   if (pointsAwarded <= 0) {
     const badges = Math.floor(baseTotal / 100);
     const level = 1 + Math.floor(badges / 5);
+    const atDailyCap = countTowardDailyLimit && currentTodayPoints >= POINTS_DAILY_CAP;
     return {
       success: true,
       reason: 'daily_limit_reached',
-      message: 'You have already reached today\'s 100 point limit. Bonus was claimed, but no extra points were added.',
+      message: atDailyCap
+        ? `You have already reached today's ${POINTS_DAILY_CAP} point limit.`
+        : `No points could be added right now.`,
       pointsAwarded: 0,
       totalPoints: baseTotal,
       weeklyPoints: baseWeekly,
       monthlyPoints: baseMonthly,
       todayPoints: currentTodayPoints,
-      dailyLimit,
+      dailyLimit: POINTS_DAILY_CAP,
       badges,
       level,
     };
   }
 
   const totalPoints = baseTotal + pointsAwarded;
-  const weeklyPoints = Math.min(weeklyLimit, baseWeekly + pointsAwarded);
+  const weeklyPoints = baseWeekly + pointsAwarded;
   const monthlyPoints = baseMonthly + pointsAwarded;
   const todayPoints = countTowardDailyLimit ? currentTodayPoints + pointsAwarded : currentTodayPoints;
   const badges = Math.floor(totalPoints / 100);
@@ -172,13 +198,13 @@ export async function awardPointsWithDailyCapByUserId(
       weeklyPoints: baseWeekly,
       monthlyPoints: baseMonthly,
       todayPoints: currentTodayPoints,
-      dailyLimit,
+      dailyLimit: POINTS_DAILY_CAP,
       badges: Math.floor(baseTotal / 100),
       level: 1 + Math.floor(Math.floor(baseTotal / 100) / 5),
     };
   }
 
-  await supabaseAdmin
+  const { error: usersSyncError } = await supabaseAdmin
     .from('users')
     .update({
       points: totalPoints,
@@ -186,6 +212,10 @@ export async function awardPointsWithDailyCapByUserId(
       monthlypoints: monthlyPoints,
     })
     .eq('uid', userId);
+
+  if (usersSyncError) {
+    console.error('[server-points] users sync failed:', usersSyncError.message);
+  }
 
   return {
     success: true,
@@ -196,7 +226,7 @@ export async function awardPointsWithDailyCapByUserId(
     weeklyPoints,
     monthlyPoints,
     todayPoints,
-    dailyLimit,
+    dailyLimit: POINTS_DAILY_CAP,
     badges,
     level,
   };

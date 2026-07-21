@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
+import { requireMatchingUser } from '@/lib/request-auth';
 
 function getWeekStartUtcDateString() {
   const now = new Date();
@@ -23,15 +24,62 @@ function buildMessage(missing: string[]) {
   return `${missing.length} left to enter the competition draw. Next: ${missing.join(' and ')}.`;
 }
 
+export async function GET(req: Request) {
+  try {
+    const { searchParams } = new URL(req.url);
+    const auth = await requireMatchingUser(req, searchParams.get('userId') || '');
+    if (!auth.ok) return auth.response;
+
+    const { userId } = auth;
+
+    const weekStart = getWeekStartUtcDateString();
+    const { data: existing, error: readErr } = await supabaseAdmin
+      .from('weekly_competition_progress')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('week_start', weekStart)
+      .maybeSingle();
+
+    if (readErr) {
+      if (readErr.code === '42P01') {
+        return NextResponse.json({ setupRequired: true, completedCount: 0, remainingCount: 3, missing: ['Daily Quiz', 'Play a game', 'Pledge Durood'] });
+      }
+      throw readErr;
+    }
+
+    const didQuiz = Boolean((existing as { did_quiz?: boolean })?.did_quiz);
+    const didGame = Boolean((existing as { did_game?: boolean })?.did_game);
+    const didPledge = Boolean((existing as { did_pledge?: boolean })?.did_pledge);
+    const missing: string[] = [];
+    if (!didQuiz) missing.push('Daily Quiz');
+    if (!didGame) missing.push('Play a game');
+    if (!didPledge) missing.push('Pledge Durood');
+
+    return NextResponse.json({
+      weekStart,
+      didQuiz,
+      didGame,
+      didPledge,
+      completedCount: (didQuiz ? 1 : 0) + (didGame ? 1 : 0) + (didPledge ? 1 : 0),
+      remainingCount: missing.length,
+      entered: missing.length === 0,
+      missing,
+    });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Unexpected error';
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
+}
+
 export async function POST(req: Request) {
   try {
     const body = await req.json().catch(() => ({}));
-    const userId = typeof body?.userId === 'string' ? body.userId : '';
+    const auth = await requireMatchingUser(req, String(body?.userId || ''));
+    if (!auth.ok) return auth.response;
+
+    const { userId } = auth;
     const activity = typeof body?.activity === 'string' ? body.activity : '';
 
-    if (!userId) {
-      return NextResponse.json({ error: 'userId is required' }, { status: 400 });
-    }
     if (!['quiz', 'pledge', 'game'].includes(activity)) {
       return NextResponse.json({ error: 'activity must be quiz, pledge, or game' }, { status: 400 });
     }

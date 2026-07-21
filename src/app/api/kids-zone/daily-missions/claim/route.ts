@@ -1,16 +1,17 @@
 import { NextResponse } from 'next/server';
 import { getDailyMissionSnapshot } from '@/lib/kids-zone-missions';
+import { tryBumpFamilyStreak } from '@/lib/family-streak';
 import { awardPointsWithDailyCapByUserId } from '@/lib/server-points';
 import { supabaseAdmin } from '@/lib/supabase-admin';
+import { requireMatchingUser } from '@/lib/request-auth';
 
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const userId = body?.userId as string | undefined;
+    const auth = await requireMatchingUser(request, String(body?.userId || ''));
+    if (!auth.ok) return auth.response;
 
-    if (!userId) {
-      return NextResponse.json({ error: 'userId is required' }, { status: 400 });
-    }
+    const { userId } = auth;
 
     const snapshot = await getDailyMissionSnapshot(userId);
     if (!snapshot.reward.configured) {
@@ -58,6 +59,26 @@ export async function POST(request: Request) {
 
     const awardResult = await awardPointsWithDailyCapByUserId(userId, snapshot.reward.points);
 
+    // Cap / zero award: unlock claim so they can retry later (e.g. next day).
+    if (awardResult.pointsAwarded <= 0) {
+      await supabaseAdmin
+        .from('daily_progress')
+        .update({ mission_bonus_claimed_at: null, mission_bonus_points: 0 })
+        .eq('user_id', userId)
+        .eq('date', snapshot.date);
+
+      return NextResponse.json({
+        success: false,
+        alreadyClaimed: false,
+        pointsAwarded: 0,
+        message:
+          awardResult.reason === 'daily_limit_reached'
+            ? `You have reached today's point limit. Come back tomorrow to claim the mission bonus.`
+            : awardResult.message || 'Could not claim mission bonus right now.',
+        reason: awardResult.reason,
+      });
+    }
+
     if (!awardResult.success && awardResult.reason === 'update_failed') {
       await supabaseAdmin
         .from('daily_progress')
@@ -74,6 +95,8 @@ export async function POST(request: Request) {
       .eq('user_id', userId)
       .eq('date', snapshot.date);
 
+    const familyStreak = await tryBumpFamilyStreak(userId, snapshot.date);
+
     return NextResponse.json({
       success: true,
       alreadyClaimed: false,
@@ -88,6 +111,7 @@ export async function POST(request: Request) {
         badges: awardResult.badges,
         level: awardResult.level,
       },
+      familyStreak,
     });
   } catch (error: any) {
     return NextResponse.json({ error: error?.message || 'Unexpected error' }, { status: 500 });

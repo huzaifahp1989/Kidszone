@@ -37,10 +37,10 @@ export const NavCard: React.FC<NavCardProps> = ({
       className={`${colorClasses[color]} surface-card surface-card-hover bg-gradient-to-br border rounded-3xl p-6 transition-all duration-300 transition-bouncy cursor-pointer h-full interactive-focus touch-target`}
     >
       <div className="text-6xl mb-4 filter drop-shadow-sm">{icon}</div>
-      <h3 className="text-2xl font-bold text-[#6a422d] mb-2">{title}</h3>
-      <p className="text-lg text-[#825035] font-medium">{description}</p>
+      <h3 className="font-heading mb-2 text-2xl font-bold text-sand-900">{title}</h3>
+      <p className="text-lg font-medium text-sand-700">{description}</p>
       {comingSoon && (
-        <div className="mt-4 inline-block bg-[#6a422d]/80 text-white px-3 py-1 rounded-full text-xs font-bold">
+        <div className="mt-4 inline-block bg-[#1e1b4b]/80 text-white px-3 py-1 rounded-full text-xs font-bold">
           Coming Soon
         </div>
       )}

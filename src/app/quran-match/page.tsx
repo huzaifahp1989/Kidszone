@@ -1,9 +1,13 @@
 'use client';
 
-import React, { useState } from 'react';
-import { AGE_GROUPS, AgeGroup, QuranMatchPair } from '@/data/age-specific-content';
+import React, { useEffect, useRef, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { AGE_GROUPS, AgeGroup } from '@/data/age-specific-content';
 import { Button } from '@/components';
-import { BookOpen, Star, RefreshCw, CheckCircle, XCircle } from 'lucide-react';
+import { BookOpen, Star, RefreshCw } from 'lucide-react';
+import { completeGameSession } from '@/lib/complete-game-session';
+import { ACTIVITY_BONUS_POINTS } from '@/lib/points-policy';
+import { useAuth } from '@/lib/auth-context';
 
 type GameState = 'playing' | 'completed';
 
@@ -25,13 +29,19 @@ function shuffleArray<T>(array: T[]): T[] {
 }
 
 export default function QuranMatchPage() {
+  const router = useRouter();
+  const { user } = useAuth();
   const [ageGroup, setAgeGroup] = useState<AgeGroup | null>(null);
   const [cards, setCards] = useState<Card[]>([]);
   const [selectedCards, setSelectedCards] = useState<Card[]>([]);
   const [gameState, setGameState] = useState<GameState>('playing');
   const [moves, setMoves] = useState(0);
+  const [pointsMessage, setPointsMessage] = useState<string | null>(null);
+  const pointsAwardedRef = useRef(false);
 
   const startNewGameForGroup = (group: AgeGroup) => {
+    pointsAwardedRef.current = false;
+    setPointsMessage(null);
     const pairs = AGE_GROUPS[group].quranMatch;
 
     const gameCards: Card[] = [];
@@ -107,6 +117,23 @@ export default function QuranMatchPage() {
             const allMatched = currentCards.every(c => c.matchId === card1.matchId || c.isMatched);
             if (allMatched) {
                 setGameState('completed');
+                if (user?.id && !pointsAwardedRef.current) {
+                  pointsAwardedRef.current = true;
+                  completeGameSession({
+                    userId: user.id,
+                    gameId: 'quran-match',
+                    gameTitle: 'Quran Match',
+                    trackCompetition: true,
+                  }).then((result) => {
+                    if (result.ok && result.pointsAwarded > 0) {
+                      setPointsMessage(`+${result.pointsAwarded} points earned!`);
+                    } else if (result.message) {
+                      setPointsMessage(result.message);
+                    } else {
+                      setPointsMessage(`Up to +${ACTIVITY_BONUS_POINTS} pts per game daily`);
+                    }
+                  }).catch(() => {});
+                }
             }
             return currentCards;
         });
@@ -190,10 +217,18 @@ export default function QuranMatchPage() {
           <div className="bg-white rounded-2xl shadow-xl p-8 text-center animate-scale-in">
             <div className="text-6xl mb-4">🎉</div>
             <h2 className="text-3xl font-bold text-purple-800 mb-4">MashaAllah!</h2>
-            <p className="text-gray-600 mb-8">You matched all the pairs in {moves} moves.</p>
+            <p className="text-gray-600 mb-2">You matched all the pairs in {moves} moves.</p>
+            {pointsMessage && (
+              <p className="text-emerald-600 font-semibold mb-4">{pointsMessage}</p>
+            )}
+            <div className="flex flex-wrap gap-3 justify-center">
             <Button onClick={startNewGame} className="mx-auto flex items-center gap-2">
               <RefreshCw size={18} /> Play Again
             </Button>
+            <Button variant="outline" onClick={() => router.push('/games')}>
+              Back to Games
+            </Button>
+            </div>
           </div>
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">

@@ -5,6 +5,9 @@ import { Button, Modal, VoucherAdminPanel } from '@/components';
 import { TrashIcon, PlusIcon, TrophyIcon, Users, Edit, Search, Loader2, ClipboardCheck, Mail } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
+import { AdminNotificationBadge } from '@/components/AdminNotificationBadge';
+import { SpinWheelWinnerPicker } from '@/components/SpinWheelWinnerPicker';
+import { useAdminNotificationCounts } from '@/lib/use-admin-notification-counts';
 
 type UserProgressMonth = {
   key: string;
@@ -27,6 +30,17 @@ type UserProgressResponse = {
     certificateMonths: number;
   };
   monthlyBreakdown?: UserProgressMonth[];
+  featureLab?: {
+    trackedDays: number;
+    totalGoodDeeds: number;
+    challengeDays: number;
+    recent: Array<{
+      date: string;
+      goodDeedsCount: number;
+      challengeId: string | null;
+      challengeTitle: string | null;
+    }>;
+  };
 };
 
 interface Question {
@@ -53,6 +67,8 @@ interface User {
   uid: string;
   name: string;
   email: string;
+  username?: string | null;
+  family_email?: string | null;
   city?: string | null;
   town?: string | null;
   location?: string | null;
@@ -93,14 +109,30 @@ export default function AdminPanel() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [winner, setWinner] = useState<any>(null);
   const [pickingWinner, setPickingWinner] = useState(false);
+  const [spinWheelData, setSpinWheelData] = useState<any>(null);
+  const [loadingSpinWheel, setLoadingSpinWheel] = useState(false);
   
   // User Management State
   const [users, setUsers] = useState<User[]>([]);
   const [loadingUsers, setLoadingUsers] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [missingDetailsOnly, setMissingDetailsOnly] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [showEditPassword, setShowEditPassword] = useState(false);
-  const [editForm, setEditForm] = useState({ name: '', password: '', points: 0, weeklypoints: 0, monthlypoints: 0, winnerTick: false, city: '', age: '' });
+  const [editForm, setEditForm] = useState({
+    name: '',
+    password: '',
+    points: 0,
+    weeklypoints: 0,
+    monthlypoints: 0,
+    pointsDelta: '',
+    weeklypointsDelta: '',
+    monthlypointsDelta: '',
+    winnerTick: false,
+    city: '',
+    age: ''
+  });
+  const [quickAdjustingUser, setQuickAdjustingUser] = useState<string | null>(null);
   const [sessionPasswords, setSessionPasswords] = useState<Record<string, string>>({});
   const [showSessionPassword, setShowSessionPassword] = useState<Record<string, boolean>>({});
   const [resettingPasswordUser, setResettingPasswordUser] = useState<string | null>(null);
@@ -162,8 +194,24 @@ export default function AdminPanel() {
   const [progressData, setProgressData] = useState<UserProgressResponse | null>(null);
   
   // Add User State
-  const [newUser, setNewUser] = useState({ name: '', points: 0, weeklypoints: 0, monthlypoints: 0 });
+  const [newUser, setNewUser] = useState({
+    name: '',
+    email: '',
+    username: '',
+    password: '',
+    age: '',
+    city: '',
+    points: 0,
+    weeklypoints: 0,
+    monthlypoints: 0,
+  });
   const [addingUser, setAddingUser] = useState(false);
+  const [addUserError, setAddUserError] = useState<string | null>(null);
+  const [createdCredentials, setCreatedCredentials] = useState<{
+    email: string;
+    username: string;
+    password: string;
+  } | null>(null);
 
   // Pledge Reset State
   const now = new Date();
@@ -175,6 +223,8 @@ export default function AdminPanel() {
   const [duroodPreviewRows, setDuroodPreviewRows] = useState<{ userId: string; name: string; pledgeCount: number; recitations: number; ptsToRemove: number; currentPoints: number; newPoints: number }[]>([]);
   const [duroodPreviewDone, setDuroodPreviewDone] = useState(false);
   const [duroodResetLoading, setDuroodResetLoading] = useState(false);
+  const WEEKLY_POINTS_LIMIT = 500;
+  const { counts: adminNotifyCounts } = useAdminNotificationCounts(30000);
 
   useEffect(() => {
     // Check authentication
@@ -187,6 +237,7 @@ export default function AdminPanel() {
   useEffect(() => {
     if (activeTab === 'rewards') {
       fetchCurrentWinner();
+      fetchSpinWheelResults();
     } else if (activeTab === 'users' || activeTab === 'winner-contacts') {
       fetchUsers(searchTerm);
     } else if (activeTab === 'claims') {
@@ -371,28 +422,55 @@ export default function AdminPanel() {
   };
 
   const handleAddUser = async () => {
-    if (!newUser.name) return alert('Name is required');
+    if (!newUser.name.trim()) return setAddUserError('Name is required');
+    if (!newUser.email.trim()) return setAddUserError('Email is required');
+    if (newUser.password.trim().length < 6) return setAddUserError('Password must be at least 6 characters');
     setAddingUser(true);
+    setAddUserError(null);
     try {
       const res = await fetch('/api/admin/users', {
         method: 'POST',
-        headers: { 
+        headers: {
           'Content-Type': 'application/json',
-          'x-admin-auth': 'true'
+          'x-admin-auth': 'true',
         },
-        body: JSON.stringify(newUser)
+        body: JSON.stringify({
+          name: newUser.name.trim(),
+          email: newUser.email.trim(),
+          username: newUser.username.trim() || undefined,
+          password: newUser.password,
+          age: newUser.age.trim() === '' ? undefined : Number(newUser.age),
+          city: newUser.city.trim() || undefined,
+          points: newUser.points,
+          weeklypoints: newUser.weeklypoints,
+          monthlypoints: newUser.monthlypoints,
+        }),
       });
-      
+
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error);
+      if (!res.ok) throw new Error(data.error || 'Failed to add user');
 
       setUsers([data.user, ...users]);
-      setShowAddModal(false);
-      setNewUser({ name: '', points: 0, weeklypoints: 0, monthlypoints: 0 });
-      alert('User added successfully');
+      setCreatedCredentials({
+        email: data.auth?.email || newUser.email.trim(),
+        username: data.auth?.username || newUser.username.trim(),
+        password: data.auth?.password || newUser.password,
+      });
+      setNewUser({
+        name: '',
+        email: '',
+        username: '',
+        password: '',
+        age: '',
+        city: '',
+        points: 0,
+        weeklypoints: 0,
+        monthlypoints: 0,
+      });
+      await fetchUsers(searchTerm);
     } catch (err: any) {
       console.error('Error adding user:', err);
-      alert('Failed to add user: ' + err.message);
+      setAddUserError(err.message || 'Failed to add user');
     } finally {
       setAddingUser(false);
     }
@@ -401,6 +479,19 @@ export default function AdminPanel() {
   const handleUpdateUser = async () => {
     if (!editingUser) return;
     try {
+      const pointsDelta = editForm.pointsDelta.trim() === '' ? undefined : Number(editForm.pointsDelta);
+      const weeklypointsDelta = editForm.weeklypointsDelta.trim() === '' ? undefined : Number(editForm.weeklypointsDelta);
+      const monthlypointsDelta = editForm.monthlypointsDelta.trim() === '' ? undefined : Number(editForm.monthlypointsDelta);
+
+      if (
+        (pointsDelta !== undefined && Number.isNaN(pointsDelta)) ||
+        (weeklypointsDelta !== undefined && Number.isNaN(weeklypointsDelta)) ||
+        (monthlypointsDelta !== undefined && Number.isNaN(monthlypointsDelta))
+      ) {
+        alert('Please enter valid numeric values for manual point changes.');
+        return;
+      }
+
       const res = await fetch('/api/admin/users', {
         method: 'PUT',
         headers: { 
@@ -414,6 +505,9 @@ export default function AdminPanel() {
           points: editForm.points,
           weeklypoints: editForm.weeklypoints,
           monthlypoints: editForm.monthlypoints,
+          pointsDelta,
+          weeklypointsDelta,
+          monthlypointsDelta,
           winnerTick: editForm.winnerTick,
           city: editForm.city,
           age: editForm.age === '' ? null : parseInt(editForm.age, 10)
@@ -423,21 +517,44 @@ export default function AdminPanel() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
       
-      // Update local state
-      setUsers(users.map(u => u.uid === editingUser.uid ? {
-        ...u,
-        name: editForm.name || u.name,
-        points: editForm.points,
-        weeklypoints: editForm.weeklypoints,
-        monthlypoints: editForm.monthlypoints,
-        cityNormalized: editForm.city.trim(),
-        ageNormalized: editForm.age === '' ? null : (parseInt(editForm.age, 10) || null)
-      } : u));
+      await fetchUsers(searchTerm);
       setEditingUser(null);
       alert('User updated successfully');
     } catch (err: any) {
       console.error('Error updating user:', err);
       alert('Failed to update user: ' + err.message);
+    }
+  };
+
+  const handleQuickPointAdjust = async (user: User, delta: number) => {
+    if (quickAdjustingUser) return;
+    const actionLabel = delta >= 0 ? `+${delta}` : `${delta}`;
+    if (!confirm(`Apply ${actionLabel} points to ${user.name || 'this user'}?`)) return;
+
+    setQuickAdjustingUser(user.uid);
+    try {
+      const res = await fetch('/api/admin/users', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-admin-auth': 'true'
+        },
+        body: JSON.stringify({
+          uid: user.uid,
+          pointsDelta: delta,
+          weeklypointsDelta: delta,
+          monthlypointsDelta: delta,
+        })
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to update points');
+
+      await fetchUsers(searchTerm);
+    } catch (err: any) {
+      alert('Failed to update points: ' + (err?.message || 'Unknown error'));
+    } finally {
+      setQuickAdjustingUser(null);
     }
   };
 
@@ -555,6 +672,24 @@ export default function AdminPanel() {
     }
   };
 
+  const fetchSpinWheelResults = async () => {
+    setLoadingSpinWheel(true);
+    try {
+      const res = await fetch('/api/admin/spin-wheel/spins', {
+        headers: { 'x-admin-auth': 'true' },
+        cache: 'no-store',
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.error || 'Failed to load spin wheel results');
+      setSpinWheelData(data);
+    } catch (e) {
+      console.error('Error fetching spin wheel results:', e);
+      setSpinWheelData(null);
+    } finally {
+      setLoadingSpinWheel(false);
+    }
+  };
+
   // Sample data
   const [questions, setQuestions] = useState<Question[]>([
     { id: '1', question: 'How many pillars are there?', category: 'Quran', difficulty: 'Easy', points: 10 },
@@ -585,10 +720,23 @@ export default function AdminPanel() {
   const handlePickWinner = async () => {
     setPickingWinner(true);
     try {
-      const { data, error } = await supabase.rpc('generate_weekly_winner');
-      if (error) throw error;
-      setWinner(data);
-      fetchCurrentWinner(); 
+      const res = await fetch('/api/admin/weekly-winners/pick', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-admin-auth': 'true',
+        },
+        body: JSON.stringify({ force: true }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.error || 'Failed to pick winners');
+
+      const names = Array.isArray(data.winners)
+        ? data.winners.map((w: { name?: string }) => w.name).filter(Boolean).join(', ')
+        : '';
+      setWinner(data.winners?.[0] ? { winner_name: data.winners[0].name, ...data.winners[0] } : data);
+      fetchCurrentWinner();
+      alert(data.message || (names ? `Picked: ${names}` : 'Winners picked'));
     } catch (err) {
       console.error(err);
       alert('Failed to pick winner: ' + (err instanceof Error ? err.message : 'Unknown error'));
@@ -665,6 +813,8 @@ export default function AdminPanel() {
     const searchableText = [
       user.name || '',
       user.email || '',
+      user.username || '',
+      user.family_email || '',
       getParentEmail(user),
       getMobileNumber(user),
       getCity(user),
@@ -679,7 +829,14 @@ export default function AdminPanel() {
     return tokens.every((token) => searchableText.includes(token));
   };
 
-  const filteredUsers = users.filter((user) => userMatchesSearch(user));
+  const filteredUsers = users.filter((user) => {
+    if (!userMatchesSearch(user)) return false;
+    if (!missingDetailsOnly) return true;
+    const cityMissing = !String(getCity(user) || '').trim();
+    const ageVal = getAge(user);
+    const ageMissing = ageVal === null || ageVal === undefined || ageVal === '' || Number(ageVal) < 1;
+    return cityMissing || ageMissing;
+  });
 
   const winnerContactUsers = filteredUsers.filter((user) => {
     return Boolean(
@@ -715,10 +872,30 @@ export default function AdminPanel() {
         {/* Tabs */}
         <div className="flex gap-2 mb-8 flex-wrap overflow-x-auto pb-2">
           <button
+            onClick={() => router.push('/admin/insights')}
+            className="px-5 py-2.5 rounded-lg font-bold transition bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 hover:border-violet-300 flex items-center gap-2 whitespace-nowrap"
+          >
+            Insights
+          </button>
+          <button
+            onClick={() => router.push('/admin/content')}
+            className="px-5 py-2.5 rounded-lg font-bold transition bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 hover:border-emerald-300 flex items-center gap-2 whitespace-nowrap"
+          >
+            Content CMS
+          </button>
+          <button
+            onClick={() => router.push('/admin/chat')}
+            className="px-5 py-2.5 rounded-lg font-bold transition bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 hover:border-violet-300 flex items-center gap-2 whitespace-nowrap"
+          >
+            Live Chat
+            <AdminNotificationBadge count={adminNotifyCounts.chat} />
+          </button>
+          <button
             onClick={() => router.push('/admin/recordings')}
             className="px-5 py-2.5 rounded-lg font-bold transition bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 hover:border-indigo-300 flex items-center gap-2 whitespace-nowrap"
           >
             Recordings
+            <AdminNotificationBadge count={adminNotifyCounts.recordings} />
           </button>
           <button
             onClick={() => router.push('/admin/setup')}
@@ -727,16 +904,42 @@ export default function AdminPanel() {
             DB Setup
           </button>
           <button
+            onClick={() => router.push('/admin/weekly-winners')}
+            className="px-5 py-2.5 rounded-lg font-bold transition bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 hover:border-sky-300 flex items-center gap-2 whitespace-nowrap"
+          >
+            Weekly Winners
+          </button>
+          <button
             onClick={() => router.push('/admin/announcements')}
             className="px-5 py-2.5 rounded-lg font-bold transition bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 hover:border-amber-300 flex items-center gap-2 whitespace-nowrap"
           >
             Announcements
           </button>
           <button
+            onClick={() => router.push('/admin/family-members')}
+            className="px-5 py-2.5 rounded-lg font-bold transition bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 hover:border-blue-300 flex items-center gap-2 whitespace-nowrap"
+          >
+            👨‍👩‍👧‍👦 Family Setup
+          </button>
+          <button
+            onClick={() => router.push('/admin/push')}
+            className="px-5 py-2.5 rounded-lg font-bold transition bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 hover:border-violet-300 flex items-center gap-2 whitespace-nowrap"
+          >
+            Push
+          </button>
+          <button
+            onClick={() => router.push('/admin/seerah')}
+            className="px-5 py-2.5 rounded-lg font-bold transition bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 hover:border-teal-300 flex items-center gap-2 whitespace-nowrap"
+          >
+            Seerah Review
+            <AdminNotificationBadge count={adminNotifyCounts.seerah} />
+          </button>
+          <button
             onClick={() => router.push('/admin/competitions/masjid-al-aqsa')}
             className="px-5 py-2.5 rounded-lg font-bold transition bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 hover:border-emerald-300 flex items-center gap-2 whitespace-nowrap"
           >
             <TrophyIcon size={18} /> Aqsa Competition
+            <AdminNotificationBadge count={adminNotifyCounts.competition} />
           </button>
           <div className="w-px h-8 bg-slate-300 mx-2 self-center hidden sm:block"></div>
           
@@ -917,107 +1120,222 @@ export default function AdminPanel() {
         {/* Users Tab */}
         {activeTab === 'users' && (
           <div className="space-y-6">
-            <div className="flex flex-col sm:flex-row justify-between items-center gap-4 bg-white p-4 rounded-xl shadow-sm border border-slate-100">
-              <h2 className="text-2xl font-bold text-slate-800">
-                User Management
-                <span className="ml-2 text-base font-semibold text-slate-500">
-                  ({filteredUsers.length}/{users.length})
-                </span>
-              </h2>
-              <div className="flex items-center gap-4 w-full sm:w-auto">
-                <div className="relative w-full sm:w-64">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400" size={18} />
-                  <input 
-                    type="text"
-                    placeholder="Search name, email, parent email, phone, city..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full pl-10 pr-12 py-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  />
-                  {searchTerm && (
-                    <button
-                      type="button"
-                      onClick={() => setSearchTerm('')}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-500 hover:text-slate-700"
-                      title="Clear search"
-                    >
-                      Clear
-                    </button>
-                  )}
+            <div className="flex flex-col gap-4 bg-white p-4 sm:p-5 rounded-xl shadow-sm border border-slate-100">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                <h2 className="text-2xl font-bold text-slate-800">
+                  User Management
+                  <span className="ml-2 text-base font-semibold text-slate-500">
+                    ({filteredUsers.length}/{users.length})
+                  </span>
+                </h2>
+                <div className="flex items-center gap-3 flex-wrap w-full sm:w-auto">
+                  <button
+                    type="button"
+                    onClick={() => setMissingDetailsOnly((v) => !v)}
+                    className={`whitespace-nowrap rounded-lg px-3 py-2.5 text-xs font-bold transition ${
+                      missingDetailsOnly
+                        ? 'bg-amber-500 text-white'
+                        : 'bg-amber-50 text-amber-800 border border-amber-200 hover:bg-amber-100'
+                    }`}
+                    title="Show users missing age or city"
+                  >
+                    {missingDetailsOnly ? 'Showing missing age/city' : 'Missing age/city'}
+                  </button>
+                  <button
+                    onClick={() => {
+                      if (!confirm('Send a progress reminder email to all users?')) return;
+                      sendReminder('all');
+                    }}
+                    disabled={sendingReminder === 'all'}
+                    className="whitespace-nowrap inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-emerald-600 text-white font-bold text-sm hover:bg-emerald-700 disabled:opacity-50 transition-colors"
+                  >
+                    <Mail size={16} />
+                    {sendingReminder === 'all' ? 'Sending\u2026' : 'Send All Reminders'}
+                  </button>
+                  <Button
+                    onClick={() => {
+                      setCreatedCredentials(null);
+                      setAddUserError(null);
+                      setShowAddModal(true);
+                    }}
+                    className="whitespace-nowrap flex items-center gap-2"
+                  >
+                    <PlusIcon size={18} /> Add User
+                  </Button>
                 </div>
-                <button
-                  onClick={() => {
-                    if (!confirm('Send a progress reminder email to all users?')) return;
-                    sendReminder('all');
-                  }}
-                  disabled={sendingReminder === 'all'}
-                  className="whitespace-nowrap inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-emerald-600 text-white font-bold text-sm hover:bg-emerald-700 disabled:opacity-50 transition-colors"
-                >
-                  <Mail size={16} />
-                  {sendingReminder === 'all' ? 'Sending\u2026' : 'Send All Reminders'}
-                </button>
-                <Button
-                  onClick={() => setShowAddModal(true)}
-                  className="whitespace-nowrap flex items-center gap-2"
-                >
-                  <PlusIcon size={18} /> Add User
-                </Button>
+              </div>
+
+              <div className="relative w-full">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={22} />
+                <input
+                  type="search"
+                  placeholder="Search by name, username, email, family email, phone, city, or uid…"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full pl-12 pr-16 py-3.5 text-base rounded-xl border-2 border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-400"
+                  autoComplete="off"
+                />
+                {searchTerm && (
+                  <button
+                    type="button"
+                    onClick={() => setSearchTerm('')}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-bold text-slate-500 hover:text-slate-800"
+                    title="Clear search"
+                  >
+                    Clear
+                  </button>
+                )}
               </div>
             </div>
 
             {/* Add User Modal */}
             <Modal
               isOpen={showAddModal}
-              onClose={() => setShowAddModal(false)}
+              onClose={() => {
+                setShowAddModal(false);
+                setCreatedCredentials(null);
+              }}
               title="Add New User"
+              size="lg"
             >
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Name</label>
-                  <input
-                    type="text"
-                    value={newUser.name}
-                    onChange={(e) => setNewUser({ ...newUser, name: e.target.value })}
-                    className="w-full px-4 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-500 outline-none"
-                    placeholder="Enter user name"
-                  />
+              {createdCredentials ? (
+                <div className="space-y-4">
+                  <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
+                    <p className="font-bold">User created — copy these login details</p>
+                    <p className="mt-2 font-mono text-xs break-all">Email: {createdCredentials.email}</p>
+                    <p className="font-mono text-xs break-all">Username: {createdCredentials.username || '—'}</p>
+                    <p className="font-mono text-xs break-all">Password: {createdCredentials.password}</p>
+                  </div>
+                  <div className="flex justify-end gap-2">
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        const text = `Email: ${createdCredentials.email}\nUsername: ${createdCredentials.username}\nPassword: ${createdCredentials.password}`;
+                        navigator.clipboard?.writeText(text).catch(() => {});
+                      }}
+                    >
+                      Copy details
+                    </Button>
+                    <Button
+                      onClick={() => {
+                        setShowAddModal(false);
+                        setCreatedCredentials(null);
+                      }}
+                    >
+                      Done
+                    </Button>
+                  </div>
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Total Points</label>
-                  <input
-                    type="number"
-                    value={newUser.points}
-                    onChange={(e) => setNewUser({ ...newUser, points: parseInt(e.target.value) || 0 })}
-                    className="w-full px-4 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-500 outline-none"
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-4">
+              ) : (
+                <div className="space-y-4 max-h-[70vh] overflow-y-auto pr-1">
+                  {addUserError && (
+                    <div className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">
+                      {addUserError}
+                    </div>
+                  )}
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">Weekly Points</label>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">Name *</label>
                     <input
-                      type="number"
-                      value={newUser.weeklypoints}
-                      onChange={(e) => setNewUser({ ...newUser, weeklypoints: parseInt(e.target.value) || 0 })}
+                      type="text"
+                      value={newUser.name}
+                      onChange={(e) => setNewUser({ ...newUser, name: e.target.value })}
                       className="w-full px-4 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-500 outline-none"
+                      placeholder="Child full name"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">Monthly Points</label>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">Email *</label>
+                    <input
+                      type="email"
+                      value={newUser.email}
+                      onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
+                      className="w-full px-4 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-500 outline-none"
+                      placeholder="family@email.com"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">Username</label>
+                    <input
+                      type="text"
+                      value={newUser.username}
+                      onChange={(e) => setNewUser({ ...newUser, username: e.target.value })}
+                      className="w-full px-4 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-500 outline-none"
+                      placeholder="optional — auto if blank"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">Password *</label>
+                    <input
+                      type="text"
+                      value={newUser.password}
+                      onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
+                      className="w-full px-4 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-500 outline-none"
+                      placeholder="Min 6 characters"
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-1">Age</label>
+                      <input
+                        type="number"
+                        value={newUser.age}
+                        onChange={(e) => setNewUser({ ...newUser, age: e.target.value })}
+                        className="w-full px-4 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-500 outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-1">City</label>
+                      <input
+                        type="text"
+                        value={newUser.city}
+                        onChange={(e) => setNewUser({ ...newUser, city: e.target.value })}
+                        className="w-full px-4 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-500 outline-none"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">Total Points</label>
                     <input
                       type="number"
-                      value={newUser.monthlypoints}
-                      onChange={(e) => setNewUser({ ...newUser, monthlypoints: parseInt(e.target.value) || 0 })}
+                      value={newUser.points}
+                      onChange={(e) => setNewUser({ ...newUser, points: parseInt(e.target.value) || 0 })}
                       className="w-full px-4 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-500 outline-none"
                     />
                   </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-1">Weekly Points</label>
+                      <input
+                        type="number"
+                        value={newUser.weeklypoints}
+                        onChange={(e) =>
+                          setNewUser({ ...newUser, weeklypoints: parseInt(e.target.value) || 0 })
+                        }
+                        className="w-full px-4 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-500 outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-1">Monthly Points</label>
+                      <input
+                        type="number"
+                        value={newUser.monthlypoints}
+                        onChange={(e) =>
+                          setNewUser({ ...newUser, monthlypoints: parseInt(e.target.value) || 0 })
+                        }
+                        className="w-full px-4 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-500 outline-none"
+                      />
+                    </div>
+                  </div>
+                  <div className="flex justify-end gap-2 mt-6">
+                    <Button variant="outline" onClick={() => setShowAddModal(false)}>
+                      Cancel
+                    </Button>
+                    <Button onClick={handleAddUser} disabled={addingUser}>
+                      {addingUser ? <Loader2 className="animate-spin" /> : 'Add User'}
+                    </Button>
+                  </div>
                 </div>
-                <div className="flex justify-end gap-2 mt-6">
-                  <Button variant="outline" onClick={() => setShowAddModal(false)}>Cancel</Button>
-                  <Button onClick={handleAddUser} disabled={addingUser}>
-                    {addingUser ? <Loader2 className="animate-spin" /> : 'Add User'}
-                  </Button>
-                </div>
-              </div>
+              )}
             </Modal>
 
             <div className="bg-white rounded-2xl shadow-lg overflow-hidden border border-slate-100">
@@ -1058,6 +1376,10 @@ export default function AdminPanel() {
                               </div>
                               <div className="ml-4">
                                 <div className="text-sm font-medium text-slate-900">{user.name || 'Unknown'}</div>
+                                {user.username && (
+                                  <div className="text-xs font-semibold text-indigo-600">@{user.username}</div>
+                                )}
+                                <div className="text-xs text-slate-500">City: {getCity(user) || '-'}</div>
                                 <div className="text-xs text-slate-500">{user.email || '-'}</div>
                                 <div className="text-xs text-slate-500">{getMobileNumber(user) || '-'}</div>
                                 <div className="text-xs text-slate-500">Parent: {getParentEmail(user) || '-'}</div>
@@ -1102,8 +1424,24 @@ export default function AdminPanel() {
                           <td className="px-6 py-4 text-sm text-slate-700">
                             {getJoinedAt(user) ? formatDayMonthYear(getJoinedAt(user)) : '-'}
                           </td>
-                          <td className="px-6 py-4 text-sm text-slate-700">{getCity(user) || '-'}</td>
-                          <td className="px-6 py-4 text-sm text-slate-700">{getAge(user) || '-'}</td>
+                          <td className="px-6 py-4 text-sm text-slate-700">
+                            {getCity(user) ? (
+                              getCity(user)
+                            ) : (
+                              <span className="inline-flex rounded-full bg-amber-100 px-2 py-0.5 text-xs font-bold text-amber-800">
+                                Missing
+                              </span>
+                            )}
+                          </td>
+                          <td className="px-6 py-4 text-sm text-slate-700">
+                            {getAge(user) != null && getAge(user) !== '' ? (
+                              getAge(user)
+                            ) : (
+                              <span className="inline-flex rounded-full bg-amber-100 px-2 py-0.5 text-xs font-bold text-amber-800">
+                                Missing
+                              </span>
+                            )}
+                          </td>
                           <td className="px-6 py-4 text-sm text-slate-700 font-bold">{user.points}</td>
                           <td className="px-6 py-4 text-sm text-slate-700">{user.weeklypoints}</td>
                           <td className="px-6 py-4 text-sm text-slate-700">{user.monthlypoints}</td>
@@ -1112,6 +1450,48 @@ export default function AdminPanel() {
                             {user.updated_at ? new Date(user.updated_at).toLocaleDateString() : '-'}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                            <div className="inline-flex items-center gap-1 mr-2">
+                              <button
+                                onClick={() => handleQuickPointAdjust(user, 10)}
+                                disabled={quickAdjustingUser === user.uid}
+                                className="px-2 py-1 rounded-md bg-emerald-100 text-emerald-700 hover:bg-emerald-200 disabled:opacity-50 text-xs font-bold"
+                                title="Add 10 points to total/weekly/monthly"
+                              >
+                                +10
+                              </button>
+                              <button
+                                onClick={() => handleQuickPointAdjust(user, 50)}
+                                disabled={quickAdjustingUser === user.uid}
+                                className="px-2 py-1 rounded-md bg-indigo-100 text-indigo-700 hover:bg-indigo-200 disabled:opacity-50 text-xs font-bold"
+                                title="Add 50 points to total/weekly/monthly"
+                              >
+                                +50
+                              </button>
+                              <button
+                                onClick={() => handleQuickPointAdjust(user, 100)}
+                                disabled={quickAdjustingUser === user.uid}
+                                className="px-2 py-1 rounded-md bg-blue-100 text-blue-700 hover:bg-blue-200 disabled:opacity-50 text-xs font-bold"
+                                title="Add 100 points to total/weekly/monthly"
+                              >
+                                +100
+                              </button>
+                              <button
+                                onClick={() => handleQuickPointAdjust(user, -10)}
+                                disabled={quickAdjustingUser === user.uid}
+                                className="px-2 py-1 rounded-md bg-rose-100 text-rose-700 hover:bg-rose-200 disabled:opacity-50 text-xs font-bold"
+                                title="Remove 10 points from total/weekly/monthly"
+                              >
+                                -10
+                              </button>
+                              <button
+                                onClick={() => handleQuickPointAdjust(user, -50)}
+                                disabled={quickAdjustingUser === user.uid}
+                                className="px-2 py-1 rounded-md bg-red-100 text-red-700 hover:bg-red-200 disabled:opacity-50 text-xs font-bold"
+                                title="Remove 50 points from total/weekly/monthly"
+                              >
+                                -50
+                              </button>
+                            </div>
                             <button
                               onClick={() => openUserProgress(user)}
                               className="text-emerald-600 hover:text-emerald-900 mr-3 p-2 hover:bg-emerald-50 rounded-full transition-colors"
@@ -1147,6 +1527,9 @@ export default function AdminPanel() {
                                   points: user.points || 0,
                                   weeklypoints: user.weeklypoints || 0,
                                   monthlypoints: user.monthlypoints || 0,
+                                  pointsDelta: '',
+                                  weeklypointsDelta: '',
+                                  monthlypointsDelta: '',
                                   winnerTick: user.winnerTick ?? false,
                                   city: getCity(user),
                                   age: getAge(user)
@@ -1235,6 +1618,7 @@ export default function AdminPanel() {
                         <tr key={user.uid} className="hover:bg-slate-50 transition-colors">
                           <td className="px-5 py-4 align-top">
                             <div className="font-semibold text-slate-800">{user.name || 'Unknown'}</div>
+                            <div className="text-xs text-slate-500 mt-1">City: {getCity(user) || '-'}</div>
                             <div className="text-xs text-slate-500 mt-1">{user.email || '-'}</div>
                           </td>
                           <td className="px-5 py-4 text-sm text-slate-700 align-top">{getParentEmail(user) || '-'}</td>
@@ -1597,9 +1981,9 @@ export default function AdminPanel() {
             </div>
             
             <div className="bg-white rounded-2xl shadow-lg p-8 text-center">
-               <h3 className="text-xl font-bold mb-4">Pick Weekly Winner</h3>
+               <h3 className="text-xl font-bold mb-4">Pick Weekly Winners</h3>
                <p className="mb-6 text-gray-600">
-                 Randomly select a winner from the top 20 weekly point earners.
+                 Randomly pick up to 5 winners from everyone who earned above 150 weekly points — not by leaderboard rank.
                </p>
                
                <Button 
@@ -1624,6 +2008,75 @@ export default function AdminPanel() {
                     </div>
                  </div>
                )}
+            </div>
+
+            <SpinWheelWinnerPicker />
+
+            <div className="bg-white rounded-2xl shadow-lg p-6">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <h3 className="text-xl font-bold text-islamic-dark">Spin Wheel Picks</h3>
+                  <p className="text-sm text-gray-600 mt-1">
+                    Winners who have spun this week. Each reward is limited to 2 winners per week.
+                  </p>
+                  {spinWheelData?.weekStartDate ? (
+                    <p className="text-xs font-semibold text-violet-700 mt-1">Week starting {spinWheelData.weekStartDate}</p>
+                  ) : null}
+                </div>
+                <Button onClick={fetchSpinWheelResults} variant="secondary" size="sm" disabled={loadingSpinWheel}>
+                  {loadingSpinWheel ? 'Refreshing...' : 'Refresh'}
+                </Button>
+              </div>
+
+              {spinWheelData?.rewards?.length ? (
+                <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                  {spinWheelData.rewards.map((reward: any) => (
+                    <div key={reward.key} className="rounded-xl border border-violet-100 bg-violet-50 px-3 py-2 text-sm">
+                      <p className="font-semibold text-violet-900">{reward.label}</p>
+                      <p className="text-xs text-violet-700">
+                        {reward.claimedCount}/{reward.weeklyLimit} claimed · {reward.remaining} left
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              ) : null}
+
+              <div className="mt-5 overflow-x-auto rounded-xl border border-slate-200">
+                <table className="min-w-full text-sm">
+                  <thead className="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
+                    <tr>
+                      <th className="px-4 py-3">Winner</th>
+                      <th className="px-4 py-3">Masjid</th>
+                      <th className="px-4 py-3">City</th>
+                      <th className="px-4 py-3">Reward</th>
+                      <th className="px-4 py-3">When</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {loadingSpinWheel ? (
+                      <tr>
+                        <td colSpan={5} className="px-4 py-8 text-center text-slate-500">Loading spin results...</td>
+                      </tr>
+                    ) : !spinWheelData?.spins?.length ? (
+                      <tr>
+                        <td colSpan={5} className="px-4 py-8 text-center text-slate-500">No spins yet this week.</td>
+                      </tr>
+                    ) : (
+                      spinWheelData.spins.map((spin: any) => (
+                        <tr key={spin.id} className="border-t border-slate-100">
+                          <td className="px-4 py-3 font-semibold text-slate-800">{spin.userName}</td>
+                          <td className="px-4 py-3 text-slate-600">{spin.madrasahName || '—'}</td>
+                          <td className="px-4 py-3 text-slate-600">{spin.city || '—'}</td>
+                          <td className="px-4 py-3 font-semibold text-violet-700">{spin.rewardLabel}</td>
+                          <td className="px-4 py-3 text-slate-500">
+                            {spin.createdAt ? new Date(spin.createdAt).toLocaleString('en-GB') : '—'}
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
             </div>
 
             <VoucherAdminPanel />
@@ -1948,24 +2401,25 @@ export default function AdminPanel() {
               <p className="text-xs text-slate-500 mt-1">Leave blank to keep existing password.</p>
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">City</label>
+              <label className="block text-sm font-medium text-slate-700 mb-1">City / town</label>
               <input
                 type="text"
                 value={editForm.city}
                 onChange={(e) => setEditForm({ ...editForm, city: e.target.value })}
                 className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
-                placeholder="Enter city"
+                placeholder="Enter city (required for kids to play)"
               />
             </div>
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">Age</label>
               <input
                 type="number"
-                min={0}
+                min={1}
+                max={120}
                 value={editForm.age}
                 onChange={(e) => setEditForm({ ...editForm, age: e.target.value })}
                 className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
-                placeholder="Enter age"
+                placeholder="Enter age (required for kids to play)"
               />
             </div>
             <div>
@@ -1995,6 +2449,40 @@ export default function AdminPanel() {
                 className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
               />
             </div>
+            <div className="rounded-lg border border-indigo-200 bg-indigo-50 p-3 space-y-3">
+              <p className="text-sm font-semibold text-indigo-800">Manual Point Changes (+/-)</p>
+              <p className="text-xs text-indigo-700">Use negative values to subtract points. Weekly points are capped at {WEEKLY_POINTS_LIMIT}.</p>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Total Points Change</label>
+                <input
+                  type="number"
+                  value={editForm.pointsDelta}
+                  onChange={(e) => setEditForm({ ...editForm, pointsDelta: e.target.value })}
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
+                  placeholder="e.g. 50 or -20"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Weekly Points Change</label>
+                <input
+                  type="number"
+                  value={editForm.weeklypointsDelta}
+                  onChange={(e) => setEditForm({ ...editForm, weeklypointsDelta: e.target.value })}
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
+                  placeholder="e.g. 30 or -10"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Monthly Points Change</label>
+                <input
+                  type="number"
+                  value={editForm.monthlypointsDelta}
+                  onChange={(e) => setEditForm({ ...editForm, monthlypointsDelta: e.target.value })}
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
+                  placeholder="e.g. 40 or -15"
+                />
+              </div>
+            </div>
             <div className="flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
               <input
                 id="winner-tick"
@@ -2004,7 +2492,7 @@ export default function AdminPanel() {
                 className="h-4 w-4"
               />
               <label htmlFor="winner-tick" className="text-sm text-slate-700">
-                Show winner tick on leaderboard
+                Also allow spin wheel on Rewards page (or use Rewards tab → Select Spin Wheel Winners)
               </label>
             </div>
             <div className="flex gap-3 pt-4">
@@ -2054,6 +2542,49 @@ export default function AdminPanel() {
                     <p className="text-xs text-amber-700">Cert Months</p>
                     <p className="font-bold text-amber-700">{progressData.totals?.certificateMonths ?? 0}</p>
                   </div>
+                </div>
+
+                <div className="rounded-lg border border-indigo-200 bg-indigo-50 p-3">
+                  <p className="text-xs font-semibold uppercase tracking-[0.12em] text-indigo-700">Kids Zone Feature Lab</p>
+                  <div className="mt-2 grid grid-cols-1 sm:grid-cols-3 gap-2 text-sm">
+                    <div className="rounded-md bg-white px-3 py-2 border border-indigo-100">
+                      <p className="text-xs text-indigo-500">Tracked Days</p>
+                      <p className="font-bold text-indigo-900">{progressData.featureLab?.trackedDays ?? 0}</p>
+                    </div>
+                    <div className="rounded-md bg-white px-3 py-2 border border-indigo-100">
+                      <p className="text-xs text-indigo-500">Good Deeds Completed</p>
+                      <p className="font-bold text-indigo-900">{progressData.featureLab?.totalGoodDeeds ?? 0}</p>
+                    </div>
+                    <div className="rounded-md bg-white px-3 py-2 border border-indigo-100">
+                      <p className="text-xs text-indigo-500">Challenge Days</p>
+                      <p className="font-bold text-indigo-900">{progressData.featureLab?.challengeDays ?? 0}</p>
+                    </div>
+                  </div>
+
+                  {(progressData.featureLab?.recent?.length || 0) > 0 ? (
+                    <div className="mt-3 max-h-36 overflow-auto rounded-md border border-indigo-100 bg-white">
+                      <table className="w-full text-xs">
+                        <thead className="bg-indigo-50 sticky top-0">
+                          <tr>
+                            <th className="px-2 py-1.5 text-left">Date</th>
+                            <th className="px-2 py-1.5 text-left">Good Deeds</th>
+                            <th className="px-2 py-1.5 text-left">Challenge</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {(progressData.featureLab?.recent || []).map((row) => (
+                            <tr key={row.date} className="border-t border-indigo-50">
+                              <td className="px-2 py-1.5">{row.date}</td>
+                              <td className="px-2 py-1.5">{row.goodDeedsCount}</td>
+                              <td className="px-2 py-1.5">{row.challengeTitle || row.challengeId || '-'}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  ) : (
+                    <p className="mt-2 text-xs text-indigo-700">No feature-lab tracking data yet for this user.</p>
+                  )}
                 </div>
 
                 <div className="max-h-72 overflow-auto border border-slate-200 rounded-lg">

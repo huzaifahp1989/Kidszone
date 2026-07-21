@@ -1,27 +1,50 @@
 import { createClient } from '@supabase/supabase-js';
 
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL || 'https://placeholder.supabase.co';
-const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
-const SUPABASE_SERVICE_ROLE_KEY = SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY || 'placeholder';
-
-if (!process.env.NEXT_PUBLIC_SUPABASE_URL && !process.env.SUPABASE_URL) {
-  console.warn('[supabase-admin] Warning: SUPABASE URL is missing. Set NEXT_PUBLIC_SUPABASE_URL (or SUPABASE_URL) in Vercel env vars.');
-}
-if (!process.env.SUPABASE_SERVICE_ROLE_KEY && !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY && !process.env.SUPABASE_ANON_KEY) {
-  console.warn('[supabase-admin] Warning: SERVICE_ROLE/Anon key is missing. Set SUPABASE_SERVICE_ROLE_KEY / NEXT_PUBLIC_SUPABASE_ANON_KEY / SUPABASE_ANON_KEY.');
+function cleanEnv(value: string | undefined | null): string {
+  return String(value || '')
+    .trim()
+    .replace(/^["']|["']$/g, '');
 }
 
-if (process.env.NODE_ENV !== 'production' && !process.env.SUPABASE_SERVICE_ROLE_KEY) {
-  console.warn('Missing SUPABASE_SERVICE_ROLE_KEY. Falling back to Anon Key (permissions may be limited).');
+const SUPABASE_URL =
+  cleanEnv(process.env.NEXT_PUBLIC_SUPABASE_URL) ||
+  cleanEnv(process.env.SUPABASE_URL) ||
+  'https://placeholder.supabase.co';
+
+const SERVICE_ROLE_KEY = cleanEnv(process.env.SUPABASE_SERVICE_ROLE_KEY);
+const ANON_KEY =
+  cleanEnv(process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) || cleanEnv(process.env.SUPABASE_ANON_KEY);
+
+/** True when a real service-role key is configured (required to bypass RLS for admin writes). */
+export function hasSupabaseServiceRole(): boolean {
+  return SERVICE_ROLE_KEY.length > 40;
 }
 
-if (process.env.NODE_ENV === 'production' && !SERVICE_ROLE_KEY) {
-  throw new Error('SUPABASE_SERVICE_ROLE_KEY is required in production for server-side Supabase admin operations.');
+const SUPABASE_SERVICE_ROLE_KEY = hasSupabaseServiceRole()
+  ? SERVICE_ROLE_KEY
+  : ANON_KEY || 'placeholder';
+
+if (!cleanEnv(process.env.NEXT_PUBLIC_SUPABASE_URL) && !cleanEnv(process.env.SUPABASE_URL)) {
+  console.warn(
+    '[supabase-admin] Warning: SUPABASE URL is missing. Set NEXT_PUBLIC_SUPABASE_URL (or SUPABASE_URL).'
+  );
+}
+
+if (!hasSupabaseServiceRole()) {
+  console.warn(
+    '[supabase-admin] Missing SUPABASE_SERVICE_ROLE_KEY. Admin writes (push schedules, etc.) will fail RLS. Copy service_role from Supabase → Project Settings → API.'
+  );
+}
+
+if (process.env.NODE_ENV === 'production' && !hasSupabaseServiceRole()) {
+  console.error(
+    '[supabase-admin] SUPABASE_SERVICE_ROLE_KEY is required in production. Push schedules and other admin DB writes will not work.'
+  );
 }
 
 export const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
   auth: {
     autoRefreshToken: false,
-    persistSession: false
-  }
+    persistSession: false,
+  },
 });

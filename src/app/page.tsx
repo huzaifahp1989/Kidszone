@@ -3,192 +3,234 @@
 import React, { useMemo } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/lib/auth-context';
-import { BookOpen, Gamepad2, Heart, Trophy, Sparkles, Star, Target, Zap, ClipboardList } from 'lucide-react';
+import { useAgeMode } from '@/lib/age-mode';
+import { BookOpen, Gamepad2, Sparkles, Star, Target, Zap, Trophy, Coins } from 'lucide-react';
 import DailyMissions from '@/components/DailyMissions';
+import { ComeBackNudge } from '@/components/ComeBackNudge';
+import { WeeklyChallengeCard } from '@/components/WeeklyChallengeCard';
+import { RamadanModeCard } from '@/components/RamadanModeCard';
+import { RamadanPopup } from '@/components/RamadanPopup';
 import ReferralTokenHub from '@/components/ReferralTokenHub';
-import { APP_STORE_LINKS } from '@/lib/app-store-links';
+import KidsZoneFeatureLab from '@/components/KidsZoneFeatureLab';
+import { FeatureDiscover } from '@/components/FeatureDiscover';
+import { WhatsNew } from '@/components/WhatsNew';
+import { Mascot } from '@/components/Mascot';
+import { ReadAloudButton } from '@/components/ReadAloudButton';
+import { PointsSummaryWidget } from '@/components/PointsSummaryWidget';
 import { SurveyPopup } from '@/components';
+import { DailyAyahCard } from '@/components/DailyAyahCard';
+import { AchievementGrid } from '@/components/AchievementGrid';
+import { StreakCalendar } from '@/components/StreakCalendar';
+import { getKidLevelTitle } from '@/lib/level-names';
+
+const TIP_TEXT =
+  'Try to learn something new about Islam every day, even if it is just one verse or one hadith. Little by little, you build lasting knowledge. May Allah bless your journey!';
 
 export default function Home() {
   const { profile } = useAuth();
+  const { isYounger } = useAgeMode();
   const user = useMemo(() => {
     const extras = (profile as unknown as { streak?: number; total_days?: number; totalDays?: number }) || {};
     return {
       username: profile?.name || 'Friend',
       points: profile?.points ?? 0,
-      level: profile?.level || 'Beginner',
+      level: getKidLevelTitle(profile?.level ?? 1),
       streak: extras.streak ?? 0,
       totalDaysLearned: extras.total_days ?? extras.totalDays ?? 0,
     };
   }, [profile]);
 
-  const progressPercent = useMemo(() => {
-    const pct = (user.points / 500) * 100;
-    return Math.max(2, Math.min(100, pct));
-  }, [user.points]);
+  const progressBlock = <PointsSummaryWidget />;
 
-  const quickActions = [
-    {
-      href: '/quiz',
-      icon: BookOpen,
-      title: 'Daily Quiz',
-      description: 'Test your knowledge',
-      color: 'from-[#14b8a6] to-[#0d9488]',
-      bgColor: 'bg-[#f0fdfa]',
-    },
-    {
-      href: '/games',
-      icon: Gamepad2,
-      title: 'Play Games',
-      description: 'Learn while having fun',
-      color: 'from-[#fbbf24] to-[#f59e0b]',
-      bgColor: 'bg-[#fffbeb]',
-    },
-    {
-      href: '/pledge',
-      icon: Heart,
-      title: 'Durood Pledge',
-      description: 'Track your dhikr',
-      color: 'from-[#ff6b6b] to-[#ff4757]',
-      bgColor: 'bg-[#fff5f5]',
-    },
-    {
-      href: '/leaderboard',
-      icon: Trophy,
-      title: 'Leaderboard',
-      description: 'See top learners',
-      color: 'from-[#8b5cf6] to-[#6366f1]',
-      bgColor: 'bg-[#eef2ff]',
-    },
-    {
-      href: '/tasks',
-      icon: ClipboardList,
-      title: 'Tasks',
-      description: 'Invite friends and track referrals',
-      color: 'from-[#6366f1] to-[#4338ca]',
-      bgColor: 'bg-[#eef2ff]',
-    },
-    {
-      href: '/competitions/masjid-al-aqsa',
-      icon: Trophy,
-      title: 'Monthly Featured Quiz',
-      description: 'Masjid Al-Aqsa written quiz with prizes',
-      color: 'from-[#14b8a6] to-[#0d9488]',
-      bgColor: 'bg-[#f0fdfa]',
-    },
-  ];
-
-  return (
-    <div className="page-canvas pattern-islamic">
-      <SurveyPopup />
-      <div className="page-wrap space-y-8">
-        
-        {/* Hero Section */}
-        <section className="hero-panel stagger-in">
-          <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-[#14b8a6]/10 to-transparent rounded-full -translate-y-1/2 translate-x-1/2"></div>
-          <div className="absolute bottom-0 left-0 w-48 h-48 bg-gradient-to-tr from-[#fbbf24]/10 to-transparent rounded-full translate-y-1/2 -translate-x-1/2"></div>
-          
-          <div className="relative px-6 py-10 md:px-10 md:py-12">
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
-              <div className="space-y-4">
-                <div className="inline-flex items-center gap-2 px-4 py-2 bg-[#f0fdfa] rounded-full border border-[#14b8a6]/20">
-                  <Sparkles size={16} className="text-[#14b8a6]" />
-                  <span className="text-sm font-semibold text-[#0d9488]">Assalamu Alaikum!</span>
-                </div>
-                
-                <h1 className="text-3xl md:text-5xl font-bold text-[#6a422d]">
-                  Welcome back,{' '}
-                  <span className="text-gradient-warm">{user.username}</span>
-                </h1>
-                
-                <p className="text-[#a1633a] text-lg max-w-lg">
-                  Continue your Islamic learning journey. Every step brings you closer to knowledge and rewards.
+  // ---------------------------------------------------------------------------
+  // Younger mode: brand-first, visual, low-text.
+  // ---------------------------------------------------------------------------
+  if (isYounger) {
+    return (
+      <div className="page-canvas">
+        <SurveyPopup />
+        <RamadanPopup />
+        <div className="page-wrap space-y-6">
+          <WhatsNew />
+          <section className="hero-panel stagger-in">
+            <div className="relative flex flex-col items-center gap-5 px-5 py-8 text-center md:flex-row md:items-center md:justify-between md:text-left">
+              <div className="space-y-3">
+                <p className="font-heading text-4xl font-extrabold tracking-tight text-teal-900 md:text-5xl">
+                  Kids Zone
                 </p>
-                
-                <div className="flex flex-wrap gap-3 pt-2">
+                <p className="text-lg font-semibold text-sand-800">
+                  Assalamu Alaikum, <span className="text-gradient-warm">{user.username}</span>!
+                </p>
+                <p className="mx-auto max-w-md text-sm text-sand-600 md:mx-0">
+                  Play, learn, and grow — one fun activity at a time.
+                </p>
+                <div className="flex flex-wrap justify-center gap-3 pt-1 md:justify-start">
                   <Link
                     href="/quiz"
-                    className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-[#14b8a6] to-[#0d9488] text-white font-bold rounded-xl shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all"
+                    className="inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-teal-600 to-teal-800 px-6 py-3.5 text-base font-bold text-white shadow-lg transition hover:-translate-y-0.5 hover:shadow-xl"
                   >
-                    <BookOpen size={20} />
-                    Start Daily Quiz
+                    <BookOpen size={20} /> Start Quiz
                   </Link>
-                  
                   <Link
                     href="/games"
-                    className="inline-flex items-center gap-2 px-6 py-3 bg-white text-[#6a422d] font-bold rounded-xl border-2 border-[#e5c9a3] hover:bg-[#f9f0e6] transition-all"
+                    className="inline-flex items-center gap-2 rounded-2xl border-2 border-teal-200 bg-white px-6 py-3.5 text-base font-bold text-sand-900 transition hover:bg-teal-50"
+                  >
+                    <Gamepad2 size={20} /> Play Games
+                  </Link>
+                </div>
+                <p className="pt-1 text-sm">
+                  <Link href="/donations" className="font-semibold text-teal-700 underline-offset-2 hover:underline">
+                    Log sadaqah
+                  </Link>
+                </p>
+              </div>
+              <Mascot mood="wave" size="md" message={`You have ${user.points} points. Let's learn today!`} />
+            </div>
+          </section>
+
+          {progressBlock}
+
+          <ComeBackNudge />
+
+          <RamadanModeCard />
+
+          <div id="daily-missions">
+            <DailyMissions />
+          </div>
+
+          <WeeklyChallengeCard />
+
+          <FeatureDiscover variant="younger" />
+
+          <DailyAyahCard compact />
+
+          <StreakCalendar compact />
+
+          <section className="feature-tile rounded-3xl border-[#7c3aed]/20 bg-[#f5f3ff] p-6">
+            <div className="flex items-start gap-4">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#7c3aed]">
+                <span className="text-2xl">💡</span>
+              </div>
+              <div>
+                <div className="mb-1 flex items-center gap-2">
+                  <h4 className="font-bold text-[#6d28d9]">Today&apos;s Tip</h4>
+                  <ReadAloudButton text={TIP_TEXT} label="" size="sm" />
+                </div>
+                <p className="kid-text text-[#5b21b6]">
+                  Learn one new thing about Islam every day. One verse or one hadith is a great start!
+                </p>
+              </div>
+            </div>
+          </section>
+        </div>
+      </div>
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // Older mode: brand-first hero, then progress, then Explore Kids Zone.
+  // ---------------------------------------------------------------------------
+  return (
+    <div className="page-canvas">
+      <SurveyPopup />
+      <RamadanPopup />
+      <div className="page-wrap space-y-7">
+        <WhatsNew />
+        <section className="hero-panel stagger-in">
+          <div className="relative px-6 py-9 md:px-10 md:py-11">
+            <div className="flex flex-col items-start gap-6 md:flex-row md:items-center md:justify-between">
+              <div className="max-w-xl space-y-3">
+                <p className="font-heading text-4xl font-extrabold tracking-tight text-teal-900 md:text-5xl lg:text-6xl">
+                  Kids Zone
+                </p>
+                <p className="text-lg font-semibold text-sand-800 md:text-xl">
+                  Assalamu Alaikum, <span className="text-gradient-warm">{user.username}</span>
+                </p>
+                <p className="max-w-lg text-base text-sand-600 md:text-lg">
+                  Your Islamic learning hub — quizzes, games, Quran, deeds, and rewards in one place.
+                </p>
+                <div className="flex flex-wrap gap-3 pt-1">
+                  <Link
+                    href="/quiz"
+                    className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-teal-600 to-teal-800 px-6 py-3 font-bold text-white shadow-lg transition hover:-translate-y-0.5 hover:shadow-xl"
+                  >
+                    <BookOpen size={20} />
+                    Daily Quiz
+                  </Link>
+                  <Link
+                    href="/games"
+                    className="inline-flex items-center gap-2 rounded-xl border-2 border-teal-200 bg-white px-6 py-3 font-bold text-sand-900 transition hover:bg-teal-50"
                   >
                     <Gamepad2 size={20} />
                     Play Games
                   </Link>
                 </div>
+                <p className="text-sm text-sand-600">
+                  <Link
+                    href="/donations"
+                    className="inline-flex items-center gap-1.5 font-semibold text-teal-700 underline-offset-2 hover:underline"
+                  >
+                    <Coins size={14} />
+                    Kids Sadaqah
+                  </Link>
+                </p>
               </div>
-              
-              <div className="flex-shrink-0">
-                <div className="relative">
-                  <div className="w-32 h-32 md:w-40 md:h-40 rounded-2xl bg-gradient-to-br from-[#fbbf24] to-[#f59e0b] flex items-center justify-center shadow-xl rotate-3">
-                    <span className="text-6xl md:text-7xl">🌟</span>
-                  </div>
-                  <div className="absolute -bottom-3 -right-3 w-20 h-20 rounded-xl bg-gradient-to-br from-[#14b8a6] to-[#0d9488] flex items-center justify-center shadow-lg -rotate-6">
-                    <span className="text-3xl">📿</span>
-                  </div>
-                </div>
+
+              <div className="flex-shrink-0 self-center">
+                <Mascot mood="happy" size="md" />
               </div>
             </div>
           </div>
         </section>
 
-        {/* Stats Row */}
-        <section className="grid grid-cols-2 md:grid-cols-4 gap-4 stagger-in">
+        <section className="grid grid-cols-2 gap-4 stagger-in md:grid-cols-4">
           {[
             { icon: Star, label: 'Points', value: user.points, color: 'text-[#f59e0b]', bg: 'bg-[#fffbeb]' },
-            { icon: Target, label: 'Level', value: user.level, color: 'text-[#14b8a6]', bg: 'bg-[#f0fdfa]' },
+            { icon: Target, label: 'Level', value: user.level, color: 'text-[#7c3aed]', bg: 'bg-[#f5f3ff]' },
             { icon: Zap, label: 'Streak', value: `${user.streak || 0} days`, color: 'text-[#ff6b6b]', bg: 'bg-[#fff5f5]' },
-            { icon: Trophy, label: 'Days Learning', value: user.totalDaysLearned || 0, color: 'text-[#8b5cf6]', bg: 'bg-[#eef2ff]' },
-          ].map((stat, idx) => (
-            <div
-              key={idx}
-              className={`${stat.bg} stat-pill p-5`}
-            >
+            {
+              icon: Trophy,
+              label: 'Days Learning',
+              value: user.totalDaysLearned || 0,
+              color: 'text-[#8b5cf6]',
+              bg: 'bg-[#eef2ff]',
+            },
+          ].map((stat) => (
+            <div key={stat.label} className={`${stat.bg} stat-pill p-5`}>
               <div className="flex items-center gap-3">
-                <div className={`p-2 rounded-xl bg-white ${stat.color}`}>
+                <div className={`rounded-xl bg-white p-2 ${stat.color}`}>
                   <stat.icon size={20} />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold text-[#6a422d]">{stat.value}</p>
-                  <p className="text-sm text-[#a1633a]">{stat.label}</p>
+                  <p className="text-2xl font-bold text-[#1e1b4b]">{stat.value}</p>
+                  <p className="text-sm text-[#475569]">{stat.label}</p>
                 </div>
               </div>
             </div>
           ))}
         </section>
 
-        <DailyMissions />
+        <PointsSummaryWidget />
+
+        <ComeBackNudge />
+
+        <RamadanModeCard />
+
+        <div id="daily-missions">
+          <DailyMissions />
+        </div>
+
+        <WeeklyChallengeCard />
+
+        <FeatureDiscover variant="older" />
+
+        <DailyAyahCard />
+
+        <AchievementGrid compact />
 
         <ReferralTokenHub />
 
-        {/* Progress Section */}
-        <section className="surface-card p-6">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#8b5cf6] to-[#6366f1] flex items-center justify-center">
-                <Target size={20} className="text-white" />
-              </div>
-              <div>
-                <h3 className="font-bold text-[#6a422d]">Journey to Young Scholar</h3>
-                <p className="text-sm text-[#a1633a]">Keep learning to level up!</p>
-              </div>
-            </div>
-            <span className="text-sm font-bold text-[#14b8a6]">{user.points} / 500 ⭐</span>
-          </div>
-          
-          <div className="h-4 bg-[#f9f0e6] rounded-full overflow-hidden">
-            <div
-              className="h-full bg-gradient-to-r from-[#14b8a6] via-[#fbbf24] to-[#ff6b6b] rounded-full transition-all duration-1000"
-              style={{ width: `${progressPercent}%` }}
-            ></div>
-          </div>
-        </section>
+        <KidsZoneFeatureLab />
 
         <section className="feature-tile rounded-3xl border-teal-200 bg-gradient-to-br from-teal-50 via-white to-emerald-50 p-6">
           <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
@@ -196,9 +238,10 @@ export default function Home() {
               <div className="inline-flex items-center gap-2 rounded-full bg-teal-100 px-3 py-1 text-xs font-bold uppercase tracking-[0.18em] text-teal-800">
                 <Sparkles size={14} /> Monthly Featured Quiz
               </div>
-              <h2 className="mt-3 text-2xl md:text-3xl font-black text-[#134e4a]">Masjid Al-Aqsa Quiz Competition</h2>
-              <p className="mt-2 text-sm md:text-base leading-6 text-[#0f766e]">
-                This month&apos;s featured contest is a written Islamic quiz on Masjid Al-Aqsa. Submit once, wait for admin review, and winners will receive cash prizes at the end of the month.
+              <h2 className="mt-3 text-2xl font-black text-[#4c1d95] md:text-3xl">Masjid Al-Aqsa Quiz Competition</h2>
+              <p className="mt-2 text-sm leading-6 text-[#5b21b6] md:text-base">
+                This month&apos;s featured contest is a written Islamic quiz on Masjid Al-Aqsa. Submit once, wait for
+                admin review, and winners will receive cash prizes at the end of the month.
               </p>
             </div>
             <Link
@@ -210,106 +253,23 @@ export default function Home() {
           </div>
         </section>
 
-        {/* Quick Actions */}
-        <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 stagger-in">
-          {quickActions.map((action, idx) => (
-            <Link
-              key={idx}
-              href={action.href}
-              className={`${action.bgColor} feature-tile group rounded-2xl p-5`}
-            >
-              <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${action.color} flex items-center justify-center shadow-md group-hover:scale-110 transition-transform`}>
-                <action.icon size={24} className="text-white" />
-              </div>
-              <h3 className="mt-4 font-bold text-[#6a422d]">{action.title}</h3>
-              <p className="text-sm text-[#a1633a]">{action.description}</p>
-            </Link>
-          ))}
-        </section>
-
-        {/* Featured Section */}
-        <section className="grid md:grid-cols-2 gap-6 stagger-in">
-          <div className="cta-panel bg-gradient-to-br from-[#14b8a6] to-[#0d9488] text-white">
-            <div className="flex items-start justify-between">
-              <div>
-                <span className="inline-block px-3 py-1 bg-white/20 rounded-full text-xs font-semibold mb-3">Daily Challenge</span>
-                <h3 className="text-xl font-bold mb-2">Complete Today&apos;s Quiz</h3>
-                <p className="text-white/80 text-sm mb-4">Answer all questions correctly to earn bonus points and climb the leaderboard!</p>
-                <Link
-                  href="/quiz"
-                  className="inline-flex items-center gap-2 px-4 py-2 bg-white text-[#0d9488] font-bold rounded-xl hover:bg-white/90 transition"
-                >
-                  Start Now →
-                </Link>
-              </div>
-              <span className="text-5xl">🎯</span>
-            </div>
-          </div>
-          
-          <div className="cta-panel bg-gradient-to-br from-[#fbbf24] to-[#f59e0b] text-white">
-            <div className="flex items-start justify-between">
-              <div>
-                <span className="inline-block px-3 py-1 bg-white/20 rounded-full text-xs font-semibold mb-3">New Games</span>
-                <h3 className="text-xl font-bold mb-2">Explore Word Hunts</h3>
-                <p className="text-white/80 text-sm mb-4">Find Islamic words in our new Seerah and Quran themed puzzles. Fun for all ages!</p>
-                <Link
-                  href="/games"
-                  className="inline-flex items-center gap-2 px-4 py-2 bg-white text-[#d97706] font-bold rounded-xl hover:bg-white/90 transition"
-                >
-                  Play Now →
-                </Link>
-              </div>
-              <span className="text-5xl">🎮</span>
-            </div>
-          </div>
-        </section>
-
-        <section className="cta-panel bg-gradient-to-r from-[#0f172a] to-[#1e293b] text-white border border-[#334155]">
-          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-            <div>
-              <p className="text-xs uppercase tracking-[0.2em] text-[#93c5fd]">Mobile App</p>
-              <h3 className="text-2xl font-bold mt-1">Download Kids Zone on iPhone & Android</h3>
-              <p className="text-[#cbd5e1] text-sm mt-2 max-w-2xl">
-                Make learning easier on mobile. Share these app-store links with families so kids can install and start learning in minutes.
-              </p>
-            </div>
-            <div className="flex flex-wrap gap-3">
-              <a
-                href={APP_STORE_LINKS.ios}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center justify-center px-5 py-3 rounded-xl bg-white text-black font-bold hover:opacity-90"
-              >
-                App Store
-              </a>
-              <a
-                href={APP_STORE_LINKS.android}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center justify-center px-5 py-3 rounded-xl bg-[#22c55e] text-[#052e16] font-bold hover:opacity-90"
-              >
-                Google Play
-              </a>
-            </div>
-          </div>
-        </section>
-
-        {/* Tip Card */}
-        <section className="feature-tile bg-[#f0fdfa] rounded-2xl p-6 border-[#14b8a6]/20">
+        <section className="feature-tile rounded-2xl border-[#7c3aed]/20 bg-[#f5f3ff] p-6">
           <div className="flex items-start gap-4">
-            <div className="w-12 h-12 rounded-xl bg-[#14b8a6] flex items-center justify-center flex-shrink-0">
+            <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl bg-[#7c3aed]">
               <span className="text-2xl">💡</span>
             </div>
             <div>
-              <h4 className="font-bold text-[#0d9488] mb-1">Learning Tip</h4>
-              <p className="text-[#115e59]">
-                Try to learn something new about Islam every day, even if it&apos;s just one verse or one hadith. 
+              <div className="mb-1 flex items-center gap-2">
+                <h4 className="font-bold text-[#6d28d9]">Learning Tip</h4>
+                <ReadAloudButton text={TIP_TEXT} label="" size="sm" />
+              </div>
+              <p className="text-[#5b21b6]">
+                Try to learn something new about Islam every day, even if it&apos;s just one verse or one hadith.
                 Consistency is the key to building lasting knowledge. May Allah bless your journey!
               </p>
             </div>
           </div>
         </section>
-
       </div>
     </div>
   );

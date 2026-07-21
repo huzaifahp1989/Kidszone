@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
+import { getReadableObjectUrl } from '@/lib/object-storage';
 
 export const dynamic = 'force-dynamic';
 
@@ -58,18 +59,18 @@ export async function GET(request: Request) {
     }
 
     // Generate public audio URLs for each recording
-    const recordingsWithUrls = (data || []).map((rec: any) => {
-      if (rec.audio_path && !rec.audio_url) {
-        const { data: publicUrlData } = supabaseAdmin
-          .storage
-          .from('story-recordings')
-          .getPublicUrl(rec.audio_path);
-        if (publicUrlData?.publicUrl) {
-          rec.audio_url = publicUrlData.publicUrl;
+    const recordingsWithUrls = await Promise.all(
+      (data || []).map(async (rec: any) => {
+        if (rec.audio_path && !rec.audio_url) {
+          try {
+            rec.audio_url = await getReadableObjectUrl('story-recordings', rec.audio_path, 3600);
+          } catch {
+            /* ignore */
+          }
         }
-      }
-      return rec;
-    });
+        return rec;
+      })
+    );
 
     // Get stats
     const { data: statsData, error: statsError } = await supabaseAdmin
