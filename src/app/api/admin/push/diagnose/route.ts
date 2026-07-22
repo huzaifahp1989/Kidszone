@@ -4,6 +4,7 @@ import { getServerOneSignalAppId } from '@/lib/onesignal-server-config';
 import {
   isOneSignalServerConfigured,
   lookupOneSignalPlayer,
+  getOneSignalAppStats,
 } from '@/lib/onesignal-server';
 import { ONESIGNAL_APP_ID as PUBLIC_ONESIGNAL_APP_ID } from '@/lib/onesignal-app-id';
 import { supabaseAdmin } from '@/lib/supabase-admin';
@@ -84,6 +85,7 @@ export async function GET(request: Request) {
 
   const foundCount = lookups.filter((l) => l.foundOnOneSignal && !l.invalidIdentifier).length;
   const subscribedCount = lookups.filter((l) => l.subscribed).length;
+  const appStats = await getOneSignalAppStats(appIdOverride);
 
   return NextResponse.json({
     configured: true,
@@ -97,6 +99,7 @@ export async function GET(request: Request) {
     checked: lookups.length,
     validOnApp: foundCount,
     subscribedOnApp: subscribedCount,
+    appStats,
     tokens: lookups,
   });
 }

@@ -10,6 +10,7 @@ import { getOneSignalAppTargets, getServerOneSignalAppId } from '@/lib/onesignal
 
 const ONESIGNAL_API = 'https://api.onesignal.com/notifications';
 const ONESIGNAL_PLAYERS_API = 'https://onesignal.com/api/v1/players';
+const ONESIGNAL_APPS_API = 'https://onesignal.com/api/v1/apps';
 
 
 export type OneSignalPushPayload = {
@@ -418,6 +419,55 @@ export type OneSignalPlayerLookup = {
   error?: string;
   appId: string;
 };
+
+export type OneSignalAppStats = {
+  appId: string;
+  ok: boolean;
+  /** Total device records registered on the app. */
+  players?: number;
+  /** Devices that can actually be sent a push (subscribed + valid token). */
+  messageablePlayers?: number;
+  /** True when the app has Android FCM (Google) push credentials configured. */
+  hasAndroidCredentials?: boolean;
+  /** True when the app has iOS APNs push credentials configured. */
+  hasIosCredentials?: boolean;
+  error?: string;
+};
+
+/**
+ * Fetch app-level push stats from OneSignal. This tells us whether the app has
+ * any messageable (deliverable) devices and whether Android FCM / iOS APNs
+ * credentials are configured — the usual reason valid players still get 0 recipients.
+ */
+export async function getOneSignalAppStats(appIdOverride?: string | null): Promise<OneSignalAppStats> {
+  const apiKey = getRestApiKey();
+  const appId = getServerOneSignalAppId(appIdOverride);
+  if (!apiKey) return { appId, ok: false, error: 'Missing REST API key' };
+
+  const url = `${ONESIGNAL_APPS_API}/${encodeURIComponent(appId)}`;
+  for (const auth of [`Key ${apiKey}`, `Basic ${apiKey}`]) {
+    try {
+      const response = await fetch(url, { headers: { Authorization: auth } });
+      const raw = await response.json().catch(() => null);
+      if (!response.ok) continue;
+      const row = raw && typeof raw === 'object' ? (raw as Record<string, unknown>) : {};
+      const gcmKey = String(row.gcm_key || '').trim();
+      const apnsEnv = String(row.apns_env || '').trim();
+      return {
+        appId,
+        ok: true,
+        players: typeof row.players === 'number' ? row.players : undefined,
+        messageablePlayers:
+          typeof row.messageable_players === 'number' ? row.messageable_players : undefined,
+        hasAndroidCredentials: Boolean(gcmKey) || Boolean(row.android_gcm_sender_id),
+        hasIosCredentials: Boolean(apnsEnv),
+      };
+    } catch {
+      /* try next auth */
+    }
+  }
+  return { appId, ok: false, error: 'Could not read app stats (auth failed or wrong app)' };
+}
 
 /** Check whether a player/subscription ID exists on the configured OneSignal app. */
 export async function lookupOneSignalPlayer(
