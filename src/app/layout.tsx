@@ -8,17 +8,24 @@ import { AgeModeProvider } from '@/lib/age-mode';
 import { AppShell } from '@/components/AppShell';
 import { FirebaseAnalyticsInit } from '@/components/FirebaseAnalyticsInit';
 import { GoogleAnalyticsInit } from '@/components/GoogleAnalyticsInit';
-import { Nunito, Amiri } from 'next/font/google';
+import { Outfit, Fraunces, Amiri } from 'next/font/google';
 
-const nunito = Nunito({
+const outfit = Outfit({
   subsets: ['latin'],
-  weight: ['400', '600', '700', '800', '900'],
+  weight: ['400', '500', '600', '700', '800'],
   display: 'swap',
-  variable: '--font-nunito',
+  variable: '--font-outfit',
+});
+
+const fraunces = Fraunces({
+  subsets: ['latin'],
+  weight: ['600', '700', '800'],
+  display: 'swap',
+  variable: '--font-fraunces',
 });
 
 const amiri = Amiri({
-  subsets: ['latin'],
+  subsets: ['latin', 'arabic'],
   weight: ['400', '700'],
   display: 'swap',
   variable: '--font-amiri',
@@ -26,21 +33,19 @@ const amiri = Amiri({
 
 export const metadata: Metadata = {
   title: 'Kids Zone - Islamic Learning Platform',
-  description: 'A warm, engaging Islamic learning platform for children aged 5-14',
+  description: 'A warm sunlit courtyard for Islamic learning — for children aged 5-14',
 };
 
 export const viewport = {
   width: 'device-width',
   initialScale: 1,
-  // Required so CSS env(safe-area-inset-*) resolves on notched iOS and
-  // edge-to-edge Android, keeping the bottom tab bar clear of system bars.
   viewportFit: 'cover' as const,
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" data-scroll-behavior="smooth">
-      <body className={`${nunito.variable} ${amiri.variable} font-sans antialiased`}>
+      <body className={`${outfit.variable} ${fraunces.variable} ${amiri.variable} font-sans antialiased`}>
         <Script
           src="https://unpkg.com/webtonative@1.1.6/webtonative.min.js"
           strategy="beforeInteractive"

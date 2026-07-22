@@ -3,6 +3,7 @@
 import React, { useMemo, useState } from 'react';
 import { Volume2 } from 'lucide-react';
 import { CreateShell } from '@/components/CreateShell';
+import { ClaimCreatePointsButton } from '@/components/ClaimCreatePointsButton';
 import { getDuaOfTheDay } from '@/data/kids-create-activities';
 
 export default function DuaOfTheDayPage() {
@@ -37,10 +38,11 @@ export default function DuaOfTheDayPage() {
       <button
         type="button"
         onClick={() => setSaid(true)}
-        className="w-full rounded-2xl bg-gradient-to-r from-teal-600 to-teal-800 px-5 py-3.5 font-bold text-white sm:w-auto"
+        className="w-full rounded-2xl border-2 border-teal-300 bg-white px-5 py-3.5 font-bold text-teal-900 sm:w-auto"
       >
         {said ? 'MashaAllah — keep saying it!' : 'I said this dua'}
       </button>
+      <ClaimCreatePointsButton activity="dua" ready={said} readyLabel="Claim dua points" />
     </CreateShell>
   );
 }

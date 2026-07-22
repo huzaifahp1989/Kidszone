@@ -44,7 +44,7 @@ export async function POST(request: NextRequest) {
 
           <div style="text-align: center; margin: 30px 0;">
             <a href="${process.env.NEXT_PUBLIC_APP_URL || 'https://islamic-kids-platform.vercel.app'}/my-recordings"
-               style="background-color: #6366f1; color: white; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: bold; display: inline-block;">
+               style="background-color: #0d9488; color: white; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: bold; display: inline-block;">
               View My Recordings
             </a>
           </div>

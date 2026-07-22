@@ -164,7 +164,7 @@ export async function performSpinWheel(userId: string) {
     spin: {
       rewardKey: data.reward_key,
       rewardLabel: data.reward_label,
-      color: getSpinWheelReward(data.reward_key)?.color ?? '#7c3aed',
+      color: getSpinWheelReward(data.reward_key)?.color ?? '#0d9488',
       createdAt: data.created_at,
       voucherGranted,
     },

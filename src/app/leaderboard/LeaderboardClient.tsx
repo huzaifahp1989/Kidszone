@@ -190,14 +190,14 @@ export default function LeaderboardClient() {
   );
 
   return (
-    <div className="min-h-screen bg-[#f5f3ff] pattern-islamic">
+    <div className="min-h-screen bg-[#f0fdfa] pattern-islamic">
       <div className="mx-auto max-w-5xl space-y-6 px-4 py-8 md:space-y-8">
         <div className="space-y-4 text-center">
           <div className="inline-flex items-center gap-2 rounded-full border border-[#fbbf24]/30 bg-[#fffbeb] px-4 py-2">
             <Trophy size={16} className="text-[#f59e0b]" />
             <span className="text-sm font-semibold text-[#b45309]">Competition Leaderboard</span>
           </div>
-          <h1 className="text-4xl font-bold text-[#1e1b4b] md:text-5xl">Leaderboard</h1>
+          <h1 className="text-4xl font-bold text-[#134e4a] md:text-5xl">Leaderboard</h1>
           <p className="text-lg text-[#475569]">
             {isMonthly
               ? 'See who has earned the most points this month'
@@ -205,14 +205,14 @@ export default function LeaderboardClient() {
           </p>
         </div>
 
-        <div className="mx-auto flex max-w-md rounded-2xl border border-[#c4b5fd]/40 bg-white p-1 shadow-sm">
+        <div className="mx-auto flex max-w-md rounded-2xl border border-[#5eead4]/40 bg-white p-1 shadow-sm">
           <button
             type="button"
             onClick={() => setActiveTab('weekly')}
             className={`flex flex-1 items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-bold transition ${
               activeTab === 'weekly'
-                ? 'bg-gradient-to-r from-[#7c3aed] to-[#6d28d9] text-white shadow'
-                : 'text-[#6d28d9] hover:bg-[#f5f3ff]'
+                ? 'bg-gradient-to-r from-[#0d9488] to-[#0f766e] text-white shadow'
+                : 'text-[#0f766e] hover:bg-[#f0fdfa]'
             }`}
           >
             <Trophy size={16} />
@@ -223,8 +223,8 @@ export default function LeaderboardClient() {
             onClick={() => setActiveTab('monthly')}
             className={`flex flex-1 items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-bold transition ${
               activeTab === 'monthly'
-                ? 'bg-gradient-to-r from-[#7c3aed] to-[#6d28d9] text-white shadow'
-                : 'text-[#6d28d9] hover:bg-[#f5f3ff]'
+                ? 'bg-gradient-to-r from-[#0d9488] to-[#0f766e] text-white shadow'
+                : 'text-[#0f766e] hover:bg-[#f0fdfa]'
             }`}
           >
             <CalendarDays size={16} />
@@ -234,7 +234,7 @@ export default function LeaderboardClient() {
 
         {profile?.uid && !loading ? (
           <div className="rounded-2xl border-2 border-violet-200 bg-gradient-to-br from-violet-50 to-white p-5 shadow-sm">
-            <p className="text-lg font-black text-[#1e1b4b]">
+            <p className="text-lg font-black text-[#134e4a]">
               You are {myRankIndex >= 0 ? `#${myRankIndex + 1}` : 'not ranked yet'}{' '}
               {isMonthly ? 'this month' : 'this week'}
             </p>
@@ -284,20 +284,20 @@ export default function LeaderboardClient() {
         ) : null}
 
         {!isMonthly ? (
-          <div className="rounded-2xl border border-[#7c3aed]/30 bg-gradient-to-r from-[#ecfeff] to-[#f5f3ff] p-5 text-center">
-            <p className="text-base font-bold text-[#5b21b6] md:text-lg">
+          <div className="rounded-2xl border border-[#0d9488]/30 bg-gradient-to-r from-[#ecfeff] to-[#f0fdfa] p-5 text-center">
+            <p className="text-base font-bold text-[#115e59] md:text-lg">
               Weekly winners are picked at random from everyone who qualifies — not by who is #1 on the board.
             </p>
-            <p className="mt-2 text-sm text-[#5b21b6] md:text-base">
+            <p className="mt-2 text-sm text-[#115e59] md:text-base">
               Earn above {WEEKLY_DRAW_MIN_POINTS} points and stay active (Sat–Fri) to enter the draw. Up to {MAX_WEEKLY_SCORE} active days and {POINTS_DAILY_CAP} points per day.
             </p>
           </div>
         ) : (
-          <div className="rounded-2xl border border-[#7c3aed]/30 bg-gradient-to-r from-[#ecfeff] to-[#f5f3ff] p-5 text-center">
-            <p className="text-base font-bold text-[#5b21b6] md:text-lg">
+          <div className="rounded-2xl border border-[#0d9488]/30 bg-gradient-to-r from-[#ecfeff] to-[#f0fdfa] p-5 text-center">
+            <p className="text-base font-bold text-[#115e59] md:text-lg">
               Monthly rankings show total points earned this calendar month.
             </p>
-            <p className="mt-2 text-sm text-[#5b21b6] md:text-base">
+            <p className="mt-2 text-sm text-[#115e59] md:text-base">
               Keep learning every day — quiz, games, and good deeds all count!
             </p>
           </div>
@@ -331,7 +331,7 @@ export default function LeaderboardClient() {
               drawStatus.qualified ? 'border-amber-200 bg-amber-50' : 'border-teal-200 bg-teal-50'
             }`}
           >
-            <p className="text-base font-bold text-[#1e1b4b] md:text-lg">
+            <p className="text-base font-bold text-[#134e4a] md:text-lg">
               {drawStatus.qualified
                 ? `You earned above ${WEEKLY_DRAW_MIN_POINTS} points this week. You are entered into the winners draw.`
                 : `Earn ${drawStatus.remainingPoints} more point${drawStatus.remainingPoints === 1 ? '' : 's'} this week to enter the winners draw (need above ${WEEKLY_DRAW_MIN_POINTS}).`}
@@ -340,27 +340,27 @@ export default function LeaderboardClient() {
         ) : null}
 
         {loading && (
-          <div className="rounded-2xl border border-[#c4b5fd]/30 bg-white p-8 shadow-lg">
-            <div className="mb-6 h-6 w-48 animate-pulse rounded bg-[#ede9fe]" />
+          <div className="rounded-2xl border border-[#5eead4]/30 bg-white p-8 shadow-lg">
+            <div className="mb-6 h-6 w-48 animate-pulse rounded bg-[#ccfbf1]" />
             <div className="space-y-3">
               {[1, 2, 3].map((i) => (
-                <div key={i} className="h-12 animate-pulse rounded bg-[#ede9fe]" />
+                <div key={i} className="h-12 animate-pulse rounded bg-[#ccfbf1]" />
               ))}
             </div>
           </div>
         )}
 
         {!loading && leaderboardData.length === 0 && (
-          <div className="rounded-2xl border border-[#c4b5fd]/30 bg-white p-8 text-center shadow-lg">
-            <Trophy size={48} className="mx-auto mb-4 text-[#c4b5fd]" />
-            <p className="font-semibold text-[#1e1b4b]">No entries yet</p>
+          <div className="rounded-2xl border border-[#5eead4]/30 bg-white p-8 text-center shadow-lg">
+            <Trophy size={48} className="mx-auto mb-4 text-[#5eead4]" />
+            <p className="font-semibold text-[#134e4a]">No entries yet</p>
             <p className="text-[#475569]">Start earning points to appear on the leaderboard!</p>
           </div>
         )}
 
         {!loading && leaderboardData.length > 0 && (
-          <div className="overflow-hidden rounded-2xl border border-[#c4b5fd]/30 bg-white shadow-lg">
-            <div className="bg-gradient-to-r from-[#7c3aed] to-[#6d28d9] p-6 text-white">
+          <div className="overflow-hidden rounded-2xl border border-[#5eead4]/30 bg-white shadow-lg">
+            <div className="bg-gradient-to-r from-[#0d9488] to-[#0f766e] p-6 text-white">
               <h2 className="text-xl font-bold">{isMonthly ? 'Monthly Rankings' : 'Weekly Rankings'}</h2>
               <p className="text-sm text-white/80">
                 {isMonthly
@@ -370,7 +370,7 @@ export default function LeaderboardClient() {
             </div>
 
             <div
-              className={`hidden gap-3 border-b border-[#c4b5fd]/20 bg-[#f5f3ff] px-4 py-3 text-xs font-bold uppercase tracking-wide text-[#6d28d9] sm:grid ${
+              className={`hidden gap-3 border-b border-[#5eead4]/20 bg-[#f0fdfa] px-4 py-3 text-xs font-bold uppercase tracking-wide text-[#0f766e] sm:grid ${
                 isMonthly
                   ? 'grid-cols-[2rem_2.5rem_1fr_5rem_5.5rem]'
                   : 'grid-cols-[2rem_2.5rem_1fr_4rem_4rem_4rem_5.5rem]'
@@ -391,13 +391,13 @@ export default function LeaderboardClient() {
               <span className="text-right">Last played</span>
             </div>
 
-            <div className="divide-y divide-[#c4b5fd]/20">
+            <div className="divide-y divide-[#5eead4]/20">
               {leaderboardData.map((entry) => {
                 const you = isYou(entry.uid);
                 return (
                   <div
                     key={entry.uid}
-                    className={`p-4 transition hover:bg-[#ede9fe]/50 ${you ? 'bg-violet-50/80 ring-1 ring-inset ring-violet-200' : ''}`}
+                    className={`p-4 transition hover:bg-[#ccfbf1]/50 ${you ? 'bg-violet-50/80 ring-1 ring-inset ring-violet-200' : ''}`}
                   >
                     <div className="flex items-center gap-3 sm:gap-4">
                       <div className="w-8 shrink-0 text-center">{getRankIcon(entry.rank)}</div>
@@ -413,7 +413,7 @@ export default function LeaderboardClient() {
                         ) : null}
                       </div>
                       <div className="min-w-0 flex-1">
-                        <p className="inline-flex flex-wrap items-center gap-2 font-bold text-[#1e1b4b]">
+                        <p className="inline-flex flex-wrap items-center gap-2 font-bold text-[#134e4a]">
                           <span className="break-words">{entry.username}</span>
                           {you ? (
                             <span className="rounded-full bg-violet-200 px-2 py-0.5 text-[10px] font-bold text-violet-800">
@@ -441,7 +441,7 @@ export default function LeaderboardClient() {
                       {!isMonthly ? (
                         <>
                           <div className="hidden w-16 shrink-0 text-right sm:block">
-                            <p className="font-bold text-[#7c3aed]">
+                            <p className="font-bold text-[#0d9488]">
                               {entry.weeklyScore}/{entry.maxWeeklyScore}
                             </p>
                           </div>
@@ -449,14 +449,14 @@ export default function LeaderboardClient() {
                             <p className="font-bold text-[#f59e0b]">{entry.weeklyPoints}</p>
                           </div>
                           <div className="hidden w-16 shrink-0 text-right sm:block">
-                            <p className="font-bold text-[#7c3aed]">
+                            <p className="font-bold text-[#0d9488]">
                               {entry.todayPoints}/{POINTS_DAILY_CAP}
                             </p>
                           </div>
                         </>
                       ) : (
                         <div className="hidden w-20 shrink-0 text-right sm:block">
-                          <p className="text-lg font-black text-[#7c3aed]">{entry.monthlyPoints}</p>
+                          <p className="text-lg font-black text-[#0d9488]">{entry.monthlyPoints}</p>
                         </div>
                       )}
                       <div className="hidden w-[5.5rem] shrink-0 text-right sm:block">
@@ -469,28 +469,28 @@ export default function LeaderboardClient() {
                     <div className={`mt-3 grid gap-2 sm:hidden ${isMonthly ? 'grid-cols-1' : 'grid-cols-3'}`}>
                       {isMonthly ? (
                         <div className="rounded-xl border border-violet-200 bg-violet-50 px-2 py-2.5 text-center">
-                          <p className="text-lg font-bold text-[#7c3aed]">{entry.monthlyPoints}</p>
-                          <p className="text-[10px] font-semibold uppercase tracking-wide text-[#6d28d9]">
+                          <p className="text-lg font-bold text-[#0d9488]">{entry.monthlyPoints}</p>
+                          <p className="text-[10px] font-semibold uppercase tracking-wide text-[#0f766e]">
                             Month pts
                           </p>
                         </div>
                       ) : (
                         <>
-                          <div className="rounded-xl border border-[#c4b5fd]/30 bg-[#f5f3ff] px-2 py-2.5 text-center">
-                            <p className="text-lg font-bold text-[#7c3aed]">
+                          <div className="rounded-xl border border-[#5eead4]/30 bg-[#f0fdfa] px-2 py-2.5 text-center">
+                            <p className="text-lg font-bold text-[#0d9488]">
                               {entry.weeklyScore}/{entry.maxWeeklyScore}
                             </p>
-                            <p className="text-[10px] font-semibold uppercase tracking-wide text-[#6d28d9]">Days</p>
+                            <p className="text-[10px] font-semibold uppercase tracking-wide text-[#0f766e]">Days</p>
                           </div>
                           <div className="rounded-xl border border-[#fbbf24]/30 bg-[#fffbeb] px-2 py-2.5 text-center">
                             <p className="text-lg font-bold text-[#f59e0b]">{entry.weeklyPoints}</p>
                             <p className="text-[10px] font-semibold uppercase tracking-wide text-[#475569]">Week</p>
                           </div>
                           <div className="rounded-xl border border-violet-200 bg-violet-50 px-2 py-2.5 text-center">
-                            <p className="text-lg font-bold text-[#6d28d9]">
+                            <p className="text-lg font-bold text-[#0f766e]">
                               {entry.todayPoints}/{POINTS_DAILY_CAP}
                             </p>
-                            <p className="text-[10px] font-semibold uppercase tracking-wide text-[#6d28d9]">Today</p>
+                            <p className="text-[10px] font-semibold uppercase tracking-wide text-[#0f766e]">Today</p>
                           </div>
                         </>
                       )}
@@ -502,7 +502,7 @@ export default function LeaderboardClient() {
           </div>
         )}
 
-        <div className="rounded-2xl bg-gradient-to-r from-[#7c3aed] to-[#6d28d9] p-6 text-white">
+        <div className="rounded-2xl bg-gradient-to-r from-[#0d9488] to-[#0f766e] p-6 text-white">
           <h3 className="mb-4 flex items-center gap-2 text-xl font-bold">
             <Star size={20} /> Your stats
           </h3>
@@ -553,32 +553,32 @@ export default function LeaderboardClient() {
           </div>
         </div>
 
-        <div className="rounded-2xl border border-[#7c3aed]/20 bg-[#f5f3ff] p-6">
-          <h4 className="mb-3 flex items-center gap-2 font-bold text-[#6d28d9]">
+        <div className="rounded-2xl border border-[#0d9488]/20 bg-[#f0fdfa] p-6">
+          <h4 className="mb-3 flex items-center gap-2 font-bold text-[#0f766e]">
             <Sparkles size={18} /> Tips to climb the leaderboard
           </h4>
-          <ul className="space-y-2 text-sm text-[#5b21b6]">
+          <ul className="space-y-2 text-sm text-[#115e59]">
             <li className="flex items-start gap-2">
-              <span className="text-[#7c3aed]">✓</span> Complete the daily quiz every day
+              <span className="text-[#0d9488]">✓</span> Complete the daily quiz every day
             </li>
             <li className="flex items-start gap-2">
-              <span className="text-[#7c3aed]">✓</span> Play games to earn bonus points
+              <span className="text-[#0d9488]">✓</span> Play games to earn bonus points
             </li>
             <li className="flex items-start gap-2">
-              <span className="text-[#7c3aed]">✓</span> Log your Durood and Zikr regularly
+              <span className="text-[#0d9488]">✓</span> Log your Durood and Zikr regularly
             </li>
             {!isMonthly ? (
               <>
                 <li className="flex items-start gap-2">
-                  <span className="text-[#7c3aed]">✓</span> Rank shows activity — winners are chosen randomly from everyone who qualifies
+                  <span className="text-[#0d9488]">✓</span> Rank shows activity — winners are chosen randomly from everyone who qualifies
                 </li>
                 <li className="flex items-start gap-2">
-                  <span className="text-[#7c3aed]">✓</span> Earn above {WEEKLY_DRAW_MIN_POINTS} weekly points to enter the winners draw
+                  <span className="text-[#0d9488]">✓</span> Earn above {WEEKLY_DRAW_MIN_POINTS} weekly points to enter the winners draw
                 </li>
               </>
             ) : (
               <li className="flex items-start gap-2">
-                <span className="text-[#7c3aed]">✓</span> Every point you earn this month counts toward your monthly rank
+                <span className="text-[#0d9488]">✓</span> Every point you earn this month counts toward your monthly rank
               </li>
             )}
           </ul>

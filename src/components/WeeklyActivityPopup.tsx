@@ -83,7 +83,7 @@ export function WeeklyActivityPopup({ userId }: WeeklyActivityPopupProps) {
       <div className="space-y-5">
         <div className={`rounded-2xl border p-5 text-center ${qualified ? 'border-amber-200 bg-amber-50' : 'border-teal-200 bg-teal-50'}`}>
           <p className="text-4xl mb-2">{qualified ? '⭐' : '🏆'}</p>
-          <p className="text-lg font-bold text-[#1e1b4b]">
+          <p className="text-lg font-bold text-[#134e4a]">
             {qualified ? 'Amazing! You completed all 5 weekly activities.' : `You have ${remaining} activit${remaining === 1 ? 'y' : 'ies'} left to complete this week.`}
           </p>
           <p className="mt-2 text-sm text-[#475569]">
@@ -97,12 +97,12 @@ export function WeeklyActivityPopup({ userId }: WeeklyActivityPopupProps) {
               const Icon = item.icon;
               const external = item.href.startsWith('http');
               const content = (
-                <div className="flex items-center justify-between rounded-xl border border-[#c4b5fd]/30 bg-white px-4 py-3">
-                  <div className="flex items-center gap-3 text-[#1e1b4b]">
+                <div className="flex items-center justify-between rounded-xl border border-[#5eead4]/30 bg-white px-4 py-3">
+                  <div className="flex items-center gap-3 text-[#134e4a]">
                     <Icon size={18} />
                     <span className="font-semibold">{item.label}</span>
                   </div>
-                  <span className="text-sm font-bold text-[#7c3aed]">Open →</span>
+                  <span className="text-sm font-bold text-[#0d9488]">Open →</span>
                 </div>
               );
               return external ? (

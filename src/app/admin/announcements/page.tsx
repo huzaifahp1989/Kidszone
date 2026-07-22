@@ -44,7 +44,7 @@ export default function AdminAnnouncements() {
   const [imageSlides, setImageSlides] = React.useState<string[]>([]);
   const [uploadingImage, setUploadingImage] = React.useState(false);
   const [slideIntervalSeconds, setSlideIntervalSeconds] = React.useState(5);
-  const [color, setColor] = React.useState('#4f46e5');
+  const [color, setColor] = React.useState('#0f766e');
   const [activeInForm, setActiveInForm] = React.useState(false);
   const [displayMode, setDisplayMode] = React.useState<'inline' | 'popup' | 'bar'>('inline');
   const [targetPaths, setTargetPaths] = React.useState<string[]>(['*']);
@@ -71,7 +71,7 @@ export default function AdminAnnouncements() {
     setText('');
     setImageSlides([]);
     setSlideIntervalSeconds(5);
-    setColor('#4f46e5');
+    setColor('#0f766e');
     setActiveInForm(false);
     setDisplayMode('inline');
     setTargetPaths(['*']);
@@ -198,7 +198,7 @@ export default function AdminAnnouncements() {
     setText(announcement.text || '');
     setImageSlides(getAnnouncementSlides(announcement));
     setSlideIntervalSeconds(Math.max(2, Number(announcement.slide_interval_seconds || 5)));
-    setColor(announcement.bg_color || '#4f46e5');
+    setColor(announcement.bg_color || '#0f766e');
     setActiveInForm(Boolean(announcement.active));
     setDisplayMode(announcement.display_mode || 'inline');
     setTargetPaths(Array.isArray(announcement.target_paths) && announcement.target_paths.length > 0 ? announcement.target_paths : ['*']);

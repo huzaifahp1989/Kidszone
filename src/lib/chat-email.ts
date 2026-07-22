@@ -90,14 +90,14 @@ export async function emailAdminChatStarted(input: {
 
   const html = `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-      <h2 style="color: #6d28d9;">New Kids Zone chat started</h2>
+      <h2 style="color: #0f766e;">New Kids Zone chat started</h2>
       <p>Someone just opened a chat on Kids Zone.</p>
       <p><strong>Name:</strong> ${safeName}</p>
       <p><strong>Email:</strong> <a href="mailto:${safeEmail}">${safeEmail}</a></p>
       <p><strong>Type:</strong> ${userType}</p>
       <p><strong>Time:</strong> ${new Date().toLocaleString()}</p>
       <p style="margin-top: 24px;">
-        <a href="${adminChatUrl}" style="background: #7c3aed; color: #fff; padding: 12px 20px; border-radius: 8px; text-decoration: none; font-weight: bold;">
+        <a href="${adminChatUrl}" style="background: #0d9488; color: #fff; padding: 12px 20px; border-radius: 8px; text-decoration: none; font-weight: bold;">
           Open Admin Chat
         </a>
       </p>
@@ -134,15 +134,15 @@ export async function emailAdminNewChatMessage(input: {
 
   const html = `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-      <h2 style="color: #6d28d9;">New Kids Zone chat message</h2>
+      <h2 style="color: #0f766e;">New Kids Zone chat message</h2>
       <p><strong>From:</strong> ${safeName}</p>
       <p><strong>Email:</strong> <a href="mailto:${safeEmail}">${safeEmail}</a></p>
       <p><strong>Time:</strong> ${new Date().toLocaleString()}</p>
       <hr />
       <h3>Message</h3>
-      <div style="background: #f5f3ff; padding: 16px; border-radius: 8px; white-space: pre-wrap; border-left: 4px solid #7c3aed;">${safeMessage}</div>
+      <div style="background: #f0fdfa; padding: 16px; border-radius: 8px; white-space: pre-wrap; border-left: 4px solid #0d9488;">${safeMessage}</div>
       <p style="margin-top: 24px;">
-        <a href="${adminChatUrl}" style="background: #7c3aed; color: #fff; padding: 12px 20px; border-radius: 8px; text-decoration: none; font-weight: bold;">
+        <a href="${adminChatUrl}" style="background: #0d9488; color: #fff; padding: 12px 20px; border-radius: 8px; text-decoration: none; font-weight: bold;">
           Reply in Admin Chat
         </a>
       </p>
@@ -177,12 +177,12 @@ export async function emailUserChatReply(input: {
 
   const html = `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-      <h2 style="color: #6d28d9;">Reply from Kids Zone</h2>
+      <h2 style="color: #0f766e;">Reply from Kids Zone</h2>
       <p>Hi ${safeName},</p>
       <p>The Kids Zone team replied to your chat:</p>
-      <div style="background: #f5f3ff; padding: 16px; border-radius: 8px; white-space: pre-wrap; border-left: 4px solid #7c3aed;">${safeMessage}</div>
+      <div style="background: #f0fdfa; padding: 16px; border-radius: 8px; white-space: pre-wrap; border-left: 4px solid #0d9488;">${safeMessage}</div>
       <p style="margin-top: 24px;">
-        <a href="${chatUrl}" style="background: #7c3aed; color: #fff; padding: 12px 20px; border-radius: 8px; text-decoration: none; font-weight: bold;">
+        <a href="${chatUrl}" style="background: #0d9488; color: #fff; padding: 12px 20px; border-radius: 8px; text-decoration: none; font-weight: bold;">
           Open Chat
         </a>
       </p>

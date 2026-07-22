@@ -6,7 +6,7 @@ import { usePathname } from 'next/navigation';
 type Announcement = {
   id: string;
   text: string;
-  bg_color: string; // hex like #4f46e5
+  bg_color: string; // hex like #0f766e
   display_mode?: 'inline' | 'popup' | 'bar';
   target_paths?: string[];
   created_at: string;

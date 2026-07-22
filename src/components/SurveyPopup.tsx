@@ -66,7 +66,7 @@ export function SurveyPopup() {
         }}
       >
         {/* Header */}
-        <div style={{ background: 'linear-gradient(to right, #7c3aed, #6d28d9)', padding: '16px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div style={{ background: 'linear-gradient(to right, #0d9488, #0f766e)', padding: '16px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <span style={{ fontSize: '24px' }}>📋</span>
             <span style={{ color: '#fff', fontWeight: 700, fontSize: '16px' }}>Quick Survey</span>
@@ -82,7 +82,7 @@ export function SurveyPopup() {
 
         {/* Body */}
         <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-          <p style={{ color: '#1e1b4b', fontSize: '14px', fontWeight: 500, margin: 0 }}>
+          <p style={{ color: '#134e4a', fontSize: '14px', fontWeight: 500, margin: 0 }}>
             Assalamu Alaikum! 🌙
           </p>
           <p style={{ color: '#374151', fontSize: '14px', lineHeight: 1.6, margin: 0 }}>
@@ -94,7 +94,7 @@ export function SurveyPopup() {
               target="_blank"
               rel="noopener noreferrer"
               onClick={dismiss}
-              style={{ flex: 1, textAlign: 'center', padding: '10px 16px', background: 'linear-gradient(to right, #7c3aed, #6d28d9)', color: '#fff', fontWeight: 700, fontSize: '14px', borderRadius: '12px', textDecoration: 'none' }}
+              style={{ flex: 1, textAlign: 'center', padding: '10px 16px', background: 'linear-gradient(to right, #0d9488, #0f766e)', color: '#fff', fontWeight: 700, fontSize: '14px', borderRadius: '12px', textDecoration: 'none' }}
             >
               Fill Survey ✍️
             </a>

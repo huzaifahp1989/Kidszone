@@ -322,7 +322,7 @@ export function WinnerDetailsForm({ compact = false, sectionId }: WinnerDetailsF
           <button
             type="submit"
             disabled={!canSubmit || saving}
-            className="rounded-lg bg-gradient-to-r from-[#7c3aed] to-[#6d28d9] px-5 py-2.5 font-bold text-white disabled:cursor-not-allowed disabled:opacity-60"
+            className="rounded-lg bg-gradient-to-r from-[#0d9488] to-[#0f766e] px-5 py-2.5 font-bold text-white disabled:cursor-not-allowed disabled:opacity-60"
           >
             {saving ? 'Saving...' : 'Save Winner Details'}
           </button>
