@@ -1,8 +1,9 @@
 import { NextResponse } from 'next/server';
 import { tryAwardDailyActivity } from '@/lib/daily-activity-award';
 import { DailyEarnActivity } from '@/lib/points-policy';
-import { supabaseAdmin } from '@/lib/supabase-admin';
 import { requireMatchingUser } from '@/lib/request-auth';
+import { ensureUserRecords } from '@/lib/ensure-user-records';
+import { isTestModeEmail } from '@/lib/test-mode';
 
 export const dynamic = 'force-dynamic';
 
@@ -26,6 +27,12 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Invalid activity type' }, { status: 400 });
     }
 
+    const isTestMode = isTestModeEmail(auth.user.email);
+    const ensured = await ensureUserRecords(userId);
+    if (!ensured.ok) {
+      return NextResponse.json({ error: ensured.error || 'Could not prepare user profile.' }, { status: 500 });
+    }
+
     const successMessages: Partial<Record<DailyEarnActivity, string>> = {
       hadith: '+25 points for completing Hadith learning today!',
       salah: '+25 points for logging all 5 prayers today!',
@@ -34,14 +41,10 @@ export async function POST(req: Request) {
 
     const award = await tryAwardDailyActivity(userId, activity, {
       salahDateKey,
+      knownIsTestMode: isTestMode,
+      skipEnsureUserRecords: true,
       successMessage: successMessages[activity],
     });
-
-    const { data: pointsRow } = await supabaseAdmin
-      .from('users_points')
-      .select('total_points, weekly_points, monthly_points, today_points')
-      .eq('user_id', userId)
-      .maybeSingle();
 
     return NextResponse.json({
       success: award.success,
@@ -49,10 +52,10 @@ export async function POST(req: Request) {
       message: award.message,
       reason: award.reason,
       profile: {
-        points: Number(pointsRow?.total_points ?? 0),
-        weeklyPoints: Number(pointsRow?.weekly_points ?? 0),
-        monthlyPoints: Number(pointsRow?.monthly_points ?? 0),
-        todayPoints: Number(pointsRow?.today_points ?? 0),
+        points: Number(award.totalPoints ?? 0),
+        weeklyPoints: Number(award.weeklyPoints ?? 0),
+        monthlyPoints: Number(award.monthlyPoints ?? 0),
+        todayPoints: Number(award.todayPoints ?? 0),
       },
     });
   } catch (error: any) {

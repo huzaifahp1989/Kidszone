@@ -287,29 +287,19 @@ export default function QuizPage() {
         } else {
           setQuizLockedUntil(null);
         }
-        try {
-          if (data.profile) {
-            updateLocalProfile({
-              points: Number(data.profile.points ?? profile?.points ?? 0),
-              weeklyPoints: Number(data.profile.weeklyPoints ?? profile?.weeklyPoints ?? 0),
-              monthlyPoints: Number(data.profile.monthlyPoints ?? profile?.monthlyPoints ?? 0),
-              todayPoints: Number(data.profile.todayPoints ?? data.todayPoints ?? 0),
-            });
-          }
-          await refreshProfile();
-        } catch {}
+        if (data.profile) {
+          updateLocalProfile({
+            points: Number(data.profile.points ?? profile?.points ?? 0),
+            weeklyPoints: Number(data.profile.weeklyPoints ?? profile?.weeklyPoints ?? 0),
+            monthlyPoints: Number(data.profile.monthlyPoints ?? profile?.monthlyPoints ?? 0),
+            todayPoints: Number(data.profile.todayPoints ?? data.todayPoints ?? 0),
+          });
+        }
         if (awardedPoints > 0) {
           setResultToast(`+${awardedPoints} points added!`);
         } else if (data.message) {
           setResultToast(String(data.message));
         }
-
-        try {
-          await authJsonFetch('/api/competition/track', {
-            method: 'POST',
-            body: JSON.stringify({ userId: user.id, activity: 'quiz' }),
-          });
-        } catch {}
 
         showPointsProgress({
           activity: 'quiz',
@@ -323,6 +313,15 @@ export default function QuizPage() {
           points: awardedPoints,
           attemptsToday,
         });
+
+        // Refresh profile and competition tracking in the background — don't block the results screen.
+        void refreshProfile().catch(() => {});
+        if (user?.id) {
+          void authJsonFetch('/api/competition/track', {
+            method: 'POST',
+            body: JSON.stringify({ userId: user.id, activity: 'quiz' }),
+          }).catch(() => {});
+        }
       } else {
         setResultToast(data.error || 'Submission failed');
       }

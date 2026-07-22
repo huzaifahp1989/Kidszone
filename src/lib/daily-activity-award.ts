@@ -58,11 +58,16 @@ export async function tryAwardDailyActivity(
     successMessage?: string;
     skipActivityLimit?: boolean;
     salahDateKey?: string;
+    /** Skip the internal test-mode lookup when the caller already knows it. */
+    knownIsTestMode?: boolean;
+    /** Skip ensureUserRecords when the caller already ran it. */
+    skipEnsureUserRecords?: boolean;
   }
 ): Promise<DailyActivityAwardResult> {
   const pointsRequested = activity === 'quiz' ? QUIZ_POINTS_PER_COMPLETION : ACTIVITY_BONUS_POINTS;
 
-  if (await isTestModeUserId(userId)) {
+  const isTestMode = options?.knownIsTestMode ?? (await isTestModeUserId(userId));
+  if (isTestMode) {
     return {
       success: true,
       pointsAwarded: 0,
@@ -71,14 +76,16 @@ export async function tryAwardDailyActivity(
     };
   }
 
-  const ensured = await ensureUserRecords(userId);
-  if (!ensured.ok) {
-    return {
-      success: false,
-      pointsAwarded: 0,
-      message: ensured.error || 'Could not prepare user profile.',
-      reason: 'update_failed',
-    };
+  if (!options?.skipEnsureUserRecords) {
+    const ensured = await ensureUserRecords(userId);
+    if (!ensured.ok) {
+      return {
+        success: false,
+        pointsAwarded: 0,
+        message: ensured.error || 'Could not prepare user profile.',
+        reason: 'update_failed',
+      };
+    }
   }
 
   if (activity === 'salah') {
@@ -113,6 +120,8 @@ export async function tryAwardDailyActivity(
     successMessage:
       options?.successMessage ||
       `+${pointsRequested} points added for ${activity.replace(/_/g, ' ')}.`,
+    knownIsTestMode: isTestMode,
+    skipEnsureUserRecords: options?.skipEnsureUserRecords ?? false,
   });
 
   if (

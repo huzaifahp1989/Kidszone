@@ -209,12 +209,6 @@ export async function POST(req: Request) {
     // Compute test mode from the already-validated token email (no extra auth round trip).
     const isTestMode = isTestModeEmail(auth.user.email);
 
-    const ensured = await ensureUserRecords(auth.userId);
-    if (!ensured.ok) {
-      console.error('Failed to ensure user records for quiz submit:', ensured.error);
-      return NextResponse.json({ error: 'Could not prepare user profile for quiz submission.' }, { status: 500 });
-    }
-
     if (quizId.startsWith('topic-')) {
       const parsed = parseTopicQuizId(String(quizId));
       const topicFromId = parsed?.topicId || topic;
@@ -224,23 +218,33 @@ export async function POST(req: Request) {
         return NextResponse.json({ error: 'No questions available for this topic.' }, { status: 400 });
       }
 
-      // Run the two independent reads in parallel: question history and the daily limit check.
-      const [exclusions, limit] = await Promise.all([
-        getTopicQuestionExclusions(userId, topicFromId),
-        isTestMode
-          ? Promise.resolve({ blocked: null as NextResponse | null, attemptsToday: 0 })
-          : enforceDailyQuizAttemptLimit(userId),
-      ]);
-      if (limit.blocked) return limit.blocked;
-      const priorAttemptsToday = limit.attemptsToday;
-
       const submittedIds = Array.isArray(submittedQuestionIds)
         ? submittedQuestionIds.map((id: string) => String(id))
         : [];
 
       const fromClient = resolveSubmittedTopicQuestions(topicFromId, submittedIds);
+      const hasTrustedClientQuestions = fromClient.length > 0;
+
+      // Parallelize independent reads. Skip question-history lookup when the client sent a valid set.
+      const [ensured, exclusions, limit] = await Promise.all([
+        ensureUserRecords(auth.userId),
+        hasTrustedClientQuestions
+          ? Promise.resolve({ today: [] as string[], recent: [] as string[], attemptsToday: 0 })
+          : getTopicQuestionExclusions(userId, topicFromId),
+        isTestMode
+          ? Promise.resolve({ blocked: null as NextResponse | null, attemptsToday: 0 })
+          : enforceDailyQuizAttemptLimit(userId),
+      ]);
+
+      if (!ensured.ok) {
+        console.error('Failed to ensure user records for quiz submit:', ensured.error);
+        return NextResponse.json({ error: 'Could not prepare user profile for quiz submission.' }, { status: 500 });
+      }
+      if (limit.blocked) return limit.blocked;
+      const priorAttemptsToday = limit.attemptsToday;
+
       const activeQuestions =
-        fromClient.length > 0
+        hasTrustedClientQuestions
           ? fromClient
           : resolveTopicQuizQuestionsFromIds(
               topicFromId,
@@ -347,12 +351,17 @@ export async function POST(req: Request) {
     }
 
     if (quizId.startsWith('fallback-')) {
-      let priorAttemptsToday = 0;
-      if (!isTestMode) {
-        const limit = await enforceDailyQuizAttemptLimit(userId);
-        if (limit.blocked) return limit.blocked;
-        priorAttemptsToday = limit.attemptsToday;
+      const [ensured, limit] = await Promise.all([
+        ensureUserRecords(auth.userId),
+        isTestMode
+          ? Promise.resolve({ blocked: null as NextResponse | null, attemptsToday: 0 })
+          : enforceDailyQuizAttemptLimit(userId),
+      ]);
+      if (!ensured.ok) {
+        return NextResponse.json({ error: 'Could not prepare user profile for quiz submission.' }, { status: 500 });
       }
+      if (limit.blocked) return limit.blocked;
+      const priorAttemptsToday = limit.attemptsToday;
 
       const date = quizId.replace('fallback-', '');
       const staticQuiz = getStaticQuiz(date);
@@ -492,20 +501,26 @@ export async function POST(req: Request) {
     const isPerfect = score === maxScore;
     const isFlagged = Number(durationSeconds) < 20;
 
-    let priorAttemptsToday = 0;
-    if (!isTestMode) {
-      const limit = await enforceDailyQuizAttemptLimit(userId);
-      if (limit.blocked) return limit.blocked;
-      priorAttemptsToday = limit.attemptsToday;
+    const [ensured, limit, existingAttemptRes] = await Promise.all([
+      ensureUserRecords(auth.userId),
+      isTestMode
+        ? Promise.resolve({ blocked: null as NextResponse | null, attemptsToday: 0 })
+        : enforceDailyQuizAttemptLimit(userId),
+      supabaseAdmin
+        .from('quiz_attempts')
+        .select('id')
+        .eq('user_id', userId)
+        .eq('quiz_id', quizId)
+        .maybeSingle(),
+    ]);
+
+    if (!ensured.ok) {
+      return NextResponse.json({ error: 'Could not prepare user profile for quiz submission.' }, { status: 500 });
     }
+    if (limit.blocked) return limit.blocked;
+    const priorAttemptsToday = limit.attemptsToday;
 
-    const { data: existingAttempt } = await supabaseAdmin
-      .from('quiz_attempts')
-      .select('id')
-      .eq('user_id', userId)
-      .eq('quiz_id', quizId)
-      .maybeSingle();
-
+    const existingAttempt = existingAttemptRes.data;
     if (!isTestMode && existingAttempt) {
       return NextResponse.json({ error: 'You have already attempted this quiz.' }, { status: 400 });
     }

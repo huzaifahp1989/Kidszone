@@ -11,7 +11,7 @@ import { authJsonFetch } from '@/lib/auth-headers';
 
 export default function HadithPage() {
   const router = useRouter();
-  const { user, refreshProfile } = useAuth();
+  const { user, refreshProfile, updateLocalProfile } = useAuth();
   const [ageGroup, setAgeGroup] = useState<AgeGroup | null>(null);
   const [selectedOptions, setSelectedOptions] = useState<Record<string, string>>({});
   const [feedback, setFeedback] = useState<Record<string, boolean>>({});
@@ -39,14 +39,22 @@ export default function HadithPage() {
       .then((data) => {
         if (data.pointsAwarded > 0) {
           setPointsMessage(`⭐ +${data.pointsAwarded} points for completing Hadith learning today!`);
-          refreshProfile?.();
+          if (data.profile) {
+            updateLocalProfile?.({
+              points: Number(data.profile.points ?? 0),
+              weeklyPoints: Number(data.profile.weeklyPoints ?? 0),
+              monthlyPoints: Number(data.profile.monthlyPoints ?? 0),
+              todayPoints: Number(data.profile.todayPoints ?? 0),
+            });
+          }
+          void refreshProfile?.();
         } else {
           setPointsMessage(data.message || 'Session complete!');
         }
       })
       .catch(() => setPointsMessage('Could not save points. Try again.'))
       .finally(() => setClaimingPoints(false));
-  }, [allAnswered, user?.id, refreshProfile]);
+  }, [allAnswered, user?.id, refreshProfile, updateLocalProfile]);
 
   const handleSelect = (hadithId: string, optionId: string, isCorrect: boolean) => {
     setSelectedOptions(prev => ({ ...prev, [hadithId]: optionId }));
