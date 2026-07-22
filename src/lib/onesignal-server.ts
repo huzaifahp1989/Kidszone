@@ -411,6 +411,10 @@ export type OneSignalPlayerLookup = {
   invalidIdentifier?: boolean;
   deviceType?: number | null;
   externalUserId?: string | null;
+  /** OneSignal notification_types: >0 means subscribed, <=0 means unsubscribed. */
+  notificationTypes?: number | null;
+  /** True when the device is actually subscribed and can receive a push. */
+  subscribed?: boolean;
   error?: string;
   appId: string;
 };
@@ -452,13 +456,19 @@ export async function lookupOneSignalPlayer(
       }
 
       const row = raw && typeof raw === 'object' ? (raw as Record<string, unknown>) : {};
+      const notificationTypes =
+        typeof row.notification_types === 'number' ? row.notification_types : null;
+      const invalidIdentifier = Boolean(row.invalid_identifier);
       return {
         playerId: id,
         found: true,
-        invalidIdentifier: Boolean(row.invalid_identifier),
+        invalidIdentifier,
         deviceType: typeof row.device_type === 'number' ? row.device_type : null,
         externalUserId:
           typeof row.external_user_id === 'string' ? row.external_user_id : null,
+        notificationTypes,
+        // Subscribed when OneSignal has a valid push token and notification_types > 0.
+        subscribed: !invalidIdentifier && (notificationTypes == null || notificationTypes > 0),
         appId,
       };
     } catch {

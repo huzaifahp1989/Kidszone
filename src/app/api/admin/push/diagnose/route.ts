@@ -76,11 +76,14 @@ export async function GET(request: Request) {
           ? DEVICE_TYPE_LABEL[lookup.deviceType] || `type ${lookup.deviceType}`
           : null,
       externalUserId: lookup.externalUserId,
+      notificationTypes: lookup.notificationTypes ?? null,
+      subscribed: lookup.subscribed ?? null,
       lookupError: lookup.error || null,
     });
   }
 
   const foundCount = lookups.filter((l) => l.foundOnOneSignal && !l.invalidIdentifier).length;
+  const subscribedCount = lookups.filter((l) => l.subscribed).length;
 
   return NextResponse.json({
     configured: true,
@@ -93,6 +96,7 @@ export async function GET(request: Request) {
         : 'At least one token is valid on this OneSignal app.',
     checked: lookups.length,
     validOnApp: foundCount,
+    subscribedOnApp: subscribedCount,
     tokens: lookups,
   });
 }
