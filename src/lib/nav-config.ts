@@ -13,6 +13,7 @@ import {
   Coins,
   Languages,
   Palette,
+  CalendarHeart,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -151,6 +152,14 @@ export const NAV_GROUPS: NavGroup[] = [
         shortLabel: 'Arabic',
         description: 'Learn everyday English–Arabic words',
         icon: Languages,
+        group: 'learn',
+      },
+      {
+        href: '/calendar',
+        label: 'Islamic Calendar',
+        shortLabel: 'Calendar',
+        description: "Today's Islamic date and learn about each month",
+        icon: CalendarHeart,
         group: 'learn',
       },
     ],
