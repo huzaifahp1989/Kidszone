@@ -5,7 +5,8 @@ import Link from 'next/link';
 import { useAuth } from '@/lib/auth-context';
 import { getAuthFetchHeaders, authJsonFetch } from '@/lib/auth-headers';
 import { nativeStepsSupported, readNativeSteps, requestStepPermission } from '@/lib/step-source';
-import { Footprints, Flame, MapPin, Clock, Trophy, Star, Loader2, RefreshCw, CheckCircle2, PartyPopper, Award } from 'lucide-react';
+import { usePedometer } from '@/lib/pedometer';
+import { Footprints, Flame, MapPin, Clock, Trophy, Star, Loader2, RefreshCw, CheckCircle2, PartyPopper, Award, Play, Square } from 'lucide-react';
 
 interface FitnessStatus {
   challenge: { id: string; name: string; goalType: 'steps' | 'minutes'; goalTarget: number; points: number } | null;
@@ -40,6 +41,53 @@ export default function FitnessPage() {
   const [error, setError] = React.useState('');
   const [nativeSupported, setNativeSupported] = React.useState(false);
   const [justCompleted, setJustCompleted] = React.useState(false);
+
+  // In-app step counter (accelerometer) — works while this page is open.
+  const pedometer = usePedometer();
+  const baseStepsRef = React.useRef(0);
+  const liveStepsRef = React.useRef(0);
+  liveStepsRef.current = pedometer.steps;
+
+  const pushSteps = React.useCallback(async (total: number, source: string) => {
+    try {
+      const headers = await getAuthFetchHeaders({ 'Content-Type': 'application/json' });
+      const res = await fetch('/api/fitness/sync', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ steps: Math.round(total), source }),
+      });
+      const json = await res.json();
+      if (res.ok && json.status) {
+        setStatus(json.status as FitnessStatus);
+        if (json.newlyAwardedPoints > 0) {
+          setJustCompleted(true);
+          setMessage(`MashaAllah! +${json.newlyAwardedPoints} points for completing today\u2019s challenge!`);
+        }
+      }
+    } catch {
+      /* offline — will sync on the next tick */
+    }
+  }, []);
+
+  const startCounter = React.useCallback(async () => {
+    baseStepsRef.current = status?.today.steps ?? 0;
+    pedometer.reset();
+    await pedometer.start();
+  }, [pedometer, status?.today.steps]);
+
+  const stopCounter = React.useCallback(async () => {
+    pedometer.stop();
+    await pushSteps(baseStepsRef.current + liveStepsRef.current, 'device_motion');
+  }, [pedometer, pushSteps]);
+
+  // While counting, sync every 15s so progress + points update live.
+  React.useEffect(() => {
+    if (!pedometer.running) return;
+    const id = window.setInterval(() => {
+      pushSteps(baseStepsRef.current + liveStepsRef.current, 'device_motion');
+    }, 15000);
+    return () => window.clearInterval(id);
+  }, [pedometer.running, pushSteps]);
 
   const loadStatus = React.useCallback(async () => {
     try {
@@ -172,7 +220,7 @@ export default function FitnessPage() {
             {message ? <p className="rounded-xl bg-emerald-50 px-4 py-2 text-center text-sm font-semibold text-emerald-700">{message}</p> : null}
             {error ? <p className="rounded-xl bg-rose-50 px-4 py-2 text-center text-sm font-semibold text-rose-700">{error}</p> : null}
 
-            {/* Sync / connect */}
+            {/* Sync / in-app counter / connect */}
             <div className="rounded-2xl border border-[#c4b5fd]/40 bg-white p-4 text-center shadow">
               {nativeSupported ? (
                 <button
@@ -184,6 +232,43 @@ export default function FitnessPage() {
                   {syncing ? <Loader2 size={18} className="animate-spin" /> : <RefreshCw size={18} />}
                   {syncing ? 'Syncing steps…' : 'Sync my steps'}
                 </button>
+              ) : pedometer.supported ? (
+                <div>
+                  <p className="font-bold text-[#1e1b4b]">🚶 Live step counter</p>
+                  {pedometer.running ? (
+                    <>
+                      <p className="mt-2 text-4xl font-black text-[#16a34a] tabular-nums">
+                        {(baseStepsRef.current + pedometer.steps).toLocaleString()}
+                      </p>
+                      <p className="text-xs text-[#64748b]">counting while this page is open…</p>
+                      <button
+                        type="button"
+                        onClick={stopCounter}
+                        className="mt-3 inline-flex items-center gap-2 rounded-xl bg-rose-600 px-6 py-3 font-bold text-white shadow-lg hover:bg-rose-700"
+                      >
+                        <Square size={18} className="fill-white" /> Stop &amp; save
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <p className="mt-1 text-sm text-[#475569]">
+                        Put your phone in your pocket and start walking — the app counts your steps using the motion sensor.
+                      </p>
+                      <button
+                        type="button"
+                        onClick={startCounter}
+                        className="mt-3 inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-[#16a34a] to-[#15803d] px-6 py-3 font-bold text-white shadow-lg transition hover:-translate-y-0.5"
+                      >
+                        <Play size={18} /> Start step counter
+                      </button>
+                    </>
+                  )}
+                  {pedometer.error ? <p className="mt-2 text-sm font-semibold text-rose-600">{pedometer.error}</p> : null}
+                  <p className="mt-3 text-[11px] text-[#94a3b8]">
+                    Tip: for automatic all-day counting (even when the app is closed), open Kids Zone in the mobile app and
+                    allow Apple Health / Google Health Connect access.
+                  </p>
+                </div>
               ) : (
                 <div className="text-sm text-[#475569]">
                   <p className="font-bold text-[#1e1b4b]">📱 Connect your phone&apos;s health app</p>
