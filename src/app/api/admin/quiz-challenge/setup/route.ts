@@ -66,6 +66,9 @@ grant select on public.challenge_quiz_questions to anon, authenticated;
 grant select, insert on public.challenge_quiz_attempts to authenticated;
 grant all on public.challenge_quiz_questions to service_role;
 grant all on public.challenge_quiz_attempts to service_role;
+
+-- Ask PostgREST (the Supabase REST layer) to reload so the new tables are visible immediately.
+notify pgrst, 'reload schema';
 `.trim();
 
 /** Insert the built-in authentic questions so admins can edit them right away. */
@@ -111,6 +114,9 @@ export async function POST(request: Request) {
 
   // Try to create the tables automatically via the exec_sql RPC.
   const { error: rpcError } = await supabaseAdmin.rpc('exec_sql', { sql: SETUP_SQL });
+
+  // Give PostgREST a moment to reload its schema cache after the DDL above.
+  await new Promise((resolve) => setTimeout(resolve, 1500));
 
   // Verify the table now exists regardless of the RPC result (it may already exist).
   const { error: checkError } = await supabaseAdmin.from(CHALLENGE_QUESTIONS_TABLE).select('id').limit(1);

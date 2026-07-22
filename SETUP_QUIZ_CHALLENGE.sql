@@ -68,3 +68,6 @@ grant select on public.challenge_quiz_questions to anon, authenticated;
 grant select, insert on public.challenge_quiz_attempts to authenticated;
 grant all on public.challenge_quiz_questions to service_role;
 grant all on public.challenge_quiz_attempts to service_role;
+
+-- Ask PostgREST (the Supabase REST layer) to reload so the new tables are visible immediately.
+notify pgrst, 'reload schema';
