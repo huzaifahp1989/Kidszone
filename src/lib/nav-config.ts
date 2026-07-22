@@ -1,4 +1,5 @@
 import {
+  Activity,
   Home,
   BookOpen,
   Gamepad2,
@@ -166,6 +167,14 @@ export const NAV_GROUPS: NavGroup[] = [
         shortLabel: 'Salah',
         description: 'Tick off your daily prayers',
         icon: CalendarDays,
+        group: 'track',
+      },
+      {
+        href: '/fitness',
+        label: 'Fitness',
+        shortLabel: 'Fitness',
+        description: 'Count steps with your phone',
+        icon: Activity,
         group: 'track',
       },
       {
