@@ -50,6 +50,10 @@ type StatusInfo = {
   legacyAppId?: string;
   legacyConfigured?: boolean;
   appsTargeted?: Array<{ label: string; appId: string }>;
+  restAuthOk?: boolean;
+  keyBelongsToLegacyApp?: boolean;
+  restAuthError?: string;
+  restAuthHint?: string;
   campaigns?: Array<{
     id: string;
     title: string;
@@ -354,7 +358,14 @@ export default function AdminPushPage() {
         `Server App ID: ${data.serverAppId}`,
         `Website App ID: ${data.publicAppId}`,
         data.appIdMismatch ? 'WARNING: server App ID ≠ website App ID' : 'App IDs match',
-        `Checked ${data.checked} token(s), valid on this app: ${data.validOnApp}`,
+        data.restAuthOk === false
+          ? `REST AUTH FAILED: ${data.error || data.authHint || 'key rejected'}`
+          : 'REST auth OK for this app',
+        data.keyBelongsToLegacyApp
+          ? 'Detected: ONESIGNAL_REST_API_KEY belongs to the legacy website app — swap keys in Vercel.'
+          : null,
+        data.authHint || null,
+        `Checked ${data.checked ?? 0} token(s), valid on this app: ${data.validOnApp ?? 0}`,
         data.hint,
         ...(data.tokens || []).map(
           (t: {
@@ -409,7 +420,9 @@ export default function AdminPushPage() {
       });
       const data = await res.json();
       if (!res.ok) {
-        setError(data?.error || 'Send failed');
+        setError(
+          [data?.error, data?.hint].filter(Boolean).join('\n') || 'Send failed'
+        );
         return;
       }
       const delivered = `Delivered to ${data.recipients ?? 0} device(s). ${
@@ -718,11 +731,34 @@ export default function AdminPushPage() {
                 ? info.configured
                   ? `${info.onesignalTokens} token(s) · ${info.registeredUsers?.length || 0} user(s)${
                       info.serverAppId ? ` · app ${info.serverAppId.slice(0, 8)}…` : ''
-                    }${info.legacyConfigured ? ' · legacy web app ON' : ' · legacy web app OFF'}`
+                    }${info.legacyConfigured ? ' · legacy web app ON' : ' · legacy web app OFF'}${
+                      info.restAuthOk === false ? ' · REST KEY INVALID' : ''
+                    }`
                   : 'Set ONESIGNAL_REST_API_KEY to enable sending'
                 : 'Loading status…'}
             </p>
           </div>
+
+          {info?.configured && info.restAuthOk === false && (
+            <div className="mb-4 rounded-xl border border-red-300 bg-red-50 px-3 py-3 text-xs text-red-950">
+              <p className="font-semibold">OneSignal REST API key rejected</p>
+              <p className="mt-1">
+                {info.restAuthHint ||
+                  info.restAuthError ||
+                  `Update Vercel ONESIGNAL_REST_API_KEY to the App API Key for ${
+                    info.serverAppId || '0bb81263-a5f5-4fd8-8786-d71f43a43725'
+                  } (Settings → Keys & IDs), not the old daf8fc36… website app. Redeploy after saving.`}
+              </p>
+              {info.keyBelongsToLegacyApp && (
+                <p className="mt-2">
+                  Move the current value to{' '}
+                  <code className="rounded bg-white px-1">ONESIGNAL_LEGACY_REST_API_KEY</code>, then set
+                  the WTN app key on{' '}
+                  <code className="rounded bg-white px-1">ONESIGNAL_REST_API_KEY</code>.
+                </p>
+              )}
+            </div>
+          )}
 
           <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-950">
             <p className="font-semibold">All users = OneSignal subscribers + saved Kids Zone tokens</p>

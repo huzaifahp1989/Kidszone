@@ -8,6 +8,7 @@ import {
 import {
   isOneSignalServerConfigured,
   sendOneSignalPushMultiApp,
+  verifyOneSignalRestAuth,
   type OneSignalMultiAppResult,
 } from '@/lib/onesignal-server';
 import {
@@ -150,6 +151,20 @@ export async function POST(request: Request) {
       return NextResponse.json(
         { error: 'Pick a user first (search by name or email).' },
         { status: 400 }
+      );
+    }
+
+    const restAuth = await verifyOneSignalRestAuth(appIdOverride);
+    if (!restAuth.ok) {
+      return NextResponse.json(
+        {
+          error: restAuth.error || 'OneSignal REST API key rejected',
+          hint: restAuth.hint,
+          keyBelongsToLegacyApp: Boolean(restAuth.keyBelongsToLegacyApp),
+          serverAppId: restAuth.appId,
+          legacyAppId: restAuth.legacyAppId,
+        },
+        { status: 502 }
       );
     }
 
@@ -373,6 +388,7 @@ export async function GET(request: Request) {
     const userIds = Array.from(new Set(tokens.map((t) => t.user_id)));
     const targets = getOneSignalAppTargets();
     const campaigns = await listPushCampaigns(25);
+    const restAuth = await verifyOneSignalRestAuth();
 
     let usersById = new Map<string, { name: string | null; email: string | null }>();
     if (userIds.length) {
@@ -416,6 +432,10 @@ export async function GET(request: Request) {
       legacyAppId: getLegacyOneSignalAppId(),
       legacyConfigured: targets.some((t) => t.label === 'legacy'),
       appsTargeted: targets.map((t) => ({ label: t.label, appId: t.appId })),
+      restAuthOk: restAuth.ok,
+      keyBelongsToLegacyApp: Boolean(restAuth.keyBelongsToLegacyApp),
+      restAuthError: restAuth.error,
+      restAuthHint: restAuth.hint,
       campaigns: campaigns.map((c) => ({
         id: c.id,
         title: c.title,
