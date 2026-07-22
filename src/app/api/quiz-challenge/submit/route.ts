@@ -98,8 +98,6 @@ export async function POST(request: Request) {
   }
 
   const userId = String(body.userId || '').trim();
-  const auth = await requireMatchingUser(request, userId);
-  if (!auth.ok) return auth.response;
 
   const config = getChallengeQuizConfig(String(body.quiz || ''));
   if (!config) return NextResponse.json({ error: 'Unknown quiz' }, { status: 400 });
@@ -108,11 +106,22 @@ export async function POST(request: Request) {
   const durationSeconds = Number(body.durationSeconds ?? 0) || 0;
   const autoSubmitted = Boolean(body.autoSubmitted);
 
-  const { questions } = await loadChallengeQuestions(config.key);
-  const result = buildResult(questions, answers, config.passScore, config.awardsBadge);
+  // Run the independent reads in parallel to keep submission fast: validating the
+  // token, loading questions, checking for an existing attempt, and fetching the
+  // user's name/email are all independent. (Nothing is written until auth passes.)
+  const [auth, loaded, existingRes, userRes] = await Promise.all([
+    requireMatchingUser(request, userId),
+    loadChallengeQuestions(config.key),
+    selectAttempt(config.key, userId),
+    supabaseAdmin.from('users').select('name,email').eq('uid', userId).maybeSingle(),
+  ]);
+
+  if (!auth.ok) return auth.response;
+
+  const result = buildResult(loaded.questions, answers, config.passScore, config.awardsBadge);
 
   // Enforce ONE attempt per child. If they already completed it, return the stored result.
-  const { data: existing, error: existingError } = await selectAttempt(config.key, userId);
+  const { data: existing, error: existingError } = existingRes;
   if (existingError && !isMissingTableError(existingError)) {
     return NextResponse.json({ error: existingError.message }, { status: 500 });
   }
@@ -129,12 +138,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ alreadyCompleted: false, persisted: false, result, review: result.review });
   }
 
-  // Look up name/email for the leaderboard display.
-  const { data: userRow } = await supabaseAdmin
-    .from('users')
-    .select('name,email')
-    .eq('uid', userId)
-    .maybeSingle();
+  const userRow = userRes.data;
 
   const insertPayload = {
     user_id: userId,
