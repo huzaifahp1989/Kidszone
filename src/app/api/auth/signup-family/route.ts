@@ -1,16 +1,5 @@
-import { createClient } from '@supabase/supabase-js';
 import { NextRequest, NextResponse } from 'next/server';
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-if (!supabaseUrl || !supabaseServiceKey) {
-  throw new Error('Missing Supabase environment variables');
-}
-
-const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
-  auth: { persistSession: false },
-});
+import { hasSupabaseServiceRole, supabaseAdmin } from '@/lib/supabase-admin';
 
 interface SignupLearner {
   name: string;
@@ -22,6 +11,10 @@ interface SignupLearner {
 
 export async function POST(request: NextRequest) {
   try {
+    if (!hasSupabaseServiceRole()) {
+      return NextResponse.json({ error: 'Server configuration error' }, { status: 503 });
+    }
+
     const body = await request.json();
     const { familyEmail, password, learners } = body as {
       familyEmail: string;
