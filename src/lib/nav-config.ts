@@ -16,6 +16,7 @@ import {
   CalendarHeart,
   Sparkles,
   Mic,
+  Footprints,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -193,6 +194,14 @@ export const NAV_GROUPS: NavGroup[] = [
         shortLabel: 'Salah',
         description: 'Tick off your daily prayers',
         icon: CalendarDays,
+        group: 'track',
+      },
+      {
+        href: '/fitness',
+        label: 'Fitness Challenge',
+        shortLabel: 'Fitness',
+        description: 'Walk every day, earn points and badges',
+        icon: Footprints,
         group: 'track',
       },
       {
