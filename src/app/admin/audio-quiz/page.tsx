@@ -10,6 +10,7 @@ import {
   AUDIO_RECORDING_MAX_SECONDS,
   AUDIO_RECORDING_DEFAULT_SECONDS,
 } from '@/lib/audio-quiz';
+import { useAudioRecorder } from '@/lib/use-audio-recorder';
 
 interface AdminAudioQuiz {
   id: string;
@@ -57,6 +58,8 @@ export default function AdminAudioQuizPage() {
   const [form, setForm] = React.useState({ ...emptyForm });
   const [uploadingAudio, setUploadingAudio] = React.useState(false);
   const [uploadingBanner, setUploadingBanner] = React.useState(false);
+  // Admin can record the question directly with the mic (up to 5 minutes).
+  const questionRecorder = useAudioRecorder(300);
 
   const load = React.useCallback(async () => {
     setLoading(true);
@@ -149,6 +152,34 @@ export default function AdminAudioQuizPage() {
       setError(e instanceof Error ? e.message : 'Upload failed');
     } finally {
       kind === 'audio' ? setUploadingAudio(false) : setUploadingBanner(false);
+    }
+  };
+
+  const uploadRecordedQuestion = async () => {
+    const blob = questionRecorder.blob;
+    if (!blob) return;
+    setUploadingAudio(true);
+    setError('');
+    try {
+      const type = blob.type || 'audio/webm';
+      const ext = type.includes('mp4') ? 'm4a' : type.includes('ogg') ? 'ogg' : type.includes('mpeg') ? 'mp3' : 'webm';
+      const fd = new FormData();
+      fd.append('file', blob, `question.${ext}`);
+      fd.append('kind', 'audio');
+      const res = await fetch('/api/admin/audio-quiz/upload', {
+        method: 'POST',
+        headers: { 'x-admin-auth': 'true' },
+        body: fd,
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Upload failed');
+      setForm((f) => ({ ...f, questionAudioPath: data.path || '', questionAudioUrl: data.url || '' }));
+      setMessage('Recorded question saved. Children will hear this on the quiz page.');
+      questionRecorder.reset();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Upload failed');
+    } finally {
+      setUploadingAudio(false);
     }
   };
 
@@ -300,10 +331,46 @@ export default function AdminAudioQuizPage() {
 
             <div className="grid gap-3 sm:grid-cols-2">
               <div className="rounded-lg border border-slate-200 p-3">
-                <p className="text-sm font-bold text-slate-700">Question audio (MP3, WAV, M4A)</p>
-                <input type="file" accept="audio/mpeg,audio/wav,audio/x-wav,audio/mp4,audio/x-m4a,audio/aac,.mp3,.wav,.m4a" disabled={uploadingAudio} onChange={(e) => uploadFile(e.target.files?.[0] || null, 'audio')} className="mt-2 w-full text-xs" />
+                <p className="text-sm font-bold text-slate-700">Question audio</p>
+
+                {/* Record directly with the mic */}
+                <div className="mt-2 rounded-lg bg-violet-50 p-2">
+                  <p className="text-xs font-bold text-violet-800">🎤 Record with mic</p>
+                  <div className="mt-1 flex flex-wrap items-center gap-2">
+                    {questionRecorder.isRecording ? (
+                      <button type="button" onClick={questionRecorder.stopRecording} className="rounded-lg bg-rose-600 px-3 py-1.5 text-xs font-bold text-white">
+                        ⏹ Stop ({questionRecorder.formatTime(questionRecorder.seconds)})
+                      </button>
+                    ) : (
+                      <button type="button" onClick={questionRecorder.startRecording} className="rounded-lg bg-violet-600 px-3 py-1.5 text-xs font-bold text-white">
+                        ● Record
+                      </button>
+                    )}
+                    {questionRecorder.state === 'finished' && questionRecorder.audioUrl ? (
+                      <>
+                        <button type="button" onClick={questionRecorder.reset} className="rounded-lg border border-slate-300 px-2.5 py-1.5 text-xs font-bold text-slate-600">
+                          Redo
+                        </button>
+                        <button type="button" onClick={uploadRecordedQuestion} disabled={uploadingAudio} className="rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-bold text-white disabled:opacity-50">
+                          {uploadingAudio ? 'Saving…' : 'Use this recording'}
+                        </button>
+                      </>
+                    ) : null}
+                  </div>
+                  {questionRecorder.audioUrl ? <audio controls src={questionRecorder.audioUrl} className="mt-2 w-full" /> : null}
+                  {questionRecorder.error ? <p className="mt-1 text-xs text-rose-600">{questionRecorder.error}</p> : null}
+                </div>
+
+                {/* Or upload a file */}
+                <p className="mt-2 text-xs text-slate-500">Or upload a file (MP3, WAV, M4A):</p>
+                <input type="file" accept="audio/mpeg,audio/wav,audio/x-wav,audio/mp4,audio/x-m4a,audio/aac,.mp3,.wav,.m4a" disabled={uploadingAudio} onChange={(e) => uploadFile(e.target.files?.[0] || null, 'audio')} className="mt-1 w-full text-xs" />
                 {uploadingAudio ? <p className="mt-1 text-xs text-slate-500">Uploading…</p> : null}
-                {form.questionAudioUrl ? <audio controls src={form.questionAudioUrl} className="mt-2 w-full" /> : null}
+                {form.questionAudioUrl ? (
+                  <div className="mt-2">
+                    <p className="text-xs font-semibold text-emerald-700">✓ Saved question audio (this plays on the quiz page):</p>
+                    <audio controls src={form.questionAudioUrl} className="mt-1 w-full" />
+                  </div>
+                ) : null}
               </div>
               <div className="rounded-lg border border-slate-200 p-3">
                 <p className="text-sm font-bold text-slate-700">Banner image (optional)</p>

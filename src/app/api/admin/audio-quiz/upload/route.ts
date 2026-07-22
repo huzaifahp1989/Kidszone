@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { isAdminRequest } from '@/lib/admin-auth';
 import { uploadObject, newAssetPath, getReadableObjectUrl } from '@/lib/object-storage';
-import { AUDIO_MAX_FILE_BYTES, QUESTION_AUDIO_MIME, extForAudioType } from '@/lib/audio-quiz';
+import { AUDIO_MAX_FILE_BYTES, ANSWER_AUDIO_MIME, extForAudioType } from '@/lib/audio-quiz';
 import { AUDIO_QUIZ_BUCKET, QUESTION_AUDIO_PREFIX } from '@/lib/audio-quiz-server';
 
 export const dynamic = 'force-dynamic';
@@ -46,10 +46,10 @@ export async function POST(request: Request) {
       return NextResponse.json({ url: uploaded.url, path: uploaded.path });
     }
 
-    // Audio question
-    const ext = extForAudioType(type, QUESTION_AUDIO_MIME);
+    // Audio question — accept uploaded files (MP3/WAV/M4A) and browser recordings (WebM/OGG/MP4).
+    const ext = extForAudioType(type, ANSWER_AUDIO_MIME);
     if (!ext) {
-      return NextResponse.json({ error: 'Audio must be MP3, WAV or M4A.' }, { status: 400 });
+      return NextResponse.json({ error: 'Unsupported audio format.' }, { status: 400 });
     }
     const path = `${QUESTION_AUDIO_PREFIX}/${newAssetPath('', ext).replace(/^\//, '')}`;
     await uploadObject({
