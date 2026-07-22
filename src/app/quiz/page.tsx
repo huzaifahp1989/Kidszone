@@ -208,7 +208,7 @@ export default function QuizPage() {
     }
   };
 
-  const finishQuiz = async () => {
+  const finishQuiz = () => {
     if (!selectedTopic) {
       setResultToast('Please select a topic first.');
       return;
@@ -245,13 +245,14 @@ export default function QuizPage() {
       syncing: true,
     });
 
-    try {
-      if (!user?.id) {
-        setResultToast('Please sign in to submit the quiz and earn points.');
-        setMode(null);
-        return;
-      }
+    if (!user?.id) {
+      setResultToast('Please sign in to submit the quiz and earn points.');
+      setDailyResult((prev: any) => ({ ...prev, syncing: false }));
+      return;
+    }
 
+    void (async () => {
+    try {
       const res = await authJsonFetch('/api/quiz/daily/submit', {
         method: 'POST',
         timeoutMs: 25_000,
@@ -267,6 +268,12 @@ export default function QuizPage() {
 
       const data = await res.json();
       
+      if (res.status === 401) {
+        setDailyResult((prev: any) => ({ ...prev, syncing: false }));
+        setResultToast('Your session expired. Please sign in again from the menu, then retake the quiz.');
+        return;
+      }
+
       // Handle daily limit (429 status)
       if (res.status === 429 && data.locked) {
         setDailyStatus('completed');
@@ -310,6 +317,8 @@ export default function QuizPage() {
             monthlyPoints: Number(data.profile.monthlyPoints ?? profile?.monthlyPoints ?? 0),
             todayPoints: Number(data.profile.todayPoints ?? data.todayPoints ?? 0),
           });
+        } else if (awardedPoints > 0) {
+          void refreshProfile().catch(() => {});
         }
         if (awardedPoints > 0) {
           setResultToast(`+${awardedPoints} points added!`);
@@ -358,6 +367,7 @@ export default function QuizPage() {
           : 'Network error submitting quiz. Your score is shown above.'
       );
     }
+    })();
   };
 
   const resetPage = () => {

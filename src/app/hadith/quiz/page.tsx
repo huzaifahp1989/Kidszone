@@ -33,10 +33,16 @@ export default function HadithPage() {
     setClaimingPoints(true);
     authJsonFetch('/api/activities/complete', {
       method: 'POST',
+      timeoutMs: 20_000,
       body: JSON.stringify({ userId: user.id, activity: 'hadith' }),
     })
-      .then((res) => res.json())
-      .then((data) => {
+      .then(async (res) => ({ res, data: await res.json() }))
+      .then(({ res, data }) => {
+        if (res.status === 401) {
+          setPointsMessage('Please sign in again to save your points.');
+          pointsClaimedRef.current = false;
+          return;
+        }
         if (data.pointsAwarded > 0) {
           setPointsMessage(`⭐ +${data.pointsAwarded} points for completing Hadith learning today!`);
           if (data.profile) {

@@ -127,14 +127,58 @@ export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
   },
 });
 
+export function readStoredAccessToken(): string | null {
+  if (typeof window === 'undefined') return null;
+
+  const keys = Array.from(new Set([PRIMARY_STORAGE_KEY, ...LEGACY_STORAGE_KEYS]));
+  const storages = [window.localStorage, window.sessionStorage];
+
+  for (const storage of storages) {
+    for (const key of keys) {
+      const raw = safeGet(storage, key);
+      if (!raw) continue;
+      try {
+        const parsed = JSON.parse(raw) as { access_token?: string; currentSession?: { access_token?: string } };
+        const token = parsed?.access_token || parsed?.currentSession?.access_token;
+        if (typeof token === 'string' && token.length > 0) return token;
+      } catch {
+        /* ignore malformed storage */
+      }
+    }
+  }
+
+  return null;
+}
+
+async function resolveAccessToken(timeoutMs = 2_500): Promise<string | null> {
+  const stored = readStoredAccessToken();
+  if (stored) return stored;
+
+  try {
+    const result = await Promise.race([
+      supabase.auth.getSession(),
+      new Promise<null>((resolve) => setTimeout(() => resolve(null), timeoutMs)),
+    ]);
+    if (result && typeof result === 'object' && 'data' in result) {
+      return result.data.session?.access_token ?? null;
+    }
+  } catch {
+    /* fall through */
+  }
+
+  return readStoredAccessToken();
+}
+
 // Debug helper: Check if user is authenticated
 export async function isAuthenticated(): Promise<boolean> {
-  const { data: { session } } = await supabase.auth.getSession();
-  return session !== null && session.user !== null;
+  const token = await resolveAccessToken();
+  return Boolean(token);
 }
 
 // Debug helper: Get current user ID
 export async function getCurrentUserId(): Promise<string | null> {
-  const { data: { user } } = await supabase.auth.getUser();
+  const token = await resolveAccessToken();
+  if (!token) return null;
+  const { data: { user } } = await supabase.auth.getUser(token);
   return user?.id || null;
 }

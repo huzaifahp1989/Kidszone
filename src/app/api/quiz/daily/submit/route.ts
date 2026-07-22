@@ -9,6 +9,7 @@ import { getTopicQuestionExclusions } from '@/lib/quiz-user-history';
 import { isTestModeEmail } from '@/lib/test-mode';
 import { POINTS_DAILY_CAP, QUIZ_POINTS_PER_COMPLETION, MAX_DAILY_QUIZ_ATTEMPTS } from '@/lib/points-policy';
 import { createSessionQuizRecordId } from '@/lib/topic-quiz-record';
+import { insertQuizAttempt } from '@/lib/quiz-attempt-insert';
 import { randomUUID } from 'crypto';
 import { requireMatchingUser } from '@/lib/request-auth';
 
@@ -291,7 +292,7 @@ export async function POST(req: Request) {
       const isCompletedTopic = activeQuestions.every((q: any) => Object.prototype.hasOwnProperty.call(answers, String(q.id)));
       const totalPoints = isCompletedTopic ? QUIZ_POINTS_PER_COMPLETION : 0;
 
-      const { error: attemptError } = await supabaseAdmin.from('quiz_attempts').insert({
+      const { error: attemptError } = await insertQuizAttempt({
         user_id: userId,
         quiz_id: resolvedSessionQuizRecordId,
         topic: topicFromId,
@@ -411,7 +412,7 @@ export async function POST(req: Request) {
       const isCompletedTopic = scoredQuestions.every((q: any) => Object.prototype.hasOwnProperty.call(answers, String(q.id)));
       const totalPoints = isCompletedTopic ? QUIZ_POINTS_PER_COMPLETION : 0;
 
-      const { error: attemptError } = await supabaseAdmin.from('quiz_attempts').insert({
+      const { error: attemptError } = await insertQuizAttempt({
         user_id: userId,
         quiz_id: fallbackDailyQuizId,
         topic: topic || null,
