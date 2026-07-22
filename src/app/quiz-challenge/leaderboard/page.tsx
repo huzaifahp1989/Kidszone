@@ -91,10 +91,10 @@ export default function QuizChallengeLeaderboardPage() {
           </div>
         ) : (
           <div className="overflow-hidden rounded-2xl border border-[#c4b5fd]/30 bg-white shadow-lg">
-            <div className="grid grid-cols-[3rem_1fr_5rem] gap-2 border-b border-[#c4b5fd]/20 bg-[#f5f3ff] px-4 py-3 text-xs font-bold uppercase tracking-wide text-[#6d28d9]">
+            <div className="grid grid-cols-[2.25rem_minmax(0,1fr)_auto] gap-2 border-b border-[#c4b5fd]/20 bg-[#f5f3ff] px-3 py-3 text-xs font-bold uppercase tracking-wide text-[#6d28d9] sm:px-4">
               <span>Rank</span>
               <span>Learner</span>
-              <span className="text-right">Score</span>
+              <span className="justify-self-end text-right">Score</span>
             </div>
             <div className="divide-y divide-[#c4b5fd]/20">
               {entries.map((entry) => {
@@ -102,17 +102,17 @@ export default function QuizChallengeLeaderboardPage() {
                 return (
                   <div
                     key={entry.uid}
-                    className={`grid grid-cols-[3rem_1fr_5rem] items-center gap-2 px-4 py-3 ${you ? 'bg-violet-50/80 ring-1 ring-inset ring-violet-200' : ''}`}
+                    className={`grid grid-cols-[2.25rem_minmax(0,1fr)_auto] items-center gap-2 px-3 py-3 sm:px-4 ${you ? 'bg-violet-50/80 ring-1 ring-inset ring-violet-200' : ''}`}
                   >
                     <span className="text-lg font-black text-[#475569]">{medal(entry.rank)}</span>
-                    <span className="flex items-center gap-2 font-bold text-[#1e1b4b]">
-                      <span className="break-words">{entry.name}</span>
+                    <span className="flex min-w-0 items-center gap-2 font-bold text-[#1e1b4b]">
+                      <span className="truncate">{entry.name}</span>
                       {you ? (
-                        <span className="rounded-full bg-violet-200 px-2 py-0.5 text-[10px] font-bold text-violet-800">You</span>
+                        <span className="shrink-0 rounded-full bg-violet-200 px-2 py-0.5 text-[10px] font-bold text-violet-800">You</span>
                       ) : null}
-                      {entry.passed ? <Medal size={14} className="text-amber-500" /> : null}
+                      {entry.passed ? <Medal size={14} className="shrink-0 text-amber-500" /> : null}
                     </span>
-                    <span className="text-right font-black text-[#7c3aed]">
+                    <span className="shrink-0 justify-self-end whitespace-nowrap text-right font-black text-[#7c3aed]">
                       {entry.score}/{entry.total}
                       {entry.bonusScore ? <span className="block text-[10px] font-bold text-amber-600">+{entry.bonusScore} bonus</span> : null}
                     </span>
