@@ -23,6 +23,7 @@ type Entry = {
   name: string;
   madrasahName?: string;
   city?: string;
+  age?: number | null;
   level: number;
   points: number;
   weeklyPoints?: number;
@@ -44,6 +45,7 @@ type Row = {
   username: string;
   madrasahName: string;
   city: string;
+  age: number | null;
   level: number;
   weeklyScore: number;
   maxWeeklyScore: number;
@@ -114,6 +116,7 @@ export default function LeaderboardClient() {
       username: entry.name,
       madrasahName: entry.madrasahName || '',
       city: entry.city || '',
+      age: entry.age ?? null,
       level: entry.level,
       weeklyScore: entry.weeklyScore ?? 0,
       maxWeeklyScore: entry.maxWeeklyScore ?? MAX_WEEKLY_SCORE,
@@ -431,6 +434,27 @@ export default function LeaderboardClient() {
                           ) : null}
                         </p>
                         <p className="text-sm text-[#475569]">{getKidLevelTitle(entry.level)}</p>
+                        {(entry.age != null || entry.madrasahName || entry.city) ? (
+                          <p className="mt-0.5 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-xs text-[#64748b]">
+                            {entry.age != null ? (
+                              <span className="inline-flex items-center gap-1 rounded-full bg-violet-100 px-2 py-0.5 font-semibold text-violet-700">
+                                Age {entry.age}
+                              </span>
+                            ) : null}
+                            {entry.madrasahName ? (
+                              <span className="inline-flex items-center gap-1">
+                                <span aria-hidden>🕌</span>
+                                <span className="break-words">{entry.madrasahName}</span>
+                              </span>
+                            ) : null}
+                            {entry.city ? (
+                              <span className="inline-flex items-center gap-1">
+                                <span aria-hidden>📍</span>
+                                <span className="break-words">{entry.city}</span>
+                              </span>
+                            ) : null}
+                          </p>
+                        ) : null}
                         {formatPlayedDate(entry.lastPlayedDate) ? (
                           <p className="mt-0.5 text-xs text-[#64748b] sm:hidden">
                             Last played: {formatPlayedDate(entry.lastPlayedDate)}

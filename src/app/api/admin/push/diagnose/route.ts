@@ -1,9 +1,10 @@
 import { NextResponse } from 'next/server';
 import { isAdminRequest } from '@/lib/admin-auth';
-import { getServerOneSignalAppId } from '@/lib/onesignal-server-config';
+import { getServerOneSignalAppId, getOneSignalAppTargets } from '@/lib/onesignal-server-config';
 import {
   isOneSignalServerConfigured,
   lookupOneSignalPlayer,
+  getOneSignalAppStats,
 } from '@/lib/onesignal-server';
 import { ONESIGNAL_APP_ID as PUBLIC_ONESIGNAL_APP_ID } from '@/lib/onesignal-app-id';
 import { supabaseAdmin } from '@/lib/supabase-admin';
@@ -76,11 +77,34 @@ export async function GET(request: Request) {
           ? DEVICE_TYPE_LABEL[lookup.deviceType] || `type ${lookup.deviceType}`
           : null,
       externalUserId: lookup.externalUserId,
+      notificationTypes: lookup.notificationTypes ?? null,
+      subscribed: lookup.subscribed ?? null,
       lookupError: lookup.error || null,
     });
   }
 
   const foundCount = lookups.filter((l) => l.foundOnOneSignal && !l.invalidIdentifier).length;
+  const subscribedCount = lookups.filter((l) => l.subscribed).length;
+  const appStats = await getOneSignalAppStats(appIdOverride);
+
+  // Report stats for EVERY configured OneSignal app (Android primary, iOS, web/legacy)
+  // so the admin can see which app actually has subscribers and is reachable.
+  const configuredTargets = getOneSignalAppTargets();
+  const targetStats = await Promise.all(
+    configuredTargets.map(async (t) => {
+      const stats = await getOneSignalAppStats(t.appId, t.restApiKey);
+      return {
+        label: t.label,
+        appId: t.appId,
+        ok: stats.ok,
+        messageablePlayers: stats.messageablePlayers ?? null,
+        players: stats.players ?? null,
+        hasAndroidCredentials: stats.hasAndroidCredentials ?? null,
+        hasIosCredentials: stats.hasIosCredentials ?? null,
+        error: stats.error ?? null,
+      };
+    })
+  );
 
   return NextResponse.json({
     configured: true,
@@ -93,6 +117,9 @@ export async function GET(request: Request) {
         : 'At least one token is valid on this OneSignal app.',
     checked: lookups.length,
     validOnApp: foundCount,
+    subscribedOnApp: subscribedCount,
+    appStats,
+    targetStats,
     tokens: lookups,
   });
 }

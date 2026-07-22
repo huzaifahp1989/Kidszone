@@ -350,11 +350,20 @@ export default function AdminPushPage() {
         setError(data?.error || 'Diagnose failed');
         return;
       }
+      const stats = data.appStats;
       const lines = [
         `Server App ID: ${data.serverAppId}`,
-        `Website App ID: ${data.publicAppId}`,
-        data.appIdMismatch ? 'WARNING: server App ID ≠ website App ID' : 'App IDs match',
-        `Checked ${data.checked} token(s), valid on this app: ${data.validOnApp}`,
+        stats?.ok
+          ? `OneSignal app: ${stats.messageablePlayers ?? '?'} subscribed / ${stats.players ?? '?'} total devices can receive push`
+          : null,
+        stats?.ok
+          ? `Android FCM: ${stats.hasAndroidCredentials ? 'configured ✓' : 'NOT configured ✗'} · iOS APNs: ${stats.hasIosCredentials ? 'configured ✓' : 'NOT configured ✗ (iOS app users cannot receive until this is set in OneSignal)'}`
+          : null,
+        `Checked ${data.checked} saved token(s) — valid: ${data.validOnApp}, subscribed: ${data.subscribedOnApp ?? '?'}`,
+        (stats?.messageablePlayers ?? 0) > 0
+          ? 'Push delivery is working on OneSignal. Use audience "Full OneSignal list" to reach all subscribers.'
+          : null,
+        data.appIdMismatch ? 'WARNING: server App ID ≠ website App ID' : null,
         data.hint,
         ...(data.tokens || []).map(
           (t: {

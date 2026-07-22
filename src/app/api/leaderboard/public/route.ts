@@ -30,6 +30,15 @@ const firstString = (...values: any[]) => {
   return '';
 };
 
+const firstAge = (...values: any[]) => {
+  for (const value of values) {
+    if (value == null || value === '') continue;
+    const n = typeof value === 'number' ? value : parseInt(String(value).trim(), 10);
+    if (Number.isFinite(n) && n > 0 && n <= 120) return n;
+  }
+  return null;
+};
+
 const parseDateOnlyUtc = (value: string | null | undefined) => {
   if (!value) return null;
   const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(value).trim());
@@ -182,6 +191,14 @@ export async function GET(req: Request) {
         userMeta.addressCity,
         userMeta.address_city
       );
+      const age = firstAge(
+        userProfile.age,
+        userProfile.childAge,
+        userProfile.child_age,
+        userMeta.age,
+        userMeta.childAge,
+        userMeta.child_age
+      );
       const totalPoints = Number(row.total_points ?? row.users?.points ?? 0);
       const rawWeeklyPoints = Number(row.weekly_points ?? row.users?.weeklypoints ?? 0);
       const rawMonthlyPoints = Number(row.monthly_points ?? row.users?.monthlypoints ?? 0);
@@ -202,6 +219,7 @@ export async function GET(req: Request) {
         name: displayName,
         madrasahName,
         city,
+        age,
         level: row.level ?? 1,
         points: totalPoints,
         weeklyPoints,

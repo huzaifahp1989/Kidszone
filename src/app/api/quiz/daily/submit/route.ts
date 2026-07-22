@@ -6,7 +6,7 @@ import { getStaticQuiz } from '@/lib/quiz-generator';
 import { filterQuestionsByTopic, getDailyTopicSeed, parseTopicQuizId } from '@/lib/quiz-topics';
 import { resolveTopicQuizQuestionsFromIds, resolveSubmittedTopicQuestions } from '@/lib/quiz-topic-questions';
 import { getTopicQuestionExclusions } from '@/lib/quiz-user-history';
-import { isTestModeUserId } from '@/lib/test-mode-server';
+import { isTestModeEmail } from '@/lib/test-mode';
 import { POINTS_DAILY_CAP, QUIZ_POINTS_PER_COMPLETION, MAX_DAILY_QUIZ_ATTEMPTS } from '@/lib/points-policy';
 import { createSessionQuizRecordId } from '@/lib/topic-quiz-record';
 import { randomUUID } from 'crypto';
@@ -33,7 +33,14 @@ function getUtcDayWindow() {
   };
 }
 
-async function enforceDailyQuizAttemptLimit(userId: string) {
+/**
+ * Returns a 429 response when the user hit the daily limit, otherwise null, plus
+ * the number of attempts already completed today (so callers can build the
+ * post-submit summary without a second COUNT query).
+ */
+async function enforceDailyQuizAttemptLimit(
+  userId: string
+): Promise<{ blocked: NextResponse | null; attemptsToday: number }> {
   const { dayStartIso, nextDayStartIso, nextDayStartMs } = getUtcDayWindow();
   const { data, count, error } = await supabaseAdmin
     .from('quiz_attempts')
@@ -52,21 +59,35 @@ async function enforceDailyQuizAttemptLimit(userId: string) {
   if (attemptsToday >= MAX_DAILY_QUIZ_ATTEMPTS) {
     const timeRemaining = Math.max(0, Math.ceil((nextDayStartMs - Date.now()) / 1000));
     const lastScore = Array.isArray(data) && data[0] ? Number((data[0] as any).score ?? 0) : null;
-    return NextResponse.json(
-      {
-        error: `You have already completed ${MAX_DAILY_QUIZ_ATTEMPTS} quizzes today. Come back tomorrow for more points.`,
-        locked: true,
-        lockedUntil: nextDayStartMs,
-        lastScore,
-        attemptsToday,
-        maxDailyAttempts: MAX_DAILY_QUIZ_ATTEMPTS,
-        timeRemaining,
-      },
-      { status: 429 }
-    );
+    return {
+      attemptsToday,
+      blocked: NextResponse.json(
+        {
+          error: `You have already completed ${MAX_DAILY_QUIZ_ATTEMPTS} quizzes today. Come back tomorrow for more points.`,
+          locked: true,
+          lockedUntil: nextDayStartMs,
+          lastScore,
+          attemptsToday,
+          maxDailyAttempts: MAX_DAILY_QUIZ_ATTEMPTS,
+          timeRemaining,
+        },
+        { status: 429 }
+      ),
+    };
   }
 
-  return null;
+  return { blocked: null, attemptsToday };
+}
+
+/** Build the attempt summary from a known count (no DB query). */
+function attemptSummaryFromCount(attemptsToday: number) {
+  const { nextDayStartMs } = getUtcDayWindow();
+  return {
+    attemptsToday,
+    maxDailyAttempts: MAX_DAILY_QUIZ_ATTEMPTS,
+    remainingDailyAttempts: Math.max(0, MAX_DAILY_QUIZ_ATTEMPTS - attemptsToday),
+    lockedUntil: nextDayStartMs,
+  };
 }
 
 async function getTodaysQuizAttemptSummary(userId: string) {
@@ -141,6 +162,10 @@ async function awardQuizPoints(userId: string, totalPoints: number, isTestMode: 
 
   const result = await awardPointsWithDailyCapByUserId(userId, totalPoints, {
     successMessage: `Topic completed! +${QUIZ_POINTS_PER_COMPLETION} points added to leaderboard.`,
+    // The submit route already validated test mode and ensured user records —
+    // skip re-doing those inside the points helper to avoid extra round trips.
+    knownIsTestMode: isTestMode,
+    skipEnsureUserRecords: true,
   });
 
   return {
@@ -181,7 +206,8 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
-    const isTestMode = await isTestModeUserId(auth.userId);
+    // Compute test mode from the already-validated token email (no extra auth round trip).
+    const isTestMode = isTestModeEmail(auth.user.email);
 
     const ensured = await ensureUserRecords(auth.userId);
     if (!ensured.ok) {
@@ -198,7 +224,16 @@ export async function POST(req: Request) {
         return NextResponse.json({ error: 'No questions available for this topic.' }, { status: 400 });
       }
 
-      const exclusions = await getTopicQuestionExclusions(userId, topicFromId);
+      // Run the two independent reads in parallel: question history and the daily limit check.
+      const [exclusions, limit] = await Promise.all([
+        getTopicQuestionExclusions(userId, topicFromId),
+        isTestMode
+          ? Promise.resolve({ blocked: null as NextResponse | null, attemptsToday: 0 })
+          : enforceDailyQuizAttemptLimit(userId),
+      ]);
+      if (limit.blocked) return limit.blocked;
+      const priorAttemptsToday = limit.attemptsToday;
+
       const submittedIds = Array.isArray(submittedQuestionIds)
         ? submittedQuestionIds.map((id: string) => String(id))
         : [];
@@ -221,13 +256,6 @@ export async function POST(req: Request) {
       }
 
       const allowedQuestionIds = new Set(activeQuestions.map((q: any) => String(q.id)));
-
-      if (!isTestMode) {
-        const limitResponse = await enforceDailyQuizAttemptLimit(userId);
-        if (limitResponse) {
-          return limitResponse;
-        }
-      }
 
       const sessionQuizRecordId = await createSessionQuizRecordId(
         topicFromId,
@@ -280,7 +308,9 @@ export async function POST(req: Request) {
       const awardResult = await awardQuizPoints(userId, totalPoints, isTestMode);
 
       const finalPointsAwarded = awardResult.pointsAwarded;
-      const attemptSummary = await getTodaysQuizAttemptSummary(userId);
+      const attemptSummary = isTestMode
+        ? await getTodaysQuizAttemptSummary(userId)
+        : attemptSummaryFromCount(priorAttemptsToday + 1);
       const awardMessage = isTestMode
         ? 'Test mode active. Quiz recorded, but no leaderboard points were added.'
         : finalPointsAwarded > 0
@@ -317,11 +347,11 @@ export async function POST(req: Request) {
     }
 
     if (quizId.startsWith('fallback-')) {
+      let priorAttemptsToday = 0;
       if (!isTestMode) {
-        const limitResponse = await enforceDailyQuizAttemptLimit(userId);
-        if (limitResponse) {
-          return limitResponse;
-        }
+        const limit = await enforceDailyQuizAttemptLimit(userId);
+        if (limit.blocked) return limit.blocked;
+        priorAttemptsToday = limit.attemptsToday;
       }
 
       const date = quizId.replace('fallback-', '');
@@ -383,7 +413,9 @@ export async function POST(req: Request) {
       const awardResult = await awardQuizPoints(userId, totalPoints, isTestMode);
 
       const finalPointsAwarded = awardResult.pointsAwarded;
-      const attemptSummary = await getTodaysQuizAttemptSummary(userId);
+      const attemptSummary = isTestMode
+        ? await getTodaysQuizAttemptSummary(userId)
+        : attemptSummaryFromCount(priorAttemptsToday + 1);
       const awardMessage = isTestMode
         ? 'Test mode active. Quiz recorded, but no leaderboard points were added.'
         : finalPointsAwarded > 0
@@ -460,11 +492,11 @@ export async function POST(req: Request) {
     const isPerfect = score === maxScore;
     const isFlagged = Number(durationSeconds) < 20;
 
+    let priorAttemptsToday = 0;
     if (!isTestMode) {
-      const limitResponse = await enforceDailyQuizAttemptLimit(userId);
-      if (limitResponse) {
-        return limitResponse;
-      }
+      const limit = await enforceDailyQuizAttemptLimit(userId);
+      if (limit.blocked) return limit.blocked;
+      priorAttemptsToday = limit.attemptsToday;
     }
 
     const { data: existingAttempt } = await supabaseAdmin
@@ -506,7 +538,9 @@ export async function POST(req: Request) {
     const awardResult = await awardQuizPoints(userId, totalPoints, isTestMode);
 
     const finalPointsAwarded = awardResult.pointsAwarded;
-    const attemptSummary = await getTodaysQuizAttemptSummary(userId);
+    const attemptSummary = isTestMode
+      ? await getTodaysQuizAttemptSummary(userId)
+      : attemptSummaryFromCount(priorAttemptsToday + 1);
     const awardMessage = isTestMode
       ? 'Test mode active. Quiz recorded, but no leaderboard points were added.'
       : finalPointsAwarded > 0

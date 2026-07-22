@@ -1,12 +1,12 @@
 import { Capacitor } from '@capacitor/core';
+import {
+  CapacitorPedometer,
+  type Measurement,
+  type PermissionStatus,
+} from '@capgo/capacitor-pedometer';
 
 export type FitnessPlatform = 'android' | 'ios' | 'web';
-export type FitnessPermissionState =
-  | 'prompt'
-  | 'prompt-with-rationale'
-  | 'granted'
-  | 'denied'
-  | 'unsupported';
+export type FitnessPermissionState = PermissionStatus['activityRecognition'] | 'unsupported';
 
 export type FitnessFeatures = {
   stepCounting: boolean;
@@ -40,22 +40,13 @@ export type FitnessStatus = {
   message: string;
 };
 
-type PedometerModule = {
-  CapacitorPedometer: {
-    isAvailable(): Promise<Partial<FitnessFeatures>>;
-    checkPermissions(): Promise<{ activityRecognition?: FitnessPermissionState }>;
-    requestPermissions(): Promise<{ activityRecognition?: FitnessPermissionState }>;
-    getMeasurement(options?: { start?: number; end?: number }): Promise<Record<string, unknown>>;
-    addListener(
-      eventName: 'measurement',
-      listener: (event: Record<string, unknown>) => void
-    ): Promise<{ remove(): Promise<void> }>;
-    startMeasurementUpdates(): Promise<void>;
-    stopMeasurementUpdates(): Promise<void>;
-  };
-};
-
 const CACHE_KEY = 'kids-zone-fitness-measurement-v1';
+
+/** Android only reports session steps until updates start — keep one shared listener alive. */
+let updatesStarted = false;
+let updatesStarting: Promise<void> | null = null;
+let sessionSteps = 0;
+let sessionBaseline = 0;
 
 function getPlatform(): FitnessPlatform {
   if (typeof window === 'undefined' || !Capacitor.isNativePlatform()) return 'web';
@@ -92,12 +83,10 @@ function getStartOfToday() {
 }
 
 function normalizeMeasurement(
-  raw: Record<string, unknown>,
+  raw: Measurement,
   platform: FitnessPlatform,
   source: FitnessMeasurement['source']
 ): FitnessMeasurement {
-  const updatedAt = Date.now();
-
   return {
     steps: toRoundedNumber(raw.numberOfSteps),
     distanceMeters: toNumber(raw.distance),
@@ -107,7 +96,7 @@ function normalizeMeasurement(
     paceSecondsPerMeter: toNumber(raw.currentPace),
     startDate: toNumber(raw.startDate),
     endDate: toNumber(raw.endDate),
-    updatedAt,
+    updatedAt: Date.now(),
     platform,
     source,
   };
@@ -143,9 +132,66 @@ function saveCachedMeasurement(measurement: FitnessMeasurement) {
   }
 }
 
-async function getPedometer() {
-  const pedometerModule = (await import('@capgo/capacitor-pedometer')) as PedometerModule;
-  return pedometerModule.CapacitorPedometer;
+function mergeMeasurements(
+  baseline: FitnessMeasurement | null,
+  live: FitnessMeasurement,
+  platform: FitnessPlatform
+): FitnessMeasurement {
+  if (platform === 'ios') {
+    // iOS live updates are session-only; keep the higher of today's query vs cached.
+    const steps = Math.max(baseline?.steps ?? 0, live.steps);
+    return {
+      ...live,
+      steps,
+      distanceMeters: live.distanceMeters ?? baseline?.distanceMeters ?? null,
+      floorsAscended: live.floorsAscended ?? baseline?.floorsAscended ?? null,
+      floorsDescended: live.floorsDescended ?? baseline?.floorsDescended ?? null,
+      cadence: live.cadence ?? baseline?.cadence ?? null,
+      paceSecondsPerMeter: live.paceSecondsPerMeter ?? baseline?.paceSecondsPerMeter ?? null,
+      source: 'live',
+      updatedAt: Date.now(),
+    };
+  }
+
+  // Android: add session steps on top of the last known daily total.
+  const steps = Math.max(baseline?.steps ?? 0, sessionBaseline + live.steps);
+  return {
+    ...live,
+    steps,
+    source: 'live',
+    updatedAt: Date.now(),
+  };
+}
+
+async function ensureMeasurementUpdates(platform: FitnessPlatform): Promise<void> {
+  if (platform === 'web' || updatesStarted) return;
+  if (updatesStarting) {
+    await updatesStarting;
+    return;
+  }
+
+  updatesStarting = (async () => {
+    const cached = loadCachedMeasurement();
+    sessionBaseline = cached?.steps ?? 0;
+    sessionSteps = 0;
+
+    await CapacitorPedometer.addListener('measurement', (event) => {
+      const live = normalizeMeasurement(event, platform, 'live');
+      sessionSteps = live.steps;
+      const cached = loadCachedMeasurement();
+      const merged = mergeMeasurements(cached, live, platform);
+      saveCachedMeasurement(merged);
+    });
+
+    await CapacitorPedometer.startMeasurementUpdates();
+    updatesStarted = true;
+  })();
+
+  try {
+    await updatesStarting;
+  } finally {
+    updatesStarting = null;
+  }
 }
 
 function resolveMessage(status: {
@@ -167,9 +213,26 @@ function resolveMessage(status: {
   if (status.measurement) {
     return status.platform === 'ios'
       ? 'Showing steps measured today from your iPhone motion sensor.'
-      : 'Showing live steps from your Android phone while the app is open.';
+      : 'Counting steps from your Android phone while the app is open.';
   }
   return 'Ready to read steps when motion data becomes available.';
+}
+
+async function queryMeasurement(platform: FitnessPlatform): Promise<FitnessMeasurement | null> {
+  if (platform === 'ios') {
+    const raw = await CapacitorPedometer.getMeasurement({
+      start: getStartOfToday(),
+      end: Date.now(),
+    });
+    return normalizeMeasurement(raw, platform, 'query');
+  }
+
+  // Android getMeasurement() only returns session steps — start updates first.
+  await ensureMeasurementUpdates(platform);
+  const raw = await CapacitorPedometer.getMeasurement();
+  const live = normalizeMeasurement(raw, platform, 'query');
+  const cached = loadCachedMeasurement();
+  return mergeMeasurements(cached, live, platform);
 }
 
 export async function getFitnessStatus(options: { requestPermission?: boolean } = {}): Promise<FitnessStatus> {
@@ -195,8 +258,7 @@ export async function getFitnessStatus(options: { requestPermission?: boolean } 
   }
 
   try {
-    const pedometer = await getPedometer();
-    const availability = await pedometer.isAvailable();
+    const availability = await CapacitorPedometer.isAvailable();
     const features: FitnessFeatures = {
       stepCounting: Boolean(availability.stepCounting),
       distance: Boolean(availability.distance),
@@ -205,20 +267,19 @@ export async function getFitnessStatus(options: { requestPermission?: boolean } 
       floorCounting: Boolean(availability.floorCounting),
     };
 
-    let permission = (await pedometer.checkPermissions()).activityRecognition ?? 'prompt';
+    let permission = (await CapacitorPedometer.checkPermissions()).activityRecognition ?? 'prompt';
     if (options.requestPermission && permission !== 'granted') {
-      permission = (await pedometer.requestPermissions()).activityRecognition ?? permission;
+      permission = (await CapacitorPedometer.requestPermissions()).activityRecognition ?? permission;
     }
 
-    let measurement = cachedMeasurement ? { ...cachedMeasurement, source: 'cache' as const } : null;
+    let measurement: FitnessMeasurement | null = cachedMeasurement
+      ? { ...cachedMeasurement, source: 'cache' }
+      : null;
     if (features.stepCounting && permission === 'granted') {
       try {
-        const rawMeasurement =
-          platform === 'ios'
-            ? await pedometer.getMeasurement({ start: getStartOfToday(), end: Date.now() })
-            : await pedometer.getMeasurement();
-        measurement = normalizeMeasurement(rawMeasurement, platform, 'query');
-        saveCachedMeasurement(measurement);
+        const queried = await queryMeasurement(platform);
+        measurement = queried;
+        if (queried) saveCachedMeasurement(queried);
       } catch {
         // Keep the most recent cached value if a live query fails.
       }
@@ -252,6 +313,28 @@ export async function getFitnessStatus(options: { requestPermission?: boolean } 
   }
 }
 
+/** Read today's step count from the native pedometer (for fitness sync). */
+export async function readPedometerSteps(): Promise<{
+  steps: number;
+  minutes?: number;
+  source: 'pedometer';
+} | null> {
+  const status = await getFitnessStatus();
+  if (!status.native || !status.available || status.permission !== 'granted') return null;
+  const steps = status.measurement?.steps ?? 0;
+  if (!Number.isFinite(steps)) return null;
+  return { steps, source: 'pedometer' };
+}
+
+export async function requestPedometerPermission(): Promise<boolean> {
+  const status = await getFitnessStatus({ requestPermission: true });
+  return status.permission === 'granted';
+}
+
+export function pedometerSupported(): boolean {
+  return getPlatform() !== 'web';
+}
+
 export async function startFitnessUpdates(
   onMeasurement: (measurement: FitnessMeasurement) => void
 ): Promise<() => Promise<void>> {
@@ -260,25 +343,22 @@ export async function startFitnessUpdates(
     return async () => {};
   }
 
-  const pedometer = await getPedometer();
-  const listener = await pedometer.addListener('measurement', (event) => {
-    const measurement = normalizeMeasurement(event, platform, 'live');
+  await ensureMeasurementUpdates(platform);
+
+  const listener = await CapacitorPedometer.addListener('measurement', (event) => {
+    const live = normalizeMeasurement(event, platform, 'live');
+    sessionSteps = live.steps;
+    const cached = loadCachedMeasurement();
+    const measurement = mergeMeasurements(cached, live, platform);
     saveCachedMeasurement(measurement);
     onMeasurement(measurement);
   });
-
-  await pedometer.startMeasurementUpdates();
 
   return async () => {
     try {
       await listener.remove();
     } catch {
       /* listener already removed */
-    }
-    try {
-      await pedometer.stopMeasurementUpdates();
-    } catch {
-      /* updates already stopped */
     }
   };
 }

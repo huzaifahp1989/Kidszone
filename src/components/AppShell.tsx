@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { MobileBottomNav } from './MobileBottomNav';
 import { AnnouncementBar, InlineAnnouncementBelowSlider } from '@/components/AnnouncementBar';
+import { HijriDateBanner } from '@/components/HijriDateBanner';
 import { PromoSlideshow } from '@/components/PromoSlideshow';
 import { ScrollingTicker } from '@/components/ScrollingTicker';
 import { VisitorCounter } from '@/components/VisitorCounter';
@@ -132,6 +133,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         onLogout={user ? logout : undefined}
         loading={loading}
       />
+      {!pathname.startsWith('/admin') && <HijriDateBanner />}
       <AnnouncementBar />
       {user && !pathname.startsWith('/admin') && (
         <div className="mx-auto max-w-7xl px-4 pt-2 sm:px-6">

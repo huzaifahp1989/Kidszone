@@ -1,5 +1,4 @@
 import {
-  Activity,
   Home,
   BookOpen,
   Gamepad2,
@@ -14,6 +13,10 @@ import {
   Coins,
   Languages,
   Palette,
+  CalendarHeart,
+  Sparkles,
+  Mic,
+  Footprints,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -91,6 +94,22 @@ export const NAV_GROUPS: NavGroup[] = [
         icon: Palette,
         group: 'play',
       },
+      {
+        href: '/quiz-challenge',
+        label: 'Quiz Challenge',
+        shortLabel: 'Challenge',
+        description: 'Quran Stories & Fiqh quizzes — one attempt each!',
+        icon: Sparkles,
+        group: 'play',
+      },
+      {
+        href: '/audio-quiz',
+        label: 'Audio Quiz',
+        shortLabel: 'Audio',
+        description: 'Listen and record your voice answer to win prizes!',
+        icon: Mic,
+        group: 'play',
+      },
     ],
   },
   {
@@ -154,6 +173,14 @@ export const NAV_GROUPS: NavGroup[] = [
         icon: Languages,
         group: 'learn',
       },
+      {
+        href: '/calendar',
+        label: 'Islamic Calendar',
+        shortLabel: 'Calendar',
+        description: "Today's Islamic date and learn about each month",
+        icon: CalendarHeart,
+        group: 'learn',
+      },
     ],
   },
   {
@@ -171,10 +198,10 @@ export const NAV_GROUPS: NavGroup[] = [
       },
       {
         href: '/fitness',
-        label: 'Fitness',
+        label: 'Fitness Challenge',
         shortLabel: 'Fitness',
-        description: 'Count steps with your phone',
-        icon: Activity,
+        description: 'Walk every day, earn points and badges',
+        icon: Footprints,
         group: 'track',
       },
       {

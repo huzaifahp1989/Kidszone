@@ -10,6 +10,7 @@ import { getOneSignalAppTargets, getServerOneSignalAppId } from '@/lib/onesignal
 
 const ONESIGNAL_API = 'https://api.onesignal.com/notifications';
 const ONESIGNAL_PLAYERS_API = 'https://onesignal.com/api/v1/players';
+const ONESIGNAL_APPS_API = 'https://onesignal.com/api/v1/apps';
 
 
 export type OneSignalPushPayload = {
@@ -411,9 +412,76 @@ export type OneSignalPlayerLookup = {
   invalidIdentifier?: boolean;
   deviceType?: number | null;
   externalUserId?: string | null;
+  /** OneSignal notification_types: >0 means subscribed, <=0 means unsubscribed. */
+  notificationTypes?: number | null;
+  /** True when the device is actually subscribed and can receive a push. */
+  subscribed?: boolean;
   error?: string;
   appId: string;
 };
+
+export type OneSignalAppStats = {
+  appId: string;
+  ok: boolean;
+  /** Total device records registered on the app. */
+  players?: number;
+  /** Devices that can actually be sent a push (subscribed + valid token). */
+  messageablePlayers?: number;
+  /** True when the app has Android FCM (Google) push credentials configured. */
+  hasAndroidCredentials?: boolean;
+  /** True when the app has iOS APNs push credentials configured. */
+  hasIosCredentials?: boolean;
+  error?: string;
+};
+
+/**
+ * Fetch app-level push stats from OneSignal. This tells us whether the app has
+ * any messageable (deliverable) devices and whether Android FCM / iOS APNs
+ * credentials are configured — the usual reason valid players still get 0 recipients.
+ */
+export async function getOneSignalAppStats(
+  appIdOverride?: string | null,
+  restApiKeyOverride?: string | null
+): Promise<OneSignalAppStats> {
+  const apiKey = restApiKeyOverride ? String(restApiKeyOverride).trim() : getRestApiKey();
+  const appId = getServerOneSignalAppId(appIdOverride);
+  if (!apiKey) return { appId, ok: false, error: 'Missing REST API key' };
+
+  const url = `${ONESIGNAL_APPS_API}/${encodeURIComponent(appId)}`;
+  for (const auth of [`Key ${apiKey}`, `Basic ${apiKey}`]) {
+    try {
+      const response = await fetch(url, { headers: { Authorization: auth } });
+      const raw = await response.json().catch(() => null);
+      if (!response.ok) continue;
+      const row = raw && typeof raw === 'object' ? (raw as Record<string, unknown>) : {};
+      const truthy = (v: unknown) => (typeof v === 'string' ? v.trim().length > 0 : Boolean(v));
+      // Android is deliverable with either the legacy GCM key or a modern FCM v1 service account.
+      const hasAndroid =
+        truthy(row.gcm_key) ||
+        truthy(row.fcm_v1_service_account_json) ||
+        truthy(row.fcm_sender_id) ||
+        truthy(row.android_gcm_sender_id);
+      // iOS needs an APNs key (.p8) or certificate configured.
+      const hasIos =
+        truthy(row.apns_env) ||
+        truthy(row.apns_certificates) ||
+        truthy(row.apns_p8) ||
+        truthy(row.apns_key_id);
+      return {
+        appId,
+        ok: true,
+        players: typeof row.players === 'number' ? row.players : undefined,
+        messageablePlayers:
+          typeof row.messageable_players === 'number' ? row.messageable_players : undefined,
+        hasAndroidCredentials: hasAndroid,
+        hasIosCredentials: hasIos,
+      };
+    } catch {
+      /* try next auth */
+    }
+  }
+  return { appId, ok: false, error: 'Could not read app stats (auth failed or wrong app)' };
+}
 
 /** Check whether a player/subscription ID exists on the configured OneSignal app. */
 export async function lookupOneSignalPlayer(
@@ -431,12 +499,14 @@ export async function lookupOneSignalPlayer(
   const url = `${ONESIGNAL_PLAYERS_API}/${encodeURIComponent(id)}?app_id=${encodeURIComponent(appId)}`;
 
   // Try modern Key auth, then legacy Basic
+  let lastStatus = 0;
   for (const auth of [`Key ${apiKey}`, `Basic ${apiKey}`]) {
     try {
       const response = await fetch(url, {
         headers: { Authorization: auth },
       });
       const raw = await response.json().catch(() => null);
+      lastStatus = response.status;
 
       if (response.status === 404) {
         return {
@@ -447,18 +517,35 @@ export async function lookupOneSignalPlayer(
         };
       }
 
+      // A 400 means the id is not a valid player/subscription id for this app
+      // (e.g. an FCM/APNs token or an id from a different app) — not an auth problem.
+      if (response.status === 400) {
+        return {
+          playerId: id,
+          found: false,
+          appId,
+          error: 'Not a valid OneSignal player id for this app (may be a raw device token or from another app)',
+        };
+      }
+
       if (!response.ok) {
         continue;
       }
 
       const row = raw && typeof raw === 'object' ? (raw as Record<string, unknown>) : {};
+      const notificationTypes =
+        typeof row.notification_types === 'number' ? row.notification_types : null;
+      const invalidIdentifier = Boolean(row.invalid_identifier);
       return {
         playerId: id,
         found: true,
-        invalidIdentifier: Boolean(row.invalid_identifier),
+        invalidIdentifier,
         deviceType: typeof row.device_type === 'number' ? row.device_type : null,
         externalUserId:
           typeof row.external_user_id === 'string' ? row.external_user_id : null,
+        notificationTypes,
+        // Subscribed when OneSignal has a valid push token and notification_types > 0.
+        subscribed: !invalidIdentifier && (notificationTypes == null || notificationTypes > 0),
         appId,
       };
     } catch {
@@ -470,6 +557,9 @@ export async function lookupOneSignalPlayer(
     playerId: id,
     found: false,
     appId,
-    error: 'Could not look up player (auth failed). Check ONESIGNAL_REST_API_KEY.',
+    error:
+      lastStatus === 401 || lastStatus === 403
+        ? 'Could not look up player (auth failed). Check ONESIGNAL_REST_API_KEY.'
+        : `Could not look up player (HTTP ${lastStatus || 'error'}).`,
   };
 }

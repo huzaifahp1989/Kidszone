@@ -52,6 +52,15 @@ export function getLegacyOneSignalAppId(): string {
   return clean(process.env.ONESIGNAL_LEGACY_APP_ID) || LEGACY_ONESIGNAL_APP_ID_DEFAULT;
 }
 
+/** Separate iOS OneSignal app (Apple push is often its own app with its own REST key). */
+function getIosRestApiKey(): string | null {
+  return restKeyOrNull(process.env.ONESIGNAL_IOS_REST_API_KEY);
+}
+
+export function getIosOneSignalAppId(): string {
+  return clean(process.env.ONESIGNAL_IOS_APP_ID);
+}
+
 /**
  * Apps we can send to from admin.
  * - Always includes primary when REST key exists.
@@ -74,6 +83,17 @@ export function getOneSignalAppTargets(overrideAppId?: string | null): OneSignal
       label: 'primary',
       appId: getServerOneSignalAppId(),
       restApiKey: primaryKey,
+    });
+  }
+
+  // Separate iOS app (Apple) — has its own App ID + REST key.
+  const iosKey = getIosRestApiKey();
+  const iosAppId = getIosOneSignalAppId();
+  if (iosKey && iosAppId && !targets.some((t) => t.appId === iosAppId)) {
+    targets.push({
+      label: 'ios',
+      appId: iosAppId,
+      restApiKey: iosKey,
     });
   }
 
