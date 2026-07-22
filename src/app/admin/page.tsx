@@ -947,6 +947,12 @@ export default function AdminPanel() {
           >
             🌙 Quiz Challenge
           </button>
+          <button
+            onClick={() => router.push('/admin/audio-quiz')}
+            className="px-5 py-2.5 rounded-lg font-bold transition bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 hover:border-violet-300 flex items-center gap-2 whitespace-nowrap"
+          >
+            🎙️ Audio Quiz
+          </button>
           <div className="w-px h-8 bg-slate-300 mx-2 self-center hidden sm:block"></div>
           
           <button

@@ -15,6 +15,7 @@ import {
   Palette,
   CalendarHeart,
   Sparkles,
+  Mic,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -98,6 +99,14 @@ export const NAV_GROUPS: NavGroup[] = [
         shortLabel: 'Challenge',
         description: 'Quran Stories & Fiqh quizzes — one attempt each!',
         icon: Sparkles,
+        group: 'play',
+      },
+      {
+        href: '/audio-quiz',
+        label: 'Audio Quiz',
+        shortLabel: 'Audio',
+        description: 'Listen and record your voice answer to win prizes!',
+        icon: Mic,
         group: 'play',
       },
     ],
