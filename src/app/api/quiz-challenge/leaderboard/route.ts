@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { isTestModeEmail } from '@/lib/test-mode';
 import { isChallengeQuizKey } from '@/data/challenge-quizzes';
-import { CHALLENGE_ATTEMPTS_TABLE, RELATION_MISSING } from '@/lib/challenge-quiz-server';
+import { CHALLENGE_ATTEMPTS_TABLE, isMissingTableError } from '@/lib/challenge-quiz-server';
 
 export const dynamic = 'force-dynamic';
 
@@ -30,7 +30,7 @@ export async function GET(request: Request) {
     .limit(100);
 
   if (error) {
-    if (error.code === RELATION_MISSING) {
+    if (isMissingTableError(error)) {
       return NextResponse.json({ entries: [], tableMissing: true });
     }
     return NextResponse.json({ entries: [], error: error.message }, { status: 500 });

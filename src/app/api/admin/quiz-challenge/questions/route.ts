@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { isAdminRequest } from '@/lib/admin-auth';
 import { isChallengeQuizKey } from '@/data/challenge-quizzes';
-import { CHALLENGE_QUESTIONS_TABLE } from '@/lib/challenge-quiz-server';
+import { CHALLENGE_QUESTIONS_TABLE, isMissingTableError } from '@/lib/challenge-quiz-server';
 
 export const dynamic = 'force-dynamic';
 
@@ -51,7 +51,7 @@ export async function GET(request: Request) {
 
     const { data, error } = await query;
     if (error) {
-      if (error.code === '42P01') {
+      if (isMissingTableError(error)) {
         return NextResponse.json({ questions: [], tableMissing: true });
       }
       throw error;

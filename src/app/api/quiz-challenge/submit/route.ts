@@ -6,7 +6,7 @@ import { isAnswerCorrect } from '@/lib/answer-match';
 import {
   loadChallengeQuestions,
   CHALLENGE_ATTEMPTS_TABLE,
-  RELATION_MISSING,
+  isMissingTableError,
 } from '@/lib/challenge-quiz-server';
 
 export const dynamic = 'force-dynamic';
@@ -113,7 +113,7 @@ export async function POST(request: Request) {
 
   // Enforce ONE attempt per child. If they already completed it, return the stored result.
   const { data: existing, error: existingError } = await selectAttempt(config.key, userId);
-  if (existingError && existingError.code !== RELATION_MISSING) {
+  if (existingError && !isMissingTableError(existingError)) {
     return NextResponse.json({ error: existingError.message }, { status: 500 });
   }
   if (existing) {
@@ -125,7 +125,7 @@ export async function POST(request: Request) {
     });
   }
   // If the attempts table is missing, still return the score so the child sees results.
-  if (existingError?.code === RELATION_MISSING) {
+  if (isMissingTableError(existingError)) {
     return NextResponse.json({ alreadyCompleted: false, persisted: false, result, review: result.review });
   }
 
@@ -164,7 +164,7 @@ export async function POST(request: Request) {
         review: dup && Array.isArray((dup as AttemptRow).answers) ? (dup as AttemptRow).answers : result.review,
       });
     }
-    if (insertError.code === RELATION_MISSING) {
+    if (isMissingTableError(insertError)) {
       return NextResponse.json({ alreadyCompleted: false, persisted: false, result, review: result.review });
     }
     return NextResponse.json({ error: insertError.message }, { status: 500 });

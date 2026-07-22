@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { isAdminRequest } from '@/lib/admin-auth';
 import { CHALLENGE_QUIZ_KEYS, CHALLENGE_QUIZZES } from '@/data/challenge-quizzes';
-import { CHALLENGE_QUESTIONS_TABLE } from '@/lib/challenge-quiz-server';
+import { CHALLENGE_QUESTIONS_TABLE, isMissingTableError } from '@/lib/challenge-quiz-server';
 
 export const dynamic = 'force-dynamic';
 
@@ -103,7 +103,7 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
   const { error } = await supabaseAdmin.from(CHALLENGE_QUESTIONS_TABLE).select('id').limit(1);
-  if (error?.code === '42P01') return NextResponse.json({ exists: false });
+  if (isMissingTableError(error)) return NextResponse.json({ exists: false });
   return NextResponse.json({ exists: !error });
 }
 
@@ -121,12 +121,12 @@ export async function POST(request: Request) {
   // Verify the table now exists regardless of the RPC result (it may already exist).
   const { error: checkError } = await supabaseAdmin.from(CHALLENGE_QUESTIONS_TABLE).select('id').limit(1);
 
-  if (checkError?.code === '42P01') {
+  if (isMissingTableError(checkError)) {
     return NextResponse.json(
       {
         success: false,
         message:
-          'Could not create the tables automatically. Please run SETUP_QUIZ_CHALLENGE.sql in the Supabase SQL editor, then reopen this page.',
+          'Automatic setup is not available on this database (the exec_sql helper is missing). Please copy the SQL below and run it once in the Supabase SQL editor, then reopen this page.',
         sql: SETUP_SQL,
         rpcError: rpcError?.message || null,
       },

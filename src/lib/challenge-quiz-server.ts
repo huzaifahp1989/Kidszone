@@ -11,6 +11,14 @@ export const CHALLENGE_ATTEMPTS_TABLE = 'challenge_quiz_attempts';
 /** Postgres error code raised when a table/relation does not exist yet. */
 export const RELATION_MISSING = '42P01';
 
+/**
+ * True when an error means the table is not available: either it does not exist
+ * (`42P01`) or PostgREST cannot see it in its schema cache yet (`PGRST205`).
+ */
+export function isMissingTableError(error: { code?: string } | null | undefined): boolean {
+  return error?.code === '42P01' || error?.code === 'PGRST205';
+}
+
 function mapRow(row: Record<string, unknown>): ChallengeQuestion {
   const accepted = row.accepted_answers;
   return {
