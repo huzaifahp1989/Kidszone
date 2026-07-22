@@ -61,6 +61,24 @@ export default function AdminAudioQuizPage() {
   const [uploadingBanner, setUploadingBanner] = React.useState(false);
   // Admin can record the question directly with the mic (up to 5 minutes).
   const questionRecorder = useAudioRecorder(300);
+  // Multi-question support: manage a list of audio questions for the quiz being edited.
+  const [questions, setQuestions] = React.useState<Array<{ id: string; prompt: string; audioUrl: string | null }>>([]);
+  const [pendingAudio, setPendingAudio] = React.useState<{ path: string; url: string } | null>(null);
+  const [pendingPrompt, setPendingPrompt] = React.useState('');
+
+  const loadQuestions = React.useCallback(async (quizId: string) => {
+    if (!quizId) {
+      setQuestions([]);
+      return;
+    }
+    try {
+      const res = await fetch(`/api/admin/audio-quiz/questions?quizId=${encodeURIComponent(quizId)}`, { headers: adminHeaders });
+      const data = await res.json();
+      if (res.ok) setQuestions(data.questions || []);
+    } catch {
+      /* ignore */
+    }
+  }, []);
 
   const load = React.useCallback(async () => {
     setLoading(true);
@@ -106,7 +124,13 @@ export default function AdminAudioQuizPage() {
     }
   };
 
-  const resetForm = () => setForm({ ...emptyForm });
+  const resetForm = () => {
+    setForm({ ...emptyForm });
+    setQuestions([]);
+    setPendingAudio(null);
+    setPendingPrompt('');
+    questionRecorder.reset();
+  };
 
   const startEdit = (q: AdminAudioQuiz) => {
     setForm({
@@ -125,6 +149,10 @@ export default function AdminAudioQuizPage() {
       winnersCount: q.winnersCount,
       active: q.active,
     });
+    setPendingAudio(null);
+    setPendingPrompt('');
+    questionRecorder.reset();
+    loadQuestions(q.id);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -144,15 +172,64 @@ export default function AdminAudioQuizPage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Upload failed');
       if (kind === 'audio') {
-        setForm((f) => ({ ...f, questionAudioPath: data.path || '', questionAudioUrl: data.url || '' }));
+        setPendingAudio({ path: data.path || '', url: data.url || '' });
       } else {
         setForm((f) => ({ ...f, bannerUrl: data.url || '' }));
       }
-      setMessage(`${kind === 'audio' ? 'Question audio' : 'Banner'} uploaded.`);
+      setMessage(`${kind === 'audio' ? 'Question audio' : 'Banner'} uploaded — add it as a question below.`);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Upload failed');
     } finally {
       kind === 'audio' ? setUploadingAudio(false) : setUploadingBanner(false);
+    }
+  };
+
+  const addPendingQuestion = async () => {
+    if (!form.id) {
+      setError('Save the quiz first, then add audio questions.');
+      return;
+    }
+    if (!pendingAudio) {
+      setError('Record or upload the question audio first.');
+      return;
+    }
+    setError('');
+    try {
+      const res = await fetch('/api/admin/audio-quiz/questions', {
+        method: 'POST',
+        headers: adminHeaders,
+        body: JSON.stringify({
+          quizId: form.id,
+          prompt: pendingPrompt,
+          audioPath: pendingAudio.path,
+          audioUrl: pendingAudio.url,
+          sortOrder: questions.length,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Could not add question');
+      setPendingAudio(null);
+      setPendingPrompt('');
+      questionRecorder.reset();
+      setMessage('Question added.');
+      loadQuestions(form.id);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Could not add question');
+    }
+  };
+
+  const deleteQuestion = async (qid: string) => {
+    if (!window.confirm('Delete this question?')) return;
+    try {
+      const res = await fetch(`/api/admin/audio-quiz/questions?id=${encodeURIComponent(qid)}`, {
+        method: 'DELETE',
+        headers: adminHeaders,
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Delete failed');
+      loadQuestions(form.id);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Delete failed');
     }
   };
 
@@ -174,46 +251,13 @@ export default function AdminAudioQuizPage() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Upload failed');
-      setForm((f) => ({ ...f, questionAudioPath: data.path || '', questionAudioUrl: data.url || '' }));
-      setMessage('Recorded question saved. Children will hear this on the quiz page.');
-      questionRecorder.reset();
+      setPendingAudio({ path: data.path || '', url: data.url || '' });
+      setMessage('Recording ready — add it as a question below.');
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Upload failed');
     } finally {
       setUploadingAudio(false);
     }
-  };
-
-  const deleteQuestionAudio = async () => {
-    if (!window.confirm('Delete the question recording for this quiz?')) return;
-    setError('');
-    const path = form.questionAudioPath;
-    // Best-effort remove the stored file.
-    if (path) {
-      try {
-        await fetch(`/api/admin/audio-quiz/upload?path=${encodeURIComponent(path)}`, {
-          method: 'DELETE',
-          headers: { 'x-admin-auth': 'true' },
-        });
-      } catch {
-        /* ignore */
-      }
-    }
-    setForm((f) => ({ ...f, questionAudioPath: '', questionAudioUrl: '' }));
-    // If editing an existing quiz, persist the removal immediately.
-    if (form.id) {
-      try {
-        await fetch('/api/admin/audio-quiz/quizzes', {
-          method: 'PUT',
-          headers: adminHeaders,
-          body: JSON.stringify({ id: form.id, questionAudioPath: null, questionAudioUrl: null }),
-        });
-        load();
-      } catch {
-        /* ignore */
-      }
-    }
-    setMessage('Question recording deleted.');
   };
 
   const save = async () => {
@@ -236,9 +280,6 @@ export default function AdminAudioQuizPage() {
       bannerUrl: form.bannerUrl || null,
       winnersCount: Number(form.winnersCount) || 3,
       active: form.active,
-      // Always send (null when removed) so deleting the recording persists and edits keep the path.
-      questionAudioPath: form.questionAudioPath || null,
-      questionAudioUrl: form.questionAudioUrl || null,
     };
     try {
       const res = await fetch('/api/admin/audio-quiz/quizzes', {
@@ -248,9 +289,21 @@ export default function AdminAudioQuizPage() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Save failed');
-      setMessage(form.id ? 'Quiz updated.' : 'Quiz created.');
-      resetForm();
       load();
+      if (form.id) {
+        setMessage('Quiz updated.');
+      } else {
+        // Enter edit mode on the new quiz so the admin can add audio questions.
+        const newId = data.quiz?.id as string | undefined;
+        if (newId) {
+          setForm((f) => ({ ...f, id: newId }));
+          setQuestions([]);
+          loadQuestions(newId);
+          setMessage('Quiz created — now add one or more audio questions below.');
+        } else {
+          setMessage('Quiz created.');
+        }
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Save failed');
     }
@@ -363,65 +416,94 @@ export default function AdminAudioQuizPage() {
               <input value={form.prizeDetails} onChange={(e) => setForm((f) => ({ ...f, prizeDetails: e.target.value }))} className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2" />
             </label>
 
-            <div className="grid gap-3 sm:grid-cols-2">
-              <div className="rounded-lg border border-slate-200 p-3">
-                <p className="text-sm font-bold text-slate-700">Question audio</p>
+            <div className="rounded-lg border border-slate-200 p-3">
+              <p className="text-sm font-bold text-slate-700">Banner image (optional)</p>
+              <input type="file" accept="image/jpeg,image/png,image/webp" disabled={uploadingBanner} onChange={(e) => uploadFile(e.target.files?.[0] || null, 'banner')} className="mt-2 w-full text-xs" />
+              {uploadingBanner ? <p className="mt-1 text-xs text-slate-500">Uploading…</p> : null}
+              {form.bannerUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={form.bannerUrl} alt="" className="mt-2 h-20 w-full rounded object-cover" />
+              ) : null}
+            </div>
 
-                {/* Record directly with the mic */}
-                <div className="mt-2 rounded-lg bg-violet-50 p-2">
-                  <p className="text-xs font-bold text-violet-800">🎤 Record with mic</p>
-                  <div className="mt-1 flex flex-wrap items-center gap-2">
-                    {questionRecorder.isRecording ? (
-                      <button type="button" onClick={questionRecorder.stopRecording} className="rounded-lg bg-rose-600 px-3 py-1.5 text-xs font-bold text-white">
-                        ⏹ Stop ({questionRecorder.formatTime(questionRecorder.seconds)})
-                      </button>
-                    ) : (
-                      <button type="button" onClick={questionRecorder.startRecording} className="rounded-lg bg-violet-600 px-3 py-1.5 text-xs font-bold text-white">
-                        ● Record
-                      </button>
-                    )}
-                    {questionRecorder.state === 'finished' && questionRecorder.audioUrl ? (
-                      <>
-                        <button type="button" onClick={questionRecorder.reset} className="rounded-lg border border-slate-300 px-2.5 py-1.5 text-xs font-bold text-slate-600">
-                          Redo
+            {/* Multiple audio questions */}
+            <div className="rounded-lg border border-violet-200 bg-violet-50/40 p-3">
+              <p className="text-sm font-black text-violet-900">🎧 Audio questions ({questions.length})</p>
+              <p className="text-xs text-slate-600">Add one or more questions. Children record an answer for each.</p>
+
+              {!form.id ? (
+                <p className="mt-2 rounded-lg bg-amber-100 px-3 py-2 text-xs font-semibold text-amber-800">
+                  Save the quiz first (button below), then add audio questions here.
+                </p>
+              ) : (
+                <>
+                  {/* Existing questions */}
+                  {questions.length > 0 ? (
+                    <ol className="mt-2 space-y-2">
+                      {questions.map((q, i) => (
+                        <li key={q.id} className="rounded-lg border border-slate-200 bg-white p-2">
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="text-sm font-bold text-slate-800">
+                              Q{i + 1}{q.prompt ? `: ${q.prompt}` : ''}
+                            </span>
+                            <button type="button" onClick={() => deleteQuestion(q.id)} className="rounded bg-rose-100 px-2 py-1 text-xs font-bold text-rose-700 hover:bg-rose-200">
+                              Delete
+                            </button>
+                          </div>
+                          {q.audioUrl ? <audio controls src={q.audioUrl} className="mt-1 h-8 w-full" /> : null}
+                        </li>
+                      ))}
+                    </ol>
+                  ) : (
+                    <p className="mt-2 text-xs text-amber-700">No questions yet — add at least one below.</p>
+                  )}
+
+                  {/* Add a new question */}
+                  <div className="mt-3 rounded-lg border border-violet-200 bg-white p-2">
+                    <p className="text-xs font-bold text-violet-800">Add a question</p>
+                    <input
+                      value={pendingPrompt}
+                      onChange={(e) => setPendingPrompt(e.target.value)}
+                      placeholder="Optional label (e.g. 'Recite Surah Al-Fatiha')"
+                      className="mt-1 w-full rounded-lg border border-slate-300 px-2 py-1.5 text-sm"
+                    />
+                    <div className="mt-2 flex flex-wrap items-center gap-2">
+                      {questionRecorder.isRecording ? (
+                        <button type="button" onClick={questionRecorder.stopRecording} className="rounded-lg bg-rose-600 px-3 py-1.5 text-xs font-bold text-white">
+                          ⏹ Stop ({questionRecorder.formatTime(questionRecorder.seconds)})
                         </button>
-                        <button type="button" onClick={uploadRecordedQuestion} disabled={uploadingAudio} className="rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-bold text-white disabled:opacity-50">
-                          {uploadingAudio ? 'Saving…' : 'Use this recording'}
+                      ) : (
+                        <button type="button" onClick={questionRecorder.startRecording} className="rounded-lg bg-violet-600 px-3 py-1.5 text-xs font-bold text-white">
+                          🎤 Record
                         </button>
-                      </>
+                      )}
+                      {questionRecorder.state === 'finished' && questionRecorder.audioUrl ? (
+                        <>
+                          <button type="button" onClick={questionRecorder.reset} className="rounded-lg border border-slate-300 px-2.5 py-1.5 text-xs font-bold text-slate-600">
+                            Redo
+                          </button>
+                          <button type="button" onClick={uploadRecordedQuestion} disabled={uploadingAudio} className="rounded-lg bg-slate-700 px-3 py-1.5 text-xs font-bold text-white disabled:opacity-50">
+                            {uploadingAudio ? 'Preparing…' : 'Use recording'}
+                          </button>
+                        </>
+                      ) : null}
+                      <span className="text-xs text-slate-500">or upload:</span>
+                      <input type="file" accept="audio/mpeg,audio/wav,audio/x-wav,audio/mp4,audio/x-m4a,audio/aac,.mp3,.wav,.m4a" disabled={uploadingAudio} onChange={(e) => uploadFile(e.target.files?.[0] || null, 'audio')} className="text-xs" />
+                    </div>
+                    {questionRecorder.audioUrl ? <audio controls src={questionRecorder.audioUrl} className="mt-2 w-full" /> : null}
+                    {questionRecorder.error ? <p className="mt-1 text-xs text-rose-600">{questionRecorder.error}</p> : null}
+                    {pendingAudio ? (
+                      <div className="mt-2 rounded-lg bg-emerald-50 p-2">
+                        <p className="text-xs font-semibold text-emerald-700">Audio ready.</p>
+                        <audio controls src={pendingAudio.url} className="mt-1 w-full" />
+                        <button type="button" onClick={addPendingQuestion} className="mt-2 rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-emerald-700">
+                          + Add this question
+                        </button>
+                      </div>
                     ) : null}
                   </div>
-                  {questionRecorder.audioUrl ? <audio controls src={questionRecorder.audioUrl} className="mt-2 w-full" /> : null}
-                  {questionRecorder.error ? <p className="mt-1 text-xs text-rose-600">{questionRecorder.error}</p> : null}
-                </div>
-
-                {/* Or upload a file */}
-                <p className="mt-2 text-xs text-slate-500">Or upload a file (MP3, WAV, M4A):</p>
-                <input type="file" accept="audio/mpeg,audio/wav,audio/x-wav,audio/mp4,audio/x-m4a,audio/aac,.mp3,.wav,.m4a" disabled={uploadingAudio} onChange={(e) => uploadFile(e.target.files?.[0] || null, 'audio')} className="mt-1 w-full text-xs" />
-                {uploadingAudio ? <p className="mt-1 text-xs text-slate-500">Uploading…</p> : null}
-                {form.questionAudioUrl ? (
-                  <div className="mt-2">
-                    <p className="text-xs font-semibold text-emerald-700">✓ Saved question audio (this plays on the quiz page):</p>
-                    <audio controls src={form.questionAudioUrl} className="mt-1 w-full" />
-                    <button
-                      type="button"
-                      onClick={deleteQuestionAudio}
-                      className="mt-2 rounded-lg bg-rose-100 px-3 py-1.5 text-xs font-bold text-rose-700 hover:bg-rose-200"
-                    >
-                      🗑 Delete recording
-                    </button>
-                  </div>
-                ) : null}
-              </div>
-              <div className="rounded-lg border border-slate-200 p-3">
-                <p className="text-sm font-bold text-slate-700">Banner image (optional)</p>
-                <input type="file" accept="image/jpeg,image/png,image/webp" disabled={uploadingBanner} onChange={(e) => uploadFile(e.target.files?.[0] || null, 'banner')} className="mt-2 w-full text-xs" />
-                {uploadingBanner ? <p className="mt-1 text-xs text-slate-500">Uploading…</p> : null}
-                {form.bannerUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={form.bannerUrl} alt="" className="mt-2 h-20 w-full rounded object-cover" />
-                ) : null}
-              </div>
+                </>
+              )}
             </div>
 
             <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
@@ -459,14 +541,7 @@ export default function AdminAudioQuizPage() {
                     {q.category} · Ages {q.ageGroup} · max {q.maxRecordingSeconds}s · {q.winnersCount} winners
                     {q.endDate ? ` · ends ${q.endDate}` : ''}
                   </p>
-                  {q.questionAudioUrl ? (
-                    <div className="mt-2">
-                      <p className="text-[11px] font-semibold text-slate-500">Question audio:</p>
-                      <audio controls src={q.questionAudioUrl} className="mt-1 h-8 w-full max-w-xs" />
-                    </div>
-                  ) : (
-                    <p className="mt-1 text-[11px] text-amber-600">No question audio yet — edit to add one.</p>
-                  )}
+                  <p className="mt-1 text-[11px] text-slate-500">Open “Edit” to add or manage audio questions.</p>
                 </div>
                 <div className="flex shrink-0 gap-2">
                   <Link href={`/admin/audio-quiz/${q.id}`} className="rounded-lg bg-violet-100 px-3 py-1.5 text-sm font-bold text-violet-700 hover:bg-violet-200">

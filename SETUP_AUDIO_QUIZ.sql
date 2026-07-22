@@ -22,13 +22,26 @@ create table if not exists public.audio_quizzes (
 
 create index if not exists audio_quizzes_active_idx on public.audio_quizzes (active, end_date);
 
+-- A quiz can have one or more audio questions.
+create table if not exists public.audio_quiz_questions (
+  id uuid primary key default gen_random_uuid(),
+  quiz_id uuid not null references public.audio_quizzes (id) on delete cascade,
+  sort_order integer not null default 0,
+  prompt text,
+  audio_path text,
+  audio_url text,
+  created_at timestamptz not null default timezone('utc', now())
+);
+create index if not exists audio_quiz_questions_quiz_idx on public.audio_quiz_questions (quiz_id, sort_order);
+
+-- One entry per child per quiz (holds overall status / winner place / judge notes).
 create table if not exists public.audio_submissions (
   id uuid primary key default gen_random_uuid(),
   quiz_id uuid not null references public.audio_quizzes (id) on delete cascade,
   user_id uuid not null references auth.users (id) on delete cascade,
   user_name text,
   age integer,
-  audio_path text not null,
+  audio_path text,
   audio_url text,
   duration_seconds integer not null default 0,
   device_info text,
@@ -43,6 +56,25 @@ create table if not exists public.audio_submissions (
 create index if not exists audio_submissions_quiz_idx
   on public.audio_submissions (quiz_id, status, submitted_at desc);
 
+-- Existing installs may have audio_path NOT NULL — per-question audio now lives in audio_answers.
+alter table public.audio_submissions alter column audio_path drop not null;
+
+-- One recorded answer per question per child.
+create table if not exists public.audio_answers (
+  id uuid primary key default gen_random_uuid(),
+  submission_id uuid not null references public.audio_submissions (id) on delete cascade,
+  quiz_id uuid not null references public.audio_quizzes (id) on delete cascade,
+  question_id uuid not null references public.audio_quiz_questions (id) on delete cascade,
+  user_id uuid not null references auth.users (id) on delete cascade,
+  audio_path text not null,
+  audio_url text,
+  duration_seconds integer not null default 0,
+  created_at timestamptz not null default timezone('utc', now()),
+  unique (submission_id, question_id)
+);
+create index if not exists audio_answers_submission_idx on public.audio_answers (submission_id);
+create index if not exists audio_answers_question_idx on public.audio_answers (question_id);
+
 create table if not exists public.audio_quiz_winners (
   id uuid primary key default gen_random_uuid(),
   quiz_id uuid not null references public.audio_quizzes (id) on delete cascade,
@@ -54,15 +86,21 @@ create table if not exists public.audio_quiz_winners (
 );
 
 alter table public.audio_quizzes enable row level security;
+alter table public.audio_quiz_questions enable row level security;
 alter table public.audio_submissions enable row level security;
+alter table public.audio_answers enable row level security;
 alter table public.audio_quiz_winners enable row level security;
 
--- Quizzes: anyone may read; only service role writes.
+-- Quizzes + questions: anyone may read; only service role writes.
 drop policy if exists "Anyone can read audio quizzes" on public.audio_quizzes;
 create policy "Anyone can read audio quizzes"
   on public.audio_quizzes for select using (true);
 
--- Submissions: a child can read/insert only their own (writes normally via service role).
+drop policy if exists "Anyone can read audio quiz questions" on public.audio_quiz_questions;
+create policy "Anyone can read audio quiz questions"
+  on public.audio_quiz_questions for select using (true);
+
+-- Submissions + answers: a child can read/insert only their own (writes normally via service role).
 drop policy if exists "Users read own audio submissions" on public.audio_submissions;
 create policy "Users read own audio submissions"
   on public.audio_submissions for select to authenticated using (auth.uid() = user_id);
@@ -71,16 +109,28 @@ drop policy if exists "Users insert own audio submissions" on public.audio_submi
 create policy "Users insert own audio submissions"
   on public.audio_submissions for insert to authenticated with check (auth.uid() = user_id);
 
+drop policy if exists "Users read own audio answers" on public.audio_answers;
+create policy "Users read own audio answers"
+  on public.audio_answers for select to authenticated using (auth.uid() = user_id);
+
+drop policy if exists "Users insert own audio answers" on public.audio_answers;
+create policy "Users insert own audio answers"
+  on public.audio_answers for insert to authenticated with check (auth.uid() = user_id);
+
 -- Winners: anyone may read (results page).
 drop policy if exists "Anyone can read audio quiz winners" on public.audio_quiz_winners;
 create policy "Anyone can read audio quiz winners"
   on public.audio_quiz_winners for select using (true);
 
 grant select on public.audio_quizzes to anon, authenticated;
+grant select on public.audio_quiz_questions to anon, authenticated;
 grant select, insert on public.audio_submissions to authenticated;
+grant select, insert on public.audio_answers to authenticated;
 grant select on public.audio_quiz_winners to anon, authenticated;
 grant all on public.audio_quizzes to service_role;
+grant all on public.audio_quiz_questions to service_role;
 grant all on public.audio_submissions to service_role;
+grant all on public.audio_answers to service_role;
 grant all on public.audio_quiz_winners to service_role;
 
 -- Ask PostgREST (the Supabase REST layer) to reload so the new tables are visible immediately.

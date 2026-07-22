@@ -4,6 +4,14 @@ import React from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 
+interface AnswerItem {
+  questionId: string;
+  prompt: string;
+  order: number;
+  durationSeconds: number;
+  audioUrl: string | null;
+}
+
 interface AdminSubmission {
   id: string;
   userName: string;
@@ -15,6 +23,7 @@ interface AdminSubmission {
   submittedAt: string | null;
   audioUrl: string | null;
   audioPath: string;
+  answers?: AnswerItem[];
 }
 
 const adminHeaders = { 'Content-Type': 'application/json', 'x-admin-auth': 'true' };
@@ -73,16 +82,16 @@ export default function AdminAudioSubmissionsPage() {
     }
   };
 
-  const download = async (sub: AdminSubmission) => {
-    if (!sub.audioUrl) return;
+  const download = async (audioUrl: string | null, name: string) => {
+    if (!audioUrl) return;
     try {
-      const res = await fetch(sub.audioUrl);
+      const res = await fetch(audioUrl);
       const blob = await res.blob();
-      const ext = sub.audioPath?.split('.').pop() || 'webm';
+      const ext = (audioUrl.split('?')[0].split('.').pop() || 'webm').slice(0, 4);
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `audio-${sub.userName}-${sub.id}.${ext}`;
+      a.download = `${name}.${ext}`;
       document.body.appendChild(a);
       a.click();
       a.remove();
@@ -160,10 +169,26 @@ export default function AdminAudioSubmissionsPage() {
                   </span>
                 </div>
 
-                {sub.audioUrl ? (
+                {sub.answers && sub.answers.length > 0 ? (
+                  <div className="mt-3 space-y-2">
+                    {sub.answers.map((a, i) => (
+                      <div key={a.questionId} className="rounded-lg border border-slate-100 bg-slate-50 p-2">
+                        <div className="flex items-center justify-between gap-2">
+                          <p className="text-xs font-bold text-slate-700">Q{i + 1}{a.prompt ? `: ${a.prompt}` : ''} · {a.durationSeconds}s</p>
+                          {a.audioUrl ? (
+                            <button type="button" onClick={() => download(a.audioUrl, `${sub.userName}-q${i + 1}-${sub.id}`)} className="rounded border border-slate-300 px-2 py-0.5 text-[11px] font-bold text-slate-600 hover:bg-slate-100">
+                              Download
+                            </button>
+                          ) : null}
+                        </div>
+                        {a.audioUrl ? <audio controls src={a.audioUrl} className="mt-1 h-8 w-full" /> : <p className="text-xs text-rose-500">Audio unavailable</p>}
+                      </div>
+                    ))}
+                  </div>
+                ) : sub.audioUrl ? (
                   <audio controls src={sub.audioUrl} className="mt-3 w-full" />
                 ) : (
-                  <p className="mt-2 text-xs text-rose-500">Audio unavailable</p>
+                  <p className="mt-2 text-xs text-rose-500">No audio</p>
                 )}
 
                 <textarea
@@ -201,9 +226,11 @@ export default function AdminAudioSubmissionsPage() {
                       Clear place
                     </button>
                   ) : null}
-                  <button type="button" onClick={() => download(sub)} className="ml-auto rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-bold text-slate-700 hover:bg-slate-100">
-                    Download
-                  </button>
+                  {(!sub.answers || sub.answers.length === 0) && sub.audioUrl ? (
+                    <button type="button" onClick={() => download(sub.audioUrl, `${sub.userName}-${sub.id}`)} className="ml-auto rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-bold text-slate-700 hover:bg-slate-100">
+                      Download
+                    </button>
+                  ) : null}
                 </div>
               </div>
             ))}

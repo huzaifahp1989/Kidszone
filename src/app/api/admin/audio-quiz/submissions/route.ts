@@ -4,6 +4,8 @@ import { isAdminRequest } from '@/lib/admin-auth';
 import { AUDIO_QUIZ_STATUSES } from '@/lib/audio-quiz';
 import {
   AUDIO_SUBMISSIONS_TABLE,
+  AUDIO_ANSWERS_TABLE,
+  AUDIO_QUESTIONS_TABLE,
   AUDIO_WINNERS_TABLE,
   isMissingTableError,
   resolveAnswerUrl,
@@ -77,9 +79,55 @@ export async function GET(request: Request) {
       });
     }
 
+    // Load per-question answers for these submissions (multi-question quizzes).
+    const submissionIds = rows.map((r) => r.id);
+    const answersBySubmission = new Map<string, { questionId: string; audioPath: string; durationSeconds: number }[]>();
+    const questionPrompts = new Map<string, { prompt: string; order: number }>();
+    if (submissionIds.length) {
+      const [{ data: answerRows }, { data: questionRows }] = await Promise.all([
+        supabaseAdmin.from(AUDIO_ANSWERS_TABLE).select('submission_id, question_id, audio_path, duration_seconds').in('submission_id', submissionIds),
+        quizId
+          ? supabaseAdmin.from(AUDIO_QUESTIONS_TABLE).select('id, prompt, sort_order').eq('quiz_id', quizId)
+          : Promise.resolve({ data: [] as Record<string, unknown>[] }),
+      ]);
+      for (const q of (questionRows || []) as Record<string, unknown>[]) {
+        questionPrompts.set(String(q.id), { prompt: q.prompt ? String(q.prompt) : '', order: Number(q.sort_order ?? 0) });
+      }
+      for (const a of (answerRows || []) as Record<string, unknown>[]) {
+        const sid = String(a.submission_id);
+        const list = answersBySubmission.get(sid) || [];
+        list.push({
+          questionId: String(a.question_id),
+          audioPath: String(a.audio_path || ''),
+          durationSeconds: Number(a.duration_seconds ?? 0),
+        });
+        answersBySubmission.set(sid, list);
+      }
+    }
+
     // Resolve fresh playable URLs for the admin player.
     const withUrls = await Promise.all(
-      rows.map(async (r) => ({ ...r, audioUrl: await resolveAnswerUrl(r.audioPath) }))
+      rows.map(async (r) => {
+        const rawAnswers = answersBySubmission.get(r.id) || [];
+        const answers = await Promise.all(
+          rawAnswers.map(async (a, i) => {
+            const meta = questionPrompts.get(a.questionId);
+            return {
+              questionId: a.questionId,
+              prompt: meta?.prompt || `Question ${(meta?.order ?? i) + 1}`,
+              order: meta?.order ?? i,
+              durationSeconds: a.durationSeconds,
+              audioUrl: await resolveAnswerUrl(a.audioPath),
+            };
+          })
+        );
+        answers.sort((x, y) => x.order - y.order);
+        return {
+          ...r,
+          audioUrl: r.audioPath ? await resolveAnswerUrl(r.audioPath) : null,
+          answers,
+        };
+      })
     );
 
     const counts = {

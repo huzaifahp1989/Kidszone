@@ -2,7 +2,9 @@ import { getReadableObjectUrl } from '@/lib/object-storage';
 import type { AudioQuiz } from '@/lib/audio-quiz';
 
 export const AUDIO_QUIZZES_TABLE = 'audio_quizzes';
+export const AUDIO_QUESTIONS_TABLE = 'audio_quiz_questions';
 export const AUDIO_SUBMISSIONS_TABLE = 'audio_submissions';
+export const AUDIO_ANSWERS_TABLE = 'audio_answers';
 export const AUDIO_WINNERS_TABLE = 'audio_quiz_winners';
 
 /** Storage bucket + path prefixes (reuses the existing story-recordings bucket). */
@@ -32,7 +34,27 @@ export function mapAudioQuiz(row: Record<string, unknown>): AudioQuiz {
   };
 }
 
-/** Resolve a fresh playable URL for a stored answer recording. */
+export interface AudioQuizQuestion {
+  id: string;
+  quizId: string;
+  sortOrder: number;
+  prompt: string;
+  audioPath: string | null;
+  audioUrl: string | null;
+}
+
+export function mapAudioQuestion(row: Record<string, unknown>): AudioQuizQuestion {
+  return {
+    id: String(row.id),
+    quizId: String(row.quiz_id || ''),
+    sortOrder: Number(row.sort_order ?? 0),
+    prompt: row.prompt ? String(row.prompt) : '',
+    audioPath: row.audio_path ? String(row.audio_path) : null,
+    audioUrl: row.audio_url ? String(row.audio_url) : null,
+  };
+}
+
+/** Resolve a fresh playable URL for a stored recording in the audio-quiz bucket. */
 export async function resolveAnswerUrl(audioPath: string | null | undefined): Promise<string | null> {
   const path = String(audioPath || '').trim();
   if (!path) return null;
