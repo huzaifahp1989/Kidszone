@@ -439,8 +439,11 @@ export type OneSignalAppStats = {
  * any messageable (deliverable) devices and whether Android FCM / iOS APNs
  * credentials are configured — the usual reason valid players still get 0 recipients.
  */
-export async function getOneSignalAppStats(appIdOverride?: string | null): Promise<OneSignalAppStats> {
-  const apiKey = getRestApiKey();
+export async function getOneSignalAppStats(
+  appIdOverride?: string | null,
+  restApiKeyOverride?: string | null
+): Promise<OneSignalAppStats> {
+  const apiKey = restApiKeyOverride ? String(restApiKeyOverride).trim() : getRestApiKey();
   const appId = getServerOneSignalAppId(appIdOverride);
   if (!apiKey) return { appId, ok: false, error: 'Missing REST API key' };
 
