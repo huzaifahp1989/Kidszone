@@ -35,10 +35,13 @@ export function usePedometer(): Pedometer {
   const [error, setError] = useState<string | null>(null);
 
   const avgRef = useRef(0);
-  const wasAboveRef = useRef(false);
-  const lastStepTsRef = useRef(0);
   const initializedRef = useRef(false);
   const handlerRef = useRef<((e: DeviceMotionEvent) => void) | null>(null);
+  // Peak/valley state machine + cadence lock (rejects shaking / random motion).
+  const peakingRef = useRef(false);
+  const peakAmpRef = useRef(0);
+  const lastStepTsRef = useRef(0);
+  const runRef = useRef(0);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -63,22 +66,50 @@ export function usePedometer(): Pedometer {
       initializedRef.current = true;
       return;
     }
-    // Low-pass running mean to remove gravity/orientation baseline.
-    avgRef.current = avgRef.current * 0.9 + mag * 0.1;
+    // Low-pass running mean to remove the gravity/orientation baseline.
+    avgRef.current = avgRef.current * 0.88 + mag * 0.12;
     const dynamic = mag - avgRef.current;
 
-    const THRESHOLD = 1.1; // m/s^2 above baseline to count as a footfall peak
     const now = typeof performance !== 'undefined' ? performance.now() : Date.now();
 
-    if (dynamic > THRESHOLD && !wasAboveRef.current) {
-      wasAboveRef.current = true;
-      // Debounce: a person cannot step more than ~4x/second.
-      if (now - lastStepTsRef.current > 260) {
-        lastStepTsRef.current = now;
-        setSteps((s) => s + 1);
+    // Tuned for real walking, to reject shaking / waving the phone:
+    const PEAK_HIGH = 1.8; // must rise this far above baseline to be a footfall peak
+    const VALLEY_LOW = -0.8; // ...then fall below this to complete one up/down step
+    const PEAK_MAX = 9.0; // above this it's a violent shake/drop, not a step
+    const MIN_STEP_MS = 300; // faster than this = shaking, not walking
+    const MAX_STEP_MS = 1800; // slower than this breaks the walking rhythm
+    const REQUIRED_RUN = 3; // consecutive rhythmic steps before we start counting
+
+    // Track the highest peak of the current up-swing.
+    if (dynamic > PEAK_HIGH) {
+      peakingRef.current = true;
+      if (dynamic > peakAmpRef.current) peakAmpRef.current = dynamic;
+      return;
+    }
+
+    // Complete a step only on the down-swing after a real peak (full oscillation).
+    if (peakingRef.current && dynamic < VALLEY_LOW) {
+      peakingRef.current = false;
+      const amp = peakAmpRef.current;
+      peakAmpRef.current = 0;
+      const interval = now - lastStepTsRef.current;
+      lastStepTsRef.current = now;
+
+      const rhythmic = interval >= MIN_STEP_MS && interval <= MAX_STEP_MS;
+      const plausible = amp <= PEAK_MAX;
+
+      if (rhythmic && plausible) {
+        runRef.current += 1;
+        // Only credit steps once a sustained walking rhythm is established.
+        if (runRef.current === REQUIRED_RUN) {
+          setSteps((s) => s + REQUIRED_RUN);
+        } else if (runRef.current > REQUIRED_RUN) {
+          setSteps((s) => s + 1);
+        }
+      } else {
+        // Too fast/slow/violent → rhythm broken (e.g. a shake). Start over.
+        runRef.current = 0;
       }
-    } else if (dynamic < THRESHOLD * 0.5) {
-      wasAboveRef.current = false;
     }
   }, []);
 
@@ -114,7 +145,10 @@ export function usePedometer(): Pedometer {
         setNeedsPermission(false);
       }
       initializedRef.current = false;
-      wasAboveRef.current = false;
+      peakingRef.current = false;
+      peakAmpRef.current = 0;
+      runRef.current = 0;
+      lastStepTsRef.current = 0;
       attach();
     } catch {
       setError('Could not start the step counter.');
