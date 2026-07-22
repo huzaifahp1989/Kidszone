@@ -451,16 +451,27 @@ export async function getOneSignalAppStats(appIdOverride?: string | null): Promi
       const raw = await response.json().catch(() => null);
       if (!response.ok) continue;
       const row = raw && typeof raw === 'object' ? (raw as Record<string, unknown>) : {};
-      const gcmKey = String(row.gcm_key || '').trim();
-      const apnsEnv = String(row.apns_env || '').trim();
+      const truthy = (v: unknown) => (typeof v === 'string' ? v.trim().length > 0 : Boolean(v));
+      // Android is deliverable with either the legacy GCM key or a modern FCM v1 service account.
+      const hasAndroid =
+        truthy(row.gcm_key) ||
+        truthy(row.fcm_v1_service_account_json) ||
+        truthy(row.fcm_sender_id) ||
+        truthy(row.android_gcm_sender_id);
+      // iOS needs an APNs key (.p8) or certificate configured.
+      const hasIos =
+        truthy(row.apns_env) ||
+        truthy(row.apns_certificates) ||
+        truthy(row.apns_p8) ||
+        truthy(row.apns_key_id);
       return {
         appId,
         ok: true,
         players: typeof row.players === 'number' ? row.players : undefined,
         messageablePlayers:
           typeof row.messageable_players === 'number' ? row.messageable_players : undefined,
-        hasAndroidCredentials: Boolean(gcmKey) || Boolean(row.android_gcm_sender_id),
-        hasIosCredentials: Boolean(apnsEnv),
+        hasAndroidCredentials: hasAndroid,
+        hasIosCredentials: hasIos,
       };
     } catch {
       /* try next auth */

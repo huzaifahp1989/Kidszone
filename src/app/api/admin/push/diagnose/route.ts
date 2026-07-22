@@ -30,39 +30,6 @@ export async function GET(request: Request) {
   const onlyUserId = String(searchParams.get('userId') || '').trim();
   const appIdOverride = String(searchParams.get('appId') || '').trim() || undefined;
 
-  // TEMP diagnostic: inspect which push credentials the OneSignal app has.
-  if (searchParams.get('appraw') === '1') {
-    const appId = getServerOneSignalAppId(appIdOverride);
-    const key = (process.env.ONESIGNAL_REST_API_KEY || '').trim().replace(/^["']|["']$/g, '');
-    const out: Record<string, unknown> = { appId };
-    for (const auth of [`Key ${key}`, `Basic ${key}`]) {
-      const r = await fetch(`https://onesignal.com/api/v1/apps/${encodeURIComponent(appId)}`, {
-        headers: { Authorization: auth },
-      });
-      const raw = await r.json().catch(() => null);
-      if (!r.ok) {
-        out[`status_${auth.split(' ')[0]}`] = r.status;
-        continue;
-      }
-      const row = (raw && typeof raw === 'object' ? raw : {}) as Record<string, unknown>;
-      // Report only presence/length booleans for credential-like fields (no secret values).
-      const credFields: Record<string, unknown> = {};
-      for (const k of Object.keys(row)) {
-        if (/fcm|gcm|apns|firebase|key|cert|sender/i.test(k)) {
-          const v = row[k];
-          credFields[k] =
-            typeof v === 'string' ? (v.trim() ? `set(len ${v.trim().length})` : 'empty') : v;
-        }
-      }
-      out.name = row.name;
-      out.players = row.players;
-      out.messageable_players = row.messageable_players;
-      out.credentials = credFields;
-      break;
-    }
-    return NextResponse.json(out);
-  }
-
   const serverAppId = getServerOneSignalAppId(appIdOverride);
   const publicAppId = PUBLIC_ONESIGNAL_APP_ID;
 

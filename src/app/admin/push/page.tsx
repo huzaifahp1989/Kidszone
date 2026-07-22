@@ -356,6 +356,9 @@ export default function AdminPushPage() {
         stats?.ok
           ? `OneSignal app: ${stats.messageablePlayers ?? '?'} subscribed / ${stats.players ?? '?'} total devices can receive push`
           : null,
+        stats?.ok
+          ? `Android FCM: ${stats.hasAndroidCredentials ? 'configured ✓' : 'NOT configured ✗'} · iOS APNs: ${stats.hasIosCredentials ? 'configured ✓' : 'NOT configured ✗ (iOS app users cannot receive until this is set in OneSignal)'}`
+          : null,
         `Checked ${data.checked} saved token(s) — valid: ${data.validOnApp}, subscribed: ${data.subscribedOnApp ?? '?'}`,
         (stats?.messageablePlayers ?? 0) > 0
           ? 'Push delivery is working on OneSignal. Use audience "Full OneSignal list" to reach all subscribers.'
