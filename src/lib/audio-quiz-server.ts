@@ -24,6 +24,7 @@ export function mapAudioQuiz(row: Record<string, unknown>): AudioQuiz {
     prizeDetails: row.prize_details ? String(row.prize_details) : '',
     maxRecordingSeconds: Number(row.max_recording_seconds ?? 60) || 60,
     questionAudioUrl: row.question_audio_url ? String(row.question_audio_url) : null,
+    questionAudioPath: row.question_audio_path ? String(row.question_audio_path) : null,
     bannerUrl: row.banner_url ? String(row.banner_url) : null,
     winnersCount: Number(row.winners_count ?? 3) || 3,
     active: row.active == null ? true : Boolean(row.active),

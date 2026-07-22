@@ -34,6 +34,7 @@ export interface AudioQuiz {
   prizeDetails: string;
   maxRecordingSeconds: number;
   questionAudioUrl: string | null;
+  questionAudioPath: string | null;
   bannerUrl: string | null;
   winnersCount: number;
   active: boolean;

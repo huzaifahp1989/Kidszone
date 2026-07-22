@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { isAdminRequest } from '@/lib/admin-auth';
-import { uploadObject, newAssetPath, getReadableObjectUrl } from '@/lib/object-storage';
+import { uploadObject, newAssetPath, getReadableObjectUrl, deleteObject } from '@/lib/object-storage';
 import { AUDIO_MAX_FILE_BYTES, ANSWER_AUDIO_MIME, extForAudioType } from '@/lib/audio-quiz';
 import { AUDIO_QUIZ_BUCKET, QUESTION_AUDIO_PREFIX } from '@/lib/audio-quiz-server';
 
@@ -62,6 +62,25 @@ export async function POST(request: Request) {
     return NextResponse.json({ url, path });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Upload failed';
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
+}
+
+/** Delete a stored question-audio object by its storage path. */
+export async function DELETE(request: Request) {
+  if (!isAdminRequest(request)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  try {
+    const { searchParams } = new URL(request.url);
+    const path = String(searchParams.get('path') || '').trim();
+    if (!path) return NextResponse.json({ error: 'path is required' }, { status: 400 });
+    try {
+      await deleteObject(AUDIO_QUIZ_BUCKET, path);
+    } catch {
+      /* object may already be gone — ignore */
+    }
+    return NextResponse.json({ success: true });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Delete failed';
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }

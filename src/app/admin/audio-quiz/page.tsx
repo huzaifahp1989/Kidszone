@@ -23,6 +23,7 @@ interface AdminAudioQuiz {
   prizeDetails: string;
   maxRecordingSeconds: number;
   questionAudioUrl: string | null;
+  questionAudioPath: string | null;
   bannerUrl: string | null;
   winnersCount: number;
   active: boolean;
@@ -118,7 +119,7 @@ export default function AdminAudioQuizPage() {
       endDate: q.endDate || '',
       prizeDetails: q.prizeDetails || '',
       maxRecordingSeconds: q.maxRecordingSeconds,
-      questionAudioPath: '',
+      questionAudioPath: q.questionAudioPath || '',
       questionAudioUrl: q.questionAudioUrl || '',
       bannerUrl: q.bannerUrl || '',
       winnersCount: q.winnersCount,
@@ -183,6 +184,38 @@ export default function AdminAudioQuizPage() {
     }
   };
 
+  const deleteQuestionAudio = async () => {
+    if (!window.confirm('Delete the question recording for this quiz?')) return;
+    setError('');
+    const path = form.questionAudioPath;
+    // Best-effort remove the stored file.
+    if (path) {
+      try {
+        await fetch(`/api/admin/audio-quiz/upload?path=${encodeURIComponent(path)}`, {
+          method: 'DELETE',
+          headers: { 'x-admin-auth': 'true' },
+        });
+      } catch {
+        /* ignore */
+      }
+    }
+    setForm((f) => ({ ...f, questionAudioPath: '', questionAudioUrl: '' }));
+    // If editing an existing quiz, persist the removal immediately.
+    if (form.id) {
+      try {
+        await fetch('/api/admin/audio-quiz/quizzes', {
+          method: 'PUT',
+          headers: adminHeaders,
+          body: JSON.stringify({ id: form.id, questionAudioPath: null, questionAudioUrl: null }),
+        });
+        load();
+      } catch {
+        /* ignore */
+      }
+    }
+    setMessage('Question recording deleted.');
+  };
+
   const save = async () => {
     setMessage('');
     setError('');
@@ -203,9 +236,10 @@ export default function AdminAudioQuizPage() {
       bannerUrl: form.bannerUrl || null,
       winnersCount: Number(form.winnersCount) || 3,
       active: form.active,
+      // Always send (null when removed) so deleting the recording persists and edits keep the path.
+      questionAudioPath: form.questionAudioPath || null,
+      questionAudioUrl: form.questionAudioUrl || null,
     };
-    if (form.questionAudioPath) payload.questionAudioPath = form.questionAudioPath;
-    if (form.questionAudioUrl) payload.questionAudioUrl = form.questionAudioUrl;
     try {
       const res = await fetch('/api/admin/audio-quiz/quizzes', {
         method: form.id ? 'PUT' : 'POST',
@@ -369,6 +403,13 @@ export default function AdminAudioQuizPage() {
                   <div className="mt-2">
                     <p className="text-xs font-semibold text-emerald-700">✓ Saved question audio (this plays on the quiz page):</p>
                     <audio controls src={form.questionAudioUrl} className="mt-1 w-full" />
+                    <button
+                      type="button"
+                      onClick={deleteQuestionAudio}
+                      className="mt-2 rounded-lg bg-rose-100 px-3 py-1.5 text-xs font-bold text-rose-700 hover:bg-rose-200"
+                    >
+                      🗑 Delete recording
+                    </button>
                   </div>
                 ) : null}
               </div>
@@ -418,6 +459,14 @@ export default function AdminAudioQuizPage() {
                     {q.category} · Ages {q.ageGroup} · max {q.maxRecordingSeconds}s · {q.winnersCount} winners
                     {q.endDate ? ` · ends ${q.endDate}` : ''}
                   </p>
+                  {q.questionAudioUrl ? (
+                    <div className="mt-2">
+                      <p className="text-[11px] font-semibold text-slate-500">Question audio:</p>
+                      <audio controls src={q.questionAudioUrl} className="mt-1 h-8 w-full max-w-xs" />
+                    </div>
+                  ) : (
+                    <p className="mt-1 text-[11px] text-amber-600">No question audio yet — edit to add one.</p>
+                  )}
                 </div>
                 <div className="flex shrink-0 gap-2">
                   <Link href={`/admin/audio-quiz/${q.id}`} className="rounded-lg bg-violet-100 px-3 py-1.5 text-sm font-bold text-violet-700 hover:bg-violet-200">
