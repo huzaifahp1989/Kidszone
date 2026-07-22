@@ -485,12 +485,14 @@ export async function lookupOneSignalPlayer(
   const url = `${ONESIGNAL_PLAYERS_API}/${encodeURIComponent(id)}?app_id=${encodeURIComponent(appId)}`;
 
   // Try modern Key auth, then legacy Basic
+  let lastStatus = 0;
   for (const auth of [`Key ${apiKey}`, `Basic ${apiKey}`]) {
     try {
       const response = await fetch(url, {
         headers: { Authorization: auth },
       });
       const raw = await response.json().catch(() => null);
+      lastStatus = response.status;
 
       if (response.status === 404) {
         return {
@@ -498,6 +500,17 @@ export async function lookupOneSignalPlayer(
           found: false,
           appId,
           error: 'Not found on this OneSignal app (wrong App ID or expired device)',
+        };
+      }
+
+      // A 400 means the id is not a valid player/subscription id for this app
+      // (e.g. an FCM/APNs token or an id from a different app) — not an auth problem.
+      if (response.status === 400) {
+        return {
+          playerId: id,
+          found: false,
+          appId,
+          error: 'Not a valid OneSignal player id for this app (may be a raw device token or from another app)',
         };
       }
 
@@ -530,6 +543,9 @@ export async function lookupOneSignalPlayer(
     playerId: id,
     found: false,
     appId,
-    error: 'Could not look up player (auth failed). Check ONESIGNAL_REST_API_KEY.',
+    error:
+      lastStatus === 401 || lastStatus === 403
+        ? 'Could not look up player (auth failed). Check ONESIGNAL_REST_API_KEY.'
+        : `Could not look up player (HTTP ${lastStatus || 'error'}).`,
   };
 }

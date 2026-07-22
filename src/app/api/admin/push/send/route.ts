@@ -305,6 +305,26 @@ export async function POST(request: Request) {
       }
 
       result = mergeMultiResults(parts);
+
+      // Saved device tokens are often stale/unsubscribed. For a broadcast to
+      // Kids Zone sign-ups, fall back to the "Subscribed Users" segment so the
+      // push still reaches everyone actually subscribed on OneSignal. (Never do
+      // this for a single-user send — that must stay targeted.)
+      if (
+        (audience === 'kids_zone' || audience === 'tokens') &&
+        (result.recipients ?? 0) <= 0
+      ) {
+        const segmentFallback = await sendOneSignalPushMultiApp({
+          title,
+          body: message,
+          url: trackedUrl,
+          imageUrl,
+          includedSegments: ['Subscribed Users'],
+          appId: appIdOverride,
+          data,
+        });
+        result = mergeMultiResults([result, segmentFallback]);
+      }
     } else {
       return NextResponse.json(
         { error: `Unknown audience "${audience}"`, campaignId },
