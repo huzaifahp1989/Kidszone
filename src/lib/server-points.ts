@@ -23,6 +23,10 @@ export type ServerAwardPointsResult = {
 type ServerAwardOptions = {
   countTowardDailyLimit?: boolean;
   successMessage?: string;
+  /** Skip the internal test-mode lookup when the caller already knows it (avoids an auth round trip). */
+  knownIsTestMode?: boolean;
+  /** Skip ensureUserRecords when the caller already ran it (avoids redundant reads/writes). */
+  skipEnsureUserRecords?: boolean;
 };
 
 export async function awardPointsWithDailyCapByUserId(
@@ -48,7 +52,7 @@ export async function awardPointsWithDailyCapByUserId(
     };
   }
 
-  const isTestMode = await isTestModeUserId(userId);
+  const isTestMode = options.knownIsTestMode ?? (await isTestModeUserId(userId));
   if (isTestMode) {
     return {
       success: true,
@@ -65,21 +69,23 @@ export async function awardPointsWithDailyCapByUserId(
     };
   }
 
-  const ensured = await ensureUserRecords(userId);
-  if (!ensured.ok) {
-    return {
-      success: false,
-      reason: 'update_failed',
-      message: ensured.error || 'Could not prepare user profile for points.',
-      pointsAwarded: 0,
-      totalPoints: 0,
-      weeklyPoints: 0,
-      monthlyPoints: 0,
-      todayPoints: 0,
-      dailyLimit: POINTS_DAILY_CAP,
-      badges: 0,
-      level: 1,
-    };
+  if (!options.skipEnsureUserRecords) {
+    const ensured = await ensureUserRecords(userId);
+    if (!ensured.ok) {
+      return {
+        success: false,
+        reason: 'update_failed',
+        message: ensured.error || 'Could not prepare user profile for points.',
+        pointsAwarded: 0,
+        totalPoints: 0,
+        weeklyPoints: 0,
+        monthlyPoints: 0,
+        todayPoints: 0,
+        dailyLimit: POINTS_DAILY_CAP,
+        badges: 0,
+        level: 1,
+      };
+    }
   }
 
   const todayStr = new Date().toISOString().slice(0, 10);
