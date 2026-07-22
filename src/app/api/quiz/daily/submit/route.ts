@@ -33,7 +33,16 @@ function getUtcDayWindow() {
   };
 }
 
-async function enforceDailyQuizAttemptLimit(userId: string) {
+type DailyQuizAttemptState = {
+  attemptsToday: number;
+  maxDailyAttempts: number;
+  remainingDailyAttempts: number;
+  lockedUntil: number;
+  lastScore: number | null;
+  timeRemaining: number;
+};
+
+async function getDailyQuizAttemptState(userId: string): Promise<DailyQuizAttemptState> {
   const { dayStartIso, nextDayStartIso, nextDayStartMs } = getUtcDayWindow();
   const { data, count, error } = await supabaseAdmin
     .from('quiz_attempts')
@@ -49,45 +58,49 @@ async function enforceDailyQuizAttemptLimit(userId: string) {
   }
 
   const attemptsToday = Number(count || 0);
-  if (attemptsToday >= MAX_DAILY_QUIZ_ATTEMPTS) {
-    const timeRemaining = Math.max(0, Math.ceil((nextDayStartMs - Date.now()) / 1000));
-    const lastScore = Array.isArray(data) && data[0] ? Number((data[0] as any).score ?? 0) : null;
-    return NextResponse.json(
-      {
-        error: `You have already completed ${MAX_DAILY_QUIZ_ATTEMPTS} quizzes today. Come back tomorrow for more points.`,
-        locked: true,
-        lockedUntil: nextDayStartMs,
-        lastScore,
-        attemptsToday,
-        maxDailyAttempts: MAX_DAILY_QUIZ_ATTEMPTS,
-        timeRemaining,
-      },
-      { status: 429 }
-    );
-  }
+  const timeRemaining = Math.max(0, Math.ceil((nextDayStartMs - Date.now()) / 1000));
+  const lastScore = Array.isArray(data) && data[0] ? Number((data[0] as any).score ?? 0) : null;
 
-  return null;
-}
-
-async function getTodaysQuizAttemptSummary(userId: string) {
-  const { dayStartIso, nextDayStartIso, nextDayStartMs } = getUtcDayWindow();
-  const { count, error } = await supabaseAdmin
-    .from('quiz_attempts')
-    .select('id', { count: 'exact', head: true })
-    .eq('user_id', userId)
-    .gte('completed_at', dayStartIso)
-    .lt('completed_at', nextDayStartIso);
-
-  if (error) {
-    throw error;
-  }
-
-  const attemptsToday = Number(count || 0);
   return {
     attemptsToday,
     maxDailyAttempts: MAX_DAILY_QUIZ_ATTEMPTS,
     remainingDailyAttempts: Math.max(0, MAX_DAILY_QUIZ_ATTEMPTS - attemptsToday),
     lockedUntil: nextDayStartMs,
+    lastScore,
+    timeRemaining,
+  };
+}
+
+function buildAttemptLimitResponse(attemptState: DailyQuizAttemptState) {
+  if (attemptState.attemptsToday < attemptState.maxDailyAttempts) {
+    return null;
+  }
+
+  return NextResponse.json(
+    {
+      error: `You have already completed ${attemptState.maxDailyAttempts} quizzes today. Come back tomorrow for more points.`,
+      locked: true,
+      lockedUntil: attemptState.lockedUntil,
+      lastScore: attemptState.lastScore,
+      attemptsToday: attemptState.attemptsToday,
+      maxDailyAttempts: attemptState.maxDailyAttempts,
+      timeRemaining: attemptState.timeRemaining,
+    },
+    { status: 429 }
+  );
+}
+
+async function getPostSubmitAttemptSummary(userId: string, attemptState: DailyQuizAttemptState | null) {
+  if (!attemptState) {
+    return getDailyQuizAttemptState(userId);
+  }
+
+  const attemptsToday = attemptState.attemptsToday + 1;
+  return {
+    attemptsToday,
+    maxDailyAttempts: attemptState.maxDailyAttempts,
+    remainingDailyAttempts: Math.max(0, attemptState.maxDailyAttempts - attemptsToday),
+    lockedUntil: attemptState.lockedUntil,
   };
 }
 
@@ -141,6 +154,8 @@ async function awardQuizPoints(userId: string, totalPoints: number, isTestMode: 
 
   const result = await awardPointsWithDailyCapByUserId(userId, totalPoints, {
     successMessage: `Topic completed! +${QUIZ_POINTS_PER_COMPLETION} points added to leaderboard.`,
+    isTestMode,
+    skipEnsureUserRecords: true,
   });
 
   return {
@@ -222,8 +237,9 @@ export async function POST(req: Request) {
 
       const allowedQuestionIds = new Set(activeQuestions.map((q: any) => String(q.id)));
 
+      const attemptState = !isTestMode ? await getDailyQuizAttemptState(userId) : null;
       if (!isTestMode) {
-        const limitResponse = await enforceDailyQuizAttemptLimit(userId);
+        const limitResponse = buildAttemptLimitResponse(attemptState!);
         if (limitResponse) {
           return limitResponse;
         }
@@ -280,7 +296,7 @@ export async function POST(req: Request) {
       const awardResult = await awardQuizPoints(userId, totalPoints, isTestMode);
 
       const finalPointsAwarded = awardResult.pointsAwarded;
-      const attemptSummary = await getTodaysQuizAttemptSummary(userId);
+      const attemptSummary = await getPostSubmitAttemptSummary(userId, attemptState);
       const awardMessage = isTestMode
         ? 'Test mode active. Quiz recorded, but no leaderboard points were added.'
         : finalPointsAwarded > 0
@@ -317,8 +333,9 @@ export async function POST(req: Request) {
     }
 
     if (quizId.startsWith('fallback-')) {
+      const attemptState = !isTestMode ? await getDailyQuizAttemptState(userId) : null;
       if (!isTestMode) {
-        const limitResponse = await enforceDailyQuizAttemptLimit(userId);
+        const limitResponse = buildAttemptLimitResponse(attemptState!);
         if (limitResponse) {
           return limitResponse;
         }
@@ -383,7 +400,7 @@ export async function POST(req: Request) {
       const awardResult = await awardQuizPoints(userId, totalPoints, isTestMode);
 
       const finalPointsAwarded = awardResult.pointsAwarded;
-      const attemptSummary = await getTodaysQuizAttemptSummary(userId);
+      const attemptSummary = await getPostSubmitAttemptSummary(userId, attemptState);
       const awardMessage = isTestMode
         ? 'Test mode active. Quiz recorded, but no leaderboard points were added.'
         : finalPointsAwarded > 0
@@ -460,22 +477,12 @@ export async function POST(req: Request) {
     const isPerfect = score === maxScore;
     const isFlagged = Number(durationSeconds) < 20;
 
+    const attemptState = !isTestMode ? await getDailyQuizAttemptState(userId) : null;
     if (!isTestMode) {
-      const limitResponse = await enforceDailyQuizAttemptLimit(userId);
+      const limitResponse = buildAttemptLimitResponse(attemptState!);
       if (limitResponse) {
         return limitResponse;
       }
-    }
-
-    const { data: existingAttempt } = await supabaseAdmin
-      .from('quiz_attempts')
-      .select('id')
-      .eq('user_id', userId)
-      .eq('quiz_id', quizId)
-      .maybeSingle();
-
-    if (!isTestMode && existingAttempt) {
-      return NextResponse.json({ error: 'You have already attempted this quiz.' }, { status: 400 });
     }
 
     const { data: attempt, error: attemptError } = await supabaseAdmin
@@ -497,8 +504,11 @@ export async function POST(req: Request) {
     const totalPoints = isCompletedTopic ? QUIZ_POINTS_PER_COMPLETION : 0;
 
     if (attemptError) {
-      if (isTestMode && attemptError.code === '23505') {
-        return NextResponse.json(successNoPoints(score, maxScore, totalPoints, { attemptId: null }));
+      if (attemptError.code === '23505') {
+        if (isTestMode) {
+          return NextResponse.json(successNoPoints(score, maxScore, totalPoints, { attemptId: null }));
+        }
+        return NextResponse.json({ error: 'You have already attempted this quiz.' }, { status: 400 });
       }
       throw attemptError;
     }
@@ -506,7 +516,7 @@ export async function POST(req: Request) {
     const awardResult = await awardQuizPoints(userId, totalPoints, isTestMode);
 
     const finalPointsAwarded = awardResult.pointsAwarded;
-    const attemptSummary = await getTodaysQuizAttemptSummary(userId);
+    const attemptSummary = await getPostSubmitAttemptSummary(userId, attemptState);
     const awardMessage = isTestMode
       ? 'Test mode active. Quiz recorded, but no leaderboard points were added.'
       : finalPointsAwarded > 0

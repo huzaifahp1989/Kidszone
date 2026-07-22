@@ -296,7 +296,7 @@ export default function QuizPage() {
               todayPoints: Number(data.profile.todayPoints ?? data.todayPoints ?? 0),
             });
           }
-          await refreshProfile();
+          void refreshProfile().catch(() => {});
         } catch {}
         if (awardedPoints > 0) {
           setResultToast(`+${awardedPoints} points added!`);
@@ -304,12 +304,10 @@ export default function QuizPage() {
           setResultToast(String(data.message));
         }
 
-        try {
-          await authJsonFetch('/api/competition/track', {
-            method: 'POST',
-            body: JSON.stringify({ userId: user.id, activity: 'quiz' }),
-          });
-        } catch {}
+        void authJsonFetch('/api/competition/track', {
+          method: 'POST',
+          body: JSON.stringify({ userId: user.id, activity: 'quiz' }),
+        }).catch(() => {});
 
         showPointsProgress({
           activity: 'quiz',
