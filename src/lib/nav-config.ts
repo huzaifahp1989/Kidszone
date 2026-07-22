@@ -14,6 +14,7 @@ import {
   Languages,
   Palette,
   CalendarHeart,
+  Sparkles,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -89,6 +90,14 @@ export const NAV_GROUPS: NavGroup[] = [
         shortLabel: 'Create',
         description: 'Colouring, drawing, dua, kindness and more',
         icon: Palette,
+        group: 'play',
+      },
+      {
+        href: '/quiz-challenge',
+        label: 'Quiz Challenge',
+        shortLabel: 'Challenge',
+        description: 'Quran Stories & Fiqh quizzes — one attempt each!',
+        icon: Sparkles,
         group: 'play',
       },
     ],
