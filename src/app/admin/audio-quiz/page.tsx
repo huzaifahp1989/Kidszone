@@ -65,6 +65,7 @@ export default function AdminAudioQuizPage() {
   const [questions, setQuestions] = React.useState<Array<{ id: string; prompt: string; audioUrl: string | null }>>([]);
   const [pendingAudio, setPendingAudio] = React.useState<{ path: string; url: string } | null>(null);
   const [pendingPrompt, setPendingPrompt] = React.useState('');
+  const [seedingTest, setSeedingTest] = React.useState(false);
 
   const loadQuestions = React.useCallback(async (quizId: string) => {
     if (!quizId) {
@@ -154,6 +155,50 @@ export default function AdminAudioQuizPage() {
     questionRecorder.reset();
     loadQuestions(q.id);
     window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const seedTestQuiz = async () => {
+    setMessage('');
+    setError('');
+    setSeedingTest(true);
+    try {
+      const res = await fetch('/api/admin/audio-quiz/seed-test', { method: 'POST', headers: adminHeaders });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Could not create test quiz');
+      setMessage(
+        data.created
+          ? `Test quiz created — open ${data.playUrl || '/audio-quiz'} to try it.`
+          : data.message || 'Test quiz is already available.'
+      );
+      await load();
+      if (data.quizId) {
+        const seeded = quizzes.find((q) => q.id === data.quizId);
+        if (seeded) {
+          startEdit(seeded);
+        } else {
+          startEdit({
+            id: data.quizId,
+            title: 'Test Audio Quiz',
+            description: 'A sample audio quiz so you can try listening and recording an answer.',
+            category: 'General Knowledge',
+            ageGroup: 'All ages',
+            startDate: null,
+            endDate: null,
+            prizeDetails: 'Test prize — bragging rights only!',
+            maxRecordingSeconds: 60,
+            questionAudioUrl: null,
+            questionAudioPath: null,
+            bannerUrl: null,
+            winnersCount: 3,
+            active: true,
+          });
+        }
+      }
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Could not create test quiz');
+    } finally {
+      setSeedingTest(false);
+    }
   };
 
   const uploadFile = async (file: File | null, kind: 'audio' | 'banner') => {
@@ -347,13 +392,23 @@ export default function AdminAudioQuizPage() {
             </button>
           </div>
         ) : (
-          <button
-            type="button"
-            onClick={runSetup}
-            className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-bold text-slate-600 hover:bg-slate-100"
-          >
-            Re-run setup
-          </button>
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={runSetup}
+              className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-bold text-slate-600 hover:bg-slate-100"
+            >
+              Re-run setup
+            </button>
+            <button
+              type="button"
+              onClick={seedTestQuiz}
+              disabled={seedingTest}
+              className="rounded-lg border border-violet-300 bg-violet-50 px-3 py-1.5 text-xs font-bold text-violet-700 hover:bg-violet-100 disabled:opacity-50"
+            >
+              {seedingTest ? 'Adding test quiz…' : 'Add test audio quiz'}
+            </button>
+          </div>
         )}
 
         {message ? <p className="rounded-lg bg-emerald-50 px-4 py-2 text-sm font-semibold text-emerald-700">{message}</p> : null}

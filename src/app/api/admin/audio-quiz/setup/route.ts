@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { isAdminRequest } from '@/lib/admin-auth';
-import { AUDIO_QUIZZES_TABLE, isMissingTableError } from '@/lib/audio-quiz-server';
+import { AUDIO_QUIZZES_TABLE, isMissingTableError, seedTestAudioQuiz } from '@/lib/audio-quiz-server';
 
 export const dynamic = 'force-dynamic';
 
@@ -144,5 +144,13 @@ export async function POST(request: Request) {
     );
   }
 
-  return NextResponse.json({ success: true, message: 'Audio Quiz tables are ready.' });
+  const seeded = await seedTestAudioQuiz().catch(() => null);
+
+  return NextResponse.json({
+    success: true,
+    message: seeded?.created
+      ? 'Audio Quiz tables are ready. A test quiz with sample audio was added.'
+      : 'Audio Quiz tables are ready.',
+    testQuizId: seeded?.quizId ?? null,
+  });
 }
