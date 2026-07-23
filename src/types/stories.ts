@@ -29,6 +29,8 @@ export interface Recording {
   title?: string;
   description?: string;
   child_name?: string;
+  category?: string | null;
+  reviewed_at?: string | null;
   
   // Joins
   story?: Story;

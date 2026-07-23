@@ -21,6 +21,7 @@ import { SurveyPopup } from '@/components';
 import { DailyAyahCard } from '@/components/DailyAyahCard';
 import { AchievementGrid } from '@/components/AchievementGrid';
 import { StreakCalendar } from '@/components/StreakCalendar';
+import { RecordingStudioBanner } from '@/components/RecordingStudioBanner';
 import { getKidLevelTitle } from '@/lib/level-names';
 
 const TIP_TEXT =
@@ -52,6 +53,7 @@ export default function Home() {
         <RamadanPopup />
         <div className="page-wrap space-y-6">
           <WhatsNew />
+          <RecordingStudioBanner />
           <section className="hero-panel stagger-in">
             <div className="relative flex flex-col items-center gap-5 px-5 py-8 text-center md:flex-row md:items-center md:justify-between md:text-left">
               <div className="space-y-3">
@@ -136,6 +138,7 @@ export default function Home() {
       <RamadanPopup />
       <div className="page-wrap space-y-7">
         <WhatsNew />
+        <RecordingStudioBanner />
         <section className="hero-panel stagger-in">
           <div className="relative px-6 py-9 md:px-10 md:py-11">
             <div className="flex flex-col items-start gap-6 md:flex-row md:items-center md:justify-between">

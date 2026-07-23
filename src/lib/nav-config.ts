@@ -221,6 +221,22 @@ export const NAV_GROUPS: NavGroup[] = [
         group: 'track',
       },
       {
+        href: '/my-recordings',
+        label: 'My Recordings',
+        shortLabel: 'Recordings',
+        description: 'See approved or rejected recordings and points earned',
+        icon: Mic,
+        group: 'track',
+      },
+      {
+        href: '/studio',
+        label: 'Recording Studio',
+        shortLabel: 'Studio',
+        description: "Record Qur'an, nasheeds, stories & hadith to earn points",
+        icon: Mic,
+        group: 'track',
+      },
+      {
         href: '/leaderboard',
         label: 'Leaderboard',
         shortLabel: 'Ranks',
