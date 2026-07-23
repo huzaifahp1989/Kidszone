@@ -17,6 +17,7 @@ import {
   Sparkles,
   Mic,
   Footprints,
+  Headphones,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -108,6 +109,22 @@ export const NAV_GROUPS: NavGroup[] = [
         shortLabel: 'Audio',
         description: 'Listen and record your voice answer to win prizes!',
         icon: Mic,
+        group: 'play',
+      },
+      {
+        href: '/studio',
+        label: 'Recording Studio',
+        shortLabel: 'Studio',
+        description: 'Record Qur’an, nasheed, story or hadith',
+        icon: Mic,
+        group: 'play',
+      },
+      {
+        href: '/listen',
+        label: 'Kids Audio',
+        shortLabel: 'Listen',
+        description: 'Listen to teacher picks and published kid recordings',
+        icon: Headphones,
         group: 'play',
       },
     ],

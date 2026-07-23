@@ -493,9 +493,7 @@ export default function RewardsPage() {
               </div>
               <div className="mt-5">
                 <a
-                  href="https://create-me-a-audio.vercel.app/kids-record"
-                  target="_blank"
-                  rel="noopener noreferrer"
+                  href="/studio"
                   className="inline-flex items-center justify-center gap-2 rounded-xl bg-purple-600 px-5 py-3 text-sm font-bold text-white transition hover:bg-purple-700"
                 >
                   <Mic size={18} />

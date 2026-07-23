@@ -66,7 +66,7 @@ export function WeeklyActivitiesProgress() {
       { key: 'quiz', label: 'Quiz', href: '/quiz', count: activities?.quiz ?? 0, icon: BookOpen },
       { key: 'game', label: 'Games', href: '/games', count: activities?.game ?? 0, icon: Gamepad2 },
       { key: 'pledge', label: 'Durood & Zikr', href: '/pledge', count: activities?.pledge ?? 0, icon: Sparkles },
-      { key: 'recording', label: 'Stories / Recording', href: 'https://create-me-a-audio.vercel.app/kids-record', count: activities?.recording ?? 0, icon: Mic },
+      { key: 'recording', label: 'Stories / Recording', href: '/studio', count: activities?.recording ?? 0, icon: Mic },
       { key: 'total', label: 'Total toward 5', href: '/leaderboard', count: data?.completed ?? 0, icon: Star },
     ];
   }, [data]);

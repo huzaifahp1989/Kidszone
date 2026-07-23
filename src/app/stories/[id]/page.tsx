@@ -12,9 +12,9 @@ import { usePointsProgress } from '@/lib/points-progress-context';
 import { authJsonFetch } from '@/lib/auth-headers';
 import { ACTIVITY_BONUS_POINTS } from '@/lib/points-policy';
 import { trackPodcastPlayed } from '@/lib/analytics';
-import { ArrowLeft, Play, Pause, Square, Mic, BookOpen, Star, ExternalLink, CheckCircle, Headphones } from 'lucide-react';
+import { ArrowLeft, Play, Pause, Square, Mic, BookOpen, Star, CheckCircle, Headphones } from 'lucide-react';
 
-const RECORD_APP_URL = 'https://create-me-a-audio.vercel.app/kids-record';
+const RECORD_APP_URL = '/studio';
 const POINTS_PER_RECORDING = 30;
 
 export default function StoryDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -422,15 +422,13 @@ export default function StoryDetailPage({ params }: { params: Promise<{ id: stri
                     </div>
                   ) : (
                     <div className="text-center space-y-4">
-                      <a
+                      <Link
                         href={RECORD_APP_URL}
-                        target="_blank"
-                        rel="noopener noreferrer"
                         className="inline-flex items-center gap-3 px-8 py-4 bg-gradient-to-r from-[#ff6b6b] to-[#ff4757] text-white font-bold text-lg rounded-xl shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all"
                       >
-                        <Mic size={24} /> Open Recorder <ExternalLink size={18} />
-                      </a>
-                      <p className="text-sm text-[#475569]">Opens in a new tab. Come back after recording!</p>
+                        <Mic size={24} /> Open Recording Studio
+                      </Link>
+                      <p className="text-sm text-[#475569]">Record in the studio, then come back and tap below when you&apos;re done!</p>
 
                       <button
                         onClick={handleRecordComplete}
