@@ -6,6 +6,7 @@ export * from './WhatsNew';
 export * from './WhatsNewFeaturesPopup';
 export * from './EarnMorePointsLinks';
 export * from './RecordEarnPointsMessage';
+export * from './RecordEarnPopup';
 export * from './RecordAndEarnBanner';
 export * from './FeedbackBanner';
 export * from './Modal';

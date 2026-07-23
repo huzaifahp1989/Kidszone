@@ -1,7 +1,7 @@
 'use client';
 import { useRouter } from 'next/navigation';
 import React, { useEffect, useRef, useState } from 'react';
-import { BiWeeklyResetPopup } from '@/components';
+import { BiWeeklyResetPopup, RecordEarnPopup } from '@/components';
 import { usePointsProgress } from '@/lib/points-progress-context';
 import { useAuth } from '@/lib/auth-context';
 import { completeGameSession } from '@/lib/complete-game-session';
@@ -499,6 +499,7 @@ export default function GamesPage() {
   return (
     <>
       <BiWeeklyResetPopup pageKey="games" />
+      <RecordEarnPopup />
       <div className="page-canvas pattern-islamic">
         <div className="page-wrap max-w-5xl space-y-8">
           <RecordAndEarnBanner />
