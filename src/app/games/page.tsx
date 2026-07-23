@@ -19,7 +19,7 @@ import { Star, Trophy, Target, Sparkles, ArrowLeft, Puzzle } from 'lucide-react'
 import Link from 'next/link';
 import { useAgeMode } from '@/lib/age-mode';
 import { EarnMorePointsLinks } from '@/components/EarnMorePointsLinks';
-import { RecordEarnPointsMessage } from '@/components/RecordEarnPointsMessage';
+import { RecordAndEarnBanner } from '@/components/RecordAndEarnBanner';
 
 type GameId = 'hangman' | 'crossword' | 'scramble' | 'true-or-false' | 'names-of-allah';
 type TaskKind = 'mcq' | 'hangman' | 'crossword' | 'scramble';
@@ -501,8 +501,8 @@ export default function GamesPage() {
       <BiWeeklyResetPopup pageKey="games" />
       <div className="page-canvas pattern-islamic">
         <div className="page-wrap max-w-5xl space-y-8">
+          <RecordAndEarnBanner />
           <EarnMorePointsLinks title="Earn more points today" />
-          <RecordEarnPointsMessage />
           <div className="hero-panel text-center space-y-4 p-8 stagger-in">
             <div className="inline-flex items-center gap-2 px-4 py-2 bg-[#fffbeb] rounded-full border border-[#fbbf24]/30 mx-auto">
               <Sparkles size={16} className="text-[#f59e0b]" />

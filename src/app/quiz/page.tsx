@@ -14,7 +14,7 @@ import { getQuizQuestionPool } from '@/lib/quiz-question-pool';
 import { QUIZ_TOPICS, QUIZ_TOPIC_GROUPS, getTopicById, getTopicQuestionCount, getDailyTopicSeed, type QuizTopicId } from '@/lib/quiz-topics';
 import { ReadAloudButton } from '@/components/ReadAloudButton';
 import { EarnMorePointsLinks } from '@/components/EarnMorePointsLinks';
-import { RecordEarnPointsMessage } from '@/components/RecordEarnPointsMessage';
+import { RecordAndEarnBanner } from '@/components/RecordAndEarnBanner';
 import { authJsonFetch, getAuthFetchHeaders } from '@/lib/auth-headers';
 import { trackQuizCompleted } from '@/lib/analytics';
 
@@ -434,6 +434,8 @@ export default function QuizPage() {
       <BiWeeklyResetPopup pageKey="quiz" />
       <div className="min-h-screen bg-[#f5f3ff] pattern-islamic">
         <div className="max-w-4xl mx-auto px-4 py-8 space-y-8">
+          <RecordAndEarnBanner />
+
           {/* Islamic Quiz Challenge — shown at the very top so it is easy to find */}
           <Link
             href="/quiz-challenge"
@@ -456,7 +458,6 @@ export default function QuizPage() {
           </Link>
 
           <EarnMorePointsLinks title="Earn more points today" />
-          <RecordEarnPointsMessage />
 
           {/* Header */}
           <div className="text-center space-y-4">
@@ -514,6 +515,9 @@ export default function QuizPage() {
                       You&apos;ve used both daily quizzes ({MAX_DAILY_QUIZ_POINTS} pts). Play games, pledge Durood &amp; Zikr, or log your dhikr — each earns +25 points until you reach {POINTS_DAILY_CAP} for the day.
                     </p>
                     <div className="flex flex-wrap gap-2">
+                      <Link href="/studio" className="inline-flex items-center gap-2 bg-teal-600 text-white px-4 py-2 rounded-lg font-bold text-sm hover:bg-teal-700 transition-all">
+                        🎙️ Record &amp; Earn
+                      </Link>
                       <Link href="/games" className="inline-flex items-center gap-2 bg-[#7c3aed] text-white px-4 py-2 rounded-lg font-bold text-sm hover:bg-[#6d28d9] transition-all">
                         🎮 Play Games
                       </Link>
