@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { deleteObject, uploadObject } from '@/lib/object-storage';
+import { isKidsAudioCategory, withCategoryMarker } from '@/lib/kids-audio';
 
 export async function POST(request: NextRequest) {
   try {
@@ -11,7 +12,7 @@ export async function POST(request: NextRequest) {
 
     const formData = await request.formData();
     const file = formData.get('recording');
-    const category = formData.get('category') as string | null;
+    const categoryRaw = formData.get('category') as string | null;
     const title = formData.get('title') as string | null;
     const duration = formData.get('duration') as string | null;
     const childName = formData.get('childName') as string | null;
@@ -20,6 +21,14 @@ export async function POST(request: NextRequest) {
 
     if (!(file instanceof Blob)) {
       return NextResponse.json({ error: 'Recording file is required' }, { status: 400 });
+    }
+
+    const category = categoryRaw && isKidsAudioCategory(categoryRaw) ? categoryRaw : null;
+    if (categoryRaw && !category) {
+      return NextResponse.json(
+        { error: 'Category must be quran, nasheed, story, or hadith' },
+        { status: 400 }
+      );
     }
 
     const arrayBuffer = await file.arrayBuffer();
@@ -31,6 +40,7 @@ export async function POST(request: NextRequest) {
     const safeChildName = childName && childName.trim().length > 0 ? childName.trim() : null;
     const safeTitle = title && title.trim().length > 0 ? title.trim() : 'Untitled';
     const timestamp = Date.now();
+    const safeDescription = withCategoryMarker(category, message);
 
     const uploadedFile = file as File;
     const mimeType =
@@ -64,24 +74,37 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to upload recording to storage' }, { status: 500 });
     }
 
-    const { data: insertedRecord, error: dbError } = await supabaseAdmin
-      .from('recordings')
-      .insert({
-        user_id: userId || null,
-        story_id: null,
-        category: category || null,
-        child_name: safeChildName,
-        title: safeTitle,
-        description: message,
-        audio_path: filename,
-        duration: parseInt(duration || '0'),
-        status: 'submitted',
-        submitted_at: new Date().toISOString(),
-      })
-      .select()
-      .single();
+    const baseRow = {
+      user_id: userId || null,
+      story_id: null,
+      child_name: safeChildName,
+      title: safeTitle,
+      description: safeDescription,
+      audio_path: filename,
+      duration: parseInt(duration || '0'),
+      status: 'submitted',
+      submitted_at: new Date().toISOString(),
+    };
 
-    if (dbError) {
+    let insertedRecord: { id: string } | null = null;
+    let dbError: { message?: string } | null = null;
+
+    // Prefer native category column when available; fall back if migration not applied yet.
+    ({ data: insertedRecord, error: dbError } = await supabaseAdmin
+      .from('recordings')
+      .insert({ ...baseRow, category: category || null })
+      .select('id')
+      .single());
+
+    if (dbError && /category/i.test(String(dbError.message || ''))) {
+      ({ data: insertedRecord, error: dbError } = await supabaseAdmin
+        .from('recordings')
+        .insert(baseRow)
+        .select('id')
+        .single());
+    }
+
+    if (dbError || !insertedRecord) {
       console.error('DB insert error:', dbError);
       try {
         await deleteObject('story-recordings', filename);

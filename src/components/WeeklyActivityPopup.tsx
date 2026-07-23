@@ -66,7 +66,7 @@ export function WeeklyActivityPopup({ userId }: WeeklyActivityPopupProps) {
       { href: '/quiz', icon: BookOpen, label: 'Do quiz activities' },
       { href: '/games', icon: Gamepad2, label: 'Do game activities' },
       { href: '/pledge', icon: Sparkles, label: 'Do Durood & Zikr activities' },
-      { href: 'https://create-me-a-audio.vercel.app/kids-record', icon: Mic, label: 'Do story recording activities' },
+      { href: '/studio', icon: Mic, label: 'Do story recording activities' },
       { href: '/leaderboard', icon: Star, label: 'Any 5 total activities count for the weekly star' },
     ].filter(Boolean) as Array<{ href: string; icon: any; label: string }>;
   }, [activities]);

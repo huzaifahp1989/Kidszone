@@ -1,6 +1,7 @@
 import { NextResponse, NextRequest } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { deleteObject, getReadableObjectUrl } from '@/lib/object-storage';
+import { resolveRecordingCategory, stripCategoryMarker } from '@/lib/kids-audio';
 
 export const dynamic = 'force-dynamic';
 
@@ -24,6 +25,9 @@ export async function GET(
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 404 });
     }
+
+    data.category = resolveRecordingCategory(data);
+    data.description = stripCategoryMarker(data.description);
 
     if (data.audio_path) {
       try {

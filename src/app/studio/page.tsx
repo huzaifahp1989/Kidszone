@@ -6,7 +6,7 @@ import { Button } from '@/components';
 import { useAuth } from '@/lib/auth-context';
 import { trackQuranRecordingSubmitted } from '@/lib/analytics';
 
-type Category = 'quran' | 'nasheed' | 'story';
+type Category = 'quran' | 'nasheed' | 'story' | 'hadith';
 
 type StudioState = 'idle' | 'recording' | 'paused' | 'finished';
 
@@ -147,7 +147,7 @@ export default function StudioPage() {
 
   const handleStart = async () => {
     if (!category) {
-      setPermissionError('Choose what you want to record first (Qur’an, Nasheed, or Story).');
+      setPermissionError('Choose what you want to record first (Qur’an, Nasheed, Story, or Hadith).');
       return;
     }
     const stream = streamRef.current || (await requestMic());
@@ -255,7 +255,7 @@ export default function StudioPage() {
       return;
     }
     if (!category) {
-      setSubmitError('Please choose what you recorded (Qur’an, Nasheed, or Story).');
+      setSubmitError('Please choose what you recorded (Qur’an, Nasheed, Story, or Hadith).');
       return;
     }
     setSubmitError(null);
@@ -291,7 +291,7 @@ export default function StudioPage() {
       if (!res.ok || !data.success) {
         setSubmitError(data.error || 'Failed to submit recording. Please try again.');
       } else {
-        setSubmitSuccess('Recording sent successfully. JazakAllahu khayran!');
+        setSubmitSuccess('Recording sent! A teacher will check it. When published, it can appear on Kids Audio.');
         if (category === 'quran') {
           trackQuranRecordingSubmitted({ source: 'studio' });
         }
@@ -341,13 +341,18 @@ export default function StudioPage() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-indigo-50 via-white to-sky-50 py-10 px-4">
       <div className="max-w-4xl mx-auto space-y-8">
-        <div className="flex justify-between items-center">
-          <Button variant="outline" onClick={() => router.push('/games')}>
-            ← Back to Games
-          </Button>
+        <div className="flex flex-wrap justify-between gap-3 items-center">
           <Button variant="outline" onClick={() => router.push('/')}>
-            Home
+            ← Home
           </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button variant="outline" onClick={() => router.push('/my-recordings')}>
+              My recordings
+            </Button>
+            <Button variant="outline" onClick={() => router.push('/listen')}>
+              Kids Audio
+            </Button>
+          </div>
         </div>
 
         <div className="text-center space-y-3">
@@ -355,8 +360,8 @@ export default function StudioPage() {
             🎙️ Kids Recording Studio
           </h1>
           <p className="text-slate-600 max-w-2xl mx-auto">
-            Record your Qur&apos;an recitation, nasheeds, or stories using your microphone.
-            Listen back and submit to your teacher.
+            Record Qur&apos;an, nasheed, story or hadith with your microphone.
+            Listen back, then submit for a teacher to check — published clips appear on Kids Audio.
           </p>
         </div>
 
@@ -389,6 +394,13 @@ export default function StudioPage() {
                   >
                     📚 Story
                   </Button>
+                  <Button
+                    variant={category === 'hadith' ? 'primary' : 'outline'}
+                    size="sm"
+                    onClick={() => setCategory('hadith')}
+                  >
+                    📜 Hadith
+                  </Button>
                 </div>
               </div>
 
@@ -410,7 +422,7 @@ export default function StudioPage() {
                 </p>
                 <input
                   className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-islamic-blue"
-                  placeholder="Example: Surah Al-Fatihah, My Eid Nasheed, Bedtime Story"
+                  placeholder="Example: Surah Al-Fatihah, My Eid Nasheed, Kindness Hadith"
                   value={title}
                   onChange={e => setTitle(e.target.value)}
                 />
@@ -569,7 +581,11 @@ export default function StudioPage() {
                 </p>
               )}
               <p className="text-xs text-slate-500">
-                Recordings stay in your browser only.
+                After submit, teachers review it on the admin Recordings page. Check{' '}
+                <button type="button" className="underline font-semibold" onClick={() => router.push('/my-recordings')}>
+                  My recordings
+                </button>{' '}
+                for feedback.
               </p>
             </div>
           ) : (
