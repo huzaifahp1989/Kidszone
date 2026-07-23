@@ -1,7 +1,7 @@
 'use client';
 import { useRouter } from 'next/navigation';
 import React, { useEffect, useRef, useState } from 'react';
-import { BiWeeklyResetPopup } from '@/components';
+import { BiWeeklyResetPopup, RecordAndEarnPopup } from '@/components';
 import { usePointsProgress } from '@/lib/points-progress-context';
 import { useAuth } from '@/lib/auth-context';
 import { completeGameSession } from '@/lib/complete-game-session';
@@ -19,7 +19,6 @@ import { Star, Trophy, Target, Sparkles, ArrowLeft, Puzzle } from 'lucide-react'
 import Link from 'next/link';
 import { useAgeMode } from '@/lib/age-mode';
 import { EarnMorePointsLinks } from '@/components/EarnMorePointsLinks';
-import { RecordAndEarnBanner } from '@/components/RecordAndEarnBanner';
 
 type GameId = 'hangman' | 'crossword' | 'scramble' | 'true-or-false' | 'names-of-allah';
 type TaskKind = 'mcq' | 'hangman' | 'crossword' | 'scramble';
@@ -499,9 +498,9 @@ export default function GamesPage() {
   return (
     <>
       <BiWeeklyResetPopup pageKey="games" />
+      <RecordAndEarnPopup pageKey="games" />
       <div className="page-canvas pattern-islamic">
         <div className="page-wrap max-w-5xl space-y-8">
-          <RecordAndEarnBanner />
           <EarnMorePointsLinks title="Earn more points today" />
           <div className="hero-panel text-center space-y-4 p-8 stagger-in">
             <div className="inline-flex items-center gap-2 px-4 py-2 bg-[#fffbeb] rounded-full border border-[#fbbf24]/30 mx-auto">

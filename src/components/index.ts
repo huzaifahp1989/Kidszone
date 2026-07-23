@@ -7,6 +7,7 @@ export * from './WhatsNewFeaturesPopup';
 export * from './EarnMorePointsLinks';
 export * from './RecordEarnPointsMessage';
 export * from './RecordAndEarnBanner';
+export * from './RecordAndEarnPopup';
 export * from './FeedbackBanner';
 export * from './Modal';
 export * from './Mascot';
