@@ -14,6 +14,7 @@ import { getQuizQuestionPool } from '@/lib/quiz-question-pool';
 import { QUIZ_TOPICS, QUIZ_TOPIC_GROUPS, getTopicById, getTopicQuestionCount, getDailyTopicSeed, type QuizTopicId } from '@/lib/quiz-topics';
 import { ReadAloudButton } from '@/components/ReadAloudButton';
 import { EarnMorePointsLinks } from '@/components/EarnMorePointsLinks';
+import { RecordEarnPointsMessage } from '@/components/RecordEarnPointsMessage';
 import { authJsonFetch, getAuthFetchHeaders } from '@/lib/auth-headers';
 import { trackQuizCompleted } from '@/lib/analytics';
 
@@ -455,6 +456,7 @@ export default function QuizPage() {
           </Link>
 
           <EarnMorePointsLinks title="Earn more points today" />
+          <RecordEarnPointsMessage />
 
           {/* Header */}
           <div className="text-center space-y-4">

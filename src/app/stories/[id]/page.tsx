@@ -15,7 +15,9 @@ import { trackPodcastPlayed } from '@/lib/analytics';
 import { ArrowLeft, Play, Pause, Square, Mic, BookOpen, Star, ExternalLink, CheckCircle, Headphones } from 'lucide-react';
 
 const RECORD_APP_URL = 'https://create-me-a-audio.vercel.app/kids-record';
-const POINTS_PER_RECORDING = 30;
+import { RECORDING_APPROVED_POINTS } from '@/lib/points-policy';
+
+const POINTS_PER_RECORDING = RECORDING_APPROVED_POINTS;
 
 export default function StoryDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { user, refreshProfile, updateLocalProfile } = useAuth();

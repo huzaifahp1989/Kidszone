@@ -1,3 +1,5 @@
+import { RECORDING_APPROVED_POINTS } from '@/lib/points-policy';
+
 export type RecordingApprovePreset = {
   id: string;
   label: string;
@@ -15,29 +17,29 @@ export type RecordingRejectPreset = {
 export const RECORDING_APPROVE_PRESETS: RecordingApprovePreset[] = [
   {
     id: 'great',
-    label: 'Great recitation (+30)',
-    points: 30,
+    label: `Great recitation (+${RECORDING_APPROVED_POINTS})`,
+    points: RECORDING_APPROVED_POINTS,
     feedback: 'MashaAllah! Beautiful recitation. Keep practising!',
     publish: true,
   },
   {
     id: 'good',
-    label: 'Good effort (+20)',
-    points: 20,
-    feedback: 'Well done! Good effort — keep going and try again for even more points.',
+    label: `Good effort (+${RECORDING_APPROVED_POINTS})`,
+    points: RECORDING_APPROVED_POINTS,
+    feedback: 'Well done! Good effort — keep going!',
     publish: true,
   },
   {
     id: 'excellent-story',
-    label: 'Excellent story (+25)',
-    points: 25,
+    label: `Excellent story (+${RECORDING_APPROVED_POINTS})`,
+    points: RECORDING_APPROVED_POINTS,
     feedback: 'Excellent storytelling! Your voice was clear and engaging.',
     publish: true,
   },
   {
     id: 'bonus',
-    label: 'Outstanding (+40)',
-    points: 40,
+    label: `Outstanding (+${RECORDING_APPROVED_POINTS})`,
+    points: RECORDING_APPROVED_POINTS,
     feedback: 'Outstanding work! This recording really stood out.',
     publish: true,
   },

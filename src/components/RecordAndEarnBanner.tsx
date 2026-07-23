@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { Mic } from 'lucide-react';
+import { RECORDING_APPROVED_POINTS } from '@/lib/points-policy';
 
 const RECORDING_TYPES = [
   { emoji: '📖', label: "Qur'an" },
@@ -42,7 +43,7 @@ export function RecordAndEarnBanner() {
                 </span>
               ))}
               <span className="inline-flex items-center rounded-full bg-amber-400/90 px-2 py-0.5 text-[10px] font-black text-amber-950 sm:text-xs">
-                +20–40 pts
+                +{RECORDING_APPROVED_POINTS} pts
               </span>
             </div>
           </div>

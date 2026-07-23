@@ -1,4 +1,4 @@
-import { ACTIVITY_BONUS_POINTS } from '@/lib/points-policy';
+import { ACTIVITY_BONUS_POINTS, RECORDING_APPROVED_POINTS } from '@/lib/points-policy';
 
 export type WhatsNewItem = {
   href: string;
@@ -32,7 +32,7 @@ export const WHATS_NEW_ITEMS: WhatsNewItem[] = [
     title: 'Recording Studio',
     blurb: "Record Qur'an, Nasheeds & Stories — earn points!",
     badge: 'NEW',
-    pointsHint: '+20–40',
+    pointsHint: `+${RECORDING_APPROVED_POINTS}`,
   },
   {
     href: '/arabic',
@@ -104,7 +104,7 @@ export const EARN_MORE_LINKS: WhatsNewItem[] = [
     title: 'Recording Studio',
     blurb: "Qur'an, Nasheeds & Stories",
     badge: 'NEW',
-    pointsHint: '+20–40',
+    pointsHint: `+${RECORDING_APPROVED_POINTS}`,
   },
   {
     href: '/my-recordings',

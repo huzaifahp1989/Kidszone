@@ -3,7 +3,9 @@ import { supabaseAdmin } from '@/lib/supabase-admin';
 
 import { POINTS_DAILY_CAP, resolvePointsToAward } from '@/lib/points-policy';
 
-const POINTS_PER_RECORDING = 30;
+import { RECORDING_APPROVED_POINTS } from '@/lib/points-policy';
+
+const POINTS_PER_RECORDING = RECORDING_APPROVED_POINTS;
 
 export async function POST(req: Request) {
   try {

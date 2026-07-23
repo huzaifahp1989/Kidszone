@@ -7,6 +7,7 @@ import { formatDate } from '@/lib/utils';
 import { SearchIcon, FilterIcon, ChevronRightIcon, ArrowLeftIcon, PlayIcon, PauseIcon, DownloadIcon } from 'lucide-react';
 import { AdminNotificationBadge } from '@/components/AdminNotificationBadge';
 import { RECORDING_APPROVE_PRESETS, RECORDING_REJECT_PRESETS } from '@/lib/recording-feedback-presets';
+import { RECORDING_APPROVED_POINTS } from '@/lib/points-policy';
 
 export default function AdminRecordingsList() {
   const router = useRouter();
@@ -140,7 +141,7 @@ export default function AdminRecordingsList() {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            points: 10,
+            points: RECORDING_APPROVED_POINTS,
             feedback: 'Approved via bulk action',
             publish: true
           })

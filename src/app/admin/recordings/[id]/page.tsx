@@ -4,6 +4,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { AdminRecording } from '@/types/admin';
 import { formatDate } from '@/lib/utils';
+import { RECORDING_APPROVED_POINTS } from '@/lib/points-policy';
 import { ArrowLeftIcon, PlayIcon, PauseIcon, CheckIcon, XIcon, TrashIcon, AlertTriangleIcon, Loader2, DownloadIcon } from 'lucide-react';
 
 export default function AdminRecordingDetail({ params }: { params: Promise<{ id: string }> }) {
@@ -14,7 +15,7 @@ export default function AdminRecordingDetail({ params }: { params: Promise<{ id:
   const [processing, setProcessing] = useState(false);
   
   // Form State
-  const [points, setPoints] = useState(10);
+  const [points, setPoints] = useState(RECORDING_APPROVED_POINTS);
   const [feedback, setFeedback] = useState('');
   const [publish, setPublish] = useState(true);
   

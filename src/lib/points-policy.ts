@@ -4,6 +4,9 @@ export const QUIZ_POINTS_PER_COMPLETION = 25;
 
 export const ACTIVITY_BONUS_POINTS = 25;
 
+/** Points awarded when a recording is approved by admin. */
+export const RECORDING_APPROVED_POINTS = 25;
+
 export const MAX_DAILY_QUIZ_ATTEMPTS = 2;
 
 export const MAX_DAILY_GAME_COMPLETIONS = 2;

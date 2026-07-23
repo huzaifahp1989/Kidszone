@@ -6,6 +6,7 @@ import { supabase } from '@/lib/supabase';
 import { Recording } from '@/types/stories';
 import { useAuth } from '@/lib/auth-context';
 import { Mic, Clock, Calendar, CheckCircle, XCircle, Hourglass, MessageSquare, RefreshCw } from 'lucide-react';
+import { RECORDING_APPROVED_POINTS } from '@/lib/points-policy';
 
 type RecordingCategory = 'quran' | 'nasheed' | 'story' | 'hadith' | 'unknown';
 
@@ -195,7 +196,7 @@ export default function MyRecordingsPage() {
             </div>
             <h3 className="text-xl font-bold text-gray-700 mb-2">No recordings yet</h3>
             <p className="text-gray-500 mb-6">
-              Record Qur&apos;an, Nasheeds, Stories or Hadith and earn up to 40 points when approved!
+              Record Qur&apos;an, Nasheeds, Stories or Hadith and earn {RECORDING_APPROVED_POINTS} points when approved!
             </p>
             <Link
               href="/studio"
