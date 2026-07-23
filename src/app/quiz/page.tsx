@@ -14,7 +14,6 @@ import { getQuizQuestionPool } from '@/lib/quiz-question-pool';
 import { QUIZ_TOPICS, QUIZ_TOPIC_GROUPS, getTopicById, getTopicQuestionCount, getDailyTopicSeed, type QuizTopicId } from '@/lib/quiz-topics';
 import { ReadAloudButton } from '@/components/ReadAloudButton';
 import { EarnMorePointsLinks } from '@/components/EarnMorePointsLinks';
-import { RecordAndEarnBanner } from '@/components/RecordAndEarnBanner';
 import { authJsonFetch, getAuthFetchHeaders } from '@/lib/auth-headers';
 import { trackQuizCompleted } from '@/lib/analytics';
 
@@ -434,8 +433,6 @@ export default function QuizPage() {
       <BiWeeklyResetPopup pageKey="quiz" />
       <div className="min-h-screen bg-[#f5f3ff] pattern-islamic">
         <div className="max-w-4xl mx-auto px-4 py-8 space-y-8">
-          <RecordAndEarnBanner />
-
           {/* Islamic Quiz Challenge — shown at the very top so it is easy to find */}
           <Link
             href="/quiz-challenge"

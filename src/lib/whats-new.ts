@@ -84,6 +84,14 @@ export const WHATS_NEW_ITEMS: WhatsNewItem[] = [
 /** Extra earn / explore links shown on Quiz / Games / Pledge. */
 export const EARN_MORE_LINKS: WhatsNewItem[] = [
   {
+    href: '/studio',
+    emoji: '🎙️',
+    title: 'Record & Earn',
+    blurb: "Qur'an, Nasheed, Hadith, Stories",
+    badge: 'NEW',
+    pointsHint: `+${RECORDING_APPROVED_POINTS}`,
+  },
+  {
     href: '/create',
     emoji: '🎨',
     title: 'Create & Play',
@@ -97,14 +105,6 @@ export const EARN_MORE_LINKS: WhatsNewItem[] = [
     blurb: "Write about one of today's 5",
     badge: 'NEW',
     pointsHint: `+${ACTIVITY_BONUS_POINTS}`,
-  },
-  {
-    href: '/studio',
-    emoji: '🎙️',
-    title: 'Recording Studio',
-    blurb: "Qur'an, Nasheeds & Stories",
-    badge: 'NEW',
-    pointsHint: `+${RECORDING_APPROVED_POINTS}`,
   },
   {
     href: '/my-recordings',
