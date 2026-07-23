@@ -64,3 +64,8 @@ export async function authJsonFetch(url: string, init: AuthJsonFetchOptions = {}
     clearTimeout(timer);
   }
 }
+
+export async function authFetch(url: string, init: RequestInit = {}): Promise<Response> {
+  const headers = await getAuthFetchHeaders(init.headers as Record<string, string> | undefined);
+  return fetch(url, { ...init, headers });
+}

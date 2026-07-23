@@ -805,3 +805,43 @@
     outline: none;
   }
 }
+
+/* Offline Activities — print worksheets without chrome */
+@media print {
+  body * {
+    visibility: hidden !important;
+  }
+
+  .print-area,
+  .print-area * {
+    visibility: visible !important;
+  }
+
+  .print-area {
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+
+  .offline-worksheet {
+    border: none !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    padding: 0.5in !important;
+  }
+
+  nav,
+  header,
+  footer,
+  .mobile-bottom-nav,
+  [data-chat-widget] {
+    display: none !important;
+  }
+}

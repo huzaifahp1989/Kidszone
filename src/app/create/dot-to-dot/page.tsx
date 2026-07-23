@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { CreateShell } from '@/components/CreateShell';
+import { ClaimCreatePointsButton } from '@/components/ClaimCreatePointsButton';
 import { DOT_TO_DOT_POINTS } from '@/data/kids-create-activities';
 
 export default function DotToDotPage() {
@@ -48,6 +49,7 @@ export default function DotToDotPage() {
         </svg>
       </div>
       {complete && <p className="font-bold text-teal-800">MashaAllah — crescent complete!</p>}
+      <ClaimCreatePointsButton activity="creative" ready={complete} />
     </CreateShell>
   );
 }

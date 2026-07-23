@@ -8,6 +8,9 @@ import Link from 'next/link';
 import { SurveyPopup } from '@/components';
 import { SpinWheel } from '@/components/SpinWheel';
 import { WonPrizeVouchers } from '@/components/WonPrizeVouchers';
+import { StickerBook } from '@/components/StickerBook';
+import { AvatarCustomizer } from '@/components/AvatarCustomizer';
+import { FamilyChallengeCard } from '@/components/FamilyChallengeCard';
 
 type MonthlyCertificate = {
   key: string;
@@ -331,6 +334,12 @@ export default function RewardsPage() {
           </div>
           <span className="shrink-0 rounded-xl bg-violet-600 px-4 py-2 text-sm font-bold text-white">Go Home →</span>
         </Link>
+
+        <div className="mb-6 space-y-4">
+          <StickerBook />
+          <AvatarCustomizer />
+          <FamilyChallengeCard />
+        </div>
           </>
         )}
 

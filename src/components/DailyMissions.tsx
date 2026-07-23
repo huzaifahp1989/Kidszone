@@ -207,7 +207,7 @@ export default function DailyMissions() {
           </div>
           <h3 className="mt-3 text-2xl font-bold text-[#1e1b4b]">Today&apos;s Kids Zone Challenge</h3>
           <p className="text-[#475569] text-sm mt-1">
-            Finish missions across quiz, games, tracker, and rewards. Any sibling completing all missions keeps your family streak going!
+            Finish missions across quiz, games, Create & Play, and points. Any sibling completing all missions keeps your family streak going!
           </p>
         </div>
 

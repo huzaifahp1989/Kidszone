@@ -141,6 +141,23 @@ export async function tryAwardDailyActivity(
     await recordActivityMarker(userId, activity, award.pointsAwarded);
   }
 
+  if (award.pointsAwarded > 0) {
+    try {
+      const { unlockStickersForTriggers } = await import('@/lib/stickers-server');
+      const triggers: string[] = [];
+      if (activity === 'quiz') triggers.push('quiz_complete');
+      if (activity === 'game') triggers.push('game_complete');
+      if (activity === 'creative') triggers.push('create_creative', 'create_any');
+      if (activity === 'story_choice') triggers.push('create_story_choice', 'create_any');
+      if (activity === 'dua') triggers.push('create_dua', 'create_any');
+      if (activity === 'kindness') triggers.push('create_kindness', 'create_any');
+      if (activity === 'manners') triggers.push('create_manners', 'create_any');
+      if (triggers.length) await unlockStickersForTriggers(userId, triggers);
+    } catch {
+      /* optional */
+    }
+  }
+
   return {
     success: award.success,
     pointsAwarded: award.pointsAwarded,
