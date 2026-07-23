@@ -158,6 +158,22 @@ export const NAV_GROUPS: NavGroup[] = [
         group: 'learn',
       },
       {
+        href: '/studio',
+        label: 'Recording Studio',
+        shortLabel: 'Record',
+        description: "Record Qur'an, Nasheeds & Stories to earn points",
+        icon: Mic,
+        group: 'learn',
+      },
+      {
+        href: '/my-recordings',
+        label: 'My Recordings',
+        shortLabel: 'Recordings',
+        description: 'See when your recordings are approved or rejected',
+        icon: Mic,
+        group: 'track',
+      },
+      {
         href: '/hadith',
         label: 'Daily Hadith',
         shortLabel: 'Hadith',

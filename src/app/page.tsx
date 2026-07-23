@@ -22,6 +22,8 @@ import { DailyAyahCard } from '@/components/DailyAyahCard';
 import { AchievementGrid } from '@/components/AchievementGrid';
 import { StreakCalendar } from '@/components/StreakCalendar';
 import { getKidLevelTitle } from '@/lib/level-names';
+import { RecordAndEarnBanner } from '@/components/RecordAndEarnBanner';
+import { EarnMorePointsLinks } from '@/components/EarnMorePointsLinks';
 
 const TIP_TEXT =
   'Try to learn something new about Islam every day, even if it is just one verse or one hadith. Little by little, you build lasting knowledge. May Allah bless your journey!';
@@ -52,6 +54,8 @@ export default function Home() {
         <RamadanPopup />
         <div className="page-wrap space-y-6">
           <WhatsNew />
+          <RecordAndEarnBanner />
+          <EarnMorePointsLinks title="Earn more points today" />
           <section className="hero-panel stagger-in">
             <div className="relative flex flex-col items-center gap-5 px-5 py-8 text-center md:flex-row md:items-center md:justify-between md:text-left">
               <div className="space-y-3">
@@ -136,6 +140,8 @@ export default function Home() {
       <RamadanPopup />
       <div className="page-wrap space-y-7">
         <WhatsNew />
+        <RecordAndEarnBanner />
+        <EarnMorePointsLinks title="Earn more points today" />
         <section className="hero-panel stagger-in">
           <div className="relative px-6 py-9 md:px-10 md:py-11">
             <div className="flex flex-col items-start gap-6 md:flex-row md:items-center md:justify-between">

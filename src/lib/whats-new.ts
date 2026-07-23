@@ -27,6 +27,14 @@ export const WHATS_NEW_ITEMS: WhatsNewItem[] = [
     pointsHint: `+${ACTIVITY_BONUS_POINTS}`,
   },
   {
+    href: '/studio',
+    emoji: '🎙️',
+    title: 'Recording Studio',
+    blurb: "Record Qur'an, Nasheeds & Stories — earn points!",
+    badge: 'NEW',
+    pointsHint: '+20–40',
+  },
+  {
     href: '/arabic',
     emoji: '📖',
     title: 'Arabic Learning',
@@ -89,6 +97,21 @@ export const EARN_MORE_LINKS: WhatsNewItem[] = [
     blurb: "Write about one of today's 5",
     badge: 'NEW',
     pointsHint: `+${ACTIVITY_BONUS_POINTS}`,
+  },
+  {
+    href: '/studio',
+    emoji: '🎙️',
+    title: 'Recording Studio',
+    blurb: "Qur'an, Nasheeds & Stories",
+    badge: 'NEW',
+    pointsHint: '+20–40',
+  },
+  {
+    href: '/my-recordings',
+    emoji: '📋',
+    title: 'My Recordings',
+    blurb: 'See approved & rejected status',
+    pointsHint: 'Check status',
   },
   {
     href: '/arabic',

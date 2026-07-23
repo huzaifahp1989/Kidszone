@@ -13,6 +13,7 @@ export interface Recording {
   id: string;
   user_id: string | null;
   story_id: string | null;
+  category?: 'quran' | 'nasheed' | 'story' | null;
   audio_path: string;
   audio_url?: string;
   duration?: number;
@@ -23,6 +24,7 @@ export interface Recording {
   admin_feedback?: string | null;
   is_published: boolean;
   submitted_at?: string;
+  reviewed_at?: string | null;
   created_at?: string;
 
   // Studio fields
