@@ -118,29 +118,45 @@ export async function uploadObject(input: {
   contentType: string;
 }): Promise<{ path: string; url: string; provider: 'r2' | 'supabase' }> {
   const path = input.path.replace(/^\/+/, '');
+  let r2Error: unknown = null;
 
   if (r2Configured()) {
-    const client = getR2Client();
-    const key = r2Key(input.bucket, path);
-    await client.send(
-      new PutObjectCommand({
-        Bucket: r2Bucket(),
-        Key: key,
-        Body: input.body,
-        ContentType: input.contentType,
-      })
-    );
-    const url = publicBaseUrl()
-      ? `${publicBaseUrl()}/${key}`
-      : await getReadableObjectUrl(input.bucket, path);
-    return { path, url, provider: 'r2' };
+    try {
+      const client = getR2Client();
+      const key = r2Key(input.bucket, path);
+      await client.send(
+        new PutObjectCommand({
+          Bucket: r2Bucket(),
+          Key: key,
+          Body: input.body,
+          ContentType: input.contentType,
+        })
+      );
+      const url = publicBaseUrl()
+        ? `${publicBaseUrl()}/${key}`
+        : await getReadableObjectUrl(input.bucket, path);
+      return { path, url, provider: 'r2' };
+    } catch (error) {
+      r2Error = error;
+      console.error('[object-storage] R2 upload failed, falling back to Supabase:', error);
+    }
   }
 
   const { error } = await supabaseAdmin.storage.from(input.bucket).upload(path, input.body, {
     contentType: input.contentType,
-    upsert: false,
+    upsert: true,
   });
-  if (error) throw error;
+  if (error) {
+    const r2Msg = r2Error instanceof Error ? r2Error.message : r2Error ? String(r2Error) : null;
+    throw new Error(
+      [
+        `Supabase storage upload failed: ${error.message}`,
+        r2Msg ? `R2 also failed: ${r2Msg}` : null,
+      ]
+        .filter(Boolean)
+        .join(' | ')
+    );
+  }
   return {
     path,
     url: getPublicObjectUrl(input.bucket, path),

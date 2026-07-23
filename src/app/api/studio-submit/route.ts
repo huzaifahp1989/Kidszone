@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { deleteObject, uploadObject } from '@/lib/object-storage';
+import { isKidsAudioCategory, withCategoryMarker } from '@/lib/kids-audio';
 
 export async function POST(request: NextRequest) {
   try {
@@ -11,7 +12,7 @@ export async function POST(request: NextRequest) {
 
     const formData = await request.formData();
     const file = formData.get('recording');
-    const category = formData.get('category') as string | null;
+    const categoryRaw = formData.get('category') as string | null;
     const title = formData.get('title') as string | null;
     const duration = formData.get('duration') as string | null;
     const childName = formData.get('childName') as string | null;
@@ -20,6 +21,14 @@ export async function POST(request: NextRequest) {
 
     if (!(file instanceof Blob)) {
       return NextResponse.json({ error: 'Recording file is required' }, { status: 400 });
+    }
+
+    const category = categoryRaw && isKidsAudioCategory(categoryRaw) ? categoryRaw : null;
+    if (categoryRaw && !category) {
+      return NextResponse.json(
+        { error: 'Category must be quran, nasheed, story, or hadith' },
+        { status: 400 }
+      );
     }
 
     const arrayBuffer = await file.arrayBuffer();
@@ -31,6 +40,7 @@ export async function POST(request: NextRequest) {
     const safeChildName = childName && childName.trim().length > 0 ? childName.trim() : null;
     const safeTitle = title && title.trim().length > 0 ? title.trim() : 'Untitled';
     const timestamp = Date.now();
+    const safeDescription = withCategoryMarker(category, message);
 
     const uploadedFile = file as File;
     const mimeType =
@@ -61,34 +71,61 @@ export async function POST(request: NextRequest) {
       });
     } catch (uploadError) {
       console.error('Storage upload error:', uploadError);
-      return NextResponse.json({ error: 'Failed to upload recording to storage' }, { status: 500 });
+      const detail = uploadError instanceof Error ? uploadError.message : 'Unknown storage error';
+      return NextResponse.json(
+        {
+          error: 'Failed to upload recording to storage',
+          detail: process.env.NODE_ENV === 'production' ? detail.slice(0, 300) : detail,
+        },
+        { status: 500 }
+      );
     }
 
-    const { data: insertedRecord, error: dbError } = await supabaseAdmin
-      .from('recordings')
-      .insert({
-        user_id: userId || null,
-        story_id: null,
-        category: category || null,
-        child_name: safeChildName,
-        title: safeTitle,
-        description: message,
-        audio_path: filename,
-        duration: parseInt(duration || '0'),
-        status: 'submitted',
-        submitted_at: new Date().toISOString(),
-      })
-      .select()
-      .single();
+    const baseRow: Record<string, unknown> = {
+      user_id: userId || null,
+      story_id: null,
+      child_name: safeChildName,
+      title: safeTitle,
+      description: safeDescription,
+      audio_path: filename,
+      duration: parseInt(duration || '0', 10) || 0,
+      status: 'submitted',
+      submitted_at: new Date().toISOString(),
+    };
 
-    if (dbError) {
+    let insertedRecord: { id: string } | null = null;
+    let dbError: { message?: string } | null = null;
+
+    const tryInsert = async (row: Record<string, unknown>) => {
+      const result = await supabaseAdmin.from('recordings').insert(row).select('id').single();
+      return { data: result.data as { id: string } | null, error: result.error as { message?: string } | null };
+    };
+
+    // Prefer native category column when available; fall back if migration not applied yet.
+    ({ data: insertedRecord, error: dbError } = await tryInsert({ ...baseRow, category: category || null }));
+
+    if (dbError && /category/i.test(String(dbError.message || ''))) {
+      ({ data: insertedRecord, error: dbError } = await tryInsert(baseRow));
+    }
+
+    // Guest uploads: user_id may be NOT NULL or FK-constrained — retry without it.
+    if (dbError && /user_id/i.test(String(dbError.message || ''))) {
+      const { user_id: _omit, ...withoutUser } = baseRow;
+      ({ data: insertedRecord, error: dbError } = await tryInsert(withoutUser));
+      if (dbError && /category/i.test(String(dbError.message || ''))) {
+        // already without category path handled above; keep without user
+      }
+    }
+
+    if (dbError || !insertedRecord) {
       console.error('DB insert error:', dbError);
       try {
         await deleteObject('story-recordings', filename);
       } catch {
         /* ignore */
       }
-      return NextResponse.json({ error: 'Failed to save recording record' }, { status: 500 });
+      const detail = String(dbError?.message || 'unknown db error').slice(0, 300);
+      return NextResponse.json({ error: 'Failed to save recording record', detail }, { status: 500 });
     }
 
     // 3. Send Email

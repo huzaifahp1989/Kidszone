@@ -487,7 +487,7 @@ export default function AdminRecordingDetail({ params }: { params: Promise<{ id:
                     onChange={(e) => setPublish(e.target.checked)}
                     className="w-4 h-4 text-islamic-primary rounded focus:ring-islamic-primary"
                   />
-                  <label htmlFor="publish" className="text-sm text-gray-700">Publish to public gallery</label>
+                  <label htmlFor="publish" className="text-sm text-gray-700">Publish to Kids Audio (/listen)</label>
                 </div>
               </div>
             </div>
