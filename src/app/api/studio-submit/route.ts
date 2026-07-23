@@ -71,17 +71,24 @@ export async function POST(request: NextRequest) {
       });
     } catch (uploadError) {
       console.error('Storage upload error:', uploadError);
-      return NextResponse.json({ error: 'Failed to upload recording to storage' }, { status: 500 });
+      const detail = uploadError instanceof Error ? uploadError.message : 'Unknown storage error';
+      return NextResponse.json(
+        {
+          error: 'Failed to upload recording to storage',
+          detail: process.env.NODE_ENV === 'production' ? detail.slice(0, 300) : detail,
+        },
+        { status: 500 }
+      );
     }
 
-    const baseRow = {
+    const baseRow: Record<string, unknown> = {
       user_id: userId || null,
       story_id: null,
       child_name: safeChildName,
       title: safeTitle,
       description: safeDescription,
       audio_path: filename,
-      duration: parseInt(duration || '0'),
+      duration: parseInt(duration || '0', 10) || 0,
       status: 'submitted',
       submitted_at: new Date().toISOString(),
     };
@@ -89,19 +96,25 @@ export async function POST(request: NextRequest) {
     let insertedRecord: { id: string } | null = null;
     let dbError: { message?: string } | null = null;
 
+    const tryInsert = async (row: Record<string, unknown>) => {
+      const result = await supabaseAdmin.from('recordings').insert(row).select('id').single();
+      return { data: result.data as { id: string } | null, error: result.error as { message?: string } | null };
+    };
+
     // Prefer native category column when available; fall back if migration not applied yet.
-    ({ data: insertedRecord, error: dbError } = await supabaseAdmin
-      .from('recordings')
-      .insert({ ...baseRow, category: category || null })
-      .select('id')
-      .single());
+    ({ data: insertedRecord, error: dbError } = await tryInsert({ ...baseRow, category: category || null }));
 
     if (dbError && /category/i.test(String(dbError.message || ''))) {
-      ({ data: insertedRecord, error: dbError } = await supabaseAdmin
-        .from('recordings')
-        .insert(baseRow)
-        .select('id')
-        .single());
+      ({ data: insertedRecord, error: dbError } = await tryInsert(baseRow));
+    }
+
+    // Guest uploads: user_id may be NOT NULL or FK-constrained — retry without it.
+    if (dbError && /user_id/i.test(String(dbError.message || ''))) {
+      const { user_id: _omit, ...withoutUser } = baseRow;
+      ({ data: insertedRecord, error: dbError } = await tryInsert(withoutUser));
+      if (dbError && /category/i.test(String(dbError.message || ''))) {
+        // already without category path handled above; keep without user
+      }
     }
 
     if (dbError || !insertedRecord) {
@@ -111,7 +124,8 @@ export async function POST(request: NextRequest) {
       } catch {
         /* ignore */
       }
-      return NextResponse.json({ error: 'Failed to save recording record' }, { status: 500 });
+      const detail = String(dbError?.message || 'unknown db error').slice(0, 300);
+      return NextResponse.json({ error: 'Failed to save recording record', detail }, { status: 500 });
     }
 
     // 3. Send Email

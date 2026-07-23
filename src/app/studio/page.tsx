@@ -347,7 +347,8 @@ export default function StudioPage() {
 
       const data = await res.json().catch(() => ({}));
       if (!res.ok || !data.success) {
-        setSubmitError(data.error || 'Failed to submit recording. Please try again.');
+        const detail = typeof data.detail === 'string' ? ` (${data.detail})` : '';
+        setSubmitError((data.error || 'Failed to submit recording. Please try again.') + detail);
       } else {
         setSubmitSuccess('Recording sent! A teacher will check it. When published, it can appear on Kids Audio.');
         if (category === 'quran') {
