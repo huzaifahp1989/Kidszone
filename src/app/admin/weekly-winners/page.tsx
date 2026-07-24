@@ -98,7 +98,7 @@ export default function AdminWeeklyWinnersPage() {
   };
 
   const handleAutoPick = async (force = false) => {
-    if (force && !window.confirm('Re-pick winners for the last completed week? This replaces the current auto-pick for that week.')) {
+    if (force && !window.confirm('Re-pick winners for the last completed week? This replaces the current picks for that week.')) {
       return;
     }
     setAutoPicking(true);
@@ -153,7 +153,7 @@ export default function AdminWeeklyWinnersPage() {
           <div>
             <h1 className="text-2xl font-black text-slate-900">Weekly Winners</h1>
             <p className="text-sm text-slate-600">
-              Five winners are auto-picked each Saturday from Kids Zone activity. You can still add manual entries or run auto-pick now.
+              Add winners manually or use the pick buttons below when you are ready to announce them.
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -161,7 +161,7 @@ export default function AdminWeeklyWinnersPage() {
               ← Admin home
             </Button>
             <Button variant="outline" onClick={() => handleAutoPick(false)} disabled={autoPicking || setupRequired}>
-              {autoPicking ? 'Picking…' : 'Auto-pick now'}
+              {autoPicking ? 'Picking…' : 'Pick winners now'}
             </Button>
             <Button variant="outline" onClick={() => handleAutoPick(true)} disabled={autoPicking || setupRequired}>
               Force re-pick

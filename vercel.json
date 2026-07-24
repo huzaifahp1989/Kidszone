@@ -13,10 +13,6 @@
       "schedule": "0 0 1 * *"
     },
     {
-      "path": "/api/cron/pick-weekly-winners",
-      "schedule": "30 0 * * 6"
-    },
-    {
       "path": "/api/cron/send-scheduled-pushes",
       "schedule": "0 * * * *"
     }

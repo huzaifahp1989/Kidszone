@@ -5,12 +5,23 @@ import { authorizeCron } from '@/lib/cron-auth';
 export const dynamic = 'force-dynamic';
 
 export async function GET(request: Request) {
+  const { searchParams } = new URL(request.url);
+  const isManualRun = searchParams.get('manual') === '1';
+
+  // Automatic weekly winner picking is disabled. Admins pick winners manually.
+  if (!isManualRun) {
+    return NextResponse.json({
+      success: true,
+      skipped: true,
+      message: 'Automatic weekly winner picking is disabled. Use ?manual=1 to run this endpoint manually.',
+    });
+  }
+
   if (!authorizeCron(request)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
   try {
-    const { searchParams } = new URL(request.url);
     const force = searchParams.get('force') === '1';
     const result = await autoPickWeeklyWinners({ force });
 
