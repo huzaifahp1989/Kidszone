@@ -4,9 +4,35 @@ import { useCallback } from 'react';
 import { useAuth } from '@/lib/auth-context';
 import {
   completeGameSession,
-  syncGameSessionProfile,
   type CompleteGameSessionResult,
+  type GameSessionProfile,
 } from '@/lib/complete-game-session';
+
+async function syncGameSessionProfile(
+  result: CompleteGameSessionResult,
+  handlers: {
+    updateLocalProfile?: (updates: Partial<GameSessionProfile>) => void;
+    refreshProfile?: () => Promise<void>;
+  }
+): Promise<void> {
+  if (
+    result.profile &&
+    handlers.updateLocalProfile &&
+    Number.isFinite(result.profile.points)
+  ) {
+    handlers.updateLocalProfile({
+      points: result.profile.points,
+      weeklyPoints: result.profile.weeklyPoints,
+      monthlyPoints: result.profile.monthlyPoints,
+      todayPoints: result.profile.todayPoints,
+    });
+  }
+  try {
+    await handlers.refreshProfile?.();
+  } catch {
+    /* non-blocking */
+  }
+}
 
 export function useCompleteGameSession() {
   const { refreshProfile, updateLocalProfile } = useAuth();
