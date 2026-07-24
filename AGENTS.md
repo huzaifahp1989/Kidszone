@@ -35,7 +35,7 @@ Points are critical product behavior. Treat any points/Supabase regression as P0
    - `cap_math_broken` / `cap_not_enforced` — policy regression in code
 3. Prefer repairing via the shared award path + admin recalc tools (`src/lib/points-repair.ts`, `/api/admin/recalc-stuck-weekly-points`) over one-off SQL unless schema is missing.
 4. Re-run health check until `ok: true`.
-5. If the Capacitor app / `LIVE_APP_URL` points at a deploy without Supabase env, points and auth will appear completely broken — fix `src/lib/app-url.ts` + `capacitor.config.ts` (or copy env vars into that Vercel project).
+5. If the Capacitor app / `LIVE_APP_URL` points at a deploy without Supabase env, points and auth will appear completely broken — fix `src/lib/app-url.ts` + `capacitor.config.ts` (or copy env vars into that Vercel project). `src/middleware.ts` 307-redirects `huzaifahp1989-audio.vercel.app` → `islamic-kids-platform.vercel.app` so already-installed Cap apps recover after deploy without a store rebuild. Client/server also fall back to the known production Supabase URL/anon key when env is missing on Vercel (never hardcode service_role).
 
 ### Scheduled guardian
 
