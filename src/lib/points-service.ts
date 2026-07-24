@@ -147,15 +147,21 @@ export async function awardPoints(
       })
       const apiData = await apiRes.json()
       if (apiRes.ok && apiData?.success) {
-        await syncUserSnapshot(user.id, {
-          total_points: apiData.total_points,
-          weekly_points: apiData.weekly_points,
-          monthly_points: apiData.monthly_points,
-        })
+        const awarded = Number(apiData.points_awarded || 0)
+        const total = Number(apiData.total_points)
+        // Only mirror totals onto users when the server actually awarded points
+        // and returned finite totals — never write fabricated zeros.
+        if (awarded > 0 && Number.isFinite(total) && total > 0) {
+          await syncUserSnapshot(user.id, {
+            total_points: apiData.total_points,
+            weekly_points: apiData.weekly_points,
+            monthly_points: apiData.monthly_points,
+          })
+        }
         return {
           success: true,
           message: apiData.message || 'Points awarded successfully',
-          points_awarded: Number(apiData.points_awarded || 0),
+          points_awarded: awarded,
           total_points: apiData.total_points,
           today_points: apiData.today_points,
           weekly_points: apiData.weekly_points,

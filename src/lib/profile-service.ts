@@ -23,14 +23,14 @@ export interface KidProfile {
   updatedAt: string;
 }
 
-import { POINTS_DAILY_CAP, resolveTodayPoints } from './points-policy';
+import { POINTS_DAILY_CAP, resolveBasePoints, resolveTodayPoints } from './points-policy';
 
 function mapUser(row: any, pointsRow?: any): KidProfile {
   const todayPoints = resolveTodayPoints(pointsRow?.today_points, pointsRow?.last_earned_date);
 
-  const totalPoints = pointsRow?.total_points ?? row.points ?? 0;
-  const weeklyPoints = pointsRow?.weekly_points ?? row.weeklyPoints ?? row.weeklypoints ?? 0;
-  const monthlyPoints = pointsRow?.monthly_points ?? row.monthlyPoints ?? row.monthlypoints ?? 0;
+  const totalPoints = resolveBasePoints(pointsRow?.total_points, row.points);
+  const weeklyPoints = resolveBasePoints(pointsRow?.weekly_points, row.weeklyPoints ?? row.weeklypoints);
+  const monthlyPoints = resolveBasePoints(pointsRow?.monthly_points, row.monthlyPoints ?? row.monthlypoints);
 
   return {
     uid: row.uid,

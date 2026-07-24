@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { ensureUserRecords } from '@/lib/ensure-user-records';
 import { tryAwardDailyActivity } from '@/lib/daily-activity-award';
-import { ACTIVITY_BONUS_POINTS } from '@/lib/points-policy';
+import { ACTIVITY_BONUS_POINTS, resolveTodayPoints } from '@/lib/points-policy';
 import { canEarnActivityPoints } from '@/lib/daily-activity-limits';
 import { requireMatchingUser } from '@/lib/request-auth';
 
@@ -163,7 +163,7 @@ export async function POST(request: Request) {
 
     const { data: pointsRow } = await supabaseAdmin
       .from('users_points')
-      .select('total_points, weekly_points, monthly_points, today_points')
+      .select('total_points, weekly_points, monthly_points, today_points, last_earned_date')
       .eq('user_id', userId)
       .maybeSingle();
 
@@ -178,7 +178,7 @@ export async function POST(request: Request) {
         points: Number(pointsRow?.total_points ?? 0),
         weeklyPoints: Number(pointsRow?.weekly_points ?? 0),
         monthlyPoints: Number(pointsRow?.monthly_points ?? 0),
-        todayPoints: Number(pointsRow?.today_points ?? 0),
+        todayPoints: resolveTodayPoints(pointsRow?.today_points, pointsRow?.last_earned_date),
       },
     });
   } catch (error: any) {

@@ -1,6 +1,6 @@
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { ensureUserRecords } from '@/lib/ensure-user-records';
-import { POINTS_DAILY_CAP, resolvePointsToAward } from '@/lib/points-policy';
+import { POINTS_DAILY_CAP, resolveBasePoints, resolvePointsToAward } from '@/lib/points-policy';
 import { shouldResetMonthlyPoints } from '@/lib/weekly-activity';
 import { isTestModeUserId } from '@/lib/test-mode-server';
 
@@ -138,9 +138,10 @@ export async function awardPointsWithDailyCapByUserId(
   const existingRow = pointsRowRes.data;
   const userRow = userRowRes.data;
 
-  const baseTotal = Number(existingRow?.total_points ?? userRow?.points ?? 0);
-  const baseWeekly = Number(existingRow?.weekly_points ?? userRow?.weeklypoints ?? 0);
-  let baseMonthly = Number(existingRow?.monthly_points ?? userRow?.monthlypoints ?? 0);
+  // Prefer the higher of users_points vs users so a zero-seeded points row cannot wipe totals.
+  const baseTotal = resolveBasePoints(existingRow?.total_points, userRow?.points);
+  const baseWeekly = resolveBasePoints(existingRow?.weekly_points, userRow?.weeklypoints);
+  let baseMonthly = resolveBasePoints(existingRow?.monthly_points, userRow?.monthlypoints);
   if (shouldResetMonthlyPoints(existingRow?.last_earned_date)) {
     baseMonthly = 0;
   }
@@ -220,7 +221,18 @@ export async function awardPointsWithDailyCapByUserId(
     .eq('uid', userId);
 
   if (usersSyncError) {
-    console.error('[server-points] users sync failed:', usersSyncError.message);
+    console.error('[server-points] users sync failed, retrying once:', usersSyncError.message);
+    const { error: retryError } = await supabaseAdmin
+      .from('users')
+      .update({
+        points: totalPoints,
+        weeklypoints: weeklyPoints,
+        monthlypoints: monthlyPoints,
+      })
+      .eq('uid', userId);
+    if (retryError) {
+      console.error('[server-points] users sync retry failed:', retryError.message);
+    }
   }
 
   return {

@@ -72,12 +72,16 @@ export async function ensureUserRecords(userId: string): Promise<EnsureUserRecor
   {
     const full = await supabaseAdmin
       .from('users')
-      .select('uid, name, email, age, username, family_email')
+      .select('uid, name, email, age, username, family_email, points, weeklypoints, monthlypoints')
       .eq('uid', uid)
       .maybeSingle();
 
     if (full.error?.code === '42703') {
-      const basic = await supabaseAdmin.from('users').select('uid, name, email, age').eq('uid', uid).maybeSingle();
+      const basic = await supabaseAdmin
+        .from('users')
+        .select('uid, name, email, age, points, weeklypoints, monthlypoints')
+        .eq('uid', uid)
+        .maybeSingle();
       if (basic.error) {
         return { ok: false, userId: uid, createdUser: false, createdPoints: false, error: basic.error.message };
       }
@@ -176,15 +180,22 @@ export async function ensureUserRecords(userId: string): Promise<EnsureUserRecor
 
   let createdPoints = false;
   if (!existingPoints?.user_id) {
+    // Seed from users snapshot so a late users_points create cannot wipe earned totals.
+    const seedTotal = Math.max(0, Number(existingUser?.points ?? 0) || 0);
+    const seedWeekly = Math.max(0, Number(existingUser?.weeklypoints ?? 0) || 0);
+    const seedMonthly = Math.max(0, Number(existingUser?.monthlypoints ?? 0) || 0);
+    const seedBadges = Math.floor(seedTotal / 100);
+    const seedLevel = 1 + Math.floor(seedBadges / 5);
+
     const { error: insertPointsErr } = await supabaseAdmin.from('users_points').upsert(
       {
         user_id: uid,
-        total_points: 0,
-        weekly_points: 0,
-        monthly_points: 0,
+        total_points: seedTotal,
+        weekly_points: seedWeekly,
+        monthly_points: seedMonthly,
         today_points: 0,
-        badges: 0,
-        level: 1,
+        badges: seedBadges,
+        level: seedLevel,
         last_earned_date: today,
       },
       { onConflict: 'user_id' }

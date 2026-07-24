@@ -26,7 +26,11 @@ export async function syncGameSessionProfile(
   result: CompleteGameSessionResult,
   handlers: ProfileSyncHandlers
 ): Promise<void> {
-  if (result.profile && handlers.updateLocalProfile) {
+  if (
+    result.profile &&
+    handlers.updateLocalProfile &&
+    Number.isFinite(result.profile.points)
+  ) {
     handlers.updateLocalProfile({
       points: result.profile.points,
       weeklyPoints: result.profile.weeklyPoints,

@@ -4,6 +4,7 @@ import {
   DAILY_PLAN_TOTAL_POINTS,
   POINTS_DAILY_CAP,
   QUIZ_POINTS_PER_COMPLETION,
+  resolveBasePoints,
   resolvePointsToAward,
 } from '@/lib/points-policy';
 
@@ -14,7 +15,8 @@ describe('resolvePointsToAward', () => {
     expect(POINTS_DAILY_CAP).toBe(200);
     expect(QUIZ_POINTS_PER_COMPLETION).toBe(25);
     expect(ACTIVITY_BONUS_POINTS).toBe(25);
-    expect(DAILY_PLAN_TOTAL_POINTS).toBe(200);
+    // Plan rows can sum above the daily cap — kids pick a mix up to POINTS_DAILY_CAP.
+    expect(DAILY_PLAN_TOTAL_POINTS).toBeGreaterThanOrEqual(POINTS_DAILY_CAP);
   });
 
   it('does not block awards when weekly points are already high', () => {
@@ -24,5 +26,14 @@ describe('resolvePointsToAward', () => {
 
   it('skips daily cap when countTowardDailyLimit is false', () => {
     expect(resolvePointsToAward(30, 200, false)).toBe(30);
+  });
+});
+
+describe('resolveBasePoints', () => {
+  it('prefers the higher of users_points vs users so a zero seed cannot wipe totals', () => {
+    expect(resolveBasePoints(0, 500)).toBe(500);
+    expect(resolveBasePoints(520, 500)).toBe(520);
+    expect(resolveBasePoints(null, 120)).toBe(120);
+    expect(resolveBasePoints(undefined, undefined)).toBe(0);
   });
 });

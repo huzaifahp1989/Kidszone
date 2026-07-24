@@ -50,7 +50,7 @@ const AuthContext = createContext<AuthContextValue>({
   updateLocalProfile: () => {},
 });
 
-import { POINTS_DAILY_CAP, resolveTodayPoints } from './points-policy';
+import { POINTS_DAILY_CAP, resolveBasePoints, resolveTodayPoints } from './points-policy';
 
 const POINTS_SELECT =
   'total_points, weekly_points, monthly_points, today_points, last_earned_date, badges, level';
@@ -78,9 +78,15 @@ const getBestName = async (currentName: string | undefined | null, email: string
 
 const mapProfile = (userRow: any, pointsRow?: any): KidProfile => {
   const todayPoints = resolveTodayPoints(pointsRow?.today_points, pointsRow?.last_earned_date);
-  const points = pointsRow?.total_points ?? userRow.points ?? 0;
-  const weeklyPoints = pointsRow?.weekly_points ?? userRow.weeklyPoints ?? userRow.weeklypoints ?? 0;
-  const monthlyPoints = pointsRow?.monthly_points ?? userRow.monthlyPoints ?? userRow.monthlypoints ?? 0;
+  const points = resolveBasePoints(pointsRow?.total_points, userRow.points);
+  const weeklyPoints = resolveBasePoints(
+    pointsRow?.weekly_points,
+    userRow.weeklyPoints ?? userRow.weeklypoints
+  );
+  const monthlyPoints = resolveBasePoints(
+    pointsRow?.monthly_points,
+    userRow.monthlyPoints ?? userRow.monthlypoints
+  );
   // Prioritize badges/level from pointsRow (users_points), fall back to userRow (users)
   const badges = pointsRow?.badges ?? userRow.badges ?? 0;
   const level = pointsRow?.level ? `Level ${pointsRow.level}` : (userRow.level || 'Beginner');

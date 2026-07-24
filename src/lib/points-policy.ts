@@ -147,3 +147,18 @@ export function resolvePointsToAward(
 
   return Math.max(0, Math.min(amount, POINTS_DAILY_CAP - currentTodayPoints));
 }
+
+/**
+ * Pick a safe base total from users_points vs users snapshot.
+ * A zeroed users_points row must not wipe a higher users.points value.
+ */
+export function resolveBasePoints(primary: unknown, fallback: unknown = 0): number {
+  const a = Number(primary);
+  const b = Number(fallback);
+  const aOk = primary != null && primary !== '' && Number.isFinite(a);
+  const bOk = fallback != null && fallback !== '' && Number.isFinite(b);
+  if (aOk && bOk) return Math.max(0, a, b);
+  if (aOk) return Math.max(0, a);
+  if (bOk) return Math.max(0, b);
+  return 0;
+}

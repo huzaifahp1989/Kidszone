@@ -7,7 +7,7 @@ import { filterQuestionsByTopic, getDailyTopicSeed, parseTopicQuizId } from '@/l
 import { resolveTopicQuizQuestionsFromIds, resolveSubmittedTopicQuestions } from '@/lib/quiz-topic-questions';
 import { getTopicQuestionExclusions } from '@/lib/quiz-user-history';
 import { isTestModeEmail } from '@/lib/test-mode';
-import { POINTS_DAILY_CAP, QUIZ_POINTS_PER_COMPLETION, MAX_DAILY_QUIZ_ATTEMPTS } from '@/lib/points-policy';
+import { POINTS_DAILY_CAP, QUIZ_POINTS_PER_COMPLETION, MAX_DAILY_QUIZ_ATTEMPTS, resolveTodayPoints } from '@/lib/points-policy';
 import { createSessionQuizRecordId } from '@/lib/topic-quiz-record';
 import { insertQuizAttempt } from '@/lib/quiz-attempt-insert';
 import { randomUUID } from 'crypto';
@@ -151,12 +151,31 @@ async function ensureFallbackDailyQuizId(dateOrWeekSeed: string, questionIds: st
   return reread.id;
 }
 
+async function readCurrentPointsSnapshot(userId: string) {
+  const { data } = await supabaseAdmin
+    .from('users_points')
+    .select('total_points, weekly_points, monthly_points, today_points, last_earned_date')
+    .eq('user_id', userId)
+    .maybeSingle();
+
+  return {
+    totalPoints: Number(data?.total_points ?? 0),
+    weeklyPoints: Number(data?.weekly_points ?? 0),
+    monthlyPoints: Number(data?.monthly_points ?? 0),
+    todayPoints: resolveTodayPoints(data?.today_points, data?.last_earned_date),
+  };
+}
+
 async function awardQuizPoints(userId: string, totalPoints: number, isTestMode: boolean) {
   if (isTestMode || totalPoints <= 0) {
+    const snapshot = await readCurrentPointsSnapshot(userId);
     return {
       pointsAwarded: 0,
       reason: isTestMode ? 'test_mode' : null,
-      todayPoints: 0,
+      todayPoints: snapshot.todayPoints,
+      totalPoints: snapshot.totalPoints,
+      weeklyPoints: snapshot.weeklyPoints,
+      monthlyPoints: snapshot.monthlyPoints,
       dailyLimit: POINTS_DAILY_CAP,
     };
   }
@@ -201,11 +220,20 @@ function buildAwardProfile(awardResult: {
   monthlyPoints?: number;
   todayPoints?: number;
 }) {
+  // Never fabricate zeros from missing fields — that wipes the client profile.
+  if (
+    typeof awardResult.totalPoints !== 'number' ||
+    typeof awardResult.weeklyPoints !== 'number' ||
+    typeof awardResult.monthlyPoints !== 'number' ||
+    typeof awardResult.todayPoints !== 'number'
+  ) {
+    return undefined;
+  }
   return {
-    points: Number(awardResult.totalPoints ?? 0),
-    weeklyPoints: Number(awardResult.weeklyPoints ?? 0),
-    monthlyPoints: Number(awardResult.monthlyPoints ?? 0),
-    todayPoints: Number(awardResult.todayPoints ?? 0),
+    points: awardResult.totalPoints,
+    weeklyPoints: awardResult.weeklyPoints,
+    monthlyPoints: awardResult.monthlyPoints,
+    todayPoints: awardResult.todayPoints,
   };
 }
 
@@ -367,12 +395,7 @@ export async function POST(req: Request) {
         maxDailyAttempts: attemptSummary.maxDailyAttempts,
         remainingDailyAttempts: attemptSummary.remainingDailyAttempts,
         lockedUntil: attemptSummary.lockedUntil,
-        profile: {
-          points: awardResult.totalPoints,
-          todayPoints: awardResult.todayPoints,
-          weeklyPoints: awardResult.weeklyPoints,
-          monthlyPoints: awardResult.monthlyPoints,
-        },
+        profile: buildAwardProfile(awardResult),
       });
     }
 

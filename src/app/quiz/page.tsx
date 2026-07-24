@@ -329,12 +329,12 @@ export default function QuizPage() {
         } else {
           setQuizLockedUntil(null);
         }
-        if (data.profile) {
+        if (data.profile && Number.isFinite(Number(data.profile.points))) {
           updateLocalProfile({
-            points: Number(data.profile.points ?? profile?.points ?? 0),
+            points: Number(data.profile.points),
             weeklyPoints: Number(data.profile.weeklyPoints ?? profile?.weeklyPoints ?? 0),
             monthlyPoints: Number(data.profile.monthlyPoints ?? profile?.monthlyPoints ?? 0),
-            todayPoints: Number(data.profile.todayPoints ?? data.todayPoints ?? 0),
+            todayPoints: Number(data.profile.todayPoints ?? data.todayPoints ?? profile?.todayPoints ?? 0),
           });
         } else if (awardedPoints > 0) {
           void refreshProfile().catch(() => {});
