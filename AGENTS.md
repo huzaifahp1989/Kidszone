@@ -28,12 +28,14 @@ Points are critical product behavior. Treat any points/Supabase regression as P0
 
 1. Call `GET /api/health/points` and read `issues[]` (`code`, `severity`, `fixHint`).
 2. Common critical codes:
+   - `supabase_url_missing` — deploy is using `placeholder.supabase.co` (no real Supabase env). Capacitor/live URL must target a Vercel project that has `NEXT_PUBLIC_SUPABASE_URL` / anon / service_role set. Canonical live host: `islamic-kids-platform.vercel.app`.
    - `service_role_missing` — set `SUPABASE_SERVICE_ROLE_KEY` in Vercel
    - `users_points_unreadable` / `users_points_schema` — table/RLS/schema broken in Supabase
    - `users_points_drift` — `users` mirror out of sync with `users_points`
    - `cap_math_broken` / `cap_not_enforced` — policy regression in code
 3. Prefer repairing via the shared award path + admin recalc tools (`src/lib/points-repair.ts`, `/api/admin/recalc-stuck-weekly-points`) over one-off SQL unless schema is missing.
 4. Re-run health check until `ok: true`.
+5. If the Capacitor app / `LIVE_APP_URL` points at a deploy without Supabase env, points and auth will appear completely broken — fix `src/lib/app-url.ts` + `capacitor.config.ts` (or copy env vars into that Vercel project).
 
 ### Scheduled guardian
 

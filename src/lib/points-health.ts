@@ -107,7 +107,8 @@ export async function runPointsHealthCheck(): Promise<PointsHealthReport> {
       code: 'supabase_url_missing',
       severity: 'critical',
       message: 'Supabase URL is missing or still set to the placeholder.',
-      fixHint: 'Set NEXT_PUBLIC_SUPABASE_URL to the real project URL.',
+      fixHint:
+        'Set NEXT_PUBLIC_SUPABASE_URL (and anon/service_role keys) on this Vercel project. If Capacitor/LIVE_APP_URL points here, switch it to islamic-kids-platform.vercel.app or copy env from that project.',
     });
   }
 

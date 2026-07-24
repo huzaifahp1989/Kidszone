@@ -24,8 +24,9 @@ Goal: keep points awarding working. Detect Supabase/points failures fast and fix
 
 ## Every run
 
-1. Fetch: https://huzaifahp1989-audio.vercel.app/api/health/points
+1. Fetch: https://islamic-kids-platform.vercel.app/api/health/points
    - If the request fails, retry once, then treat as critical.
+   - Also note: https://huzaifahp1989-audio.vercel.app historically shipped with `placeholder.supabase.co` (missing Vercel env). If `LIVE_APP_URL` / Capacitor still points there, treat as critical and point back to islamic-kids-platform.vercel.app (or copy Supabase env into that Vercel project).
 2. Parse JSON: `ok`, `issues[]` (code, severity, message, fixHint), `checks`.
 
 ## If ok === true and no critical issues
@@ -39,7 +40,7 @@ Investigate and fix:
 
 Common codes:
 - service_role_missing → document/verify SUPABASE_SERVICE_ROLE_KEY in Vercel env (do not invent fake keys). Prefer env/docs guidance over code hacks.
-- supabase_url_missing → NEXT_PUBLIC_SUPABASE_URL must be the real project URL.
+- supabase_url_missing → NEXT_PUBLIC_SUPABASE_URL must be the real project URL (jlqrbbqsuksncrxjcmbc.supabase.co). If the live Capacitor URL points at a deploy baked with placeholder.supabase.co, fix LIVE_APP_URL in src/lib/app-url.ts and capacitor.config.ts to https://islamic-kids-platform.vercel.app.
 - users_points_unreadable / users_points_schema → check migrations / FIX_POINTS_SYSTEM_COMPLETE.sql; fix app code only if a query/column mismatch is in repo.
 - users_unreadable → users table select for uid/points/weeklypoints/monthlypoints.
 - users_points_drift → ensure awards sync users after users_points (src/lib/server-points.ts). Never invent a second award path.
