@@ -230,8 +230,8 @@ export const Navbar: React.FC<NavbarProps> = ({ username, points, level, badges,
             <SupportDonateLink />
             {loading ? (
               <div className="flex items-center gap-2">
-                <div className="w-20 h-8 bg-[#ede9fe] rounded-xl animate-pulse"></div>
-                <div className="w-12 h-8 bg-[#ede9fe] rounded-xl animate-pulse"></div>
+                <div className="w-20 h-8 bg-[#dbeafe] rounded-xl animate-pulse"></div>
+                <div className="w-12 h-8 bg-[#dbeafe] rounded-xl animate-pulse"></div>
               </div>
             ) : displayUsername ? (
               <>
@@ -270,7 +270,7 @@ export const Navbar: React.FC<NavbarProps> = ({ username, points, level, badges,
               <div className="flex items-center gap-2">
                 <Link
                   href="/signin"
-                  className="px-4 py-2.5 text-[#1e1b4b] font-semibold hover:bg-[#ede9fe] rounded-xl transition interactive-focus touch-target"
+                  className="px-4 py-2.5 text-[#1e3a8a] font-semibold hover:bg-[#dbeafe] rounded-xl transition interactive-focus touch-target"
                 >
                   Sign In
                 </Link>
@@ -306,7 +306,7 @@ export const Navbar: React.FC<NavbarProps> = ({ username, points, level, badges,
               </>
             )}
             <button
-              className="hidden sm:inline-flex p-2.5 text-[#1e1b4b] hover:bg-[#ede9fe] rounded-xl transition interactive-focus touch-target border border-[#ddd6fe]/60 bg-white/60"
+              className="hidden sm:inline-flex p-2.5 text-[#1e3a8a] hover:bg-[#dbeafe] rounded-xl transition interactive-focus touch-target border border-[#bfdbfe]/60 bg-white/60"
               onClick={() => setIsMenuOpen(!isMenuOpen)}
               aria-expanded={isMenuOpen}
               aria-controls="mobile-main-menu"
@@ -322,7 +322,7 @@ export const Navbar: React.FC<NavbarProps> = ({ username, points, level, badges,
           {isMenuOpen && (
           <motion.div
             id="mobile-main-menu"
-            className="lg:hidden py-4 border-t border-[#c4b5fd]/40"
+            className="lg:hidden py-4 border-t border-[#93c5fd]/40"
             initial={reduceMotion ? undefined : { opacity: 0, y: -8 }}
             animate={reduceMotion ? undefined : { opacity: 1, y: 0 }}
             exit={reduceMotion ? undefined : { opacity: 0, y: -8 }}
@@ -343,8 +343,8 @@ export const Navbar: React.FC<NavbarProps> = ({ username, points, level, badges,
                           href={item.href}
                           className={`flex items-center gap-3 px-4 py-3 rounded-xl font-semibold transition-all interactive-focus touch-target ${
                             active
-                              ? 'bg-gradient-to-r from-[#ede9fe] to-[#ede9fe] text-[#6d28d9]'
-                              : 'text-[#1e1b4b] hover:bg-[#f5f3ff] hover:text-[#6d28d9]'
+                              ? 'bg-gradient-to-r from-[#dbeafe] to-[#dbeafe] text-[#1d4ed8]'
+                              : 'text-[#1e3a8a] hover:bg-[#eff6ff] hover:text-[#1d4ed8]'
                           }`}
                           onClick={() => setIsMenuOpen(false)}
                           aria-current={active ? 'page' : undefined}
@@ -368,8 +368,8 @@ export const Navbar: React.FC<NavbarProps> = ({ username, points, level, badges,
                       href={item.href}
                       className={`flex items-center gap-3 px-4 py-3 rounded-xl font-semibold transition-all interactive-focus touch-target ${
                         active
-                          ? 'bg-gradient-to-r from-[#ede9fe] to-[#ede9fe] text-[#6d28d9]'
-                          : 'text-[#1e1b4b] hover:bg-[#f5f3ff] hover:text-[#6d28d9]'
+                          ? 'bg-gradient-to-r from-[#dbeafe] to-[#dbeafe] text-[#1d4ed8]'
+                          : 'text-[#1e3a8a] hover:bg-[#eff6ff] hover:text-[#1d4ed8]'
                       }`}
                       onClick={() => setIsMenuOpen(false)}
                       aria-current={active ? 'page' : undefined}
@@ -381,22 +381,22 @@ export const Navbar: React.FC<NavbarProps> = ({ username, points, level, badges,
                 })}
               </div>
 
-              <div className="mt-2 pt-4 border-t border-[#c4b5fd]/30">
+              <div className="mt-2 pt-4 border-t border-[#93c5fd]/30">
                 {loading ? (
                   <div className="px-4 py-3">
-                    <div className="w-32 h-6 bg-[#ede9fe] rounded animate-pulse mb-2"></div>
-                    <div className="w-20 h-4 bg-[#ede9fe] rounded animate-pulse"></div>
+                    <div className="w-32 h-6 bg-[#dbeafe] rounded animate-pulse mb-2"></div>
+                    <div className="w-20 h-4 bg-[#dbeafe] rounded animate-pulse"></div>
                   </div>
                 ) : displayUsername ? (
                   <div className="space-y-3 px-4">
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="font-bold text-[#1e1b4b]">{displayUsername}</p>
+                        <p className="font-bold text-[#1e3a8a]">{displayUsername}</p>
                         <p className="text-sm text-[#475569]">{displayLevel || 'Beginner'}</p>
                       </div>
                       <div className="flex gap-2">
                         <span className="text-sm font-bold text-[#f59e0b]">⭐ {displayPoints || 0}</span>
-                        <span className="text-sm font-bold text-[#6d28d9]">🏆 {displayBadges || 0}</span>
+                        <span className="text-sm font-bold text-[#1d4ed8]">🏆 {displayBadges || 0}</span>
                       </div>
                     </div>
 
@@ -420,7 +420,7 @@ export const Navbar: React.FC<NavbarProps> = ({ username, points, level, badges,
                     <Link
                       href="/signin"
                       onClick={() => setIsMenuOpen(false)}
-                      className="w-full text-center py-3 text-[#1e1b4b] font-semibold hover:bg-[#ede9fe] rounded-xl transition interactive-focus touch-target"
+                      className="w-full text-center py-3 text-[#1e3a8a] font-semibold hover:bg-[#dbeafe] rounded-xl transition interactive-focus touch-target"
                     >
                       Sign In
                     </Link>
