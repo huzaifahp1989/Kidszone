@@ -48,3 +48,5 @@ Create a Cursor Automation that every few hours:
 3. Runs `npm test -- src/lib/points-policy.test.ts src/lib/points-health.test.ts`
 4. Does **not** change `POINTS_DAILY_CAP`, quiz/game point amounts, or invent a second award path
 
+**Ready-made setup:** open [https://cursor.com/automations/new](https://cursor.com/automations/new), attach repo `huzaifahp1989/Kidszone`, schedule hourly, and paste the prompt from `.cursor/automations/points-health.md`.
+
