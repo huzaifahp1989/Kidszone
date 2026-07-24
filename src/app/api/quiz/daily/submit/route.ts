@@ -180,6 +180,20 @@ async function awardQuizPoints(userId: string, totalPoints: number, isTestMode: 
   };
 }
 
+function buildAwardProfile(awardResult: {
+  totalPoints?: number;
+  todayPoints?: number;
+  weeklyPoints?: number;
+  monthlyPoints?: number;
+}) {
+  return {
+    points: Number(awardResult.totalPoints ?? 0),
+    todayPoints: Number(awardResult.todayPoints ?? 0),
+    weeklyPoints: Number(awardResult.weeklyPoints ?? 0),
+    monthlyPoints: Number(awardResult.monthlyPoints ?? 0),
+  };
+}
+
 function successNoPoints(score: number, maxScore: number, totalPossiblePoints: number, flags?: Record<string, unknown>) {
   return {
     success: true,
@@ -462,6 +476,7 @@ export async function POST(req: Request) {
         maxDailyAttempts: attemptSummary.maxDailyAttempts,
         remainingDailyAttempts: attemptSummary.remainingDailyAttempts,
         lockedUntil: attemptSummary.lockedUntil,
+        profile: buildAwardProfile(awardResult),
       });
     }
 
@@ -593,6 +608,7 @@ export async function POST(req: Request) {
       maxDailyAttempts: attemptSummary.maxDailyAttempts,
       remainingDailyAttempts: attemptSummary.remainingDailyAttempts,
       lockedUntil: attemptSummary.lockedUntil,
+      profile: buildAwardProfile(awardResult),
     });
   } catch (err: any) {
     console.error('Submit error:', err);

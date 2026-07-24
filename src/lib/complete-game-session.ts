@@ -1,5 +1,6 @@
 import { ACTIVITY_BONUS_POINTS } from '@/lib/points-policy';
 import { authJsonFetch } from '@/lib/auth-headers';
+import { dispatchPointsProfileUpdate } from '@/lib/points-profile-sync';
 
 export type CompleteGameSessionResult = {
   ok: boolean;
@@ -63,6 +64,10 @@ export async function completeGameSession(params: {
         pointsAwarded: 0,
         message: data?.error || data?.message || 'Could not save game progress.',
       };
+    }
+
+    if (data?.profile) {
+      dispatchPointsProfileUpdate(data.profile);
     }
 
     return {

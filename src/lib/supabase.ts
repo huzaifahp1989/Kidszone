@@ -150,7 +150,7 @@ export function readStoredAccessToken(): string | null {
   return null;
 }
 
-async function resolveAccessToken(timeoutMs = 2_500): Promise<string | null> {
+export async function resolveAccessToken(timeoutMs = 2_500): Promise<string | null> {
   const stored = readStoredAccessToken();
   if (stored) return stored;
 

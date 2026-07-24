@@ -16,6 +16,7 @@ import { ReadAloudButton } from '@/components/ReadAloudButton';
 import { EarnMorePointsLinks } from '@/components/EarnMorePointsLinks';
 import { authJsonFetch, getAuthFetchHeaders } from '@/lib/auth-headers';
 import { trackQuizCompleted } from '@/lib/analytics';
+import { dispatchPointsProfileUpdate } from '@/lib/points-profile-sync';
 
 const quizPool = getQuizQuestionPool();
 
@@ -336,6 +337,7 @@ export default function QuizPage() {
             monthlyPoints: Number(data.profile.monthlyPoints ?? profile?.monthlyPoints ?? 0),
             todayPoints: Number(data.profile.todayPoints ?? data.todayPoints ?? 0),
           });
+          dispatchPointsProfileUpdate(data.profile);
         } else if (awardedPoints > 0) {
           void refreshProfile().catch(() => {});
         }
