@@ -910,6 +910,12 @@ export default function AdminPanel() {
             Weekly Winners
           </button>
           <button
+            onClick={() => router.push('/admin/points-health')}
+            className="px-5 py-2.5 rounded-lg font-bold transition bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 hover:border-emerald-300 flex items-center gap-2 whitespace-nowrap"
+          >
+            Points Health
+          </button>
+          <button
             onClick={() => router.push('/admin/announcements')}
             className="px-5 py-2.5 rounded-lg font-bold transition bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 hover:border-amber-300 flex items-center gap-2 whitespace-nowrap"
           >
