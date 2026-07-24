@@ -220,7 +220,18 @@ export async function awardPointsWithDailyCapByUserId(
     .eq('uid', userId);
 
   if (usersSyncError) {
-    console.error('[server-points] users sync failed:', usersSyncError.message);
+    console.error('[server-points] users sync failed (retrying once):', usersSyncError.message);
+    const { error: retryError } = await supabaseAdmin
+      .from('users')
+      .update({
+        points: totalPoints,
+        weeklypoints: weeklyPoints,
+        monthlypoints: monthlyPoints,
+      })
+      .eq('uid', userId);
+    if (retryError) {
+      console.error('[server-points] users sync retry failed:', retryError.message);
+    }
   }
 
   return {

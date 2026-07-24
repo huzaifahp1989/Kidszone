@@ -14,7 +14,9 @@ describe('resolvePointsToAward', () => {
     expect(POINTS_DAILY_CAP).toBe(200);
     expect(QUIZ_POINTS_PER_COMPLETION).toBe(25);
     expect(ACTIVITY_BONUS_POINTS).toBe(25);
-    expect(DAILY_PLAN_TOTAL_POINTS).toBe(200);
+    // Plan rows can sum above the daily cap — kids pick a mix up to POINTS_DAILY_CAP.
+    expect(DAILY_PLAN_TOTAL_POINTS).toBeGreaterThanOrEqual(POINTS_DAILY_CAP);
+    expect(DAILY_PLAN_TOTAL_POINTS).toBe(225);
   });
 
   it('does not block awards when weekly points are already high', () => {
