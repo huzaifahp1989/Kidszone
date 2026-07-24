@@ -3,7 +3,7 @@
 import React, { useCallback, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
-import { completeGameSession } from '@/lib/complete-game-session';
+import { useCompleteGameSession } from '@/lib/use-complete-game-session';
 import { ACTIVITY_BONUS_POINTS } from '@/lib/points-policy';
 import { useAuth } from '@/lib/auth-context';
 
@@ -34,6 +34,7 @@ function shuffleArray<T>(arr: T[]): T[] {
 export function SalahStepsGame() {
   const router = useRouter();
   const { user } = useAuth();
+  const completeGameSession = useCompleteGameSession();
 
   const [gameState, setGameState] = useState<'menu' | 'playing' | 'success' | 'fail'>('menu');
   const [steps, setSteps] = useState<PrayerStep[]>([]);

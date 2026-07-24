@@ -2,7 +2,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
-import { completeGameSession } from '@/lib/complete-game-session';
+import { useCompleteGameSession } from '@/lib/use-complete-game-session';
 import { ACTIVITY_BONUS_POINTS } from '@/lib/points-policy';
 import { useAuth } from '@/lib/auth-context';
 
@@ -92,6 +92,7 @@ const chapters: Chapter[] = [
 export default function IbrahimStoryGame() {
   const router = useRouter();
   const { user } = useAuth() as any;
+  const completeGameSession = useCompleteGameSession();
   const [step, setStep] = useState(0);
   const [answered, setAnswered] = useState<number | null>(null);
   const [showExplanation, setShowExplanation] = useState(false);

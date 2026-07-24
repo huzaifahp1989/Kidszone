@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { Button } from '@/components';
 import { useAuth } from '@/lib/auth-context';
-import { completeGameSession } from '@/lib/complete-game-session';
+import { useCompleteGameSession } from '@/lib/use-complete-game-session';
 import {
   getDifficultyLabel,
   getSurahCourseBySlug,
@@ -21,6 +21,7 @@ export default function SurahCourseDetailPage() {
   const slug = String(params?.slug || '');
   const course = getSurahCourseBySlug(slug);
   const { user } = useAuth();
+  const completeGameSession = useCompleteGameSession();
 
   const [readConfirmed, setReadConfirmed] = useState(false);
   const [answers, setAnswers] = useState<number[]>([]);

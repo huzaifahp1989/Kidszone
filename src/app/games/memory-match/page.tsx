@@ -6,7 +6,7 @@ import { ArrowLeft, Timer, Trophy } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
 import { useAgeMode } from '@/lib/age-mode';
 import { usePointsProgress } from '@/lib/points-progress-context';
-import { completeGameSession } from '@/lib/complete-game-session';
+import { useCompleteGameSession } from '@/lib/use-complete-game-session';
 import { ACTIVITY_BONUS_POINTS } from '@/lib/points-policy';
 import { getMemoryDeck, type MemoryPair } from '@/data/memory-match';
 
@@ -49,7 +49,8 @@ function buildCards(pairs: MemoryPair[]): Card[] {
 }
 
 export default function MemoryMatchPage() {
-  const { user, refreshProfile, updateLocalProfile } = useAuth();
+  const { user } = useAuth();
+  const completeGameSession = useCompleteGameSession();
   const { isYounger } = useAgeMode();
   const { showPointsProgress } = usePointsProgress();
 
@@ -124,21 +125,12 @@ export default function MemoryMatchPage() {
             : result.message || 'Nice match! Come back tomorrow for more game points.'
         );
 
-        if (result.profile) {
-          updateLocalProfile?.({
-            points: result.profile.points,
-            weeklyPoints: result.profile.weeklyPoints,
-            monthlyPoints: result.profile.monthlyPoints,
-            todayPoints: result.profile.todayPoints,
-          });
-        }
         if (result.pointsAwarded > 0) {
           showPointsProgress?.({
             activity: 'game',
             activityLabel: 'Islamic Memory Match',
             pointsEarned: result.pointsAwarded,
           });
-          await refreshProfile();
         }
       } catch {
         if (!cancelled) setAwardMessage('Could not save points. Try again later.');
@@ -150,7 +142,7 @@ export default function MemoryMatchPage() {
     return () => {
       cancelled = true;
     };
-  }, [won, user?.id, isYounger, deck.pairs.length, updateLocalProfile, showPointsProgress, refreshProfile]);
+  }, [won, user?.id, isYounger, deck.pairs.length, showPointsProgress, completeGameSession]);
 
   const onFlip = (key: string) => {
     if (busy || won || matched.has(key) || flipped.includes(key)) return;

@@ -4,7 +4,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { BiWeeklyResetPopup } from '@/components';
 import { usePointsProgress } from '@/lib/points-progress-context';
 import { useAuth } from '@/lib/auth-context';
-import { completeGameSession } from '@/lib/complete-game-session';
+import { useCompleteGameSession } from '@/lib/use-complete-game-session';
 import { ACTIVITY_BONUS_POINTS, MAX_DAILY_GAME_COMPLETIONS } from '@/lib/points-policy';
 import { getAuthFetchHeaders } from '@/lib/auth-headers';
 import {
@@ -82,7 +82,8 @@ const getCrosswordCellMeta = (puzzle: CrosswordPuzzle, r: number, c: number) => 
 
 export default function GamesPage() {
   const router = useRouter();
-  const { user, refreshProfile, profile, updateLocalProfile } = useAuth() as any;
+  const { user, profile } = useAuth() as any;
+  const completeGameSession = useCompleteGameSession();
   const { showPointsProgress } = usePointsProgress();
   const { isYounger } = useAgeMode();
   const [selectedGameId, setSelectedGameId] = useState<GameId | null>(null);
@@ -155,21 +156,12 @@ export default function GamesPage() {
           trackCompetition: true,
         });
         earnedBonus = result.pointsAwarded;
-        if (result.profile) {
-          updateLocalProfile({
-            points: result.profile.points,
-            weeklyPoints: result.profile.weeklyPoints,
-            monthlyPoints: result.profile.monthlyPoints,
-            todayPoints: result.profile.todayPoints,
-          });
-        }
         if (earnedBonus > 0) {
           showToast(`⭐ +${earnedBonus} points for finishing the game!`);
           setGamesUsedToday((prev) => Math.min(MAX_DAILY_GAME_COMPLETIONS, prev + 1));
         } else if (result.message) {
           showToast(result.message);
         }
-        await refreshProfile();
       } catch {
         gameBonusAwardedRef.current = false;
         showToast('Points not saved. Try again.');

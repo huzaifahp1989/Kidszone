@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { AGE_GROUPS, AgeGroup } from '@/data/age-specific-content';
 import { Button } from '@/components';
 import { BookOpen, Star, RefreshCw } from 'lucide-react';
-import { completeGameSession } from '@/lib/complete-game-session';
+import { useCompleteGameSession } from '@/lib/use-complete-game-session';
 import { ACTIVITY_BONUS_POINTS } from '@/lib/points-policy';
 import { useAuth } from '@/lib/auth-context';
 
@@ -31,6 +31,7 @@ function shuffleArray<T>(array: T[]): T[] {
 export default function QuranMatchPage() {
   const router = useRouter();
   const { user } = useAuth();
+  const completeGameSession = useCompleteGameSession();
   const [ageGroup, setAgeGroup] = useState<AgeGroup | null>(null);
   const [cards, setCards] = useState<Card[]>([]);
   const [selectedCards, setSelectedCards] = useState<Card[]>([]);

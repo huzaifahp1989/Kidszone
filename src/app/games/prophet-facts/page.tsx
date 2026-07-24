@@ -4,7 +4,7 @@ import React, { useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
 import { PROPHET_FACTS } from '@/data/kids-new-activities';
-import { completeGameSession } from '@/lib/complete-game-session';
+import { useCompleteGameSession } from '@/lib/use-complete-game-session';
 import { ACTIVITY_BONUS_POINTS } from '@/lib/points-policy';
 import { useAuth } from '@/lib/auth-context';
 
@@ -20,6 +20,7 @@ function shuffle<T>(arr: T[]): T[] {
 export default function ProphetFactsPage() {
   const router = useRouter();
   const { user } = useAuth();
+  const completeGameSession = useCompleteGameSession();
   const [round, setRound] = useState(0);
   const questions = useMemo(() => shuffle(PROPHET_FACTS).slice(0, 5), [round]);
   const [index, setIndex] = useState(0);

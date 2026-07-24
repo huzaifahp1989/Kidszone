@@ -4,7 +4,7 @@ import React, { useCallback, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
 import type { OrderStep } from '@/data/kids-new-activities';
-import { completeGameSession } from '@/lib/complete-game-session';
+import { useCompleteGameSession } from '@/lib/use-complete-game-session';
 import { ACTIVITY_BONUS_POINTS } from '@/lib/points-policy';
 import { useAuth } from '@/lib/auth-context';
 
@@ -63,6 +63,7 @@ export function OrderStepsGame({
 }: OrderStepsGameProps) {
   const router = useRouter();
   const { user } = useAuth();
+  const completeGameSession = useCompleteGameSession();
   const theme = ACCENT[accent];
 
   const [gameState, setGameState] = useState<'menu' | 'playing' | 'success' | 'fail'>('menu');

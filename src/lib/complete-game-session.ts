@@ -1,18 +1,45 @@
 import { ACTIVITY_BONUS_POINTS } from '@/lib/points-policy';
 import { authJsonFetch } from '@/lib/auth-headers';
 
+export type GameSessionProfile = {
+  points: number;
+  weeklyPoints: number;
+  monthlyPoints: number;
+  todayPoints: number;
+};
+
 export type CompleteGameSessionResult = {
   ok: boolean;
   pointsAwarded: number;
   message?: string;
-  profile?: {
-    points: number;
-    weeklyPoints: number;
-    monthlyPoints: number;
-    todayPoints: number;
-  };
+  profile?: GameSessionProfile;
   warning?: string;
 };
+
+export type ProfileSyncHandlers = {
+  updateLocalProfile?: (updates: Partial<GameSessionProfile>) => void;
+  refreshProfile?: () => Promise<void>;
+};
+
+/** Apply server-returned totals to auth context so navbar/daily bar update immediately. */
+export async function syncGameSessionProfile(
+  result: CompleteGameSessionResult,
+  handlers: ProfileSyncHandlers
+): Promise<void> {
+  if (result.profile && handlers.updateLocalProfile) {
+    handlers.updateLocalProfile({
+      points: result.profile.points,
+      weeklyPoints: result.profile.weeklyPoints,
+      monthlyPoints: result.profile.monthlyPoints,
+      todayPoints: result.profile.todayPoints,
+    });
+  }
+  try {
+    await handlers.refreshProfile?.();
+  } catch {
+    /* non-blocking */
+  }
+}
 
 export async function completeGameSession(params: {
   userId: string;

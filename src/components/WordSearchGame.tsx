@@ -11,7 +11,7 @@ import {
 } from '@/data/games';
 import { useAuth } from '@/lib/auth-context';
 import { ACTIVITY_BONUS_POINTS, MAX_DAILY_GAME_COMPLETIONS } from '@/lib/points-policy';
-import { completeGameSession } from '@/lib/complete-game-session';
+import { useCompleteGameSession } from '@/lib/use-complete-game-session';
 import { ArrowLeft, CheckCircle2 } from 'lucide-react';
 
 type ThemeId = 'ramadan' | 'seerah' | 'quran';
@@ -41,7 +41,8 @@ function wordFromCells(grid: string[][], cells: [number, number][]): string {
 }
 
 export function WordSearchGame({ themeId, title, emoji, config }: Props) {
-  const { user, refreshProfile } = useAuth() as { user?: { id: string }; refreshProfile?: () => void };
+  const { user } = useAuth() as { user?: { id: string } };
+  const completeGameSession = useCompleteGameSession();
   const [difficulty, setDifficulty] = useState<Difficulty>('medium');
   const [puzzle, setPuzzle] = useState<WordSearchData | null>(null);
   const [found, setFound] = useState<Set<string>>(new Set());
@@ -110,7 +111,6 @@ export function WordSearchGame({ themeId, title, emoji, config }: Props) {
         trackCompetition: true,
       });
       setPointsEarned(result.pointsAwarded);
-      await refreshProfile?.();
     } catch {
       setPointsEarned(0);
     } finally {

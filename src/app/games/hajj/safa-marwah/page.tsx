@@ -2,7 +2,7 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
-import { completeGameSession } from '@/lib/complete-game-session';
+import { useCompleteGameSession } from '@/lib/use-complete-game-session';
 import { ACTIVITY_BONUS_POINTS } from '@/lib/points-policy';
 import { useAuth } from '@/lib/auth-context';
 
@@ -24,6 +24,7 @@ const PLAYER_Y = FLOOR_Y - PLAYER_R;
 export default function SafaMarwahGame() {
   const router = useRouter();
   const { user } = useAuth() as any;
+  const completeGameSession = useCompleteGameSession();
 
   const [gameState, setGameState] = useState<'menu' | 'playing' | 'complete'>('menu');
   const [laps, setLaps] = useState(0);

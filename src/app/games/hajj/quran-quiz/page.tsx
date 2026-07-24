@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
-import { completeGameSession } from '@/lib/complete-game-session';
+import { useCompleteGameSession } from '@/lib/use-complete-game-session';
 import { ACTIVITY_BONUS_POINTS } from '@/lib/points-policy';
 import { useAuth } from '@/lib/auth-context';
 
@@ -82,6 +82,7 @@ const getPlayKey = () => `hajj-quiz-plays-${new Date().toDateString()}`;
 export default function HajjQuizGame() {
   const router = useRouter();
   const { user } = useAuth() as any;
+  const completeGameSession = useCompleteGameSession();
 
   const [gameState, setGameState] = useState<'menu' | 'playing' | 'complete' | 'limited'>('menu');
   const [qIdx, setQIdx] = useState(0);
