@@ -1,4 +1,10 @@
 import { createClient } from '@supabase/supabase-js';
+import {
+  PRODUCTION_SUPABASE_ANON_KEY,
+  PRODUCTION_SUPABASE_URL,
+  isPlaceholderAnonKey,
+  isPlaceholderSupabaseUrl,
+} from '@/lib/supabase-public-config';
 
 function cleanEnv(value: string | undefined | null): string {
   return String(value || '')
@@ -6,14 +12,20 @@ function cleanEnv(value: string | undefined | null): string {
     .replace(/^["']|["']$/g, '');
 }
 
+const envUrl =
+  cleanEnv(process.env.NEXT_PUBLIC_SUPABASE_URL) || cleanEnv(process.env.SUPABASE_URL);
+const allowProductionFallback = Boolean(process.env.VERCEL) || process.env.NODE_ENV === 'production';
+
 const SUPABASE_URL =
-  cleanEnv(process.env.NEXT_PUBLIC_SUPABASE_URL) ||
-  cleanEnv(process.env.SUPABASE_URL) ||
-  'https://placeholder.supabase.co';
+  (!isPlaceholderSupabaseUrl(envUrl) && envUrl) ||
+  (allowProductionFallback ? PRODUCTION_SUPABASE_URL : 'https://placeholder.supabase.co');
 
 const SERVICE_ROLE_KEY = cleanEnv(process.env.SUPABASE_SERVICE_ROLE_KEY);
-const ANON_KEY =
+const envAnon =
   cleanEnv(process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) || cleanEnv(process.env.SUPABASE_ANON_KEY);
+const ANON_KEY =
+  (!isPlaceholderAnonKey(envAnon) && envAnon) ||
+  (allowProductionFallback ? PRODUCTION_SUPABASE_ANON_KEY : '');
 
 /** True when a real service-role key is configured (required to bypass RLS for admin writes). */
 export function hasSupabaseServiceRole(): boolean {
@@ -24,9 +36,11 @@ const SUPABASE_SERVICE_ROLE_KEY = hasSupabaseServiceRole()
   ? SERVICE_ROLE_KEY
   : ANON_KEY || 'placeholder';
 
-if (!cleanEnv(process.env.NEXT_PUBLIC_SUPABASE_URL) && !cleanEnv(process.env.SUPABASE_URL)) {
+if (!envUrl) {
   console.warn(
-    '[supabase-admin] Warning: SUPABASE URL is missing. Set NEXT_PUBLIC_SUPABASE_URL (or SUPABASE_URL).'
+    allowProductionFallback
+      ? '[supabase-admin] SUPABASE URL missing — using production project fallback.'
+      : '[supabase-admin] Warning: SUPABASE URL is missing. Set NEXT_PUBLIC_SUPABASE_URL (or SUPABASE_URL).'
   );
 }
 

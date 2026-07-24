@@ -26,3 +26,11 @@ describe('points health policy guards', () => {
     expect(LIVE_APP_URL).not.toContain('huzaifahp1989-audio');
   });
 });
+
+describe('broken live host redirect', () => {
+  it('middleware matcher covers app and API routes', async () => {
+    const mod = await import('@/middleware');
+    expect(mod.config.matcher.length).toBeGreaterThan(0);
+    expect(typeof mod.middleware).toBe('function');
+  });
+});

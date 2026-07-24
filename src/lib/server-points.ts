@@ -3,10 +3,14 @@ import { ensureUserRecords } from '@/lib/ensure-user-records';
 import { POINTS_DAILY_CAP, resolvePointsToAward } from '@/lib/points-policy';
 import { shouldResetMonthlyPoints } from '@/lib/weekly-activity';
 import { isTestModeUserId } from '@/lib/test-mode-server';
+import { isPlaceholderSupabaseUrl as isPlaceholderUrl } from '@/lib/supabase-public-config';
 
-function isPlaceholderSupabaseUrl(): boolean {
+function supabaseUrlUnusable(): boolean {
   const url = String(process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL || '').trim();
-  return !url || url.includes('placeholder.supabase.co');
+  if (!isPlaceholderUrl(url)) return false;
+  // Match supabase-admin: production/Vercel builds fall back to the known project.
+  const allowProductionFallback = Boolean(process.env.VERCEL) || process.env.NODE_ENV === 'production';
+  return !allowProductionFallback;
 }
 
 async function syncUsersPointsMirror(
@@ -104,7 +108,7 @@ export async function awardPointsWithDailyCapByUserId(
     };
   }
 
-  if (isPlaceholderSupabaseUrl()) {
+  if (supabaseUrlUnusable()) {
     return {
       success: false,
       reason: 'update_failed',

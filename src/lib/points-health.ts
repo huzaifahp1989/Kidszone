@@ -1,5 +1,9 @@
 import { POINTS_DAILY_CAP, DAILY_PLAN_TOTAL_POINTS, resolvePointsToAward } from '@/lib/points-policy';
 import { hasSupabaseServiceRole, supabaseAdmin } from '@/lib/supabase-admin';
+import {
+  PRODUCTION_SUPABASE_URL,
+  isPlaceholderSupabaseUrl,
+} from '@/lib/supabase-public-config';
 
 export type PointsHealthIssue = {
   code: string;
@@ -99,8 +103,14 @@ export async function runPointsHealthCheck(): Promise<PointsHealthReport> {
     service_role_configured: hasSupabaseServiceRole(),
   };
 
-  const url = String(process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL || '').trim();
-  checks.supabase_url_configured = Boolean(url) && !url.includes('placeholder.supabase.co');
+  const envUrl = String(process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL || '').trim();
+  const allowProductionFallback = Boolean(process.env.VERCEL) || process.env.NODE_ENV === 'production';
+  const effectiveUrl =
+    (!isPlaceholderSupabaseUrl(envUrl) && envUrl) ||
+    (allowProductionFallback ? PRODUCTION_SUPABASE_URL : '');
+  checks.supabase_url_configured = Boolean(effectiveUrl) && !isPlaceholderSupabaseUrl(effectiveUrl);
+  checks.supabase_url_from_env = Boolean(envUrl) && !isPlaceholderSupabaseUrl(envUrl);
+  checks.supabase_url_using_fallback = checks.supabase_url_configured && !checks.supabase_url_from_env;
 
   if (!checks.supabase_url_configured) {
     issues.push({
@@ -109,6 +119,15 @@ export async function runPointsHealthCheck(): Promise<PointsHealthReport> {
       message: 'Supabase URL is missing or still set to the placeholder.',
       fixHint:
         'Set NEXT_PUBLIC_SUPABASE_URL (and anon/service_role keys) on this Vercel project. If Capacitor/LIVE_APP_URL points here, switch it to islamic-kids-platform.vercel.app or copy env from that project.',
+    });
+  } else if (checks.supabase_url_using_fallback) {
+    issues.push({
+      code: 'supabase_url_fallback',
+      severity: 'warning',
+      message:
+        'Supabase URL env is missing; app is using the built-in production project fallback.',
+      fixHint:
+        'Set NEXT_PUBLIC_SUPABASE_URL on this Vercel project so the fallback is not required.',
     });
   }
 

@@ -1,17 +1,44 @@
 import { createClient } from '@supabase/supabase-js';
+import {
+  PRODUCTION_SUPABASE_ANON_KEY,
+  PRODUCTION_SUPABASE_URL,
+  isPlaceholderAnonKey,
+  isPlaceholderSupabaseUrl,
+} from '@/lib/supabase-public-config';
 
 const clean = (v: string | undefined | null) => (typeof v === 'string' ? v.trim() : '');
 
-const SUPABASE_URL = clean(process.env.NEXT_PUBLIC_SUPABASE_URL) || clean(process.env.SUPABASE_URL) || 'https://placeholder.supabase.co';
-const SUPABASE_ANON_KEY = clean(process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) || clean(process.env.SUPABASE_ANON_KEY) || 'placeholder';
-const isPlaceholderConfig = SUPABASE_URL.includes('placeholder.supabase.co') || SUPABASE_ANON_KEY === 'placeholder';
+const envUrl = clean(process.env.NEXT_PUBLIC_SUPABASE_URL) || clean(process.env.SUPABASE_URL);
+const envAnon =
+  clean(process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) || clean(process.env.SUPABASE_ANON_KEY);
+
+// On Vercel (or any non-dev build) fall back to the known production project so
+// a missing env var cannot ship placeholder.supabase.co and break points/auth.
+const allowProductionFallback = Boolean(process.env.VERCEL) || process.env.NODE_ENV === 'production';
+
+const SUPABASE_URL =
+  (!isPlaceholderSupabaseUrl(envUrl) && envUrl) ||
+  (allowProductionFallback ? PRODUCTION_SUPABASE_URL : 'https://placeholder.supabase.co');
+const SUPABASE_ANON_KEY =
+  (!isPlaceholderAnonKey(envAnon) && envAnon) ||
+  (allowProductionFallback ? PRODUCTION_SUPABASE_ANON_KEY : 'placeholder');
+const isPlaceholderConfig =
+  isPlaceholderSupabaseUrl(SUPABASE_URL) || isPlaceholderAnonKey(SUPABASE_ANON_KEY);
 export const supabaseConfigured = !isPlaceholderConfig;
 
-if (!process.env.NEXT_PUBLIC_SUPABASE_URL && !process.env.SUPABASE_URL) {
-  console.warn('[supabase] Warning: SUPABASE URL is missing. Set NEXT_PUBLIC_SUPABASE_URL (or SUPABASE_URL) in Vercel env vars.');
+if (!envUrl) {
+  console.warn(
+    allowProductionFallback
+      ? '[supabase] NEXT_PUBLIC_SUPABASE_URL missing — using production project fallback.'
+      : '[supabase] Warning: SUPABASE URL is missing. Set NEXT_PUBLIC_SUPABASE_URL (or SUPABASE_URL) in Vercel env vars.'
+  );
 }
-if (!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY && !process.env.SUPABASE_ANON_KEY) {
-  console.warn('[supabase] Warning: SUPABASE ANON KEY is missing. Set NEXT_PUBLIC_SUPABASE_ANON_KEY (or SUPABASE_ANON_KEY) in Vercel env vars.');
+if (!envAnon) {
+  console.warn(
+    allowProductionFallback
+      ? '[supabase] NEXT_PUBLIC_SUPABASE_ANON_KEY missing — using production anon fallback.'
+      : '[supabase] Warning: SUPABASE ANON KEY is missing. Set NEXT_PUBLIC_SUPABASE_ANON_KEY (or SUPABASE_ANON_KEY) in Vercel env vars.'
+  );
 }
 if (typeof window !== 'undefined' && isPlaceholderConfig) {
   console.error('[supabase] Invalid Supabase configuration detected. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY.');
