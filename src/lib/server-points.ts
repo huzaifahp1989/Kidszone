@@ -182,18 +182,29 @@ export async function awardPointsWithDailyCapByUserId(
   const badges = Math.floor(totalPoints / 100);
   const level = 1 + Math.floor(badges / 5);
 
-  const { error: upsertError } = await supabaseAdmin
-    .from('users_points')
-    .upsert({
-      user_id: userId,
-      total_points: totalPoints,
-      weekly_points: weeklyPoints,
-      monthly_points: monthlyPoints,
-      today_points: todayPoints,
-      last_earned_date: todayStr,
-      badges,
-      level,
-    }, { onConflict: 'user_id' });
+  const [{ error: upsertError }, usersSync] = await Promise.all([
+    supabaseAdmin.from('users_points').upsert(
+      {
+        user_id: userId,
+        total_points: totalPoints,
+        weekly_points: weeklyPoints,
+        monthly_points: monthlyPoints,
+        today_points: todayPoints,
+        last_earned_date: todayStr,
+        badges,
+        level,
+      },
+      { onConflict: 'user_id' }
+    ),
+    supabaseAdmin
+      .from('users')
+      .update({
+        points: totalPoints,
+        weeklypoints: weeklyPoints,
+        monthlypoints: monthlyPoints,
+      })
+      .eq('uid', userId),
+  ]);
 
   if (upsertError) {
     return {
@@ -211,17 +222,8 @@ export async function awardPointsWithDailyCapByUserId(
     };
   }
 
-  const { error: usersSyncError } = await supabaseAdmin
-    .from('users')
-    .update({
-      points: totalPoints,
-      weeklypoints: weeklyPoints,
-      monthlypoints: monthlyPoints,
-    })
-    .eq('uid', userId);
-
-  if (usersSyncError) {
-    console.error('[server-points] users sync failed, retrying once:', usersSyncError.message);
+  if (usersSync.error) {
+    console.error('[server-points] users sync failed, retrying once:', usersSync.error.message);
     const { error: retryError } = await supabaseAdmin
       .from('users')
       .update({

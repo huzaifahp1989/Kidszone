@@ -274,7 +274,7 @@ export default function QuizPage() {
     try {
       const res = await authJsonFetch('/api/quiz/daily/submit', {
         method: 'POST',
-        timeoutMs: 25_000,
+        timeoutMs: 15_000,
         body: JSON.stringify({
           userId: user?.id,
           quizId: activeQuizId || `topic-${selectedTopic}-${todaySeed}-${user.id}`,
@@ -859,7 +859,12 @@ export default function QuizPage() {
               <div className="space-y-4 mb-8">
                   <div className="bg-[#f5f3ff] rounded-xl p-4">
                     <p className="text-sm text-[#6d28d9] font-semibold uppercase tracking-wide">Your Score</p>
-                    <p className="text-4xl font-bold text-[#7c3aed]">{dailyResult?.score} / {currentQuestions.length}</p>
+                    <p className="text-4xl font-bold text-[#7c3aed]">
+                      {Math.round(Number(dailyResult?.score ?? 0) / 10)} / {currentQuestions.length}
+                    </p>
+                    <p className="mt-1 text-sm font-semibold text-[#6d28d9]">
+                      {dailyResult?.score ?? 0} points
+                    </p>
                   </div>
 
                   {dailyResult?.streak > 0 && (

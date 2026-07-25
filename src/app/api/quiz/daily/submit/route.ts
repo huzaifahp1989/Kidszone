@@ -363,12 +363,14 @@ export async function POST(req: Request) {
         throw attemptError;
       }
 
-      const awardResult = await awardQuizPoints(userId, totalPoints, isTestMode);
+      const [awardResult, attemptSummary] = await Promise.all([
+        awardQuizPoints(userId, totalPoints, isTestMode),
+        isTestMode
+          ? getTodaysQuizAttemptSummary(userId)
+          : Promise.resolve(attemptSummaryFromCount(priorAttemptsToday + 1)),
+      ]);
 
       const finalPointsAwarded = awardResult.pointsAwarded;
-      const attemptSummary = isTestMode
-        ? await getTodaysQuizAttemptSummary(userId)
-        : attemptSummaryFromCount(priorAttemptsToday + 1);
       const awardMessage = isTestMode
         ? 'Test mode active. Quiz recorded, but no leaderboard points were added.'
         : finalPointsAwarded > 0
@@ -468,12 +470,14 @@ export async function POST(req: Request) {
         throw attemptError;
       }
 
-      const awardResult = await awardQuizPoints(userId, totalPoints, isTestMode);
+      const [awardResult, attemptSummary] = await Promise.all([
+        awardQuizPoints(userId, totalPoints, isTestMode),
+        isTestMode
+          ? getTodaysQuizAttemptSummary(userId)
+          : Promise.resolve(attemptSummaryFromCount(priorAttemptsToday + 1)),
+      ]);
 
       const finalPointsAwarded = awardResult.pointsAwarded;
-      const attemptSummary = isTestMode
-        ? await getTodaysQuizAttemptSummary(userId)
-        : attemptSummaryFromCount(priorAttemptsToday + 1);
       const awardMessage = isTestMode
         ? 'Test mode active. Quiz recorded, but no leaderboard points were added.'
         : finalPointsAwarded > 0
@@ -600,12 +604,14 @@ export async function POST(req: Request) {
       throw attemptError;
     }
 
-    const awardResult = await awardQuizPoints(userId, totalPoints, isTestMode);
+    const [awardResult, attemptSummary] = await Promise.all([
+      awardQuizPoints(userId, totalPoints, isTestMode),
+      isTestMode
+        ? getTodaysQuizAttemptSummary(userId)
+        : Promise.resolve(attemptSummaryFromCount(priorAttemptsToday + 1)),
+    ]);
 
     const finalPointsAwarded = awardResult.pointsAwarded;
-    const attemptSummary = isTestMode
-      ? await getTodaysQuizAttemptSummary(userId)
-      : attemptSummaryFromCount(priorAttemptsToday + 1);
     const awardMessage = isTestMode
       ? 'Test mode active. Quiz recorded, but no leaderboard points were added.'
       : finalPointsAwarded > 0
