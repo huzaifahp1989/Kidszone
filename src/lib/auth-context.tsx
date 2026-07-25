@@ -127,14 +127,64 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Define refreshProfile early so it can be used in effects
   const refreshProfile = useCallback(async () => {
     if (!user) return;
-    
+
     console.log('Manually refreshing profile for:', user.id);
+
+    // Prefer the service-role API. Browser anon reads of users_points often fail
+    // under Cap/WebView RLS, which used to overwrite awarded points with stale totals.
+    try {
+      const [{ authJsonFetch }, { LIVE_APP_URL }] = await Promise.all([
+        import('@/lib/auth-headers'),
+        import('@/lib/app-url'),
+      ]);
+      const res = await authJsonFetch(`${LIVE_APP_URL.replace(/\/$/, '')}/api/me/points`, {
+        method: 'GET',
+        timeoutMs: 8_000,
+      });
+      if (res.ok) {
+        const payload = await res.json().catch(() => ({}));
+        const apiProfile = payload?.profile;
+        if (apiProfile && Number.isFinite(Number(apiProfile.points))) {
+          const finalName = await getBestName(apiProfile.name, apiProfile.email || user.email);
+          setProfile((prev) => ({
+            uid: user.id,
+            role: apiProfile.role || prev?.role || 'kid',
+            name: finalName || prev?.name || 'Friend',
+            username: prev?.username,
+            age: Number(apiProfile.age ?? prev?.age ?? 0),
+            city: apiProfile.city ?? prev?.city,
+            madrasahName: prev?.madrasahName,
+            contactNumber: prev?.contactNumber,
+            email: apiProfile.email || prev?.email || user.email || '',
+            familyEmail: prev?.familyEmail,
+            points: Number(apiProfile.points),
+            weeklyPoints: Number(apiProfile.weeklyPoints ?? prev?.weeklyPoints ?? 0),
+            monthlyPoints: Number(apiProfile.monthlyPoints ?? prev?.monthlyPoints ?? 0),
+            todayPoints: Number(apiProfile.todayPoints ?? prev?.todayPoints ?? 0),
+            dailyLimit: Number(apiProfile.dailyLimit ?? POINTS_DAILY_CAP),
+            badges: Number(apiProfile.badges ?? prev?.badges ?? 0),
+            level: String(apiProfile.level || prev?.level || 'Beginner'),
+            streak: Number(apiProfile.streak ?? prev?.streak ?? 0),
+            lastStreakUpdate: prev?.lastStreakUpdate,
+            isFlagged: prev?.isFlagged,
+            parentEmail: prev?.parentEmail,
+            reminderOptIn: prev?.reminderOptIn,
+            reminderFrequency: prev?.reminderFrequency,
+            reminderLastSentAt: prev?.reminderLastSentAt,
+          }));
+          return;
+        }
+      }
+    } catch (err) {
+      console.warn('Authoritative points refresh failed, falling back to Supabase client:', err);
+    }
+
     const { data, error } = await supabase
       .from('users')
       .select('*')
       .eq('uid', user.id)
       .maybeSingle();
-    
+
     if (error) {
       console.error('Profile refresh error:', error.message);
     } else if (data) {
@@ -149,12 +199,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       const mapped = mapProfile(data, pointsRow);
-      const finalName = await getBestName(mapped.name, mapped.email);
-      if (finalName !== mapped.name && finalName && !isPlaceholderName(finalName)) {
-        const { error: updateErr } = await supabase.from('users').update({ name: finalName }).eq('uid', user.id);
-        if (updateErr) {}
-      }
-      setProfile({ ...mapped, name: finalName });
+      // If users_points was blocked by RLS, keep any higher local total instead of wiping.
+      setProfile((prev) => {
+        const finalPoints = Math.max(Number(mapped.points || 0), Number(prev?.points || 0));
+        return {
+          ...mapped,
+          points: finalPoints,
+          weeklyPoints: Math.max(Number(mapped.weeklyPoints || 0), Number(prev?.weeklyPoints || 0)),
+          monthlyPoints: Math.max(Number(mapped.monthlyPoints || 0), Number(prev?.monthlyPoints || 0)),
+          todayPoints: Math.max(Number(mapped.todayPoints || 0), Number(prev?.todayPoints || 0)),
+        };
+      });
     } else {
       console.log('No profile data found for user; ensuring default profile');
       const created = await ensureUserProfile(user.id);
@@ -164,7 +219,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           .select('*')
           .eq('uid', user.id)
           .maybeSingle();
-          
+
         if (refetched) {
           const { data: pointsRow, error: pointsError } = await supabase
             .from('users_points')

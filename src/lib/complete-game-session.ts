@@ -1,6 +1,7 @@
 'use client';
 
 import { authJsonFetch } from '@/lib/auth-headers';
+import { LIVE_APP_URL } from '@/lib/app-url';
 
 export type GameSessionProfile = {
   points: number;
@@ -34,9 +35,14 @@ export async function completeGameSession(params: {
     trackCompetition = false,
   } = params;
 
+  const live = LIVE_APP_URL.replace(/\/$/, '');
+
   try {
-    const res = await authJsonFetch('/api/games/track', {
+    // Always hit the canonical live host so Cap/WebViews on a stale Vercel
+    // project still write game points to the working backend.
+    const res = await authJsonFetch(`${live}/api/games/track`, {
       method: 'POST',
+      timeoutMs: 20_000,
       body: JSON.stringify({
         userId,
         gameId,
@@ -51,7 +57,7 @@ export async function completeGameSession(params: {
 
     if (trackCompetition) {
       try {
-        await authJsonFetch('/api/competition/track', {
+        await authJsonFetch(`${live}/api/competition/track`, {
           method: 'POST',
           body: JSON.stringify({ userId, activity: 'game' }),
         });

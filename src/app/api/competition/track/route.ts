@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { requireMatchingUser } from '@/lib/request-auth';
+import { apiCorsHeaders } from '@/lib/quiz-cors';
 
 function getWeekStartUtcDateString() {
   const now = new Date();
@@ -24,11 +25,31 @@ function buildMessage(missing: string[]) {
   return `${missing.length} left to enter the competition draw. Next: ${missing.join(' and ')}.`;
 }
 
+function json(req: Request, body: unknown, init?: { status?: number }) {
+  return NextResponse.json(body, {
+    status: init?.status,
+    headers: apiCorsHeaders(req, 'GET, POST, OPTIONS'),
+  });
+}
+
+function withCors(req: Request, response: NextResponse) {
+  const headers = apiCorsHeaders(req, 'GET, POST, OPTIONS');
+  Object.entries(headers).forEach(([key, value]) => response.headers.set(key, value));
+  return response;
+}
+
+export async function OPTIONS(req: Request) {
+  return new NextResponse(null, {
+    status: 204,
+    headers: apiCorsHeaders(req, 'GET, POST, OPTIONS'),
+  });
+}
+
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
     const auth = await requireMatchingUser(req, searchParams.get('userId') || '');
-    if (!auth.ok) return auth.response;
+    if (!auth.ok) return withCors(req, auth.response);
 
     const { userId } = auth;
 
@@ -42,7 +63,7 @@ export async function GET(req: Request) {
 
     if (readErr) {
       if (readErr.code === '42P01') {
-        return NextResponse.json({ setupRequired: true, completedCount: 0, remainingCount: 3, missing: ['Daily Quiz', 'Play a game', 'Pledge Durood'] });
+        return json(req, { setupRequired: true, completedCount: 0, remainingCount: 3, missing: ['Daily Quiz', 'Play a game', 'Pledge Durood'] });
       }
       throw readErr;
     }
@@ -55,7 +76,7 @@ export async function GET(req: Request) {
     if (!didGame) missing.push('Play a game');
     if (!didPledge) missing.push('Pledge Durood');
 
-    return NextResponse.json({
+    return json(req, {
       weekStart,
       didQuiz,
       didGame,
@@ -67,7 +88,7 @@ export async function GET(req: Request) {
     });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Unexpected error';
-    return NextResponse.json({ error: message }, { status: 500 });
+    return json(req, { error: message }, { status: 500 });
   }
 }
 
@@ -75,13 +96,13 @@ export async function POST(req: Request) {
   try {
     const body = await req.json().catch(() => ({}));
     const auth = await requireMatchingUser(req, String(body?.userId || ''));
-    if (!auth.ok) return auth.response;
+    if (!auth.ok) return withCors(req, auth.response);
 
     const { userId } = auth;
     const activity = typeof body?.activity === 'string' ? body.activity : '';
 
     if (!['quiz', 'pledge', 'game'].includes(activity)) {
-      return NextResponse.json({ error: 'activity must be quiz, pledge, or game' }, { status: 400 });
+      return json(req, { error: 'activity must be quiz, pledge, or game' }, { status: 400 });
     }
 
     const weekStart = getWeekStartUtcDateString();
@@ -95,7 +116,7 @@ export async function POST(req: Request) {
 
     if (readErr) {
       if (readErr.code === '42P01') {
-        return NextResponse.json({
+        return json(req, {
           success: false,
           setupRequired: true,
           message:
@@ -133,7 +154,7 @@ export async function POST(req: Request) {
     if (!next.did_game) missing.push('Play a game');
     if (!next.did_pledge) missing.push('Pledge Durood');
 
-    return NextResponse.json({
+    return json(req, {
       success: true,
       weekStart,
       didQuiz: next.did_quiz,
@@ -145,6 +166,6 @@ export async function POST(req: Request) {
       message: buildMessage(missing),
     });
   } catch (error: any) {
-    return NextResponse.json({ error: error?.message || 'Unexpected error' }, { status: 500 });
+    return json(req, { error: error?.message || 'Unexpected error' }, { status: 500 });
   }
 }

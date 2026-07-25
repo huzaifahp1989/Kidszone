@@ -314,7 +314,8 @@ export default function QuizPage() {
       const submitUrl = `${LIVE_APP_URL.replace(/\/$/, '')}/api/quiz/daily/submit`;
       const res = await authJsonFetch(submitUrl, {
         method: 'POST',
-        timeoutMs: 12_000,
+        // Server maxDuration is 25s — keep client wait aligned so awards aren't abandoned.
+        timeoutMs: 25_000,
         body: JSON.stringify({
           userId: user?.id,
           quizId: activeQuizId || `topic-${selectedTopic}-${todaySeed}-${user.id}`,
@@ -408,7 +409,7 @@ export default function QuizPage() {
         // Refresh profile and competition tracking in the background — don't block the results screen.
         void refreshProfile().catch(() => {});
         if (user?.id) {
-          void authJsonFetch('/api/competition/track', {
+          void authJsonFetch(`${LIVE_APP_URL.replace(/\/$/, '')}/api/competition/track`, {
             method: 'POST',
             body: JSON.stringify({ userId: user.id, activity: 'quiz' }),
           }).catch(() => {});

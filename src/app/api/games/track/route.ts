@@ -11,14 +11,32 @@ import {
 } from '@/lib/points-policy';
 import { canEarnActivityPoints } from '@/lib/daily-activity-limits';
 import { requireMatchingUser } from '@/lib/request-auth';
+import { apiCorsHeaders } from '@/lib/quiz-cors';
 
 export const dynamic = 'force-dynamic';
+
+function json(req: Request, body: unknown, init?: { status?: number }) {
+  return NextResponse.json(body, {
+    status: init?.status,
+    headers: apiCorsHeaders(req, 'POST, OPTIONS'),
+  });
+}
+
+export async function OPTIONS(req: Request) {
+  return new NextResponse(null, {
+    status: 204,
+    headers: apiCorsHeaders(req, 'POST, OPTIONS'),
+  });
+}
 
 export async function POST(req: Request) {
   try {
     const body = await req.json().catch(() => ({}));
     const auth = await requireMatchingUser(req, String(body?.userId || ''));
-    if (!auth.ok) return auth.response;
+    if (!auth.ok) {
+      const errBody = await auth.response.clone().json().catch(() => ({ error: 'Unauthorized' }));
+      return json(req, errBody, { status: auth.response.status });
+    }
 
     const { userId } = auth;
     const gameId = String(body?.gameId || '').trim();
@@ -28,7 +46,7 @@ export async function POST(req: Request) {
     const awardPoints = body?.awardPoints !== false;
 
     if (!gameId) {
-      return NextResponse.json({ error: 'userId and gameId are required' }, { status: 400 });
+      return json(req, { error: 'userId and gameId are required' }, { status: 400 });
     }
 
     await ensureUserRecords(userId);
@@ -96,7 +114,7 @@ export async function POST(req: Request) {
     const weeklyPoints = resolveBasePoints(pointsRow?.weekly_points, userRow?.weeklypoints);
     const monthlyPoints = resolveBasePoints(pointsRow?.monthly_points, userRow?.monthlypoints);
 
-    return NextResponse.json({
+    return json(req, {
       ok: true,
       pointsAwarded,
       message,
@@ -122,6 +140,6 @@ export async function POST(req: Request) {
     });
   } catch (error: any) {
     console.error('[games/track] unexpected error:', error);
-    return NextResponse.json({ error: error?.message || 'Unexpected error' }, { status: 500 });
+    return json(req, { error: error?.message || 'Unexpected error' }, { status: 500 });
   }
 }

@@ -73,9 +73,23 @@ async function syncUsersTable(
   };
 
   for (let attempt = 0; attempt < 3; attempt++) {
-    const { error } = await supabaseAdmin.from('users').update(payload).eq('uid', userId);
-    if (!error) return true;
-    console.error(`[server-points] users sync attempt ${attempt + 1} failed:`, error.message);
+    const { data, error } = await supabaseAdmin
+      .from('users')
+      .update(payload)
+      .eq('uid', userId)
+      .select('uid')
+      .maybeSingle();
+
+    if (!error && data?.uid) return true;
+
+    // Update can "succeed" with 0 rows when the users row is missing — create it, then retry.
+    if (!error && !data?.uid) {
+      console.warn(`[server-points] users sync matched 0 rows for ${userId}; ensuring user row`);
+      await ensureUserRecords(userId);
+      continue;
+    }
+
+    console.error(`[server-points] users sync attempt ${attempt + 1} failed:`, error?.message);
   }
   return false;
 }

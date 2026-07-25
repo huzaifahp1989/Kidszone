@@ -9,8 +9,11 @@ const EXTRA_ALLOWED = new Set([
   'https://localhost',
 ]);
 
-/** Allow Cap / stale-host pages to call the live quiz submit API with a Bearer token. */
-export function quizCorsHeaders(request: Request): Record<string, string> {
+/** Allow Cap / stale-host pages to call live APIs with a Bearer token. */
+export function apiCorsHeaders(
+  request: Request,
+  methods = 'GET, POST, OPTIONS'
+): Record<string, string> {
   const origin = (request.headers.get('origin') || '').trim();
   const liveOrigin = LIVE_APP_URL.replace(/\/$/, '');
   const allow =
@@ -23,9 +26,14 @@ export function quizCorsHeaders(request: Request): Record<string, string> {
 
   return {
     'Access-Control-Allow-Origin': origin || liveOrigin,
-    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'Access-Control-Allow-Methods': methods,
     'Access-Control-Allow-Headers': 'Authorization, Content-Type',
     'Access-Control-Max-Age': '86400',
     Vary: 'Origin',
   };
+}
+
+/** @deprecated Prefer apiCorsHeaders — kept for existing quiz submit imports. */
+export function quizCorsHeaders(request: Request): Record<string, string> {
+  return apiCorsHeaders(request, 'POST, OPTIONS');
 }
