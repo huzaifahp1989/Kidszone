@@ -3,11 +3,12 @@
  * Handles all points-related operations with the Supabase backend
  */
 
-import { supabase } from './supabase'
+import { supabase, resolveAccessToken } from './supabase'
 import { POINTS_DAILY_CAP } from './points-policy'
 import { ensureUserProfile } from './user-profile'
 import { isTestModeEmail } from './test-mode'
-import { getAuthFetchHeaders } from './auth-headers'
+import { authJsonFetch } from './auth-headers'
+import { dispatchPointsProfileUpdate } from './points-profile-sync'
 
 async function syncUserSnapshot(userId: string, totals: {
   total_points?: number
@@ -79,35 +80,34 @@ export async function awardPoints(
 ): Promise<AwardPointsResponse> {
   try {
     const countTowardDailyLimit = options.countTowardDailyLimit !== false;
-    // CRITICAL: Verify user is authenticated BEFORE calling RPC
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
 
-    console.log('[awardPoints] Starting:', { points, userId: user?.id, authError });
-
-    if (authError || !user) {
-      console.error('[awardPoints] ❌ Auth failed:', authError);
-      console.error('[awardPoints] ⚠️ User must be logged in to award points');
+    // Prefer stored token — getSession/getUser can hang on Capacitor/mobile WebViews.
+    const token = await resolveAccessToken();
+    if (!token) {
+      console.error('[awardPoints] ❌ No access token found');
       return {
         success: false,
         message: 'You are not logged in. Please sign in again.',
         points_awarded: 0,
       };
     }
-    
-    // Double-check session exists
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) {
-      console.error('[awardPoints] ❌ No active session found');
+
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser(token);
+
+    console.log('[awardPoints] Starting:', { points, userId: user?.id, authError });
+
+    if (authError || !user) {
+      console.error('[awardPoints] ❌ Auth failed:', authError);
       return {
         success: false,
-        message: 'Session expired. Please sign in again.',
+        message: 'You are not logged in. Please sign in again.',
         points_awarded: 0,
       };
     }
-    
+
     console.log('[awardPoints] ✅ User authenticated:', user.id);
 
     if (isTestModeEmail(user.email)) {
@@ -135,10 +135,8 @@ export async function awardPoints(
     // Do not hard-block here when remaining < requested — that dropped valid points.
 
     try {
-      const headers = await getAuthFetchHeaders({ 'Content-Type': 'application/json' })
-      const apiRes = await fetch('/api/points/award', {
+      const apiRes = await authJsonFetch('/api/points/award', {
         method: 'POST',
-        headers,
         body: JSON.stringify({
           userId: user.id,
           points,
@@ -156,6 +154,14 @@ export async function awardPoints(
             total_points: apiData.total_points,
             weekly_points: apiData.weekly_points,
             monthly_points: apiData.monthly_points,
+          })
+          dispatchPointsProfileUpdate({
+            points: Number(apiData.total_points),
+            weeklyPoints: Number(apiData.weekly_points),
+            monthlyPoints: Number(apiData.monthly_points),
+            todayPoints: Number(apiData.today_points),
+            badges: Number(apiData.badges),
+            level: apiData.level,
           })
         }
         return {

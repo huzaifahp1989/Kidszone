@@ -1,6 +1,7 @@
 'use client';
 
 import { authJsonFetch } from '@/lib/auth-headers';
+import { dispatchPointsProfileUpdate } from '@/lib/points-profile-sync';
 
 export type GameSessionProfile = {
   points: number;
@@ -66,6 +67,15 @@ export async function completeGameSession(params: {
         pointsAwarded: 0,
         message: data?.error || data?.message || 'Could not save game progress.',
       };
+    }
+
+    if (data?.profile && Number.isFinite(Number(data.profile.points))) {
+      dispatchPointsProfileUpdate({
+        points: Number(data.profile.points),
+        weeklyPoints: Number(data.profile.weeklyPoints),
+        monthlyPoints: Number(data.profile.monthlyPoints),
+        todayPoints: Number(data.profile.todayPoints),
+      });
     }
 
     return {

@@ -15,6 +15,7 @@ import { QUIZ_TOPICS, QUIZ_TOPIC_GROUPS, getTopicById, getTopicQuestionCount, ge
 import { ReadAloudButton } from '@/components/ReadAloudButton';
 import { EarnMorePointsLinks } from '@/components/EarnMorePointsLinks';
 import { authJsonFetch, getAuthFetchHeaders } from '@/lib/auth-headers';
+import { dispatchPointsProfileUpdate } from '@/lib/points-profile-sync';
 import { trackQuizCompleted } from '@/lib/analytics';
 
 const quizPool = getQuizQuestionPool();
@@ -330,12 +331,15 @@ export default function QuizPage() {
           setQuizLockedUntil(null);
         }
         if (data.profile && Number.isFinite(Number(data.profile.points))) {
-          updateLocalProfile({
+          const snapshot = {
             points: Number(data.profile.points),
             weeklyPoints: Number(data.profile.weeklyPoints ?? profile?.weeklyPoints ?? 0),
             monthlyPoints: Number(data.profile.monthlyPoints ?? profile?.monthlyPoints ?? 0),
             todayPoints: Number(data.profile.todayPoints ?? data.todayPoints ?? profile?.todayPoints ?? 0),
-          });
+          };
+          updateLocalProfile(snapshot);
+          // Keep navbar / daily bar in sync even if a later refreshProfile races.
+          dispatchPointsProfileUpdate(snapshot);
         } else if (awardedPoints > 0) {
           void refreshProfile().catch(() => {});
         }

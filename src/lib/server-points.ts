@@ -1,8 +1,64 @@
-import { supabaseAdmin } from '@/lib/supabase-admin';
+import { hasSupabaseServiceRole, supabaseAdmin } from '@/lib/supabase-admin';
 import { ensureUserRecords } from '@/lib/ensure-user-records';
 import { POINTS_DAILY_CAP, resolveBasePoints, resolvePointsToAward } from '@/lib/points-policy';
 import { shouldResetMonthlyPoints } from '@/lib/weekly-activity';
 import { isTestModeUserId } from '@/lib/test-mode-server';
+import { isPlaceholderSupabaseUrl as isPlaceholderUrl } from '@/lib/supabase-public-config';
+
+function supabaseUrlUnusable(): boolean {
+  const url = String(process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL || '').trim();
+  if (!isPlaceholderUrl(url)) return false;
+  // Match supabase-admin: production/Vercel builds fall back to the known project.
+  const allowProductionFallback = Boolean(process.env.VERCEL) || process.env.NODE_ENV === 'production';
+  return !allowProductionFallback;
+}
+
+async function syncUsersPointsMirror(
+  userId: string,
+  totals: { totalPoints: number; weeklyPoints: number; monthlyPoints: number }
+): Promise<{ ok: boolean; error?: string }> {
+  const payload = {
+    points: totals.totalPoints,
+    weeklypoints: totals.weeklyPoints,
+    monthlypoints: totals.monthlyPoints,
+  };
+
+  const { data, error } = await supabaseAdmin
+    .from('users')
+    .update(payload)
+    .eq('uid', userId)
+    .select('uid');
+
+  if (error) {
+    return { ok: false, error: error.message };
+  }
+
+  if (Array.isArray(data) && data.length > 0) {
+    return { ok: true };
+  }
+
+  // Update matched 0 rows — ensure the users row exists, then write again.
+  const ensured = await ensureUserRecords(userId);
+  if (!ensured.ok) {
+    return { ok: false, error: ensured.error || 'Could not ensure users row for points mirror.' };
+  }
+
+  const { data: retryData, error: retryError } = await supabaseAdmin
+    .from('users')
+    .update(payload)
+    .eq('uid', userId)
+    .select('uid');
+
+  if (retryError) {
+    return { ok: false, error: retryError.message };
+  }
+
+  if (!Array.isArray(retryData) || retryData.length === 0) {
+    return { ok: false, error: 'users row still missing after ensureUserRecords.' };
+  }
+
+  return { ok: true };
+}
 
 export type ServerAwardReason = 'awarded' | 'daily_limit_reached' | 'test_mode' | 'invalid_points' | 'update_failed';
 
@@ -41,6 +97,40 @@ export async function awardPointsWithDailyCapByUserId(
       success: false,
       reason: 'invalid_points',
       message: 'Points must be greater than 0.',
+      pointsAwarded: 0,
+      totalPoints: 0,
+      weeklyPoints: 0,
+      monthlyPoints: 0,
+      todayPoints: 0,
+      dailyLimit: POINTS_DAILY_CAP,
+      badges: 0,
+      level: 1,
+    };
+  }
+
+  if (supabaseUrlUnusable()) {
+    return {
+      success: false,
+      reason: 'update_failed',
+      message:
+        'Supabase is not configured on this deployment (placeholder URL). Set NEXT_PUBLIC_SUPABASE_URL and related keys in Vercel.',
+      pointsAwarded: 0,
+      totalPoints: 0,
+      weeklyPoints: 0,
+      monthlyPoints: 0,
+      todayPoints: 0,
+      dailyLimit: POINTS_DAILY_CAP,
+      badges: 0,
+      level: 1,
+    };
+  }
+
+  if (!hasSupabaseServiceRole()) {
+    return {
+      success: false,
+      reason: 'update_failed',
+      message:
+        'SUPABASE_SERVICE_ROLE_KEY is missing — point awards cannot bypass RLS. Set the service_role key in Vercel.',
       pointsAwarded: 0,
       totalPoints: 0,
       weeklyPoints: 0,
@@ -211,27 +301,38 @@ export async function awardPointsWithDailyCapByUserId(
     };
   }
 
-  const { error: usersSyncError } = await supabaseAdmin
-    .from('users')
-    .update({
-      points: totalPoints,
-      weeklypoints: weeklyPoints,
-      monthlypoints: monthlyPoints,
-    })
-    .eq('uid', userId);
+  const sync = await syncUsersPointsMirror(userId, {
+    totalPoints,
+    weeklyPoints,
+    monthlyPoints,
+  });
 
-  if (usersSyncError) {
-    console.error('[server-points] users sync failed, retrying once:', usersSyncError.message);
-    const { error: retryError } = await supabaseAdmin
-      .from('users')
-      .update({
-        points: totalPoints,
-        weeklypoints: weeklyPoints,
-        monthlypoints: monthlyPoints,
-      })
-      .eq('uid', userId);
-    if (retryError) {
-      console.error('[server-points] users sync retry failed:', retryError.message);
+  if (!sync.ok) {
+    console.error('[server-points] users sync failed (retrying once):', sync.error);
+    const retry = await syncUsersPointsMirror(userId, {
+      totalPoints,
+      weeklyPoints,
+      monthlyPoints,
+    });
+    if (!retry.ok) {
+      console.error('[server-points] users sync retry failed:', retry.error);
+      // users_points already has the new total — still report success for the award,
+      // but surface the mirror failure in the message for ops/debug.
+      return {
+        success: true,
+        reason: 'awarded',
+        message:
+          (options.successMessage || `+${pointsAwarded} points added.`) +
+          ' (Profile mirror sync lagged — refresh if totals look stale.)',
+        pointsAwarded,
+        totalPoints,
+        weeklyPoints,
+        monthlyPoints,
+        todayPoints,
+        dailyLimit: POINTS_DAILY_CAP,
+        badges,
+        level,
+      };
     }
   }
 

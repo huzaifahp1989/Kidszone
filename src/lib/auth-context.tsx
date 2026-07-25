@@ -1,9 +1,13 @@
 "use client";
 
-import React, { createContext, useContext, useEffect, useMemo, useState, useCallback } from 'react';
+import React, { createContext, useContext, useEffect, useMemo, useState, useCallback, useRef } from 'react';
 import { ensureUserProfile } from '@/lib/user-profile';
 import { supabase } from '@/lib/supabase';
 import { mobileAuthHelper } from '@/lib/mobile-auth';
+import {
+  POINTS_PROFILE_UPDATE_EVENT,
+  type PointsProfileSnapshot,
+} from '@/lib/points-profile-sync';
 
 type KidProfile = {
   uid: string;
@@ -39,6 +43,7 @@ interface AuthContextValue {
   logout: () => Promise<void>;
   refreshProfile: () => Promise<void>;
   updateLocalProfile: (updates: Partial<KidProfile>) => void;
+  applyPointsSnapshot: (snapshot: PointsProfileSnapshot) => void;
 }
 
 const AuthContext = createContext<AuthContextValue>({
@@ -48,6 +53,7 @@ const AuthContext = createContext<AuthContextValue>({
   logout: async () => {},
   refreshProfile: async () => {},
   updateLocalProfile: () => {},
+  applyPointsSnapshot: () => {},
 });
 
 import { POINTS_DAILY_CAP, resolveBasePoints, resolveTodayPoints } from './points-policy';
@@ -119,10 +125,130 @@ const mapProfile = (userRow: any, pointsRow?: any): KidProfile => {
   };
 };
 
+const POINTS_SNAPSHOT_TTL_MS = 8_000;
+
+function mergeProfileWithPointsSnapshot(
+  mapped: KidProfile,
+  prev: KidProfile | null,
+  snapshot: {
+    points: number;
+    weeklyPoints: number;
+    monthlyPoints: number;
+    todayPoints: number;
+    badges?: number;
+    at: number;
+  } | null
+): KidProfile {
+  if (!snapshot || Date.now() - snapshot.at > POINTS_SNAPSHOT_TTL_MS) {
+    return mapped;
+  }
+
+  const levelFromSnapshot =
+    snapshot.badges != null
+      ? `Level ${1 + Math.floor(snapshot.badges / 5)}`
+      : mapped.level;
+
+  return {
+    ...mapped,
+    points: Math.max(mapped.points, snapshot.points, prev?.points ?? 0),
+    weeklyPoints: Math.max(
+      Number(mapped.weeklyPoints ?? 0),
+      snapshot.weeklyPoints,
+      Number(prev?.weeklyPoints ?? 0)
+    ),
+    monthlyPoints: Math.max(
+      Number(mapped.monthlyPoints ?? 0),
+      snapshot.monthlyPoints,
+      Number(prev?.monthlyPoints ?? 0)
+    ),
+    todayPoints: Math.max(
+      Number(mapped.todayPoints ?? 0),
+      snapshot.todayPoints,
+      Number(prev?.todayPoints ?? 0)
+    ),
+    badges: Math.max(Number(mapped.badges ?? 0), Number(snapshot.badges ?? 0), Number(prev?.badges ?? 0)),
+    level: levelFromSnapshot || mapped.level,
+  };
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<{ id: string; email?: string | null } | null>(null);
   const [profile, setProfile] = useState<KidProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  const pointsSnapshotRef = useRef<{
+    points: number;
+    weeklyPoints: number;
+    monthlyPoints: number;
+    todayPoints: number;
+    badges?: number;
+    at: number;
+  } | null>(null);
+
+  const applyPointsSnapshot = useCallback((snapshot: PointsProfileSnapshot) => {
+    const nextSnapshot = {
+      points: Number(snapshot.points ?? NaN),
+      weeklyPoints: Number(snapshot.weeklyPoints ?? NaN),
+      monthlyPoints: Number(snapshot.monthlyPoints ?? NaN),
+      todayPoints: Number(snapshot.todayPoints ?? NaN),
+      badges: snapshot.badges,
+      at: Date.now(),
+    };
+
+    setProfile((prev) => {
+      if (!prev) return prev;
+
+      const mergedPoints = Number.isFinite(nextSnapshot.points) ? nextSnapshot.points : prev.points;
+      const mergedWeekly = Number.isFinite(nextSnapshot.weeklyPoints)
+        ? nextSnapshot.weeklyPoints
+        : Number(prev.weeklyPoints ?? 0);
+      const mergedMonthly = Number.isFinite(nextSnapshot.monthlyPoints)
+        ? nextSnapshot.monthlyPoints
+        : Number(prev.monthlyPoints ?? 0);
+      const mergedToday = Number.isFinite(nextSnapshot.todayPoints)
+        ? nextSnapshot.todayPoints
+        : Number(prev.todayPoints ?? 0);
+      const mergedBadges = Number.isFinite(Number(snapshot.badges))
+        ? Number(snapshot.badges)
+        : prev.badges;
+
+      pointsSnapshotRef.current = {
+        points: mergedPoints,
+        weeklyPoints: mergedWeekly,
+        monthlyPoints: mergedMonthly,
+        todayPoints: mergedToday,
+        badges: mergedBadges,
+        at: nextSnapshot.at,
+      };
+
+      const level =
+        typeof snapshot.level === 'number'
+          ? `Level ${snapshot.level}`
+          : typeof snapshot.level === 'string'
+            ? snapshot.level
+            : prev.level;
+
+      return {
+        ...prev,
+        ...(Number.isFinite(nextSnapshot.points) ? { points: nextSnapshot.points } : {}),
+        ...(Number.isFinite(nextSnapshot.weeklyPoints) ? { weeklyPoints: nextSnapshot.weeklyPoints } : {}),
+        ...(Number.isFinite(nextSnapshot.monthlyPoints) ? { monthlyPoints: nextSnapshot.monthlyPoints } : {}),
+        ...(Number.isFinite(nextSnapshot.todayPoints) ? { todayPoints: nextSnapshot.todayPoints } : {}),
+        ...(Number.isFinite(Number(snapshot.badges)) ? { badges: Number(snapshot.badges) } : {}),
+        ...(level ? { level } : {}),
+      };
+    });
+  }, []);
+
+  useEffect(() => {
+    const onPointsUpdated = (event: Event) => {
+      const detail = (event as CustomEvent<PointsProfileSnapshot>).detail;
+      if (!detail || typeof detail !== 'object') return;
+      applyPointsSnapshot(detail);
+    };
+
+    window.addEventListener(POINTS_PROFILE_UPDATE_EVENT, onPointsUpdated);
+    return () => window.removeEventListener(POINTS_PROFILE_UPDATE_EVENT, onPointsUpdated);
+  }, [applyPointsSnapshot]);
 
   // Define refreshProfile early so it can be used in effects
   const refreshProfile = useCallback(async () => {
@@ -154,7 +280,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const { error: updateErr } = await supabase.from('users').update({ name: finalName }).eq('uid', user.id);
         if (updateErr) {}
       }
-      setProfile({ ...mapped, name: finalName });
+      setProfile((prev) =>
+        mergeProfileWithPointsSnapshot({ ...mapped, name: finalName }, prev, pointsSnapshotRef.current)
+      );
     } else {
       console.log('No profile data found for user; ensuring default profile');
       const created = await ensureUserProfile(user.id);
@@ -177,7 +305,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           }
 
           const mapped = mapProfile(refetched, pointsRow);
-          setProfile(mapped);
+          setProfile((prev) =>
+            mergeProfileWithPointsSnapshot(mapped, prev, pointsSnapshotRef.current)
+          );
         }
       }
     }
@@ -484,7 +614,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     },
     refreshProfile,
     updateLocalProfile,
-  }), [user, profile, loading, refreshProfile, updateLocalProfile]);
+    applyPointsSnapshot,
+  }), [user, profile, loading, refreshProfile, updateLocalProfile, applyPointsSnapshot]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
