@@ -1,7 +1,7 @@
 'use client';
 
 import { authJsonFetch } from '@/lib/auth-headers';
-import { LIVE_APP_URL } from '@/lib/app-url';
+import { getClientApiBaseUrl } from '@/lib/app-url';
 
 export type GameSessionProfile = {
   points: number;
@@ -35,7 +35,7 @@ export async function completeGameSession(params: {
     trackCompetition = false,
   } = params;
 
-  const live = LIVE_APP_URL.replace(/\/$/, '');
+  const live = getClientApiBaseUrl();
 
   try {
     // Always hit the canonical live host so Cap/WebViews on a stale Vercel

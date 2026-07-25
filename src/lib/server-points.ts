@@ -8,12 +8,10 @@ import {
 } from '@/lib/points-policy';
 import { shouldResetMonthlyPoints } from '@/lib/weekly-activity';
 import { isTestModeUserId } from '@/lib/test-mode-server';
-import { isPlaceholderSupabaseUrl, allowProductionSupabaseFallback } from '@/lib/supabase-public-config';
+import { isPlaceholderSupabaseUrl, resolvePublicSupabaseUrl } from '@/lib/supabase-public-config';
 
 function supabaseUrlUnusable(): boolean {
-  const url = String(process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL || '').trim();
-  if (!isPlaceholderSupabaseUrl(url)) return false;
-  return !allowProductionSupabaseFallback();
+  return isPlaceholderSupabaseUrl(resolvePublicSupabaseUrl());
 }
 
 export type ServerAwardReason = 'awarded' | 'daily_limit_reached' | 'test_mode' | 'invalid_points' | 'update_failed';

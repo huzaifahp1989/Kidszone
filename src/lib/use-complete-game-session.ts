@@ -7,29 +7,30 @@ import {
   type CompleteGameSessionResult,
   type GameSessionProfile,
 } from '@/lib/complete-game-session';
+import { mergePointsAfterAward, type PointsProfileSlice } from '@/lib/profile-points-merge';
 
 async function syncGameSessionProfile(
   result: CompleteGameSessionResult,
   handlers: {
     updateLocalProfile?: (updates: Partial<GameSessionProfile>) => void;
     refreshProfile?: () => Promise<void>;
+    profile?: PointsProfileSlice | null;
   }
 ): Promise<void> {
-  if (
-    result.profile &&
-    handlers.updateLocalProfile &&
-    Number.isFinite(result.profile.points) &&
-    // Never apply a zero/empty snapshot that would wipe the navbar after a failed sync.
-    (result.pointsAwarded > 0 || result.profile.points > 0)
-  ) {
-    handlers.updateLocalProfile({
-      points: result.profile.points,
-      weeklyPoints: result.profile.weeklyPoints,
-      monthlyPoints: result.profile.monthlyPoints,
-      todayPoints: result.profile.todayPoints,
-    });
+  if (handlers.updateLocalProfile && (result.pointsAwarded > 0 || result.profile)) {
+    const merged = mergePointsAfterAward(
+      handlers.profile,
+      result.pointsAwarded,
+      result.profile
+    );
+    if (result.pointsAwarded > 0 || merged.points > 0) {
+      handlers.updateLocalProfile(merged);
+    }
   }
   try {
+    if (result.pointsAwarded > 0) {
+      await new Promise((resolve) => setTimeout(resolve, 1500));
+    }
     await handlers.refreshProfile?.();
   } catch {
     /* non-blocking */
@@ -37,16 +38,16 @@ async function syncGameSessionProfile(
 }
 
 export function useCompleteGameSession() {
-  const { refreshProfile, updateLocalProfile } = useAuth();
+  const { refreshProfile, updateLocalProfile, profile } = useAuth();
 
   return useCallback(
     async (
       params: Parameters<typeof completeGameSession>[0]
     ): Promise<CompleteGameSessionResult> => {
       const result = await completeGameSession(params);
-      await syncGameSessionProfile(result, { updateLocalProfile, refreshProfile });
+      await syncGameSessionProfile(result, { updateLocalProfile, refreshProfile, profile });
       return result;
     },
-    [refreshProfile, updateLocalProfile]
+    [refreshProfile, updateLocalProfile, profile]
   );
 }
