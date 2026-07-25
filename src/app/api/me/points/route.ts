@@ -68,7 +68,8 @@ export async function GET(req: Request) {
       profile: {
         uid: user.id,
         name: userRow?.name || 'Friend',
-        email: userRow?.email || user.email || '',
+        // Prefer auth email — users.email can still be a stale user-xxx@local placeholder.
+        email: user.email || userRow?.email || '',
         age: typeof userRow?.age === 'number' ? userRow.age : Number(userRow?.age) || 0,
         role: userRow?.role || 'kid',
         city: userRow?.city ? String(userRow.city) : undefined,

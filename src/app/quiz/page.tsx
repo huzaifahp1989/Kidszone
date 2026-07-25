@@ -16,7 +16,8 @@ import { ReadAloudButton } from '@/components/ReadAloudButton';
 import { EarnMorePointsLinks } from '@/components/EarnMorePointsLinks';
 import { authJsonFetch, getAuthFetchHeaders } from '@/lib/auth-headers';
 import { trackQuizCompleted } from '@/lib/analytics';
-import { LIVE_APP_URL } from '@/lib/app-url';
+import { getClientApiBaseUrl } from '@/lib/app-url';
+import { mergePointsAfterAward } from '@/lib/profile-points-merge';
 
 const quizPool = getQuizQuestionPool();
 
@@ -143,8 +144,12 @@ export default function QuizPage() {
         setDailyQuiz(quizData);
 
         if (user?.id) {
-          // Server-side 24-hour lock check — works across all devices
-          const lockRes = await fetch(`/api/quiz/daily/lock-status?userId=${user.id}`);
+          // Must send Bearer token — unauthenticated lock-status returns 401 and
+          // used to hide the "2 quizzes done" lock, so kids kept playing for 0 pts.
+          const lockRes = await authJsonFetch(
+            `/api/quiz/daily/lock-status?userId=${encodeURIComponent(user.id)}`,
+            { method: 'GET', timeoutMs: 10_000 }
+          );
           if (lockRes.ok) {
             const lockData = await lockRes.json();
             setQuizAttemptsToday(Number(lockData.attemptsToday || 0));
@@ -311,7 +316,8 @@ export default function QuizPage() {
     try {
       // Always hit the canonical live host so Cap/WebViews parked on a stale
       // Vercel project still write attempts + points to the working backend.
-      const submitUrl = `${LIVE_APP_URL.replace(/\/$/, '')}/api/quiz/daily/submit`;
+      const apiBase = getClientApiBaseUrl();
+      const submitUrl = `${apiBase}/api/quiz/daily/submit`;
       const res = await authJsonFetch(submitUrl, {
         method: 'POST',
         // Server maxDuration is 25s — keep client wait aligned so awards aren't abandoned.
@@ -371,21 +377,21 @@ export default function QuizPage() {
           setQuizLockedUntil(null);
         }
         const nextPoints = Number(data.profile?.points);
-        // Only apply server profile totals when they look real — never wipe with 0
-        // after a failed/partial points write.
-        if (
-          data.profile &&
-          Number.isFinite(nextPoints) &&
-          (awardedPoints > 0 || nextPoints > 0 || Number(profile?.points || 0) === 0)
-        ) {
-          updateLocalProfile({
-            points: nextPoints,
-            weeklyPoints: Number(data.profile.weeklyPoints ?? profile?.weeklyPoints ?? 0),
-            monthlyPoints: Number(data.profile.monthlyPoints ?? profile?.monthlyPoints ?? 0),
-            todayPoints: Number(data.profile.todayPoints ?? data.todayPoints ?? profile?.todayPoints ?? 0),
-          });
-        } else if (awardedPoints > 0) {
-          void refreshProfile().catch(() => {});
+        const mergedPoints = mergePointsAfterAward(
+          profile,
+          awardedPoints,
+          data.profile
+            ? {
+                points: Number.isFinite(nextPoints) ? nextPoints : undefined,
+                weeklyPoints: Number(data.profile.weeklyPoints ?? profile?.weeklyPoints ?? 0),
+                monthlyPoints: Number(data.profile.monthlyPoints ?? profile?.monthlyPoints ?? 0),
+                todayPoints: Number(data.profile.todayPoints ?? data.todayPoints ?? profile?.todayPoints ?? 0),
+              }
+            : null
+        );
+
+        if (awardedPoints > 0 || data.profile || Number(profile?.points || 0) === 0) {
+          updateLocalProfile(mergedPoints);
         }
         if (awardedPoints > 0) {
           setResultToast(`+${awardedPoints} points added!`);
@@ -406,10 +412,12 @@ export default function QuizPage() {
           attemptsToday,
         });
 
-        // Refresh profile and competition tracking in the background — don't block the results screen.
-        void refreshProfile().catch(() => {});
+        // Delay refresh so a fast stale read cannot undo the merged totals above.
+        window.setTimeout(() => {
+          void refreshProfile().catch(() => {});
+        }, 1500);
         if (user?.id) {
-          void authJsonFetch(`${LIVE_APP_URL.replace(/\/$/, '')}/api/competition/track`, {
+          void authJsonFetch(`${apiBase}/api/competition/track`, {
             method: 'POST',
             body: JSON.stringify({ userId: user.id, activity: 'quiz' }),
           }).catch(() => {});

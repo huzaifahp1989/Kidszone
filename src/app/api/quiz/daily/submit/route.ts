@@ -1,13 +1,13 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { ensureUserRecords } from '@/lib/ensure-user-records';
-import { awardPointsWithDailyCapByUserId } from '@/lib/server-points';
+import { awardPointsWithDailyCapByUserId, readAuthoritativePointsSnapshot } from '@/lib/server-points';
 import { getStaticQuiz } from '@/lib/quiz-generator';
 import { filterQuestionsByTopic, getDailyTopicSeed, parseTopicQuizId } from '@/lib/quiz-topics';
 import { resolveTopicQuizQuestionsFromIds, resolveSubmittedTopicQuestions } from '@/lib/quiz-topic-questions';
 import { getTopicQuestionExclusions } from '@/lib/quiz-user-history';
 import { isTestModeEmail } from '@/lib/test-mode';
-import { POINTS_DAILY_CAP, QUIZ_POINTS_PER_COMPLETION, MAX_DAILY_QUIZ_ATTEMPTS, resolveTodayPoints } from '@/lib/points-policy';
+import { POINTS_DAILY_CAP, QUIZ_POINTS_PER_COMPLETION, MAX_DAILY_QUIZ_ATTEMPTS } from '@/lib/points-policy';
 import { createSessionQuizRecordId, createSessionQuizRecordIdResilient } from '@/lib/topic-quiz-record';
 import { insertQuizAttempt } from '@/lib/quiz-attempt-insert';
 import { randomUUID } from 'crypto';
@@ -167,26 +167,22 @@ async function ensureFallbackDailyQuizId(dateOrWeekSeed: string, questionIds: st
 }
 
 async function readCurrentPointsSnapshot(userId: string) {
-  const { data } = await supabaseAdmin
-    .from('users_points')
-    .select('total_points, weekly_points, monthly_points, today_points, last_earned_date')
-    .eq('user_id', userId)
-    .maybeSingle();
-
+  const snapshot = await readAuthoritativePointsSnapshot(userId);
   return {
-    totalPoints: Number(data?.total_points ?? 0),
-    weeklyPoints: Number(data?.weekly_points ?? 0),
-    monthlyPoints: Number(data?.monthly_points ?? 0),
-    todayPoints: resolveTodayPoints(data?.today_points, data?.last_earned_date),
+    totalPoints: snapshot.totalPoints,
+    weeklyPoints: snapshot.weeklyPoints,
+    monthlyPoints: snapshot.monthlyPoints,
+    todayPoints: snapshot.todayPoints,
   };
 }
 
 async function awardQuizPoints(userId: string, totalPoints: number, isTestMode: boolean) {
-  if (isTestMode || totalPoints <= 0) {
+  // Test-mode accounts still earn points (hidden from public leaderboards only).
+  if (totalPoints <= 0) {
     const snapshot = await readCurrentPointsSnapshot(userId);
     return {
       pointsAwarded: 0,
-      reason: isTestMode ? 'test_mode' : null,
+      reason: null,
       todayPoints: snapshot.todayPoints,
       totalPoints: snapshot.totalPoints,
       weeklyPoints: snapshot.weeklyPoints,
@@ -197,8 +193,6 @@ async function awardQuizPoints(userId: string, totalPoints: number, isTestMode: 
 
   const result = await awardPointsWithDailyCapByUserId(userId, totalPoints, {
     successMessage: `Topic completed! +${QUIZ_POINTS_PER_COMPLETION} points added to leaderboard.`,
-    // The submit route already validated test mode and ensured user records —
-    // skip re-doing those inside the points helper to avoid extra round trips.
     knownIsTestMode: isTestMode,
     skipEnsureUserRecords: true,
   });
@@ -427,9 +421,8 @@ export async function POST(req: Request) {
       ]);
 
       const finalPointsAwarded = awardResult.pointsAwarded;
-      const awardMessage = isTestMode
-        ? 'Test mode active. Quiz recorded, but no leaderboard points were added.'
-        : finalPointsAwarded > 0
+      const awardMessage =
+        finalPointsAwarded > 0
           ? `Topic completed! +${QUIZ_POINTS_PER_COMPLETION} points added to leaderboard.`
           : awardResult.reason === 'daily_limit_reached'
             ? `You have reached today's ${POINTS_DAILY_CAP}-point limit. Quiz completed, but no points were added.`
@@ -535,9 +528,8 @@ export async function POST(req: Request) {
       ]);
 
       const finalPointsAwarded = awardResult.pointsAwarded;
-      const awardMessage = isTestMode
-        ? 'Test mode active. Quiz recorded, but no leaderboard points were added.'
-        : finalPointsAwarded > 0
+      const awardMessage =
+        finalPointsAwarded > 0
           ? `Topic completed! +${QUIZ_POINTS_PER_COMPLETION} points added to leaderboard.`
           : awardResult.reason === 'daily_limit_reached'
             ? `You have reached today's ${POINTS_DAILY_CAP}-point limit. Quiz completed, but no points were added.`
@@ -669,9 +661,8 @@ export async function POST(req: Request) {
     ]);
 
     const finalPointsAwarded = awardResult.pointsAwarded;
-    const awardMessage = isTestMode
-      ? 'Test mode active. Quiz recorded, but no leaderboard points were added.'
-      : finalPointsAwarded > 0
+    const awardMessage =
+      finalPointsAwarded > 0
         ? `Topic completed! +${QUIZ_POINTS_PER_COMPLETION} points added to leaderboard.`
         : awardResult.reason === 'daily_limit_reached'
           ? `You have reached today's ${POINTS_DAILY_CAP}-point limit. Quiz completed, but no points were added.`

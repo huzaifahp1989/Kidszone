@@ -1,14 +1,16 @@
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { ensureUserRecords } from '@/lib/ensure-user-records';
-import { POINTS_DAILY_CAP, resolveBasePoints, resolvePointsToAward } from '@/lib/points-policy';
+import {
+  POINTS_DAILY_CAP,
+  resolveBasePoints,
+  resolvePointsToAward,
+  resolveTodayPoints,
+} from '@/lib/points-policy';
 import { shouldResetMonthlyPoints } from '@/lib/weekly-activity';
-import { isTestModeUserId } from '@/lib/test-mode-server';
-import { isPlaceholderSupabaseUrl, allowProductionSupabaseFallback } from '@/lib/supabase-public-config';
+import { isPlaceholderSupabaseUrl, resolvePublicSupabaseUrl } from '@/lib/supabase-public-config';
 
 function supabaseUrlUnusable(): boolean {
-  const url = String(process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL || '').trim();
-  if (!isPlaceholderSupabaseUrl(url)) return false;
-  return !allowProductionSupabaseFallback();
+  return isPlaceholderSupabaseUrl(resolvePublicSupabaseUrl());
 }
 
 export type ServerAwardReason = 'awarded' | 'daily_limit_reached' | 'test_mode' | 'invalid_points' | 'update_failed';
@@ -60,6 +62,43 @@ function emptyFailure(
   };
 }
 
+export type AuthoritativePointsSnapshot = {
+  totalPoints: number;
+  weeklyPoints: number;
+  monthlyPoints: number;
+  todayPoints: number;
+  hasReliableTotals: boolean;
+};
+
+/** Read the best-known totals from users_points and users (never trust a zero-seeded row alone). */
+export async function readAuthoritativePointsSnapshot(
+  userId: string
+): Promise<AuthoritativePointsSnapshot> {
+  const [pointsRowRes, userRowRes] = await Promise.all([
+    supabaseAdmin
+      .from('users_points')
+      .select('total_points, weekly_points, monthly_points, today_points, last_earned_date')
+      .eq('user_id', userId)
+      .maybeSingle(),
+    supabaseAdmin
+      .from('users')
+      .select('points, weeklypoints, monthlypoints')
+      .eq('uid', userId)
+      .maybeSingle(),
+  ]);
+
+  const pointsRow = pointsRowRes.data;
+  const userRow = userRowRes.data;
+
+  return {
+    totalPoints: resolveBasePoints(pointsRow?.total_points, userRow?.points),
+    weeklyPoints: resolveBasePoints(pointsRow?.weekly_points, userRow?.weeklypoints),
+    monthlyPoints: resolveBasePoints(pointsRow?.monthly_points, userRow?.monthlypoints),
+    todayPoints: resolveTodayPoints(pointsRow?.today_points, pointsRow?.last_earned_date),
+    hasReliableTotals: Boolean(pointsRow || userRow),
+  };
+}
+
 async function syncUsersTable(
   userId: string,
   totalPoints: number,
@@ -103,24 +142,6 @@ export async function awardPointsWithDailyCapByUserId(
 
   if (!requestedPoints || requestedPoints <= 0) {
     return emptyFailure('invalid_points', 'Points must be greater than 0.');
-  }
-
-  const isTestMode = options.knownIsTestMode ?? (await isTestModeUserId(userId));
-  if (isTestMode) {
-    return {
-      success: true,
-      reason: 'test_mode',
-      message: 'Test mode active for this account. Mission bonus is tracked but no leaderboard points are added.',
-      pointsAwarded: 0,
-      totalPoints: 0,
-      weeklyPoints: 0,
-      monthlyPoints: 0,
-      todayPoints: 0,
-      dailyLimit: POINTS_DAILY_CAP,
-      badges: 0,
-      level: 1,
-      hasReliableTotals: false,
-    };
   }
 
   if (supabaseUrlUnusable()) {

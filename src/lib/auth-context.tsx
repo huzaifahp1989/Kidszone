@@ -51,6 +51,8 @@ const AuthContext = createContext<AuthContextValue>({
 });
 
 import { POINTS_DAILY_CAP, resolveBasePoints, resolveTodayPoints } from './points-policy';
+import { getClientApiBaseUrl } from './app-url';
+import { mergePointsAfterAward, mergeTodayPoints } from './profile-points-merge';
 
 const POINTS_SELECT =
   'total_points, weekly_points, monthly_points, today_points, last_earned_date, badges, level';
@@ -133,11 +135,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Prefer the service-role API. Browser anon reads of users_points often fail
     // under Cap/WebView RLS, which used to overwrite awarded points with stale totals.
     try {
-      const [{ authJsonFetch }, { LIVE_APP_URL }] = await Promise.all([
-        import('@/lib/auth-headers'),
-        import('@/lib/app-url'),
-      ]);
-      const res = await authJsonFetch(`${LIVE_APP_URL.replace(/\/$/, '')}/api/me/points`, {
+      const [{ authJsonFetch }] = await Promise.all([import('@/lib/auth-headers')]);
+      const apiBase = getClientApiBaseUrl();
+      const res = await authJsonFetch(`${apiBase}/api/me/points`, {
         method: 'GET',
         timeoutMs: 8_000,
       });
@@ -146,32 +146,43 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const apiProfile = payload?.profile;
         if (apiProfile && Number.isFinite(Number(apiProfile.points))) {
           const finalName = await getBestName(apiProfile.name, apiProfile.email || user.email);
-          setProfile((prev) => ({
-            uid: user.id,
-            role: apiProfile.role || prev?.role || 'kid',
-            name: finalName || prev?.name || 'Friend',
-            username: prev?.username,
-            age: Number(apiProfile.age ?? prev?.age ?? 0),
-            city: apiProfile.city ?? prev?.city,
-            madrasahName: prev?.madrasahName,
-            contactNumber: prev?.contactNumber,
-            email: apiProfile.email || prev?.email || user.email || '',
-            familyEmail: prev?.familyEmail,
-            points: Number(apiProfile.points),
-            weeklyPoints: Number(apiProfile.weeklyPoints ?? prev?.weeklyPoints ?? 0),
-            monthlyPoints: Number(apiProfile.monthlyPoints ?? prev?.monthlyPoints ?? 0),
-            todayPoints: Number(apiProfile.todayPoints ?? prev?.todayPoints ?? 0),
-            dailyLimit: Number(apiProfile.dailyLimit ?? POINTS_DAILY_CAP),
-            badges: Number(apiProfile.badges ?? prev?.badges ?? 0),
-            level: String(apiProfile.level || prev?.level || 'Beginner'),
-            streak: Number(apiProfile.streak ?? prev?.streak ?? 0),
-            lastStreakUpdate: prev?.lastStreakUpdate,
-            isFlagged: prev?.isFlagged,
-            parentEmail: prev?.parentEmail,
-            reminderOptIn: prev?.reminderOptIn,
-            reminderFrequency: prev?.reminderFrequency,
-            reminderLastSentAt: prev?.reminderLastSentAt,
-          }));
+          setProfile((prev) => {
+            const merged = mergePointsAfterAward(prev, 0, {
+              points: Number(apiProfile.points),
+              weeklyPoints: Number(apiProfile.weeklyPoints ?? prev?.weeklyPoints ?? 0),
+              monthlyPoints: Number(apiProfile.monthlyPoints ?? prev?.monthlyPoints ?? 0),
+              todayPoints: mergeTodayPoints(
+                Number(prev?.todayPoints ?? 0),
+                Number(apiProfile.todayPoints ?? prev?.todayPoints ?? 0)
+              ),
+            });
+            return {
+              uid: user.id,
+              role: apiProfile.role || prev?.role || 'kid',
+              name: finalName || prev?.name || 'Friend',
+              username: prev?.username,
+              age: Number(apiProfile.age ?? prev?.age ?? 0),
+              city: apiProfile.city ?? prev?.city,
+              madrasahName: prev?.madrasahName,
+              contactNumber: prev?.contactNumber,
+              email: apiProfile.email || prev?.email || user.email || '',
+              familyEmail: prev?.familyEmail,
+              points: merged.points,
+              weeklyPoints: merged.weeklyPoints,
+              monthlyPoints: merged.monthlyPoints,
+              todayPoints: merged.todayPoints,
+              dailyLimit: Number(apiProfile.dailyLimit ?? POINTS_DAILY_CAP),
+              badges: Number(apiProfile.badges ?? prev?.badges ?? 0),
+              level: String(apiProfile.level || prev?.level || 'Beginner'),
+              streak: Number(apiProfile.streak ?? prev?.streak ?? 0),
+              lastStreakUpdate: prev?.lastStreakUpdate,
+              isFlagged: prev?.isFlagged,
+              parentEmail: prev?.parentEmail,
+              reminderOptIn: prev?.reminderOptIn,
+              reminderFrequency: prev?.reminderFrequency,
+              reminderLastSentAt: prev?.reminderLastSentAt,
+            };
+          });
           return;
         }
       }

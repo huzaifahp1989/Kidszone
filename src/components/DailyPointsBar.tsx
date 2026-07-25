@@ -94,7 +94,7 @@ export function DailyPointsBar({ quizAttemptsUsed, compact = false, className = 
 
       <p className="mt-2 text-xs text-slate-600">
         Daily plan ({DAILY_PLAN_TOTAL_POINTS} pts): {MAX_DAILY_QUIZ_ATTEMPTS} quizzes × {QUIZ_POINTS_PER_COMPLETION} ·{' '}
-        {MAX_DAILY_GAME_COMPLETIONS} games × {ACTIVITY_BONUS_POINTS} · Durood · Zikr · Hadith · Salah ·{' '}
+        {MAX_DAILY_GAME_COMPLETIONS} games × {ACTIVITY_BONUS_POINTS} · Story quiz · Durood · Zikr · Hadith · Salah ·{' '}
         <Link href="/guide" className="font-bold text-violet-700 hover:underline">
           Full guide
         </Link>
@@ -103,10 +103,13 @@ export function DailyPointsBar({ quizAttemptsUsed, compact = false, className = 
       {showActivityHint && (
         <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-950">
           <p className="font-bold">Both quizzes done — {remaining} points left today!</p>
-          <p className="mt-1">Try games, Durood, Zikr, Hadith, or Salah — each earns +{ACTIVITY_BONUS_POINTS} points.</p>
+          <p className="mt-1">Try games, story quizzes, Durood, Zikr, Hadith, or Salah — each earns +{ACTIVITY_BONUS_POINTS} points.</p>
           <div className="mt-3 flex flex-wrap gap-2">
             <Link href="/games" className="rounded-lg bg-white px-3 py-1.5 text-xs font-bold text-violet-800 ring-1 ring-violet-200 hover:bg-violet-50">
               🎮 Games
+            </Link>
+            <Link href="/stories" className="rounded-lg bg-white px-3 py-1.5 text-xs font-bold text-violet-800 ring-1 ring-violet-200 hover:bg-violet-50">
+              📚 Stories
             </Link>
             <Link href="/pledge" className="rounded-lg bg-white px-3 py-1.5 text-xs font-bold text-violet-800 ring-1 ring-violet-200 hover:bg-violet-50">
               📿 Pledge

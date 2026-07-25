@@ -1,20 +1,24 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
-
-import { POINTS_DAILY_CAP, resolvePointsToAward } from '@/lib/points-policy';
-
+import { ensureUserRecords } from '@/lib/ensure-user-records';
+import {
+  awardPointsWithDailyCapByUserId,
+  readAuthoritativePointsSnapshot,
+} from '@/lib/server-points';
 import { RECORDING_APPROVED_POINTS } from '@/lib/points-policy';
-
-const POINTS_PER_RECORDING = RECORDING_APPROVED_POINTS;
+import { requireMatchingUser } from '@/lib/request-auth';
 
 export async function POST(req: Request) {
   try {
     const body = await req.json().catch(() => ({}));
-    const userId = typeof body?.userId === 'string' ? body.userId.trim() : '';
+    const auth = await requireMatchingUser(req, String(body?.userId || ''));
+    if (!auth.ok) return auth.response;
+
+    const { userId } = auth;
     const storyId = typeof body?.storyId === 'string' ? body.storyId.trim() : '';
 
-    if (!userId || !storyId) {
-      return NextResponse.json({ error: 'userId and storyId are required' }, { status: 400 });
+    if (!storyId) {
+      return NextResponse.json({ error: 'storyId is required' }, { status: 400 });
     }
 
     const { data: existingSameWeek, error: existingError } = await supabaseAdmin
@@ -33,30 +37,10 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: true, alreadyRecorded: true, pointsAwarded: 0 });
     }
 
-    const { data: currentPointsRow, error: pointsFetchError } = await supabaseAdmin
-      .from('users_points')
-      .select('*')
-      .eq('user_id', userId)
-      .maybeSingle();
-
-    if (pointsFetchError && pointsFetchError.code !== 'PGRST116') {
-      throw pointsFetchError;
+    const ensured = await ensureUserRecords(userId);
+    if (!ensured.ok) {
+      return NextResponse.json({ error: ensured.error || 'Could not prepare user profile.' }, { status: 500 });
     }
-
-    const todayStr = new Date().toISOString().slice(0, 10);
-    const todayPoints = currentPointsRow?.last_earned_date === todayStr ? Number(currentPointsRow?.today_points || 0) : 0;
-    const pointsToAward = resolvePointsToAward(
-      POINTS_PER_RECORDING,
-      todayPoints,
-      true
-    );
-
-    const totalPoints = Number(currentPointsRow?.total_points || 0) + pointsToAward;
-    const weeklyPoints = Number(currentPointsRow?.weekly_points || 0) + pointsToAward;
-    const monthlyPoints = Number(currentPointsRow?.monthly_points || 0) + pointsToAward;
-    const updatedTodayPoints = todayPoints + pointsToAward;
-    const badges = Math.floor(totalPoints / 100);
-    const level = 1 + Math.floor(badges / 5);
 
     const { error: recordingError } = await supabaseAdmin
       .from('recordings')
@@ -72,42 +56,34 @@ export async function POST(req: Request) {
       throw recordingError;
     }
 
-    const { error: pointsUpsertError } = await supabaseAdmin
-      .from('users_points')
-      .upsert({
-        user_id: userId,
-        total_points: totalPoints,
-        weekly_points: weeklyPoints,
-        monthly_points: monthlyPoints,
-        today_points: updatedTodayPoints,
-        last_earned_date: todayStr,
-        badges,
-        level,
-      }, { onConflict: 'user_id' });
+    const award = await awardPointsWithDailyCapByUserId(userId, RECORDING_APPROVED_POINTS, {
+      // Recording approvals are bonus points — do not consume the daily earn budget.
+      countTowardDailyLimit: false,
+      successMessage: `+${RECORDING_APPROVED_POINTS} points for your story recording!`,
+      skipEnsureUserRecords: true,
+    });
 
-    if (pointsUpsertError) {
-      throw pointsUpsertError;
+    if (!award.success && award.reason === 'update_failed') {
+      return NextResponse.json({ error: award.message }, { status: 500 });
     }
 
-    const { error: userSyncError } = await supabaseAdmin
-      .from('users')
-      .update({
-        points: totalPoints,
-        weeklypoints: weeklyPoints,
-        monthlypoints: monthlyPoints,
-      })
-      .eq('uid', userId);
-
-    if (userSyncError) {
-      throw userSyncError;
-    }
+    const snapshot = await readAuthoritativePointsSnapshot(userId);
 
     return NextResponse.json({
       ok: true,
-      pointsAwarded: pointsToAward,
-      totalPoints,
-      weeklyPoints,
-      monthlyPoints,
+      pointsAwarded: award.pointsAwarded,
+      totalPoints: snapshot.hasReliableTotals ? snapshot.totalPoints : award.totalPoints,
+      weeklyPoints: snapshot.hasReliableTotals ? snapshot.weeklyPoints : award.weeklyPoints,
+      monthlyPoints: snapshot.hasReliableTotals ? snapshot.monthlyPoints : award.monthlyPoints,
+      todayPoints: snapshot.hasReliableTotals ? snapshot.todayPoints : award.todayPoints,
+      profile: snapshot.hasReliableTotals
+        ? {
+            points: snapshot.totalPoints,
+            weeklyPoints: snapshot.weeklyPoints,
+            monthlyPoints: snapshot.monthlyPoints,
+            todayPoints: snapshot.todayPoints,
+          }
+        : undefined,
     });
   } catch (error: any) {
     return NextResponse.json({ error: error?.message || 'Unexpected error' }, { status: 500 });

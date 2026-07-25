@@ -6,7 +6,6 @@
 import { supabase } from './supabase'
 import { POINTS_DAILY_CAP } from './points-policy'
 import { ensureUserProfile } from './user-profile'
-import { isTestModeEmail } from './test-mode'
 import { getAuthFetchHeaders } from './auth-headers'
 
 async function syncUserSnapshot(userId: string, totals: {
@@ -109,14 +108,6 @@ export async function awardPoints(
     }
     
     console.log('[awardPoints] ✅ User authenticated:', user.id);
-
-    if (isTestModeEmail(user.email)) {
-      return {
-        success: true,
-        message: 'Test mode active for this account. Points are not added to leaderboard.',
-        points_awarded: 0,
-      }
-    }
 
     // Validate points
     if (!points || points <= 0) {

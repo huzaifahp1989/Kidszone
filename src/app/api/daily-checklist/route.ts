@@ -91,7 +91,7 @@ export async function POST(request: Request) {
     if (upsertError) throw upsertError;
 
     // 3. Update User Total Points (only if there is a difference)
-    if (pointDelta !== 0 && !isTestMode) {
+    if (pointDelta !== 0) {
       const { data: user } = await supabaseAdmin
         .from('users')
         .select('points, weeklypoints, monthlypoints')
@@ -144,7 +144,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ 
       success: true, 
       points: newPoints,
-      delta: isTestMode ? 0 : pointDelta,
+      delta: pointDelta,
       testMode: isTestMode 
     });
 

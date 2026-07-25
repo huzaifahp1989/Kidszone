@@ -21,6 +21,21 @@ describe('supabase-public-config', () => {
     expect(resolvePublicSupabaseUrl()).toBe(PRODUCTION_SUPABASE_URL);
     process.env.NODE_ENV = prev;
   });
+
+  it('falls back to production URL in local dev when env vars are unset', () => {
+    const prevNode = process.env.NODE_ENV;
+    const prevUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const prevKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    process.env.NODE_ENV = 'development';
+    delete process.env.NEXT_PUBLIC_SUPABASE_URL;
+    delete process.env.SUPABASE_URL;
+    delete process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    delete process.env.SUPABASE_ANON_KEY;
+    expect(resolvePublicSupabaseUrl()).toBe(PRODUCTION_SUPABASE_URL);
+    process.env.NODE_ENV = prevNode;
+    if (prevUrl) process.env.NEXT_PUBLIC_SUPABASE_URL = prevUrl;
+    if (prevKey) process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = prevKey;
+  });
 });
 
 describe('live app URL', () => {
