@@ -3,6 +3,13 @@ import { ensureUserRecords } from '@/lib/ensure-user-records';
 import { POINTS_DAILY_CAP, resolveBasePoints, resolvePointsToAward } from '@/lib/points-policy';
 import { shouldResetMonthlyPoints } from '@/lib/weekly-activity';
 import { isTestModeUserId } from '@/lib/test-mode-server';
+import { isPlaceholderSupabaseUrl, allowProductionSupabaseFallback } from '@/lib/supabase-public-config';
+
+function supabaseUrlUnusable(): boolean {
+  const url = String(process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL || '').trim();
+  if (!isPlaceholderSupabaseUrl(url)) return false;
+  return !allowProductionSupabaseFallback();
+}
 
 export type ServerAwardReason = 'awarded' | 'daily_limit_reached' | 'test_mode' | 'invalid_points' | 'update_failed';
 
@@ -58,6 +65,22 @@ export async function awardPointsWithDailyCapByUserId(
       success: true,
       reason: 'test_mode',
       message: 'Test mode active for this account. Mission bonus is tracked but no leaderboard points are added.',
+      pointsAwarded: 0,
+      totalPoints: 0,
+      weeklyPoints: 0,
+      monthlyPoints: 0,
+      todayPoints: 0,
+      dailyLimit: POINTS_DAILY_CAP,
+      badges: 0,
+      level: 1,
+    };
+  }
+
+  if (supabaseUrlUnusable()) {
+    return {
+      success: false,
+      reason: 'update_failed',
+      message: 'Supabase is not configured on this server. Points could not be saved.',
       pointsAwarded: 0,
       totalPoints: 0,
       weeklyPoints: 0,

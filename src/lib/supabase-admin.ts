@@ -1,4 +1,11 @@
 import { createClient } from '@supabase/supabase-js';
+import {
+  isPlaceholderAnonKey,
+  isPlaceholderSupabaseUrl,
+  PRODUCTION_SUPABASE_ANON_KEY,
+  PRODUCTION_SUPABASE_URL,
+  allowProductionSupabaseFallback,
+} from '@/lib/supabase-public-config';
 
 function cleanEnv(value: string | undefined | null): string {
   return String(value || '')
@@ -6,14 +13,20 @@ function cleanEnv(value: string | undefined | null): string {
     .replace(/^["']|["']$/g, '');
 }
 
+const envUrl =
+  cleanEnv(process.env.NEXT_PUBLIC_SUPABASE_URL) || cleanEnv(process.env.SUPABASE_URL);
+const allowFallback = allowProductionSupabaseFallback();
+
 const SUPABASE_URL =
-  cleanEnv(process.env.NEXT_PUBLIC_SUPABASE_URL) ||
-  cleanEnv(process.env.SUPABASE_URL) ||
-  'https://placeholder.supabase.co';
+  (!isPlaceholderSupabaseUrl(envUrl) && envUrl) ||
+  (allowFallback ? PRODUCTION_SUPABASE_URL : 'https://placeholder.supabase.co');
 
 const SERVICE_ROLE_KEY = cleanEnv(process.env.SUPABASE_SERVICE_ROLE_KEY);
-const ANON_KEY =
+const envAnon =
   cleanEnv(process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) || cleanEnv(process.env.SUPABASE_ANON_KEY);
+const ANON_KEY =
+  (!isPlaceholderAnonKey(envAnon) && envAnon) ||
+  (allowFallback ? PRODUCTION_SUPABASE_ANON_KEY : '');
 
 /** True when a real service-role key is configured (required to bypass RLS for admin writes). */
 export function hasSupabaseServiceRole(): boolean {

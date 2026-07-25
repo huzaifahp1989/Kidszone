@@ -8,7 +8,7 @@ import { resolveTopicQuizQuestionsFromIds, resolveSubmittedTopicQuestions } from
 import { getTopicQuestionExclusions } from '@/lib/quiz-user-history';
 import { isTestModeEmail } from '@/lib/test-mode';
 import { POINTS_DAILY_CAP, QUIZ_POINTS_PER_COMPLETION, MAX_DAILY_QUIZ_ATTEMPTS, resolveTodayPoints } from '@/lib/points-policy';
-import { createSessionQuizRecordId } from '@/lib/topic-quiz-record';
+import { createSessionQuizRecordId, createSessionQuizRecordIdWithTimeout } from '@/lib/topic-quiz-record';
 import { insertQuizAttempt } from '@/lib/quiz-attempt-insert';
 import { randomUUID } from 'crypto';
 import { requireMatchingUser } from '@/lib/request-auth';
@@ -280,7 +280,7 @@ export async function POST(req: Request) {
           ? Promise.resolve({ blocked: null as NextResponse | null, attemptsToday: 0 })
           : enforceDailyQuizAttemptLimit(userId),
         activeQuestionsEarly
-          ? createSessionQuizRecordId(
+          ? createSessionQuizRecordIdWithTimeout(
               topicFromId,
               activeQuestionsEarly.map((q: any) => String(q.id)),
               `${userId}:${topicFromId}:${randomUUID()}`
@@ -315,7 +315,7 @@ export async function POST(req: Request) {
 
       const resolvedSessionQuizRecordId =
         sessionQuizRecordId ||
-        (await createSessionQuizRecordId(
+        (await createSessionQuizRecordIdWithTimeout(
           topicFromId,
           activeQuestions.map((q: any) => String(q.id)),
           `${userId}:${topicFromId}:${randomUUID()}`

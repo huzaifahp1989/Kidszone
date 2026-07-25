@@ -60,3 +60,27 @@ export async function createSessionQuizRecordId(
 
   throw new Error('Could not create quiz session record after retries')
 }
+
+const SESSION_RECORD_TIMEOUT_MS = 8_000
+
+/** Same as createSessionQuizRecordId but aborts after a few seconds so submit cannot hang. */
+export async function createSessionQuizRecordIdWithTimeout(
+  topicId: string,
+  questionIds: string[],
+  sessionKey?: string
+): Promise<string> {
+  let timer: ReturnType<typeof setTimeout> | undefined
+  try {
+    return await Promise.race([
+      createSessionQuizRecordId(topicId, questionIds, sessionKey),
+      new Promise<string>((_, reject) => {
+        timer = setTimeout(
+          () => reject(new Error('Quiz session record timed out')),
+          SESSION_RECORD_TIMEOUT_MS
+        )
+      }),
+    ])
+  } finally {
+    if (timer) clearTimeout(timer)
+  }
+}

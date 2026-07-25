@@ -63,6 +63,42 @@ export default function QuizPage() {
   const [isLoadingTopicQuiz, setIsLoadingTopicQuiz] = useState(false);
   const [showFeedback, setShowFeedback] = useState(false);
   const [quizAttemptsToday, setQuizAttemptsToday] = useState(0);
+  const submitSafetyTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    if (!dailyResult?.syncing) {
+      if (submitSafetyTimerRef.current) {
+        clearTimeout(submitSafetyTimerRef.current);
+        submitSafetyTimerRef.current = null;
+      }
+      return;
+    }
+
+    submitSafetyTimerRef.current = setTimeout(() => {
+      setDailyResult((prev: any) =>
+        prev?.syncing
+          ? {
+              ...prev,
+              syncing: false,
+              message:
+                prev?.message === 'Saving your score…'
+                  ? 'Score saved on this device. Pull down to refresh your points if they have not updated yet.'
+                  : prev?.message,
+            }
+          : prev
+      );
+      setResultToast(
+        'Submission is taking longer than usual. Your score is shown — pull down to refresh points.'
+      );
+    }, 20_000);
+
+    return () => {
+      if (submitSafetyTimerRef.current) {
+        clearTimeout(submitSafetyTimerRef.current);
+        submitSafetyTimerRef.current = null;
+      }
+    };
+  }, [dailyResult?.syncing]);
 
   useEffect(() => {
     setTodayDate(new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' }));

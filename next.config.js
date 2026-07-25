@@ -10,6 +10,10 @@ const nextConfig = {
         source: '/quiz/:path*',
         headers: [{ key: 'Cache-Control', value: 'no-store, must-revalidate' }],
       },
+      {
+        source: '/((?!_next/static|_next/image|favicon.ico).*)',
+        headers: [{ key: 'Cache-Control', value: 'no-store, must-revalidate' }],
+      },
     ];
   },
 }
