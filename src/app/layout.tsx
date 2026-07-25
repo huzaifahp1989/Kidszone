@@ -8,6 +8,7 @@ import { AgeModeProvider } from '@/lib/age-mode';
 import { AppShell } from '@/components/AppShell';
 import { FirebaseAnalyticsInit } from '@/components/FirebaseAnalyticsInit';
 import { GoogleAnalyticsInit } from '@/components/GoogleAnalyticsInit';
+import { Nunito, Amiri } from 'next/font/google';
 import { LIVE_APP_URL } from '@/lib/app-url';
 
 const STALE_HOST_REDIRECT = `
