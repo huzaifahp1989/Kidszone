@@ -4,6 +4,19 @@ const nextConfig = {
   turbopack: {
     root: __dirname,
   },
+  async redirects() {
+    // When the lagging islamic-kids-platform project eventually deploys this
+    // commit, edge redirects migrate Cap/WebView traffic to the live host
+    // before any stale quiz JS can block on "Submitting your answers…".
+    return [
+      {
+        source: '/:path*',
+        has: [{ type: 'host', value: 'islamic-kids-platform.vercel.app' }],
+        destination: 'https://huzaifahp1989-audio.vercel.app/:path*',
+        permanent: false,
+      },
+    ];
+  },
   async headers() {
     return [
       {

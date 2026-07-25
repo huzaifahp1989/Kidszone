@@ -5,6 +5,7 @@
 (function () {
   try {
     var live = 'https://huzaifahp1989-audio.vercel.app';
+    var version = '2026-07-25-quiz-submit-v4';
     var host = (location.hostname || '').toLowerCase();
     var path = location.pathname || '';
 
@@ -16,7 +17,10 @@
     if (path !== '/quiz' && path.indexOf('/quiz/') !== 0) return;
 
     var text = (document.body && document.body.innerText) || '';
-    if (text.indexOf('Submitting your answers') === -1) return;
+    var stuck =
+      text.indexOf('Submitting your answers') !== -1 ||
+      text.indexOf('Saving your score') !== -1;
+    if (!stuck) return;
 
     try {
       if (window.caches && caches.keys) {
@@ -28,6 +32,6 @@
       }
     } catch (e) {}
 
-    location.replace(live + '/quiz?hotfix=1&t=' + Date.now());
+    location.replace(live + '/quiz?hotfix=1&_qv=' + encodeURIComponent(version) + '&t=' + Date.now());
   } catch (err) {}
 })();

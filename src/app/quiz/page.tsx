@@ -144,7 +144,10 @@ export default function QuizPage() {
 
         if (user?.id) {
           // Server-side 24-hour lock check — works across all devices
-          const lockRes = await fetch(`/api/quiz/daily/lock-status?userId=${user.id}`);
+          const lockHeaders = await getAuthFetchHeaders();
+          const lockRes = await fetch(`/api/quiz/daily/lock-status?userId=${user.id}`, {
+            headers: lockHeaders,
+          });
           if (lockRes.ok) {
             const lockData = await lockRes.json();
             setQuizAttemptsToday(Number(lockData.attemptsToday || 0));
@@ -333,6 +336,16 @@ export default function QuizPage() {
         return;
       }
 
+      if (!res.ok && res.status !== 429 && res.status !== 409) {
+        setDailyResult((prev: any) => ({
+          ...prev,
+          syncing: false,
+          message: data.error || `Could not save your quiz (error ${res.status}). Please try again.`,
+        }));
+        setResultToast(data.error || `Could not save your quiz (error ${res.status}). Please try again.`);
+        return;
+      }
+
       // Handle daily limit (429 status)
       if (res.status === 429 && data.locked) {
         setDailyStatus('completed');
@@ -376,9 +389,9 @@ export default function QuizPage() {
             monthlyPoints: Number(data.profile.monthlyPoints ?? profile?.monthlyPoints ?? 0),
             todayPoints: Number(data.profile.todayPoints ?? data.todayPoints ?? profile?.todayPoints ?? 0),
           });
-        } else if (awardedPoints > 0) {
-          void refreshProfile().catch(() => {});
         }
+        // Always refresh so older accounts / stale local profiles pick up awarded points.
+        void refreshProfile().catch(() => {});
         if (awardedPoints > 0) {
           setResultToast(`+${awardedPoints} points added!`);
         } else if (data.message) {
@@ -398,8 +411,6 @@ export default function QuizPage() {
           attemptsToday,
         });
 
-        // Refresh profile and competition tracking in the background — don't block the results screen.
-        void refreshProfile().catch(() => {});
         if (user?.id) {
           void authJsonFetch('/api/competition/track', {
             method: 'POST',

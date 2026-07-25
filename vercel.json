@@ -3,6 +3,14 @@
   "outputDirectory": ".next",
   "framework": "nextjs",
   "regions": ["iad1"],
+  "redirects": [
+    {
+      "source": "/:path*",
+      "has": [{ "type": "host", "value": "islamic-kids-platform.vercel.app" }],
+      "destination": "https://huzaifahp1989-audio.vercel.app/:path*",
+      "permanent": false
+    }
+  ],
   "crons": [
     {
       "path": "/api/cron/send-reminders",
