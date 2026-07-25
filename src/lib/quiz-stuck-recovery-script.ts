@@ -51,11 +51,15 @@ export const QUIZ_STUCK_RECOVERY_SCRIPT = `
 
     var stuckSince = 0;
     var reloaded = false;
-    try { reloaded = sessionStorage.getItem('quiz-stuck-reload-v3') === '1'; } catch (e4) {}
+    try { reloaded = sessionStorage.getItem('quiz-stuck-reload-v4') === '1'; } catch (e4) {}
 
     function hasBlockingSubmitCopy() {
       var text = (document.body && document.body.innerText) || '';
-      return text.indexOf('Submitting your answers') !== -1;
+      return (
+        text.indexOf('Submitting your answers') !== -1 ||
+        // Older builds used this copy while awaiting a hung daily_quizzes insert.
+        (text.indexOf('Saving your score') !== -1 && text.indexOf('Quiz Completed') !== -1)
+      );
     }
 
     function showRecovery() {
@@ -93,7 +97,7 @@ export const QUIZ_STUCK_RECOVERY_SCRIPT = `
       var elapsed = Date.now() - stuckSince;
       if (elapsed < 2500) return;
       if (!reloaded) {
-        try { sessionStorage.setItem('quiz-stuck-reload-v3', '1'); } catch (e5) {}
+        try { sessionStorage.setItem('quiz-stuck-reload-v4', '1'); } catch (e5) {}
         clearCaches();
         location.replace(live + '/quiz?_qv=' + encodeURIComponent(version) + '&_qr=' + Date.now());
         return;

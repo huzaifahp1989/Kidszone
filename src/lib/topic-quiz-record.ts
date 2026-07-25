@@ -8,10 +8,13 @@ import { supabaseAdmin } from '@/lib/supabase-admin'
  * Uses time + random entropy so concurrent submits almost never collide on
  * UNIQUE(quiz_date) — the previous hash space was only ~1.3k dates and caused
  * recursive insert retries that slowed quiz finish.
+ *
+ * Prefer applying migration 20260725_daily_quizzes_drop_date_unique.sql so
+ * date collisions cannot block submit at all.
  */
 export function getSessionQuizStorageDate(sessionKey: string): string {
   const now = Date.now()
-  const mix = (now ^ (sessionKey.length * 2654435761)) >>> 0
+  const mix = (now ^ (sessionKey.length * 2654435761) ^ Math.floor(Math.random() * 0xffffffff)) >>> 0
   const year = 2096 + (mix % 7900)
   const month = (mix % 12) + 1
   const day = ((mix >>> 8) % 28) + 1
@@ -64,7 +67,7 @@ export async function createSessionQuizRecordId(
   throw new Error('Could not create quiz session record after retries')
 }
 
-const SESSION_RECORD_TIMEOUT_MS = 5_000
+const SESSION_RECORD_TIMEOUT_MS = 4_000
 
 /** Same as createSessionQuizRecordId but aborts after a few seconds so submit cannot hang. */
 export async function createSessionQuizRecordIdWithTimeout(
@@ -88,7 +91,7 @@ export async function createSessionQuizRecordIdWithTimeout(
   }
 }
 
-/** Never throws on first timeout — retries once so submit stays resilient. */
+/** Never hangs — both attempts are timed; throws if neither succeeds. */
 export async function createSessionQuizRecordIdResilient(
   topicId: string,
   questionIds: string[],
@@ -100,5 +103,5 @@ export async function createSessionQuizRecordIdResilient(
     console.warn('[topic-quiz-record] session record timed out, retrying once:', firstErr)
   }
 
-  return createSessionQuizRecordId(topicId, questionIds, sessionKey)
+  return createSessionQuizRecordIdWithTimeout(topicId, questionIds, sessionKey || randomUUID())
 }

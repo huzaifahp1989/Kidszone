@@ -11,9 +11,23 @@ import {
 } from '@/lib/quiz-topics'
 import { getTopicQuestionExclusions } from '@/lib/quiz-user-history'
 
-const QUESTIONS_PER_TOPIC_QUIZ = 5
+export const QUESTIONS_PER_TOPIC_QUIZ = 5
 
 type QuizQuestion = ReturnType<typeof getQuizQuestionPool>[number]
+
+function buildTopicValidationPool(): QuizQuestion[] {
+  const agePool = getAllAgeSpecificQuizPools() as QuizQuestion[]
+  const main = getQuizQuestionPool().filter((question) => question && question.id)
+  const seen = new Set<string>()
+  const pool: QuizQuestion[] = []
+  for (const q of [...agePool, ...main]) {
+    const id = String(q.id)
+    if (seen.has(id)) continue
+    seen.add(id)
+    pool.push(q)
+  }
+  return pool
+}
 
 function normalizeQuestion(question: QuizQuestion) {
   const extended = question as QuizQuestion & {
@@ -123,27 +137,18 @@ export function resolveSubmittedTopicQuestions(
   submittedQuestionIds: string[]
 ): ReturnType<typeof getQuizQuestionPool> {
   const ids = submittedQuestionIds.map((id) => String(id)).filter(Boolean)
-  if (ids.length !== QUESTIONS_PER_TOPIC_QUIZ) return []
+  // Age-specific / thin topic pools may send fewer than 5 questions.
+  if (ids.length === 0 || ids.length > QUESTIONS_PER_TOPIC_QUIZ) return []
 
-  // Include all age pools so submitted age-specific ids validate.
-  const agePool = getAllAgeSpecificQuizPools() as QuizQuestion[]
-  const main = getQuizQuestionPool().filter((question) => question && question.id)
-  const seen = new Set<string>()
-  const pool: QuizQuestion[] = []
-  for (const q of [...agePool, ...main]) {
-    const id = String(q.id)
-    if (seen.has(id)) continue
-    seen.add(id)
-    pool.push(q)
-  }
-  const topicPool = filterQuestionsByTopic(pool, topicId)
+  const topicPool = filterQuestionsByTopic(buildTopicValidationPool(), topicId)
   const byId = new Map(topicPool.map((question) => [String(question.id), question]))
 
   const resolved = ids
     .map((id) => byId.get(id))
-    .filter((question): question is (typeof pool)[number] => Boolean(question))
+    .filter((question): question is QuizQuestion => Boolean(question))
 
-  return resolved.length === QUESTIONS_PER_TOPIC_QUIZ ? resolved : []
+  // Accept any valid client set (1..N questions) so partial pools still award points.
+  return resolved.length === ids.length ? resolved : []
 }
 
 export function resolveTopicQuizQuestionsFromIds(
@@ -152,9 +157,10 @@ export function resolveTopicQuizQuestionsFromIds(
   userId: string,
   submittedQuestionIds: string[],
   excludeQuestionIds: string[] = [],
-  attemptIndex = 0
+  attemptIndex = 0,
+  age?: number | null
 ) {
-  const pool = buildAgePreferredPool(undefined)
+  const pool = buildAgePreferredPool(age)
   const expected = getTopicQuizQuestions(
     pool.filter((question) => question && question.id),
     topicId,
@@ -168,7 +174,8 @@ export function resolveTopicQuizQuestionsFromIds(
     }
   )
 
-  const submittedSet = new Set(submittedQuestionIds.map((id) => String(id)))
+  const submittedIds = submittedQuestionIds.map((id) => String(id)).filter(Boolean)
+  const submittedSet = new Set(submittedIds)
   const expectedIds = expected
     .map((question) => String(question.id))
     .sort()
@@ -179,15 +186,16 @@ export function resolveTopicQuizQuestionsFromIds(
     return expected
   }
 
-  const allowedIds = new Set(expected.map((question) => String(question.id)))
-  const validSubmitted = submittedQuestionIds
-    .map((id) => String(id))
-    .filter((id) => allowedIds.has(id))
+  // Prefer the questions the learner actually answered (age-banded or otherwise),
+  // as long as every id belongs to the topic. Regenerating a different set here
+  // would mark the quiz incomplete and award 0 points.
+  const topicPool = filterQuestionsByTopic(buildTopicValidationPool(), topicId)
+  const topicById = new Map(topicPool.map((question) => [String(question.id), question]))
+  const validSubmitted = submittedIds.filter((id) => topicById.has(id))
 
-  if (validSubmitted.length === QUESTIONS_PER_TOPIC_QUIZ) {
-    const byId = new Map(expected.map((question) => [String(question.id), question]))
+  if (validSubmitted.length > 0 && validSubmitted.length <= QUESTIONS_PER_TOPIC_QUIZ) {
     return validSubmitted
-      .map((id) => byId.get(id))
+      .map((id) => topicById.get(id))
       .filter((question): question is QuizQuestion => Boolean(question))
   }
 
