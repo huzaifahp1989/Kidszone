@@ -24,7 +24,14 @@ export function isPlaceholderAnonKey(key: string | null | undefined): boolean {
 }
 
 export function allowProductionSupabaseFallback(): boolean {
-  return Boolean(process.env.VERCEL) || process.env.NODE_ENV === 'production';
+  if (Boolean(process.env.VERCEL) || process.env.NODE_ENV === 'production') return true;
+
+  // Local dev with no env vars: use the bundled project so sign-in and points work.
+  const envUrl = String(process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL || '').trim();
+  const envKey = String(
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY || ''
+  ).trim();
+  return !envUrl && !envKey;
 }
 
 export function resolvePublicSupabaseUrl(): string {
