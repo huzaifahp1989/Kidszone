@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Button, Modal, VoucherAdminPanel } from '@/components';
+import { AdminSupabaseHealthPanel } from '@/components/AdminSupabaseHealthPanel';
 import { TrashIcon, PlusIcon, TrophyIcon, Users, Edit, Search, Loader2, ClipboardCheck, Mail } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
@@ -868,6 +869,8 @@ export default function AdminPanel() {
             Logout
           </Button>
         </div>
+
+        <AdminSupabaseHealthPanel variant="banner" />
 
         {/* Tabs */}
         <div className="flex gap-2 mb-8 flex-wrap overflow-x-auto pb-2">
@@ -2105,6 +2108,8 @@ export default function AdminPanel() {
         {activeTab === 'system' && (
           <div className="space-y-6">
             <h2 className="text-2xl font-bold text-islamic-dark">System Management</h2>
+
+            <AdminSupabaseHealthPanel variant="full" />
 
             {/* Pledge Points Reset */}
             <div className="bg-rose-50 border border-rose-200 rounded-2xl p-6 space-y-5">
