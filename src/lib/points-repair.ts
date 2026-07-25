@@ -6,9 +6,11 @@ import {
   MAX_DAILY_HADITH,
   MAX_DAILY_QUIZ_ATTEMPTS,
   MAX_DAILY_SALAH,
+  MAX_DAILY_STORY_QUIZ,
   MAX_DAILY_ZIKR,
   POINTS_DAILY_CAP,
   QUIZ_POINTS_PER_COMPLETION,
+  resolveBasePoints,
 } from '@/lib/points-policy';
 import { ensureUserRecords } from '@/lib/ensure-user-records';
 import { countGameEarningSessions } from '@/lib/daily-activity-limits';
@@ -17,6 +19,7 @@ export type TodayActivitySummary = {
   quizCompletions: number;
   gameSessions: number;
   pledgeSubmissions: number;
+  storyQuizSessions: number;
   rawPoints: number;
   cappedTodayPoints: number;
 };
@@ -37,7 +40,7 @@ export function getUtcDayBounds(date = new Date()) {
 export async function summarizeTodayActivity(userId: string): Promise<TodayActivitySummary> {
   const { dayStartIso, dayEndIso } = getUtcDayBounds();
 
-  const [quizRes, gamesRes, duroodRes, zikrRes, hadithRes, salahRes] = await Promise.all([
+  const [quizRes, gamesRes, duroodRes, zikrRes, hadithRes, salahRes, storyQuizRes] = await Promise.all([
     supabaseAdmin
       .from('quiz_attempts')
       .select('score, max_score, completed_at')
@@ -80,6 +83,14 @@ export async function summarizeTodayActivity(userId: string): Promise<TodayActiv
       .gt('points', 0)
       .gte('playedat', dayStartIso)
       .lt('playedat', dayEndIso),
+    supabaseAdmin
+      .from('game_progress')
+      .select('gameid, points')
+      .eq('uid', userId)
+      .eq('gameid', 'activity-story-quiz')
+      .gt('points', 0)
+      .gte('playedat', dayStartIso)
+      .lt('playedat', dayEndIso),
   ]);
 
   let quizCompletions = 0;
@@ -98,6 +109,7 @@ export async function summarizeTodayActivity(userId: string): Promise<TodayActiv
   ).length;
   const hadithSessions = (hadithRes.data || []).length;
   const salahSessions = (salahRes.data || []).length;
+  const storyQuizSessions = (storyQuizRes.data || []).length;
 
   const rawPoints =
     Math.min(quizCompletions, MAX_DAILY_QUIZ_ATTEMPTS) * QUIZ_POINTS_PER_COMPLETION +
@@ -105,12 +117,14 @@ export async function summarizeTodayActivity(userId: string): Promise<TodayActiv
     Math.min(duroodSubmissions, MAX_DAILY_DUROOD) * ACTIVITY_BONUS_POINTS +
     Math.min(zikrSubmissions, MAX_DAILY_ZIKR) * ACTIVITY_BONUS_POINTS +
     Math.min(hadithSessions, MAX_DAILY_HADITH) * ACTIVITY_BONUS_POINTS +
-    Math.min(salahSessions, MAX_DAILY_SALAH) * ACTIVITY_BONUS_POINTS;
+    Math.min(salahSessions, MAX_DAILY_SALAH) * ACTIVITY_BONUS_POINTS +
+    Math.min(storyQuizSessions, MAX_DAILY_STORY_QUIZ) * ACTIVITY_BONUS_POINTS;
 
   return {
     quizCompletions,
     gameSessions,
     pledgeSubmissions: duroodSubmissions + zikrSubmissions,
+    storyQuizSessions,
     rawPoints,
     cappedTodayPoints: Math.min(POINTS_DAILY_CAP, rawPoints),
   };
@@ -157,6 +171,12 @@ export async function repairUserPointsByUserId(userId: string, options?: { backf
 
   if (readErr) throw readErr;
 
+  const { data: userRow } = await supabaseAdmin
+    .from('users')
+    .select('points, weeklypoints, monthlypoints')
+    .eq('uid', userId)
+    .maybeSingle();
+
   const todaySummary = await summarizeTodayActivity(userId);
   const { dayKey } = getUtcDayBounds();
   const lastEarned = String(beforeRow?.last_earned_date || '');
@@ -168,9 +188,9 @@ export async function repairUserPointsByUserId(userId: string, options?: { backf
 
   let afterRow = beforeRow;
   if (missingToday > 0) {
-    const baseTotal = Number(beforeRow?.total_points ?? 0);
-    const baseWeekly = Number(beforeRow?.weekly_points ?? 0);
-    const baseMonthly = Number(beforeRow?.monthly_points ?? 0);
+    const baseTotal = resolveBasePoints(beforeRow?.total_points, userRow?.points);
+    const baseWeekly = resolveBasePoints(beforeRow?.weekly_points, userRow?.weeklypoints);
+    const baseMonthly = resolveBasePoints(beforeRow?.monthly_points, userRow?.monthlypoints);
     const totalPoints = baseTotal + missingToday;
     const weeklyPoints = baseWeekly + missingToday;
     const monthlyPoints = baseMonthly + missingToday;

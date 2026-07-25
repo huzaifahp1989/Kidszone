@@ -20,7 +20,7 @@ import { RECORDING_APPROVED_POINTS } from '@/lib/points-policy';
 const POINTS_PER_RECORDING = RECORDING_APPROVED_POINTS;
 
 export default function StoryDetailPage({ params }: { params: Promise<{ id: string }> }) {
-  const { user, refreshProfile, updateLocalProfile } = useAuth();
+  const { user, profile, refreshProfile, updateLocalProfile } = useAuth();
   const { isYounger } = useAgeMode();
   const { showPointsProgress } = usePointsProgress();
   const [id, setId] = useState<string | null>(null);
@@ -199,10 +199,16 @@ export default function StoryDetailPage({ params }: { params: Promise<{ id: stri
       );
       if (data?.profile) {
         updateLocalProfile({
-          points: data.profile.points,
-          weeklyPoints: data.profile.weeklyPoints,
-          monthlyPoints: data.profile.monthlyPoints,
-          todayPoints: data.profile.todayPoints,
+          points: Math.max(Number(data.profile.points ?? 0), Number(profile?.points ?? 0)),
+          weeklyPoints: Math.max(
+            Number(data.profile.weeklyPoints ?? profile?.weeklyPoints ?? 0),
+            Number(profile?.weeklyPoints ?? 0)
+          ),
+          monthlyPoints: Math.max(
+            Number(data.profile.monthlyPoints ?? profile?.monthlyPoints ?? 0),
+            Number(profile?.monthlyPoints ?? 0)
+          ),
+          todayPoints: Number(data.profile.todayPoints ?? profile?.todayPoints ?? 0),
         });
       }
       if (awarded > 0) {
@@ -211,6 +217,8 @@ export default function StoryDetailPage({ params }: { params: Promise<{ id: stri
           activityLabel: 'Story Mini-Quiz',
           pointsEarned: awarded,
         });
+      }
+      if (awarded > 0 || data?.profile) {
         await refreshProfile();
       }
     } catch {

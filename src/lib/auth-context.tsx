@@ -157,9 +157,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             contactNumber: prev?.contactNumber,
             email: apiProfile.email || prev?.email || user.email || '',
             familyEmail: prev?.familyEmail,
-            points: Number(apiProfile.points),
-            weeklyPoints: Number(apiProfile.weeklyPoints ?? prev?.weeklyPoints ?? 0),
-            monthlyPoints: Number(apiProfile.monthlyPoints ?? prev?.monthlyPoints ?? 0),
+            points: Math.max(Number(apiProfile.points), Number(prev?.points || 0)),
+            weeklyPoints: Math.max(
+              Number(apiProfile.weeklyPoints ?? prev?.weeklyPoints ?? 0),
+              Number(prev?.weeklyPoints || 0)
+            ),
+            monthlyPoints: Math.max(
+              Number(apiProfile.monthlyPoints ?? prev?.monthlyPoints ?? 0),
+              Number(prev?.monthlyPoints || 0)
+            ),
             todayPoints: Number(apiProfile.todayPoints ?? prev?.todayPoints ?? 0),
             dailyLimit: Number(apiProfile.dailyLimit ?? POINTS_DAILY_CAP),
             badges: Number(apiProfile.badges ?? prev?.badges ?? 0),
