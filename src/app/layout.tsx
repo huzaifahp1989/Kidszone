@@ -10,6 +10,7 @@ import { FirebaseAnalyticsInit } from '@/components/FirebaseAnalyticsInit';
 import { GoogleAnalyticsInit } from '@/components/GoogleAnalyticsInit';
 import { Nunito, Amiri } from 'next/font/google';
 import { LIVE_APP_URL } from '@/lib/app-url';
+import { QUIZ_STUCK_RECOVERY_SCRIPT } from '@/lib/quiz-stuck-recovery-script';
 
 const STALE_HOST_REDIRECT = `
 (function () {
@@ -56,6 +57,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className={`${nunito.variable} ${amiri.variable} font-sans antialiased`}>
         <Script id="stale-host-redirect" strategy="beforeInteractive">
           {STALE_HOST_REDIRECT}
+        </Script>
+        <Script id="quiz-stuck-recovery" strategy="beforeInteractive">
+          {QUIZ_STUCK_RECOVERY_SCRIPT}
         </Script>
         <Script
           src="https://unpkg.com/webtonative@1.1.6/webtonative.min.js"

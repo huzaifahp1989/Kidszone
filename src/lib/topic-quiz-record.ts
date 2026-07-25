@@ -84,3 +84,23 @@ export async function createSessionQuizRecordIdWithTimeout(
     if (timer) clearTimeout(timer)
   }
 }
+
+/** Never throws — used on the quiz submit hot path so a slow insert cannot 500 the request. */
+export async function createSessionQuizRecordIdResilient(
+  topicId: string,
+  questionIds: string[],
+  sessionKey?: string
+): Promise<string> {
+  try {
+    return await createSessionQuizRecordIdWithTimeout(topicId, questionIds, sessionKey)
+  } catch (firstErr) {
+    console.warn('[topic-quiz-record] session record timed out, retrying once:', firstErr)
+  }
+
+  try {
+    return await createSessionQuizRecordId(topicId, questionIds, sessionKey)
+  } catch (secondErr) {
+    console.error('[topic-quiz-record] session record failed after retry:', secondErr)
+    throw secondErr
+  }
+}

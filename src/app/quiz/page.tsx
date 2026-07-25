@@ -90,7 +90,7 @@ export default function QuizPage() {
       setResultToast(
         'Submission is taking longer than usual. Your score is shown — pull down to refresh points.'
       );
-    }, 20_000);
+    }, 10_000);
 
     return () => {
       if (submitSafetyTimerRef.current) {
@@ -310,7 +310,7 @@ export default function QuizPage() {
     try {
       const res = await authJsonFetch('/api/quiz/daily/submit', {
         method: 'POST',
-        timeoutMs: 15_000,
+        timeoutMs: 12_000,
         body: JSON.stringify({
           userId: user?.id,
           quizId: activeQuizId || `topic-${selectedTopic}-${todaySeed}-${user.id}`,
