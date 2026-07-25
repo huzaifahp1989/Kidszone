@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { CreateShell } from '@/components/CreateShell';
+import { ClaimCreatePointsButton } from '@/components/ClaimCreatePointsButton';
 import { STORY_ADVENTURE } from '@/data/kids-create-activities';
 
 export default function StoryAdventurePage() {
@@ -35,6 +36,7 @@ export default function StoryAdventurePage() {
           </button>
         )}
       </div>
+      <ClaimCreatePointsButton activity="story_choice" ready={Boolean(node.ending)} />
     </CreateShell>
   );
 }

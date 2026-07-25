@@ -7,14 +7,14 @@ export type CreateActivityCard = {
   badge?: string;
 };
 
-/** Hub activities — practice for fun (no self-claim points). */
+/** Hub activities — claimable once per day (shared creative cap for art tools). */
 export const CREATE_HUB_ACTIVITIES: CreateActivityCard[] = [
   {
     href: '/create/coloring',
     emoji: '🎨',
     title: 'Islamic Colouring',
     blurb: 'Colour a masjid, lantern, crescent and more',
-    pointsNote: 'For fun · no points claim',
+    pointsNote: '+25 pts · once per day (Create)',
     badge: 'NEW',
   },
   {
@@ -22,7 +22,7 @@ export const CREATE_HUB_ACTIVITIES: CreateActivityCard[] = [
     emoji: '✏️',
     title: 'Draw & Share',
     blurb: 'Draw a kind Islamic scene',
-    pointsNote: 'For fun · no points claim',
+    pointsNote: '+25 pts · once per day (Create)',
     badge: 'NEW',
   },
   {
@@ -30,7 +30,7 @@ export const CREATE_HUB_ACTIVITIES: CreateActivityCard[] = [
     emoji: '🔢',
     title: 'Dot-to-Dot',
     blurb: 'Connect the dots to reveal an Islamic picture',
-    pointsNote: 'For fun · no points claim',
+    pointsNote: '+25 pts · once per day (Create)',
     badge: 'NEW',
   },
   {
@@ -38,7 +38,7 @@ export const CREATE_HUB_ACTIVITIES: CreateActivityCard[] = [
     emoji: '✍️',
     title: 'Trace Arabic',
     blurb: 'Trace beautiful words like Bismillah',
-    pointsNote: 'For fun · no points claim',
+    pointsNote: '+25 pts · once per day (Create)',
     badge: 'NEW',
   },
   {
@@ -46,7 +46,7 @@ export const CREATE_HUB_ACTIVITIES: CreateActivityCard[] = [
     emoji: '🌈',
     title: 'Ayah Colour-by-Number',
     blurb: 'Colour sections as you learn a short ayah',
-    pointsNote: 'For fun · no points claim',
+    pointsNote: '+25 pts · once per day (Create)',
     badge: 'NEW',
   },
   {
@@ -54,7 +54,7 @@ export const CREATE_HUB_ACTIVITIES: CreateActivityCard[] = [
     emoji: '📖',
     title: 'Story Adventure',
     blurb: 'Choose what happens next in a manners story',
-    pointsNote: 'For fun · no points claim',
+    pointsNote: '+25 pts · once per day',
     badge: 'NEW',
   },
   {
@@ -62,7 +62,7 @@ export const CREATE_HUB_ACTIVITIES: CreateActivityCard[] = [
     emoji: '🤲',
     title: 'Dua of the Day',
     blurb: "Learn today's dua and say it",
-    pointsNote: 'For fun · no points claim',
+    pointsNote: '+25 pts · once per day',
     badge: 'NEW',
   },
   {
@@ -70,7 +70,7 @@ export const CREATE_HUB_ACTIVITIES: CreateActivityCard[] = [
     emoji: '💛',
     title: 'Kindness Hunt',
     blurb: 'Complete 5 kind deeds at home today',
-    pointsNote: 'For fun · no points claim',
+    pointsNote: '+25 pts · once per day',
     badge: 'NEW',
   },
   {
@@ -78,7 +78,22 @@ export const CREATE_HUB_ACTIVITIES: CreateActivityCard[] = [
     emoji: '✨',
     title: 'Good Manners',
     blurb: 'Practise salam, Bismillah, listening and kind words',
-    pointsNote: 'For fun · no points claim',
+    pointsNote: '+25 pts · once per day',
+    badge: 'NEW',
+  },
+  {
+    href: '/create/gallery',
+    emoji: '🖼️',
+    title: 'My Gallery',
+    blurb: 'See artworks you saved from colouring and drawing',
+    pointsNote: 'Save & show your creations',
+  },
+  {
+    href: '/create/offline',
+    emoji: '📄',
+    title: 'Offline Activities',
+    blurb: 'Print colouring, mazes, checklists and dua cards for home',
+    pointsNote: 'Print · no screen needed',
     badge: 'NEW',
   },
 ];

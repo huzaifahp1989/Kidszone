@@ -78,7 +78,7 @@ const activityMeta: Record<
     color: 'from-lime-500 to-green-600',
   },
   creative: {
-    description: 'Colour, draw, dot-to-dot, or trace Arabic in Create & Play — claim once per day.',
+    description: 'Colour, draw, offline printables, or create art in Create & Play — claim once per day.',
     cta: 'Create & Play',
     emoji: '🎨',
     color: 'from-fuchsia-500 to-pink-600',
@@ -168,11 +168,20 @@ const dailyPlanSteps = [
     detail: `+${ACTIVITY_BONUS_POINTS} points once per day`,
     color: 'bg-indigo-600',
   },
+  {
+    label: 'Create & Play activities',
+    detail: `+${ACTIVITY_BONUS_POINTS} each (colour, story, dua, kindness, manners — once per type)`,
+    color: 'bg-pink-500',
+  },
 ];
 
 const extraWays = [
-  { label: 'Daily missions bonus', href: '/', note: 'Complete all 4 daily missions on the home page' },
+  { label: 'Daily missions bonus', href: '/', note: 'Complete all 4 daily missions on the home page (includes a rotating Create activity)' },
+  { label: 'Daily surprise box', href: '/', note: 'Open once a day for +5 pts, a sticker, or a fun tip' },
   { label: '7-day mystery box', href: '/', note: 'Be active 7 days in the score week for +15–30 pts + a badge' },
+  { label: 'Sticker book', href: '/rewards', note: 'Unlock stickers from Create, quizzes, streaks, and surprises' },
+  { label: 'My Gallery', href: '/create/gallery', note: 'Save colouring and drawings to show your parents' },
+  { label: 'Offline Activities', href: '/create/offline', note: 'Print colouring, mazes, checklists and dua cards' },
   { label: 'Refer a friend', href: '/tasks', note: 'Share your referral link from Tasks' },
   { label: 'Story recordings', href: '/stories', note: 'Record and submit story recitations' },
   { label: 'Weekly prize draw', href: '/leaderboard', note: 'Stay active all week to qualify' },

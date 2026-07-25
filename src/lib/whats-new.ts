@@ -12,6 +12,13 @@ export type WhatsNewItem = {
 /** Featured new / easy-to-miss activities kids should discover. */
 export const WHATS_NEW_ITEMS: WhatsNewItem[] = [
   {
+    href: '/create/offline',
+    emoji: '📄',
+    title: 'Offline Activities',
+    blurb: 'Print colouring, mazes, checklists & dua cards for home',
+    badge: 'NEW',
+  },
+  {
     href: '/create',
     emoji: '🎨',
     title: 'Create & Play',

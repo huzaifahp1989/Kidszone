@@ -2,7 +2,9 @@
 
 import React, { useState } from 'react';
 import { CreateShell } from '@/components/CreateShell';
+import { ClaimCreatePointsButton } from '@/components/ClaimCreatePointsButton';
 import { COLOURING_PALETTE } from '@/data/kids-create-activities';
+import { SaveToGalleryButton } from '@/components/SaveToGalleryButton';
 
 type Shape = {
   id: string;
@@ -79,20 +81,20 @@ function ShapeEl({
   if (shape.type === 'rect') {
     return (
       <rect
-        x={Number(p.x)}
-        y={Number(p.y)}
-        width={Number(p.width)}
-        height={Number(p.height)}
-        rx={p.rx != null ? Number(p.rx) : undefined}
+        x={p.x}
+        y={p.y}
+        width={p.width}
+        height={p.height}
+        rx={p.rx}
         {...style}
       />
     );
   }
   if (shape.type === 'circle') {
-    return <circle cx={Number(p.cx)} cy={Number(p.cy)} r={Number(p.r)} {...style} />;
+    return <circle cx={p.cx} cy={p.cy} r={p.r} {...style} />;
   }
   if (shape.type === 'ellipse') {
-    return <ellipse cx={Number(p.cx)} cy={Number(p.cy)} rx={Number(p.rx)} ry={Number(p.ry)} {...style} />;
+    return <ellipse cx={p.cx} cy={p.cy} rx={p.rx} ry={p.ry} {...style} />;
   }
   return <path d={String(p.d)} {...style} />;
 }
@@ -102,14 +104,26 @@ export default function ColouringPage() {
   const [color, setColor] = useState(COLOURING_PALETTE[0]);
   const [fills, setFills] = useState<Record<string, string>>({});
   const page = PAGES[pageIndex] ?? PAGES[0];
+  const paintedCount = page.shapes.filter((s) => fills[`${page.id}-${s.id}`]).length;
+  const ready = paintedCount >= Math.min(3, page.shapes.length);
 
   const paint = (shapeId: string) => {
     setFills((prev) => ({ ...prev, [`${page.id}-${shapeId}`]: color }));
   };
 
+  const captureSvg = () => {
+    const svg = document.getElementById('colouring-svg');
+    if (!svg) return null;
+    const xml = new XMLSerializer().serializeToString(svg);
+    const svg64 = btoa(unescape(encodeURIComponent(xml)));
+    return `data:image/svg+xml;base64,${svg64}`;
+  };
+
   return (
     <CreateShell title="Islamic Colouring">
-      <p className="text-sm text-sand-600">Pick a colour and tap a part of the picture. Practice for fun!</p>
+      <p className="text-sm text-sand-600">
+        Pick a colour and tap a part of the picture. Colour a few parts, then claim today&apos;s Create points.
+      </p>
 
       <div className="flex flex-wrap gap-2">
         {PAGES.map((p, i) => (
@@ -140,7 +154,13 @@ export default function ColouringPage() {
       </div>
 
       <div className="overflow-hidden rounded-3xl border border-sand-200 bg-white p-4 shadow-sm">
-        <svg viewBox="0 0 320 220" className="mx-auto h-auto w-full max-w-md" role="img" aria-label={page.title}>
+        <svg
+          id="colouring-svg"
+          viewBox="0 0 320 220"
+          className="mx-auto h-auto w-full max-w-md"
+          role="img"
+          aria-label={page.title}
+        >
           {page.shapes.map((shape) => (
             <ShapeEl
               key={shape.id}
@@ -151,6 +171,14 @@ export default function ColouringPage() {
           ))}
         </svg>
       </div>
+
+      <ClaimCreatePointsButton activity="creative" ready={ready} />
+      <SaveToGalleryButton
+        kind="coloring"
+        title={page.title}
+        getDataUrl={captureSvg}
+        disabled={!ready}
+      />
     </CreateShell>
   );
 }

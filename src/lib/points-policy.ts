@@ -67,6 +67,11 @@ export const DAILY_EARNING_PLAN: Array<{
   { activity: 'zikr', title: 'Zikr Pledge', limit: MAX_DAILY_ZIKR, pointsEach: ACTIVITY_BONUS_POINTS, href: '/pledge' },
   { activity: 'hadith', title: 'Daily Hadith', limit: MAX_DAILY_HADITH, pointsEach: ACTIVITY_BONUS_POINTS, href: '/hadith' },
   { activity: 'salah', title: 'Salah Tracking', limit: MAX_DAILY_SALAH, pointsEach: ACTIVITY_BONUS_POINTS, href: '/salah' },
+  { activity: 'creative', title: 'Create & Play', limit: MAX_DAILY_CREATIVE, pointsEach: ACTIVITY_BONUS_POINTS, href: '/create' },
+  { activity: 'story_choice', title: 'Story Adventure', limit: MAX_DAILY_STORY_CHOICE, pointsEach: ACTIVITY_BONUS_POINTS, href: '/create/story' },
+  { activity: 'dua', title: 'Dua of the Day', limit: MAX_DAILY_DUA, pointsEach: ACTIVITY_BONUS_POINTS, href: '/create/dua' },
+  { activity: 'kindness', title: 'Kindness Hunt', limit: MAX_DAILY_KINDNESS, pointsEach: ACTIVITY_BONUS_POINTS, href: '/create/kindness' },
+  { activity: 'manners', title: 'Good Manners', limit: MAX_DAILY_MANNERS, pointsEach: ACTIVITY_BONUS_POINTS, href: '/create/manners' },
 ];
 
 /** Plan rows can sum above the daily cap — kids pick a mix up to POINTS_DAILY_CAP. */

@@ -2,6 +2,7 @@
 
 import React, { useMemo, useState } from 'react';
 import { CreateShell } from '@/components/CreateShell';
+import { ClaimCreatePointsButton } from '@/components/ClaimCreatePointsButton';
 import { MANNERS_TASKS } from '@/data/kids-new-activities';
 
 export default function MannersPage() {
@@ -36,8 +37,8 @@ export default function MannersPage() {
   return (
     <CreateShell title="Good Manners">
       <p className="text-sm text-sand-600">
-        Tick off Islamic manners you practised today ({completedCount}/{MANNERS_TASKS.length}). For practice —
-        no points claim.
+        Tick off Islamic manners you practised today ({completedCount}/{MANNERS_TASKS.length}). Finish all to
+        claim +25 points.
       </p>
       <div className="space-y-2">
         {MANNERS_TASKS.map((task) => (
@@ -66,6 +67,7 @@ export default function MannersPage() {
         ))}
       </div>
       {allDone && <p className="font-bold text-violet-800">Beautiful manners — keep it up!</p>}
+      <ClaimCreatePointsButton activity="manners" ready={allDone} />
     </CreateShell>
   );
 }

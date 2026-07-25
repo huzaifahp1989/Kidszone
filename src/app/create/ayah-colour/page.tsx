@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { CreateShell } from '@/components/CreateShell';
+import { ClaimCreatePointsButton } from '@/components/ClaimCreatePointsButton';
 import { AYAH_COLOUR_NUMBERS } from '@/data/kids-create-activities';
 
 const REGIONS = [
@@ -76,6 +77,7 @@ export default function AyahColourPage() {
         </svg>
       </div>
       {allDone && <p className="font-bold text-teal-800">MashaAllah — ayah colouring complete!</p>}
+      <ClaimCreatePointsButton activity="creative" ready={allDone} />
     </CreateShell>
   );
 }

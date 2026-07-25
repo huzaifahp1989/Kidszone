@@ -26,8 +26,8 @@ export default function CreateHubPage() {
           </h1>
           <p className="mt-2 max-w-2xl text-sand-600">
             Colour, draw, trace Arabic, go on a story adventure, say today&apos;s dua, practice good manners,
-            and complete a kindness hunt. These activities are for learning and fun — they do not award
-            claimable points.
+            complete a kindness hunt, or print Offline Activities for home. Finish an activity to claim points
+            (once per type each day), save art to My Gallery, and unlock stickers.
           </p>
         </header>
 
