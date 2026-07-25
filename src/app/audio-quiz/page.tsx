@@ -56,7 +56,7 @@ export default function AudioQuizListPage() {
           <div className="mx-auto inline-flex h-16 w-16 items-center justify-center rounded-3xl bg-gradient-to-br from-[#7c3aed] to-[#6d28d9] text-3xl text-white shadow-lg">
             🎙️
           </div>
-          <h1 className="text-4xl font-black text-[#1e1b4b] md:text-5xl">Audio Competition</h1>
+          <h1 className="text-4xl font-black text-[#1e1b4b] md:text-5xl">Audio Quiz</h1>
           <p className="mx-auto max-w-2xl text-lg text-[#475569]">
             Listen to the audio questions, record your voice answers, earn points when approved — and winners get prizes!
           </p>

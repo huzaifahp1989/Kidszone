@@ -374,7 +374,7 @@ export default function AdminAudioQuizPage() {
     <div className="min-h-screen bg-slate-50 p-4 md:p-8">
       <div className="mx-auto max-w-4xl space-y-6">
         <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-black text-slate-900">Audio Competition — Manage</h1>
+          <h1 className="text-2xl font-black text-slate-900">Audio Quiz — Manage</h1>
           <Link href="/admin" className="text-sm font-bold text-violet-700 hover:underline">
             ← Admin
           </Link>
@@ -382,7 +382,7 @@ export default function AdminAudioQuizPage() {
 
         {tableMissing ? (
           <div className="rounded-xl border border-amber-300 bg-amber-50 p-4">
-            <p className="font-bold text-amber-800">The Audio Competition tables are not set up yet.</p>
+            <p className="font-bold text-amber-800">The Audio Quiz tables are not set up yet.</p>
             <button
               type="button"
               onClick={runSetup}

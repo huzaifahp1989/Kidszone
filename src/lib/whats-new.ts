@@ -18,7 +18,7 @@ export const WHATS_NEW_ITEMS: WhatsNewItem[] = [
   {
     href: '/audio-quiz',
     emoji: '🎙️',
-    title: 'Audio Competition',
+    title: 'Audio Quiz',
     blurb: 'Listen to audio questions, record your voice answer, earn points!',
     badge: 'NEW',
     pointsHint: `+${AUDIO_COMPETITION_APPROVED_POINTS}`,
@@ -98,7 +98,7 @@ export const EARN_MORE_LINKS: WhatsNewItem[] = [
   {
     href: '/audio-quiz',
     emoji: '🎙️',
-    title: 'Audio Competition',
+    title: 'Audio Quiz',
     blurb: 'Voice answers to audio questions',
     badge: 'NEW',
     pointsHint: `+${AUDIO_COMPETITION_APPROVED_POINTS}`,

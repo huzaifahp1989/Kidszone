@@ -869,6 +869,21 @@ export default function AdminPanel() {
           </Button>
         </div>
 
+        <button
+          type="button"
+          onClick={() => router.push('/admin/audio-quiz')}
+          className="mb-6 flex w-full flex-col gap-2 rounded-2xl border-2 border-amber-300 bg-gradient-to-r from-amber-50 to-orange-50 p-5 text-left shadow-sm transition hover:border-amber-400 hover:shadow-md sm:flex-row sm:items-center sm:justify-between"
+        >
+          <div>
+            <p className="text-xs font-bold uppercase tracking-[0.16em] text-amber-800">Audio Quiz</p>
+            <p className="mt-1 text-lg font-black text-amber-950">Ask audio questions · review voice answers · award points</p>
+            <p className="mt-1 text-sm text-amber-900/80">Create competitions, record question audio, and judge kid submissions.</p>
+          </div>
+          <span className="inline-flex items-center justify-center gap-2 rounded-xl bg-amber-500 px-5 py-3 text-sm font-bold text-white shadow hover:bg-amber-600">
+            🎙️ Open Audio Quiz
+          </span>
+        </button>
+
         {/* Tabs */}
         <div className="flex gap-2 mb-8 flex-wrap overflow-x-auto pb-2">
           <button
@@ -896,6 +911,12 @@ export default function AdminPanel() {
           >
             Recordings
             <AdminNotificationBadge count={adminNotifyCounts.recordings} />
+          </button>
+          <button
+            onClick={() => router.push('/admin/audio-quiz')}
+            className="px-5 py-2.5 rounded-lg font-bold transition bg-amber-500 text-white shadow-md hover:bg-amber-600 flex items-center gap-2 whitespace-nowrap"
+          >
+            🎙️ Audio Quiz
           </button>
           <button
             onClick={() => router.push('/admin/setup')}
@@ -946,12 +967,6 @@ export default function AdminPanel() {
             className="px-5 py-2.5 rounded-lg font-bold transition bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 hover:border-violet-300 flex items-center gap-2 whitespace-nowrap"
           >
             🌙 Quiz Challenge
-          </button>
-          <button
-            onClick={() => router.push('/admin/audio-quiz')}
-            className="px-5 py-2.5 rounded-lg font-bold transition bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 hover:border-violet-300 flex items-center gap-2 whitespace-nowrap"
-          >
-            🎙️ Audio Competition
           </button>
           <button
             onClick={() => router.push('/admin/fitness')}

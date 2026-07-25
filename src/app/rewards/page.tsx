@@ -463,7 +463,7 @@ export default function RewardsPage() {
               <div className="inline-flex items-center gap-2 rounded-full bg-amber-100 px-3 py-1 text-xs font-bold uppercase tracking-[0.18em] text-amber-900">
                 <Mic size={14} /> Voice Challenge
               </div>
-              <p className="mt-3 font-extrabold text-amber-950 text-base md:text-lg">Audio Competition</p>
+              <p className="mt-3 font-extrabold text-amber-950 text-base md:text-lg">Audio Quiz</p>
               <p className="mt-2 text-sm text-amber-900/80">
                 Listen to audio questions, record your answers, earn points when approved, and compete for prizes.
               </p>

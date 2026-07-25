@@ -244,7 +244,7 @@ export default function Home() {
               <div className="inline-flex items-center gap-2 rounded-full bg-amber-100 px-3 py-1 text-xs font-bold uppercase tracking-[0.18em] text-amber-900">
                 <Sparkles size={14} /> Voice Challenge
               </div>
-              <h2 className="mt-3 text-2xl font-black text-amber-950 md:text-3xl">Audio Competition</h2>
+              <h2 className="mt-3 text-2xl font-black text-amber-950 md:text-3xl">Audio Quiz</h2>
               <p className="mt-2 text-sm leading-6 text-amber-900/80 md:text-base">
                 Listen to audio questions, record your voice answers, and earn points when judges approve your entry.
                 Winners can also win prizes!

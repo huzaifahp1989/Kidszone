@@ -91,6 +91,18 @@ export const MobileBottomNav = () => {
                 </button>
               </div>
 
+              <Link
+                href="/audio-quiz"
+                onClick={() => setIsSheetOpen(false)}
+                className="mb-4 flex items-center gap-3 rounded-2xl border-2 border-amber-300 bg-gradient-to-r from-amber-50 to-orange-50 px-4 py-3.5 shadow-sm interactive-focus"
+              >
+                <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-500 text-xl text-white">🎙️</span>
+                <span className="min-w-0 flex-1">
+                  <span className="block text-base font-black text-amber-950">Audio Quiz</span>
+                  <span className="block text-xs font-semibold text-amber-800/80">Record voice answers &amp; earn points</span>
+                </span>
+              </Link>
+
               <div className="space-y-4">
                 {NAV_GROUPS.map((group) => (
                   <div key={group.id}>

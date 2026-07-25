@@ -79,6 +79,14 @@ export const NAV_GROUPS: NavGroup[] = [
         group: 'play',
       },
       {
+        href: '/audio-quiz',
+        label: 'Audio Quiz',
+        shortLabel: 'Audio',
+        description: 'Listen to audio questions, record your answer, and earn points!',
+        icon: Mic,
+        group: 'play',
+      },
+      {
         href: '/games',
         label: 'Games',
         shortLabel: 'Games',
@@ -100,14 +108,6 @@ export const NAV_GROUPS: NavGroup[] = [
         shortLabel: 'Challenge',
         description: 'Quran Stories & Fiqh quizzes — one attempt each!',
         icon: Sparkles,
-        group: 'play',
-      },
-      {
-        href: '/audio-quiz',
-        label: 'Audio Competition',
-        shortLabel: 'Audio',
-        description: 'Listen to audio questions, record your answer, and earn points!',
-        icon: Mic,
         group: 'play',
       },
     ],
@@ -281,10 +281,10 @@ export const ALL_NAV_ITEMS: NavItem[] = [
 /** Primary home quick actions — keep in sync with nav-config. */
 export const HOME_PRIMARY_ACTIONS: NavItem[] = [
   NAV_GROUPS[0].items[0], // Daily Quiz
-  NAV_GROUPS[0].items[1], // Games
+  NAV_GROUPS[0].items[1], // Audio Quiz
+  NAV_GROUPS[0].items[2], // Games
   NAV_GROUPS[1].items[0], // Quran
   NAV_GROUPS[2].items[0], // Salah
-  NAV_GROUPS[2].items[3], // Leaderboard
   NAV_GROUPS[3].items[0], // Rewards
 ];
 
