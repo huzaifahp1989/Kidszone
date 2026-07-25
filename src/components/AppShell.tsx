@@ -15,6 +15,7 @@ import { isTestModeEmail } from '@/lib/test-mode';
 import { PageTransition } from '@/components/PageTransition';
 import { PointsProgressProvider } from '@/lib/points-progress-context';
 import { DailyPointsBar } from '@/components/DailyPointsBar';
+import { LIVE_APP_URL } from '@/lib/app-url';
 
 const PointsProgressPopup = dynamic(
   () => import('@/components/PointsProgressPopup').then(m => m.PointsProgressPopup),
@@ -76,6 +77,15 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const fallbackName = user?.email ? user.email.split('@')[0] : undefined;
   const isTestModeUser = isTestModeEmail(user?.email);
   const isSignedInHome = Boolean(user) && pathname === '/';
+
+  // Migrate WebViews still parked on the stale Vercel project (old quiz JS).
+  React.useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const host = window.location.hostname.toLowerCase();
+    if (host !== 'islamic-kids-platform.vercel.app') return;
+    const live = LIVE_APP_URL.replace(/\/$/, '');
+    window.location.replace(`${live}${window.location.pathname}${window.location.search}${window.location.hash}`);
+  }, []);
 
   const hasValidName = React.useMemo(() => {
     const t = (profile?.name ?? '').trim();

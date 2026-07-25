@@ -16,6 +16,7 @@ import { ReadAloudButton } from '@/components/ReadAloudButton';
 import { EarnMorePointsLinks } from '@/components/EarnMorePointsLinks';
 import { authJsonFetch, getAuthFetchHeaders } from '@/lib/auth-headers';
 import { trackQuizCompleted } from '@/lib/analytics';
+import { LIVE_APP_URL } from '@/lib/app-url';
 
 const quizPool = getQuizQuestionPool();
 
@@ -308,7 +309,10 @@ export default function QuizPage() {
 
     void (async () => {
     try {
-      const res = await authJsonFetch('/api/quiz/daily/submit', {
+      // Always hit the canonical live host so Cap/WebViews parked on a stale
+      // Vercel project still write attempts + points to the working backend.
+      const submitUrl = `${LIVE_APP_URL.replace(/\/$/, '')}/api/quiz/daily/submit`;
+      const res = await authJsonFetch(submitUrl, {
         method: 'POST',
         timeoutMs: 12_000,
         body: JSON.stringify({
@@ -321,7 +325,7 @@ export default function QuizPage() {
         })
       });
 
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
       
       if (res.status === 401) {
         setDailyResult((prev: any) => ({ ...prev, syncing: false }));

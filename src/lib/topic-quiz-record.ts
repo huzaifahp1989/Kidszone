@@ -35,11 +35,13 @@ export async function createSessionQuizRecordId(
   const taggedQuestionIds = [`topic:${topicId}`, `session:${sessionKey}`, ...questionIds.map(String)]
 
   for (let attempt = 0; attempt < 6; attempt++) {
-    const storageDate = attempt === 0 ? getSessionQuizStorageDate(sessionKey) : nextStorageDate(attempt)
+    const id = randomUUID()
+    const storageDate = attempt === 0 ? getSessionQuizStorageDate(`${sessionKey}:${id}`) : nextStorageDate(attempt)
 
     const { data: inserted, error: insertErr } = await supabaseAdmin
       .from('daily_quizzes')
       .insert({
+        id,
         quiz_date: storageDate,
         question_ids: taggedQuestionIds,
         is_published: false,
@@ -51,6 +53,7 @@ export async function createSessionQuizRecordId(
       return inserted.id
     }
 
+    // Unique date collision — retry with a new date/id. Other errors fail fast.
     if (insertErr?.code === '23505') {
       continue
     }
@@ -61,7 +64,7 @@ export async function createSessionQuizRecordId(
   throw new Error('Could not create quiz session record after retries')
 }
 
-const SESSION_RECORD_TIMEOUT_MS = 8_000
+const SESSION_RECORD_TIMEOUT_MS = 5_000
 
 /** Same as createSessionQuizRecordId but aborts after a few seconds so submit cannot hang. */
 export async function createSessionQuizRecordIdWithTimeout(
@@ -85,7 +88,7 @@ export async function createSessionQuizRecordIdWithTimeout(
   }
 }
 
-/** Never throws — used on the quiz submit hot path so a slow insert cannot 500 the request. */
+/** Never throws on first timeout — retries once so submit stays resilient. */
 export async function createSessionQuizRecordIdResilient(
   topicId: string,
   questionIds: string[],
@@ -97,10 +100,5 @@ export async function createSessionQuizRecordIdResilient(
     console.warn('[topic-quiz-record] session record timed out, retrying once:', firstErr)
   }
 
-  try {
-    return await createSessionQuizRecordId(topicId, questionIds, sessionKey)
-  } catch (secondErr) {
-    console.error('[topic-quiz-record] session record failed after retry:', secondErr)
-    throw secondErr
-  }
+  return createSessionQuizRecordId(topicId, questionIds, sessionKey)
 }

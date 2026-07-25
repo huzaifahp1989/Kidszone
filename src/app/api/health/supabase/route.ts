@@ -7,6 +7,7 @@ import {
 } from '@/lib/supabase-public-config';
 import { hasEffectiveServiceRoleKey, resolveServiceRoleKey } from '@/lib/supabase-server-secrets';
 import { hasSupabaseServiceRole } from '@/lib/supabase-admin';
+import { randomUUID } from 'crypto';
 
 export async function GET() {
   const envUrl = String(process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL || '').trim();
@@ -24,10 +25,21 @@ export async function GET() {
 
   let adminPointsReadOk = false;
   let adminPointsReadError: string | null = null;
+  let adminQuizWriteOk = false;
+  let adminQuizWriteError: string | null = null;
+  let adminPointsWriteOk = false;
+  let adminPointsWriteError: string | null = null;
 
   if (urlOk && effectiveServiceRole) {
+    const serviceKey = resolveServiceRoleKey();
+    const headers = {
+      apikey: serviceKey,
+      Authorization: `Bearer ${serviceKey}`,
+      'Content-Type': 'application/json',
+      Prefer: 'return=representation',
+    };
+
     try {
-      const serviceKey = resolveServiceRoleKey();
       const probe = await fetch(`${effectiveUrl}/rest/v1/users_points?select=user_id&limit=1`, {
         headers: {
           apikey: serviceKey,
@@ -42,10 +54,74 @@ export async function GET() {
     } catch (err: any) {
       adminPointsReadError = err?.message || 'probe_failed';
     }
+
+    // Prove service role can create (and delete) a daily_quizzes session row —
+    // the same write path quiz submit uses before awarding points.
+    const probeId = randomUUID();
+    const probeDate = `2097-${String(1 + (Date.now() % 12)).padStart(2, '0')}-${String(1 + (Date.now() % 28)).padStart(2, '0')}`;
+    try {
+      const insertRes = await fetch(`${effectiveUrl}/rest/v1/daily_quizzes`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          id: probeId,
+          quiz_date: probeDate,
+          question_ids: ['health-probe'],
+          is_published: false,
+        }),
+        cache: 'no-store',
+      });
+      adminQuizWriteOk = insertRes.ok;
+      if (!insertRes.ok) {
+        adminQuizWriteError = `status_${insertRes.status}`;
+      }
+      await fetch(`${effectiveUrl}/rest/v1/daily_quizzes?id=eq.${probeId}`, {
+        method: 'DELETE',
+        headers: {
+          apikey: serviceKey,
+          Authorization: `Bearer ${serviceKey}`,
+        },
+        cache: 'no-store',
+      }).catch(() => null);
+    } catch (err: any) {
+      adminQuizWriteError = err?.message || 'quiz_write_failed';
+    }
+
+    try {
+      const patchRes = await fetch(
+        `${effectiveUrl}/rest/v1/users_points?user_id=eq.00000000-0000-0000-0000-000000000000`,
+        {
+          method: 'PATCH',
+          headers: {
+            apikey: serviceKey,
+            Authorization: `Bearer ${serviceKey}`,
+            'Content-Type': 'application/json',
+            Prefer: 'return=minimal',
+          },
+          body: JSON.stringify({ today_points: 0 }),
+          cache: 'no-store',
+        }
+      );
+      // 204/200 = allowed; 404 also means RLS did not block the request shape.
+      adminPointsWriteOk = patchRes.ok || patchRes.status === 404;
+      if (!adminPointsWriteOk) {
+        adminPointsWriteError = `status_${patchRes.status}`;
+      }
+    } catch (err: any) {
+      adminPointsWriteError = err?.message || 'points_write_failed';
+    }
   }
 
+  const configured =
+    urlOk &&
+    anonOk &&
+    effectiveServiceRole &&
+    adminPointsReadOk &&
+    adminQuizWriteOk &&
+    adminPointsWriteOk;
+
   return NextResponse.json({
-    configured: urlOk && anonOk && effectiveServiceRole && adminPointsReadOk,
+    configured,
     next_public_supabase_url: Boolean(envUrl),
     next_public_supabase_anon_key: Boolean(envAnon),
     supabase_service_role_key: Boolean(envService),
@@ -59,5 +135,10 @@ export async function GET() {
     effective_url_host: urlOk ? new URL(effectiveUrl).host : null,
     admin_points_read_ok: adminPointsReadOk,
     admin_points_read_error: adminPointsReadError,
+    admin_quiz_write_ok: adminQuizWriteOk,
+    admin_quiz_write_error: adminQuizWriteError,
+    admin_points_write_ok: adminPointsWriteOk,
+    admin_points_write_error: adminPointsWriteError,
+    quiz_submissions_allowed: adminQuizWriteOk && adminPointsWriteOk,
   });
 }

@@ -12,9 +12,21 @@ import { createSessionQuizRecordId, createSessionQuizRecordIdResilient } from '@
 import { insertQuizAttempt } from '@/lib/quiz-attempt-insert';
 import { randomUUID } from 'crypto';
 import { requireMatchingUser } from '@/lib/request-auth';
+import { quizCorsHeaders } from '@/lib/quiz-cors';
 
 export const maxDuration = 25;
 export const dynamic = 'force-dynamic';
+
+function json(req: Request, body: unknown, init?: { status?: number }) {
+  return NextResponse.json(body, {
+    status: init?.status,
+    headers: quizCorsHeaders(req),
+  });
+}
+
+export async function OPTIONS(req: Request) {
+  return new NextResponse(null, { status: 204, headers: quizCorsHeaders(req) });
+}
 
 function getUtcDayWindow() {
   const now = new Date();
@@ -246,10 +258,13 @@ export async function POST(req: Request) {
     const { userId, quizId, answers, durationSeconds, topic, questionIds: submittedQuestionIds } = body;
 
     const auth = await requireMatchingUser(req, String(userId || ''));
-    if (!auth.ok) return auth.response;
+    if (!auth.ok) {
+      const errBody = await auth.response.clone().json().catch(() => ({ error: 'Unauthorized' }));
+      return json(req, errBody, { status: auth.response.status });
+    }
 
     if (!quizId || !answers) {
-      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+      return json(req, { error: 'Missing required fields' }, { status: 400 });
     }
 
     // Compute test mode from the already-validated token email (no extra auth round trip).
@@ -261,7 +276,7 @@ export async function POST(req: Request) {
       const daySeedFromId = parsed?.weekSeed || getDailyTopicSeed();
 
       if (!topicFromId) {
-        return NextResponse.json({ error: 'No questions available for this topic.' }, { status: 400 });
+        return json(req, { error: 'No questions available for this topic.' }, { status: 400 });
       }
 
       const submittedIds = Array.isArray(submittedQuestionIds)
@@ -293,9 +308,12 @@ export async function POST(req: Request) {
 
       if (!ensured.ok) {
         console.error('Failed to ensure user records for quiz submit:', ensured.error);
-        return NextResponse.json({ error: 'Could not prepare user profile for quiz submission.' }, { status: 500 });
+        return json(req, { error: 'Could not prepare user profile for quiz submission.' }, { status: 500 });
       }
-      if (limit.blocked) return limit.blocked;
+      if (limit.blocked) {
+        const blockedBody = await limit.blocked.clone().json().catch(() => ({ error: 'Daily limit reached', locked: true }));
+        return json(req, blockedBody, { status: 429 });
+      }
       const priorAttemptsToday = limit.attemptsToday;
 
       const activeQuestions =
@@ -311,18 +329,31 @@ export async function POST(req: Request) {
             );
 
       if (!activeQuestions.length) {
-        return NextResponse.json({ error: 'No questions available for this topic.' }, { status: 400 });
+        return json(req, { error: 'No questions available for this topic.' }, { status: 400 });
       }
 
       const allowedQuestionIds = new Set(activeQuestions.map((q: any) => String(q.id)));
 
-      const resolvedSessionQuizRecordId =
-        sessionQuizRecordId ||
-        (await createSessionQuizRecordIdResilient(
-          topicFromId,
-          activeQuestions.map((q: any) => String(q.id)),
-          `${userId}:${topicFromId}:${randomUUID()}`
-        ));
+      let resolvedSessionQuizRecordId = sessionQuizRecordId;
+      if (!resolvedSessionQuizRecordId) {
+        try {
+          resolvedSessionQuizRecordId = await createSessionQuizRecordIdResilient(
+            topicFromId,
+            activeQuestions.map((q: any) => String(q.id)),
+            `${userId}:${topicFromId}:${randomUUID()}`
+          );
+        } catch (sessionErr) {
+          console.error('Quiz session record failed after retries:', sessionErr);
+          return json(
+            req,
+            {
+              error: 'Could not save quiz session. Please tap Finish Quiz again.',
+              retryable: true,
+            },
+            { status: 503 }
+          );
+        }
+      }
 
       let correctCount = 0;
       const questionMap = new Map(activeQuestions.map((q: any) => [String(q.id), q]));
@@ -353,9 +384,10 @@ export async function POST(req: Request) {
       if (attemptError) {
         if (attemptError.code === '23505') {
           if (isTestMode) {
-            return NextResponse.json(successNoPoints(score, maxScore, totalPoints, { isTopicQuiz: true }));
+            return json(req, successNoPoints(score, maxScore, totalPoints, { isTopicQuiz: true }));
           }
-          return NextResponse.json(
+          return json(
+            req,
             {
               error: 'You have already completed this topic quiz. Pick a different topic for your second daily quiz.',
               duplicateAttempt: true,
@@ -384,7 +416,7 @@ export async function POST(req: Request) {
               ? 'Quiz completed, but points could not be added right now.'
               : 'Quiz completed, but points could not be added right now.';
 
-      return NextResponse.json({
+      return json(req, {
         success: true,
         score,
         maxScore,
@@ -401,6 +433,7 @@ export async function POST(req: Request) {
         remainingDailyAttempts: attemptSummary.remainingDailyAttempts,
         lockedUntil: attemptSummary.lockedUntil,
         profile: buildAwardProfile(awardResult),
+        supabasePointsOk: awardResult.reason === 'awarded' || totalPoints === 0 || isTestMode,
       });
     }
 
@@ -644,6 +677,6 @@ export async function POST(req: Request) {
     });
   } catch (err: any) {
     console.error('Submit error:', err);
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    return json(req, { error: err?.message || 'Submit failed' }, { status: 500 });
   }
 }
