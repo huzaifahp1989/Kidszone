@@ -27,10 +27,12 @@ async function syncGameSessionProfile(
       todayPoints: result.profile.todayPoints,
     });
   }
-  try {
-    await handlers.refreshProfile?.();
-  } catch {
-    /* non-blocking */
+  if (result.ok) {
+    try {
+      await handlers.refreshProfile?.();
+    } catch {
+      /* non-blocking */
+    }
   }
 }
 

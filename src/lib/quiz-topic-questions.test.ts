@@ -13,6 +13,14 @@ describe('resolveSubmittedTopicQuestions', () => {
     expect(resolved.map((q) => q.id)).toEqual(selected.map((q) => q.id))
   })
 
+  it('accepts a smaller valid client set (not only exactly five)', () => {
+    const daySeed = '2026-06-23'
+    const selected = getTopicQuizQuestions(quizPool, 'hadith', daySeed, 5, { userId: 'learner-2' })
+    const subset = selected.slice(0, 3)
+    const resolved = resolveSubmittedTopicQuestions('hadith', subset.map((q) => String(q.id)))
+    expect(resolved.map((q) => q.id)).toEqual(subset.map((q) => q.id))
+  })
+
   it('rejects invalid or partial submissions', () => {
     expect(resolveSubmittedTopicQuestions('hadith', ['hadith-bank-1'])).toEqual([])
     expect(resolveSubmittedTopicQuestions('hadith', ['not-a-real-id', 'x', 'y', 'z', 'w'])).toEqual([])

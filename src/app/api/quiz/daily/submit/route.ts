@@ -214,6 +214,26 @@ function successNoPoints(score: number, maxScore: number, totalPossiblePoints: n
   };
 }
 
+async function readUserAge(userId: string): Promise<number | undefined> {
+  try {
+    const { data } = await supabaseAdmin
+      .from('users')
+      .select('age')
+      .eq('uid', userId)
+      .maybeSingle();
+    return data?.age != null ? Number(data.age) : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+function isQuizFullyAnswered(
+  questions: Array<{ id: string | number }>,
+  answers: Record<string, unknown>
+): boolean {
+  return questions.every((q) => Object.prototype.hasOwnProperty.call(answers, String(q.id)));
+}
+
 function buildAwardProfile(awardResult: {
   totalPoints?: number;
   weeklyPoints?: number;
@@ -271,7 +291,7 @@ export async function POST(req: Request) {
       const activeQuestionsEarly = hasTrustedClientQuestions ? fromClient : null;
 
       // Parallelize independent reads. Skip question-history lookup when the client sent a valid set.
-      const [ensured, exclusions, limit, sessionQuizRecordId] = await Promise.all([
+      const [ensured, exclusions, limit, sessionQuizRecordId, userAge] = await Promise.all([
         ensureUserRecords(auth.userId),
         hasTrustedClientQuestions
           ? Promise.resolve({ today: [] as string[], recent: [] as string[], attemptsToday: 0 })
@@ -286,6 +306,7 @@ export async function POST(req: Request) {
               `${userId}:${topicFromId}:${randomUUID()}`
             )
           : Promise.resolve(''),
+        hasTrustedClientQuestions ? Promise.resolve(undefined) : readUserAge(userId),
       ]);
 
       if (!ensured.ok) {
@@ -304,7 +325,8 @@ export async function POST(req: Request) {
               userId,
               submittedIds,
               [...new Set([...exclusions.today, ...exclusions.recent])],
-              exclusions.attemptsToday
+              exclusions.attemptsToday,
+              userAge
             );
 
       if (!activeQuestions.length) {
@@ -331,7 +353,7 @@ export async function POST(req: Request) {
 
       const score = correctCount * 10;
       const maxScore = activeQuestions.length * 10;
-      const isCompletedTopic = activeQuestions.every((q: any) => Object.prototype.hasOwnProperty.call(answers, String(q.id)));
+      const isCompletedTopic = isQuizFullyAnswered(activeQuestions, answers);
       const totalPoints = isCompletedTopic ? QUIZ_POINTS_PER_COMPLETION : 0;
 
       const { error: attemptError } = await insertQuizAttempt({
@@ -446,7 +468,7 @@ export async function POST(req: Request) {
 
       const score = correctCount * 10;
       const maxScore = scoredQuestions.length * 10;
-      const isCompletedTopic = scoredQuestions.every((q: any) => Object.prototype.hasOwnProperty.call(answers, String(q.id)));
+      const isCompletedTopic = isQuizFullyAnswered(scoredQuestions, answers);
       const totalPoints = isCompletedTopic ? QUIZ_POINTS_PER_COMPLETION : 0;
 
       const { error: attemptError } = await insertQuizAttempt({
@@ -590,7 +612,10 @@ export async function POST(req: Request) {
       .select()
       .single();
 
-    const isCompletedTopic = activeQuestionIds.every((id) => Object.prototype.hasOwnProperty.call(answers, id));
+    const isCompletedTopic = isQuizFullyAnswered(
+      activeQuestionIds.map((id) => ({ id })),
+      answers
+    );
     const totalPoints = isCompletedTopic ? QUIZ_POINTS_PER_COMPLETION : 0;
 
     if (attemptError) {
