@@ -6,6 +6,7 @@ import {
   PRODUCTION_SUPABASE_URL,
   allowProductionSupabaseFallback,
 } from '@/lib/supabase-public-config';
+import { hasEffectiveServiceRoleKey, resolveServiceRoleKey } from '@/lib/supabase-server-secrets';
 
 function cleanEnv(value: string | undefined | null): string {
   return String(value || '')
@@ -21,7 +22,7 @@ const SUPABASE_URL =
   (!isPlaceholderSupabaseUrl(envUrl) && envUrl) ||
   (allowFallback ? PRODUCTION_SUPABASE_URL : 'https://placeholder.supabase.co');
 
-const SERVICE_ROLE_KEY = cleanEnv(process.env.SUPABASE_SERVICE_ROLE_KEY);
+const SERVICE_ROLE_KEY = resolveServiceRoleKey();
 const envAnon =
   cleanEnv(process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) || cleanEnv(process.env.SUPABASE_ANON_KEY);
 const ANON_KEY =
@@ -30,7 +31,7 @@ const ANON_KEY =
 
 /** True when a real service-role key is configured (required to bypass RLS for admin writes). */
 export function hasSupabaseServiceRole(): boolean {
-  return SERVICE_ROLE_KEY.length > 40;
+  return hasEffectiveServiceRoleKey();
 }
 
 const SUPABASE_SERVICE_ROLE_KEY = hasSupabaseServiceRole()
