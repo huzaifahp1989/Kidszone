@@ -144,8 +144,12 @@ export default function QuizPage() {
         setDailyQuiz(quizData);
 
         if (user?.id) {
-          // Server-side 24-hour lock check — works across all devices
-          const lockRes = await fetch(`/api/quiz/daily/lock-status?userId=${user.id}`);
+          // Must send Bearer token — unauthenticated lock-status returns 401 and
+          // used to hide the "2 quizzes done" lock, so kids kept playing for 0 pts.
+          const lockRes = await authJsonFetch(
+            `/api/quiz/daily/lock-status?userId=${encodeURIComponent(user.id)}`,
+            { method: 'GET', timeoutMs: 10_000 }
+          );
           if (lockRes.ok) {
             const lockData = await lockRes.json();
             setQuizAttemptsToday(Number(lockData.attemptsToday || 0));

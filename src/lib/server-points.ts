@@ -7,7 +7,6 @@ import {
   resolveTodayPoints,
 } from '@/lib/points-policy';
 import { shouldResetMonthlyPoints } from '@/lib/weekly-activity';
-import { isTestModeUserId } from '@/lib/test-mode-server';
 import { isPlaceholderSupabaseUrl, resolvePublicSupabaseUrl } from '@/lib/supabase-public-config';
 
 function supabaseUrlUnusable(): boolean {
@@ -143,24 +142,6 @@ export async function awardPointsWithDailyCapByUserId(
 
   if (!requestedPoints || requestedPoints <= 0) {
     return emptyFailure('invalid_points', 'Points must be greater than 0.');
-  }
-
-  const isTestMode = options.knownIsTestMode ?? (await isTestModeUserId(userId));
-  if (isTestMode) {
-    return {
-      success: true,
-      reason: 'test_mode',
-      message: 'Test mode active for this account. Mission bonus is tracked but no leaderboard points are added.',
-      pointsAwarded: 0,
-      totalPoints: 0,
-      weeklyPoints: 0,
-      monthlyPoints: 0,
-      todayPoints: 0,
-      dailyLimit: POINTS_DAILY_CAP,
-      badges: 0,
-      level: 1,
-      hasReliableTotals: false,
-    };
   }
 
   if (supabaseUrlUnusable()) {

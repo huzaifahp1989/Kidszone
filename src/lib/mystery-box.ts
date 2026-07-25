@@ -1,7 +1,6 @@
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { getScoreWeekRangeUtc } from '@/lib/weekly-score-core';
 import { awardPointsWithDailyCapByUserId } from '@/lib/server-points';
-import { isTestModeUserId } from '@/lib/test-mode-server';
 
 export const MYSTERY_BOX_REQUIRED_DAYS = 7;
 
@@ -135,16 +134,6 @@ export async function claimMysteryBox(userId: string): Promise<{
       message: `Keep learning! ${snapshot.requiredDays - snapshot.activeDays} more active day(s) to unlock the mystery box.`,
       pointsAwarded: 0,
       snapshot,
-    };
-  }
-
-  if (await isTestModeUserId(userId)) {
-    return {
-      ok: true,
-      message: 'Test mode: mystery box tracked but no points added.',
-      pointsAwarded: 0,
-      badgeName: 'Steady Star',
-      snapshot: { ...snapshot, claimed: true },
     };
   }
 

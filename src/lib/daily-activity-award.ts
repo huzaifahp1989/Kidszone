@@ -66,15 +66,8 @@ export async function tryAwardDailyActivity(
 ): Promise<DailyActivityAwardResult> {
   const pointsRequested = activity === 'quiz' ? QUIZ_POINTS_PER_COMPLETION : ACTIVITY_BONUS_POINTS;
 
+  // Test-mode accounts still earn points; leaderboards filter them out separately.
   const isTestMode = options?.knownIsTestMode ?? (await isTestModeUserId(userId));
-  if (isTestMode) {
-    return {
-      success: true,
-      pointsAwarded: 0,
-      message: 'Test mode active. Activity tracked but no leaderboard points were added.',
-      reason: 'test_mode',
-    };
-  }
 
   if (!options?.skipEnsureUserRecords) {
     const ensured = await ensureUserRecords(userId);

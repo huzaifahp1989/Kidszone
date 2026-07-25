@@ -82,12 +82,12 @@ export async function POST(request: Request) {
     let pointsAwarded = prevPoints;
     let newlyAwardedPoints = 0;
     const isTest = isTestModeEmail(user.email);
-    if (challenge && met && !alreadyAwarded && !flagged && !isTest) {
+    if (challenge && met && !alreadyAwarded && !flagged) {
       await ensureUserRecords(user.id);
       const award = await awardPointsWithDailyCapByUserId(user.id, challenge.points, {
         successMessage: `Walking challenge complete! +${challenge.points} points.`,
         countTowardDailyLimit: false,
-        knownIsTestMode: false,
+        knownIsTestMode: isTest,
         skipEnsureUserRecords: true,
       });
       if (award.success && award.pointsAwarded > 0) {

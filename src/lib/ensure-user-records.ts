@@ -143,7 +143,13 @@ export async function ensureUserRecords(userId: string): Promise<EnsureUserRecor
     if (isPlaceholderName(String(existingUser.name || '')) && !isPlaceholderName(fallbackName)) {
       patch.name = fallbackName;
     }
-    if (!existingUser.email && fallbackEmail) {
+    const existingEmail = String(existingUser.email || '').trim().toLowerCase();
+    const nextEmail = String(fallbackEmail || '').trim().toLowerCase();
+    const isPlaceholderEmail =
+      !existingEmail ||
+      existingEmail.endsWith('@local') ||
+      /^user-[0-9a-f]{8}@/i.test(existingEmail);
+    if (nextEmail && isPlaceholderEmail && nextEmail !== existingEmail) {
       patch.email = fallbackEmail;
     }
     if (!existingUser.family_email && fallbackFamilyEmail) {
