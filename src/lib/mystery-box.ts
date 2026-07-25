@@ -185,11 +185,14 @@ export async function claimMysteryBox(userId: string): Promise<{
     pointsAwarded: award.pointsAwarded,
     badgeName,
     snapshot: refreshed,
-    profile: {
-      points: award.totalPoints ?? 0,
-      weeklyPoints: award.weeklyPoints ?? 0,
-      monthlyPoints: award.monthlyPoints ?? 0,
-      todayPoints: award.todayPoints ?? 0,
-    },
+    profile:
+      award.hasReliableTotals !== false && award.reason !== 'update_failed'
+        ? {
+            points: award.totalPoints ?? 0,
+            weeklyPoints: award.weeklyPoints ?? 0,
+            monthlyPoints: award.monthlyPoints ?? 0,
+            todayPoints: award.todayPoints ?? 0,
+          }
+        : undefined,
   };
 }

@@ -203,6 +203,22 @@ async function awardQuizPoints(userId: string, totalPoints: number, isTestMode: 
     skipEnsureUserRecords: true,
   });
 
+  // On write failure, fall back to the current DB snapshot so the client never
+  // receives fabricated zeros that wipe the navbar points.
+  if (!result.hasReliableTotals || result.reason === 'update_failed') {
+    const snapshot = await readCurrentPointsSnapshot(userId);
+    return {
+      pointsAwarded: result.pointsAwarded,
+      reason: result.reason,
+      todayPoints: snapshot.todayPoints,
+      totalPoints: snapshot.totalPoints,
+      weeklyPoints: snapshot.weeklyPoints,
+      monthlyPoints: snapshot.monthlyPoints,
+      dailyLimit: result.dailyLimit,
+      hasReliableTotals: true,
+    };
+  }
+
   return {
     pointsAwarded: result.pointsAwarded,
     reason: result.reason,
@@ -211,6 +227,7 @@ async function awardQuizPoints(userId: string, totalPoints: number, isTestMode: 
     weeklyPoints: result.weeklyPoints,
     monthlyPoints: result.monthlyPoints,
     dailyLimit: result.dailyLimit,
+    hasReliableTotals: true,
   };
 }
 
@@ -234,8 +251,12 @@ function buildAwardProfile(awardResult: {
   weeklyPoints?: number;
   monthlyPoints?: number;
   todayPoints?: number;
+  reason?: string | null;
+  hasReliableTotals?: boolean;
 }) {
-  // Never fabricate zeros from missing fields — that wipes the client profile.
+  // Never fabricate zeros from missing/failed totals — that wipes the client profile.
+  if (awardResult.hasReliableTotals === false) return undefined;
+  if (awardResult.reason === 'update_failed') return undefined;
   if (
     typeof awardResult.totalPoints !== 'number' ||
     typeof awardResult.weeklyPoints !== 'number' ||

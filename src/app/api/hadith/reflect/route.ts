@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { tryAwardDailyActivity } from '@/lib/daily-activity-award';
 import { isHadithInTodaysSet } from '@/lib/daily-hadith';
-import { ACTIVITY_BONUS_POINTS, resolveTodayPoints } from '@/lib/points-policy';
+import { ACTIVITY_BONUS_POINTS, resolveBasePoints, resolveTodayPoints } from '@/lib/points-policy';
 import { requireMatchingUser } from '@/lib/request-auth';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 
@@ -61,11 +61,18 @@ export async function POST(req: Request) {
       console.warn('[hadith/reflect] save failed:', insertError.message);
     }
 
-    const { data: pointsRow } = await supabaseAdmin
-      .from('users_points')
-      .select('total_points, weekly_points, monthly_points, today_points, last_earned_date')
-      .eq('user_id', userId)
-      .maybeSingle();
+    const [{ data: pointsRow }, { data: userRow }] = await Promise.all([
+      supabaseAdmin
+        .from('users_points')
+        .select('total_points, weekly_points, monthly_points, today_points, last_earned_date')
+        .eq('user_id', userId)
+        .maybeSingle(),
+      supabaseAdmin
+        .from('users')
+        .select('points, weeklypoints, monthlypoints')
+        .eq('uid', userId)
+        .maybeSingle(),
+    ]);
 
     return NextResponse.json({
       success: award.success,
@@ -73,12 +80,15 @@ export async function POST(req: Request) {
       message: award.message,
       reason: award.reason,
       reflectionSaved: !insertError || insertError.code === '42P01',
-      profile: {
-        points: Number(pointsRow?.total_points ?? 0),
-        weeklyPoints: Number(pointsRow?.weekly_points ?? 0),
-        monthlyPoints: Number(pointsRow?.monthly_points ?? 0),
-        todayPoints: resolveTodayPoints(pointsRow?.today_points, pointsRow?.last_earned_date),
-      },
+      profile:
+        pointsRow || userRow
+          ? {
+              points: resolveBasePoints(pointsRow?.total_points, userRow?.points),
+              weeklyPoints: resolveBasePoints(pointsRow?.weekly_points, userRow?.weeklypoints),
+              monthlyPoints: resolveBasePoints(pointsRow?.monthly_points, userRow?.monthlypoints),
+              todayPoints: resolveTodayPoints(pointsRow?.today_points, pointsRow?.last_earned_date),
+            }
+          : undefined,
     });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Unexpected error';

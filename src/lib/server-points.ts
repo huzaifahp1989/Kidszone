@@ -25,6 +25,8 @@ export type ServerAwardPointsResult = {
   dailyLimit: number;
   badges: number;
   level: number;
+  /** False when totals are unknown (early failure) — callers must not wipe the UI profile. */
+  hasReliableTotals: boolean;
 };
 
 type ServerAwardOptions = {
@@ -36,6 +38,48 @@ type ServerAwardOptions = {
   skipEnsureUserRecords?: boolean;
 };
 
+function emptyFailure(
+  reason: ServerAwardReason,
+  message: string,
+  overrides: Partial<ServerAwardPointsResult> = {}
+): ServerAwardPointsResult {
+  return {
+    success: false,
+    reason,
+    message,
+    pointsAwarded: 0,
+    totalPoints: 0,
+    weeklyPoints: 0,
+    monthlyPoints: 0,
+    todayPoints: 0,
+    dailyLimit: POINTS_DAILY_CAP,
+    badges: 0,
+    level: 1,
+    hasReliableTotals: false,
+    ...overrides,
+  };
+}
+
+async function syncUsersTable(
+  userId: string,
+  totalPoints: number,
+  weeklyPoints: number,
+  monthlyPoints: number
+): Promise<boolean> {
+  const payload = {
+    points: totalPoints,
+    weeklypoints: weeklyPoints,
+    monthlypoints: monthlyPoints,
+  };
+
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const { error } = await supabaseAdmin.from('users').update(payload).eq('uid', userId);
+    if (!error) return true;
+    console.error(`[server-points] users sync attempt ${attempt + 1} failed:`, error.message);
+  }
+  return false;
+}
+
 export async function awardPointsWithDailyCapByUserId(
   userId: string,
   requestedPoints: number,
@@ -44,19 +88,7 @@ export async function awardPointsWithDailyCapByUserId(
   const countTowardDailyLimit = options.countTowardDailyLimit !== false;
 
   if (!requestedPoints || requestedPoints <= 0) {
-    return {
-      success: false,
-      reason: 'invalid_points',
-      message: 'Points must be greater than 0.',
-      pointsAwarded: 0,
-      totalPoints: 0,
-      weeklyPoints: 0,
-      monthlyPoints: 0,
-      todayPoints: 0,
-      dailyLimit: POINTS_DAILY_CAP,
-      badges: 0,
-      level: 1,
-    };
+    return emptyFailure('invalid_points', 'Points must be greater than 0.');
   }
 
   const isTestMode = options.knownIsTestMode ?? (await isTestModeUserId(userId));
@@ -73,41 +105,18 @@ export async function awardPointsWithDailyCapByUserId(
       dailyLimit: POINTS_DAILY_CAP,
       badges: 0,
       level: 1,
+      hasReliableTotals: false,
     };
   }
 
   if (supabaseUrlUnusable()) {
-    return {
-      success: false,
-      reason: 'update_failed',
-      message: 'Supabase is not configured on this server. Points could not be saved.',
-      pointsAwarded: 0,
-      totalPoints: 0,
-      weeklyPoints: 0,
-      monthlyPoints: 0,
-      todayPoints: 0,
-      dailyLimit: POINTS_DAILY_CAP,
-      badges: 0,
-      level: 1,
-    };
+    return emptyFailure('update_failed', 'Supabase is not configured on this server. Points could not be saved.');
   }
 
   if (!options.skipEnsureUserRecords) {
     const ensured = await ensureUserRecords(userId);
     if (!ensured.ok) {
-      return {
-        success: false,
-        reason: 'update_failed',
-        message: ensured.error || 'Could not prepare user profile for points.',
-        pointsAwarded: 0,
-        totalPoints: 0,
-        weeklyPoints: 0,
-        monthlyPoints: 0,
-        todayPoints: 0,
-        dailyLimit: POINTS_DAILY_CAP,
-        badges: 0,
-        level: 1,
-      };
+      return emptyFailure('update_failed', ensured.error || 'Could not prepare user profile for points.');
     }
   }
 
@@ -127,35 +136,11 @@ export async function awardPointsWithDailyCapByUserId(
   ]);
 
   if (pointsRowRes.error) {
-    return {
-      success: false,
-      reason: 'update_failed',
-      message: pointsRowRes.error.message,
-      pointsAwarded: 0,
-      totalPoints: 0,
-      weeklyPoints: 0,
-      monthlyPoints: 0,
-      todayPoints: 0,
-      dailyLimit: POINTS_DAILY_CAP,
-      badges: 0,
-      level: 1,
-    };
+    return emptyFailure('update_failed', pointsRowRes.error.message);
   }
 
   if (userRowRes.error) {
-    return {
-      success: false,
-      reason: 'update_failed',
-      message: userRowRes.error.message,
-      pointsAwarded: 0,
-      totalPoints: 0,
-      weeklyPoints: 0,
-      monthlyPoints: 0,
-      todayPoints: 0,
-      dailyLimit: POINTS_DAILY_CAP,
-      badges: 0,
-      level: 1,
-    };
+    return emptyFailure('update_failed', userRowRes.error.message);
   }
 
   const existingRow = pointsRowRes.data;
@@ -195,69 +180,48 @@ export async function awardPointsWithDailyCapByUserId(
       dailyLimit: POINTS_DAILY_CAP,
       badges,
       level,
+      hasReliableTotals: true,
     };
   }
 
   const totalPoints = baseTotal + pointsAwarded;
   const weeklyPoints = baseWeekly + pointsAwarded;
   const monthlyPoints = baseMonthly + pointsAwarded;
+  // Uncapped awards (competitions, approvals) must not consume the daily earn budget.
   const todayPoints = countTowardDailyLimit ? currentTodayPoints + pointsAwarded : currentTodayPoints;
   const badges = Math.floor(totalPoints / 100);
   const level = 1 + Math.floor(badges / 5);
 
-  const [{ error: upsertError }, usersSync] = await Promise.all([
-    supabaseAdmin.from('users_points').upsert(
-      {
-        user_id: userId,
-        total_points: totalPoints,
-        weekly_points: weeklyPoints,
-        monthly_points: monthlyPoints,
-        today_points: todayPoints,
-        last_earned_date: todayStr,
-        badges,
-        level,
-      },
-      { onConflict: 'user_id' }
-    ),
-    supabaseAdmin
-      .from('users')
-      .update({
-        points: totalPoints,
-        weeklypoints: weeklyPoints,
-        monthlypoints: monthlyPoints,
-      })
-      .eq('uid', userId),
-  ]);
+  const { error: upsertError } = await supabaseAdmin.from('users_points').upsert(
+    {
+      user_id: userId,
+      total_points: totalPoints,
+      weekly_points: weeklyPoints,
+      monthly_points: monthlyPoints,
+      today_points: todayPoints,
+      last_earned_date: todayStr,
+      badges,
+      level,
+    },
+    { onConflict: 'user_id' }
+  );
 
   if (upsertError) {
-    return {
-      success: false,
-      reason: 'update_failed',
-      message: upsertError.message,
-      pointsAwarded: 0,
+    return emptyFailure('update_failed', upsertError.message, {
       totalPoints: baseTotal,
       weeklyPoints: baseWeekly,
       monthlyPoints: baseMonthly,
       todayPoints: currentTodayPoints,
-      dailyLimit: POINTS_DAILY_CAP,
       badges: Math.floor(baseTotal / 100),
       level: 1 + Math.floor(Math.floor(baseTotal / 100) / 5),
-    };
+      hasReliableTotals: true,
+    });
   }
 
-  if (usersSync.error) {
-    console.error('[server-points] users sync failed, retrying once:', usersSync.error.message);
-    const { error: retryError } = await supabaseAdmin
-      .from('users')
-      .update({
-        points: totalPoints,
-        weeklypoints: weeklyPoints,
-        monthlypoints: monthlyPoints,
-      })
-      .eq('uid', userId);
-    if (retryError) {
-      console.error('[server-points] users sync retry failed:', retryError.message);
-    }
+  const usersSynced = await syncUsersTable(userId, totalPoints, weeklyPoints, monthlyPoints);
+  if (!usersSynced) {
+    // users_points already has the new totals — keep returning them so the client updates.
+    console.error('[server-points] users table sync failed after retries; users_points was updated');
   }
 
   return {
@@ -272,5 +236,6 @@ export async function awardPointsWithDailyCapByUserId(
     dailyLimit: POINTS_DAILY_CAP,
     badges,
     level,
+    hasReliableTotals: true,
   };
 }

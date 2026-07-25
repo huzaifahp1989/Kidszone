@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { ensureUserRecords } from '@/lib/ensure-user-records';
 import { tryAwardDailyActivity } from '@/lib/daily-activity-award';
-import { ACTIVITY_BONUS_POINTS, resolveTodayPoints } from '@/lib/points-policy';
+import { ACTIVITY_BONUS_POINTS, resolveBasePoints, resolveTodayPoints } from '@/lib/points-policy';
 import { canEarnActivityPoints } from '@/lib/daily-activity-limits';
 import { requireMatchingUser } from '@/lib/request-auth';
 
@@ -161,11 +161,18 @@ export async function POST(request: Request) {
       console.warn('[pledge/submit] competition track failed:', trackErr);
     }
 
-    const { data: pointsRow } = await supabaseAdmin
-      .from('users_points')
-      .select('total_points, weekly_points, monthly_points, today_points, last_earned_date')
-      .eq('user_id', userId)
-      .maybeSingle();
+    const [{ data: pointsRow }, { data: userRow }] = await Promise.all([
+      supabaseAdmin
+        .from('users_points')
+        .select('total_points, weekly_points, monthly_points, today_points, last_earned_date')
+        .eq('user_id', userId)
+        .maybeSingle(),
+      supabaseAdmin
+        .from('users')
+        .select('points, weeklypoints, monthlypoints')
+        .eq('uid', userId)
+        .maybeSingle(),
+    ]);
 
     return NextResponse.json({
       success: true,
@@ -174,12 +181,15 @@ export async function POST(request: Request) {
       count: Math.floor(count),
       pointsAwarded,
       message: pointsMessage,
-      profile: {
-        points: Number(pointsRow?.total_points ?? 0),
-        weeklyPoints: Number(pointsRow?.weekly_points ?? 0),
-        monthlyPoints: Number(pointsRow?.monthly_points ?? 0),
-        todayPoints: resolveTodayPoints(pointsRow?.today_points, pointsRow?.last_earned_date),
-      },
+      profile:
+        pointsRow || userRow
+          ? {
+              points: resolveBasePoints(pointsRow?.total_points, userRow?.points),
+              weeklyPoints: resolveBasePoints(pointsRow?.weekly_points, userRow?.weeklypoints),
+              monthlyPoints: resolveBasePoints(pointsRow?.monthly_points, userRow?.monthlypoints),
+              todayPoints: resolveTodayPoints(pointsRow?.today_points, pointsRow?.last_earned_date),
+            }
+          : undefined,
     });
   } catch (error: any) {
     console.error('[pledge/submit] unexpected error:', error);

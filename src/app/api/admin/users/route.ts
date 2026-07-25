@@ -100,6 +100,13 @@ const syncUsersPointsSnapshot = async (
   const badges = Math.floor(safeTotal / 100);
   const level = 1 + Math.floor(badges / 5);
 
+  // Preserve today's earned points — never wipe them on admin edits.
+  const { data: existingPoints } = await supabaseAdmin
+    .from('users_points')
+    .select('today_points, last_earned_date')
+    .eq('user_id', uid)
+    .maybeSingle();
+
   const { error } = await supabaseAdmin
     .from('users_points')
     .upsert({
@@ -107,10 +114,11 @@ const syncUsersPointsSnapshot = async (
       total_points: safeTotal,
       weekly_points: safeWeekly,
       monthly_points: safeMonthly,
-      today_points: 0,
+      today_points: Number(existingPoints?.today_points ?? 0),
       badges,
       level,
-      last_earned_date: new Date().toISOString().slice(0, 10),
+      last_earned_date:
+        existingPoints?.last_earned_date || new Date().toISOString().slice(0, 10),
     }, { onConflict: 'user_id' });
 
   if (error) {
@@ -604,9 +612,29 @@ export async function PUT(request: Request) {
       monthlypoints !== undefined ||
       hasPointDelta
     ) {
-      const basePoints = Number(points !== undefined ? points : existingUser?.points || 0);
-      const baseWeekly = Number(weeklypoints !== undefined ? weeklypoints : existingUser?.weeklypoints || 0);
-      const baseMonthly = Number(monthlypoints !== undefined ? monthlypoints : existingUser?.monthlypoints || 0);
+      // Prefer the higher of users_points vs users so a stale users.points row
+      // cannot reset a child's real total when admin applies a delta.
+      const { data: pointsRow } = await supabaseAdmin
+        .from('users_points')
+        .select('total_points, weekly_points, monthly_points')
+        .eq('user_id', uid)
+        .maybeSingle();
+
+      const basePoints = Number(
+        points !== undefined
+          ? points
+          : Math.max(Number(existingUser?.points || 0), Number(pointsRow?.total_points || 0))
+      );
+      const baseWeekly = Number(
+        weeklypoints !== undefined
+          ? weeklypoints
+          : Math.max(Number(existingUser?.weeklypoints || 0), Number(pointsRow?.weekly_points || 0))
+      );
+      const baseMonthly = Number(
+        monthlypoints !== undefined
+          ? monthlypoints
+          : Math.max(Number(existingUser?.monthlypoints || 0), Number(pointsRow?.monthly_points || 0))
+      );
 
       const safePointsDelta = Number(pointsDelta || 0);
       const safeWeeklyDelta = Number(weeklypointsDelta || 0);

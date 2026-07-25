@@ -3,7 +3,12 @@ import { randomUUID } from 'crypto';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { ensureUserRecords } from '@/lib/ensure-user-records';
 import { tryAwardDailyActivity } from '@/lib/daily-activity-award';
-import { ACTIVITY_BONUS_POINTS, MAX_DAILY_GAME_COMPLETIONS, resolveTodayPoints } from '@/lib/points-policy';
+import {
+  ACTIVITY_BONUS_POINTS,
+  MAX_DAILY_GAME_COMPLETIONS,
+  resolveBasePoints,
+  resolveTodayPoints,
+} from '@/lib/points-policy';
 import { canEarnActivityPoints } from '@/lib/daily-activity-limits';
 import { requireMatchingUser } from '@/lib/request-auth';
 
@@ -74,11 +79,22 @@ export async function POST(req: Request) {
       gamesRemaining = Math.max(0, afterGate.limit - afterGate.used);
     }
 
-    const { data: pointsRow } = await supabaseAdmin
-      .from('users_points')
-      .select('total_points, weekly_points, monthly_points, today_points, last_earned_date')
-      .eq('user_id', userId)
-      .maybeSingle();
+    const [{ data: pointsRow }, { data: userRow }] = await Promise.all([
+      supabaseAdmin
+        .from('users_points')
+        .select('total_points, weekly_points, monthly_points, today_points, last_earned_date')
+        .eq('user_id', userId)
+        .maybeSingle(),
+      supabaseAdmin
+        .from('users')
+        .select('points, weeklypoints, monthlypoints')
+        .eq('uid', userId)
+        .maybeSingle(),
+    ]);
+
+    const totalPoints = resolveBasePoints(pointsRow?.total_points, userRow?.points);
+    const weeklyPoints = resolveBasePoints(pointsRow?.weekly_points, userRow?.weeklypoints);
+    const monthlyPoints = resolveBasePoints(pointsRow?.monthly_points, userRow?.monthlypoints);
 
     return NextResponse.json({
       ok: true,
@@ -89,12 +105,16 @@ export async function POST(req: Request) {
       gamesRemaining,
       maxDailyGames: MAX_DAILY_GAME_COMPLETIONS,
       pointsPerGame: ACTIVITY_BONUS_POINTS,
-      profile: {
-        points: Number(pointsRow?.total_points ?? 0),
-        weeklyPoints: Number(pointsRow?.weekly_points ?? 0),
-        monthlyPoints: Number(pointsRow?.monthly_points ?? 0),
-        todayPoints: resolveTodayPoints(pointsRow?.today_points, pointsRow?.last_earned_date),
-      },
+      // Only attach a profile when we have a real snapshot — never push zeros that wipe the UI.
+      profile:
+        pointsRow || userRow
+          ? {
+              points: totalPoints,
+              weeklyPoints,
+              monthlyPoints,
+              todayPoints: resolveTodayPoints(pointsRow?.today_points, pointsRow?.last_earned_date),
+            }
+          : undefined,
       warning: error && error.code !== '42P01' ? error.message : undefined,
       gameTitle,
       difficulty,

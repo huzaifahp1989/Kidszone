@@ -51,12 +51,15 @@ export async function POST(req: Request) {
       pointsAwarded: award.pointsAwarded,
       message: award.message,
       reason: award.reason,
-      profile: {
-        points: Number(award.totalPoints ?? 0),
-        weeklyPoints: Number(award.weeklyPoints ?? 0),
-        monthlyPoints: Number(award.monthlyPoints ?? 0),
-        todayPoints: Number(award.todayPoints ?? 0),
-      },
+      profile:
+        typeof award.totalPoints === 'number'
+          ? {
+              points: award.totalPoints,
+              weeklyPoints: Number(award.weeklyPoints ?? 0),
+              monthlyPoints: Number(award.monthlyPoints ?? 0),
+              todayPoints: Number(award.todayPoints ?? 0),
+            }
+          : undefined,
     });
   } catch (error: any) {
     console.error('[activities/complete] error:', error);

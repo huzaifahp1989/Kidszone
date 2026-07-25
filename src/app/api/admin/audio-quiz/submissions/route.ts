@@ -181,19 +181,38 @@ export async function PUT(request: Request) {
 
     const previousStatus = String(previous.status || 'pending');
     const previousPlace = previous.place != null ? Number(previous.place) : null;
-    let previousPointsAwarded = Math.max(0, Number(previous.points_awarded ?? 0));
-    // If the column is new / empty but the entry was already approved, don't re-pay approval.
-    if (previousPointsAwarded === 0 && previousStatus === 'approved') {
-      previousPointsAwarded = getAudioCompetitionAwardPoints('approved', previousPlace);
-    }
+    const previousPointsAwarded = Math.max(0, Number(previous.points_awarded ?? 0));
     const finalStatus = String(patch.status ?? previousStatus);
     const finalPlace = hasPlace ? place : previousPlace;
     // Never claw back — only award the positive delta vs points already given.
     const desiredPoints = getAudioCompetitionAwardPoints(finalStatus, finalPlace);
     const pointsToAward = Math.max(0, desiredPoints - previousPointsAwarded);
 
-    if (pointsToAward > 0) {
-      patch.points_awarded = previousPointsAwarded + pointsToAward;
+    let pointsAwardedNow = 0;
+    let awardMessage: string | null = null;
+
+    // Award FIRST so a failed write never marks the submission as already paid.
+    if (pointsToAward > 0 && previous.user_id) {
+      const userId = String(previous.user_id);
+      await ensureUserRecords(userId);
+      const award = await awardPointsWithDailyCapByUserId(userId, pointsToAward, {
+        countTowardDailyLimit: false,
+        successMessage: `+${pointsToAward} points for your Audio Quiz entry!`,
+        skipEnsureUserRecords: true,
+      });
+
+      if (!award.success && award.reason === 'update_failed') {
+        return NextResponse.json(
+          { error: `Failed to award points: ${award.message}` },
+          { status: 500 }
+        );
+      }
+
+      pointsAwardedNow = award.pointsAwarded;
+      awardMessage = award.message;
+      if (pointsAwardedNow > 0) {
+        patch.points_awarded = previousPointsAwarded + pointsAwardedNow;
+      }
     }
 
     let { data, error } = await supabaseAdmin
@@ -203,7 +222,7 @@ export async function PUT(request: Request) {
       .select('*')
       .single();
 
-    // Older DBs may not have points_awarded yet — still approve and award points.
+    // Older DBs may not have points_awarded yet — still approve and keep the award.
     if (error && patch.points_awarded != null && /points_awarded/i.test(String(error.message || ''))) {
       delete patch.points_awarded;
       ({ data, error } = await supabaseAdmin
@@ -216,8 +235,6 @@ export async function PUT(request: Request) {
     if (error) throw error;
 
     const row = data as Record<string, unknown>;
-    let pointsAwardedNow = 0;
-    let awardMessage: string | null = null;
 
     // Keep the winners table in sync when a place is assigned/cleared.
     if (hasPlace) {
@@ -235,26 +252,6 @@ export async function PUT(request: Request) {
           place,
         });
       }
-    }
-
-    if (pointsToAward > 0 && row.user_id) {
-      const userId = String(row.user_id);
-      await ensureUserRecords(userId);
-      const award = await awardPointsWithDailyCapByUserId(userId, pointsToAward, {
-        countTowardDailyLimit: false,
-        successMessage: `+${pointsToAward} points for your Audio Competition entry!`,
-        skipEnsureUserRecords: true,
-      });
-
-      if (!award.success && award.reason === 'update_failed') {
-        return NextResponse.json(
-          { error: `Saved but failed to award points: ${award.message}`, submission: mapSubmission(row) },
-          { status: 500 }
-        );
-      }
-
-      pointsAwardedNow = award.pointsAwarded;
-      awardMessage = award.message;
     }
 
     return NextResponse.json({

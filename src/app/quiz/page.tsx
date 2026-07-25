@@ -369,9 +369,16 @@ export default function QuizPage() {
         } else {
           setQuizLockedUntil(null);
         }
-        if (data.profile && Number.isFinite(Number(data.profile.points))) {
+        const nextPoints = Number(data.profile?.points);
+        // Only apply server profile totals when they look real — never wipe with 0
+        // after a failed/partial points write.
+        if (
+          data.profile &&
+          Number.isFinite(nextPoints) &&
+          (awardedPoints > 0 || nextPoints > 0 || Number(profile?.points || 0) === 0)
+        ) {
           updateLocalProfile({
-            points: Number(data.profile.points),
+            points: nextPoints,
             weeklyPoints: Number(data.profile.weeklyPoints ?? profile?.weeklyPoints ?? 0),
             monthlyPoints: Number(data.profile.monthlyPoints ?? profile?.monthlyPoints ?? 0),
             todayPoints: Number(data.profile.todayPoints ?? data.todayPoints ?? profile?.todayPoints ?? 0),

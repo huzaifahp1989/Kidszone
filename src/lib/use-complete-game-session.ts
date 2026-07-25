@@ -18,7 +18,9 @@ async function syncGameSessionProfile(
   if (
     result.profile &&
     handlers.updateLocalProfile &&
-    Number.isFinite(result.profile.points)
+    Number.isFinite(result.profile.points) &&
+    // Never apply a zero/empty snapshot that would wipe the navbar after a failed sync.
+    (result.pointsAwarded > 0 || result.profile.points > 0)
   ) {
     handlers.updateLocalProfile({
       points: result.profile.points,

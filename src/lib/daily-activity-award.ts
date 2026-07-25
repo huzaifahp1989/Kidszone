@@ -141,6 +141,8 @@ export async function tryAwardDailyActivity(
     await recordActivityMarker(userId, activity, award.pointsAwarded);
   }
 
+  const reliable = award.hasReliableTotals !== false && award.reason !== 'update_failed';
+
   return {
     success: award.success,
     pointsAwarded: award.pointsAwarded,
@@ -153,9 +155,9 @@ export async function tryAwardDailyActivity(
           : award.reason === 'update_failed'
             ? 'update_failed'
             : 'daily_limit_reached',
-    totalPoints: award.totalPoints,
-    weeklyPoints: award.weeklyPoints,
-    monthlyPoints: award.monthlyPoints,
-    todayPoints: award.todayPoints,
+    totalPoints: reliable ? award.totalPoints : undefined,
+    weeklyPoints: reliable ? award.weeklyPoints : undefined,
+    monthlyPoints: reliable ? award.monthlyPoints : undefined,
+    todayPoints: reliable ? award.todayPoints : undefined,
   };
 }
