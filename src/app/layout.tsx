@@ -8,7 +8,19 @@ import { AgeModeProvider } from '@/lib/age-mode';
 import { AppShell } from '@/components/AppShell';
 import { FirebaseAnalyticsInit } from '@/components/FirebaseAnalyticsInit';
 import { GoogleAnalyticsInit } from '@/components/GoogleAnalyticsInit';
-import { Nunito, Amiri } from 'next/font/google';
+import { LIVE_APP_URL } from '@/lib/app-url';
+
+const STALE_HOST_REDIRECT = `
+(function () {
+  try {
+    var host = (location.hostname || '').toLowerCase();
+    if (host !== 'islamic-kids-platform.vercel.app') return;
+    var target = ${JSON.stringify(LIVE_APP_URL)};
+    var next = target + location.pathname + location.search + location.hash;
+    if (location.href !== next) location.replace(next);
+  } catch (e) {}
+})();
+`;
 
 const nunito = Nunito({
   subsets: ['latin'],
@@ -41,6 +53,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" data-scroll-behavior="smooth">
       <body className={`${nunito.variable} ${amiri.variable} font-sans antialiased`}>
+        <Script id="stale-host-redirect" strategy="beforeInteractive">
+          {STALE_HOST_REDIRECT}
+        </Script>
         <Script
           src="https://unpkg.com/webtonative@1.1.6/webtonative.min.js"
           strategy="beforeInteractive"
