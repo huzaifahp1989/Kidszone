@@ -7,6 +7,30 @@ export const ACTIVITY_BONUS_POINTS = 25;
 /** Points awarded when a recording is approved by admin. */
 export const RECORDING_APPROVED_POINTS = 25;
 
+/** Points awarded when an Audio Competition voice entry is approved. */
+export const AUDIO_COMPETITION_APPROVED_POINTS = 25;
+
+/** Extra competition points when a place is assigned (on top of approval points). */
+export const AUDIO_COMPETITION_PLACE_POINTS: Record<number, number> = {
+  1: 75,
+  2: 50,
+  3: 25,
+};
+
+export function getAudioCompetitionPlacePoints(place: number | null | undefined): number {
+  if (place == null) return 0;
+  return AUDIO_COMPETITION_PLACE_POINTS[place] ?? 0;
+}
+
+/** Total points for an approved audio competition entry (approval + place bonus). */
+export function getAudioCompetitionAwardPoints(
+  status: string | null | undefined,
+  place: number | null | undefined
+): number {
+  if (String(status || '') !== 'approved') return 0;
+  return AUDIO_COMPETITION_APPROVED_POINTS + getAudioCompetitionPlacePoints(place);
+}
+
 export const MAX_DAILY_QUIZ_ATTEMPTS = 2;
 
 export const MAX_DAILY_GAME_COMPLETIONS = 2;

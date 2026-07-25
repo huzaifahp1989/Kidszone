@@ -1,4 +1,8 @@
-import { ACTIVITY_BONUS_POINTS, RECORDING_APPROVED_POINTS } from '@/lib/points-policy';
+import {
+  ACTIVITY_BONUS_POINTS,
+  AUDIO_COMPETITION_APPROVED_POINTS,
+  RECORDING_APPROVED_POINTS,
+} from '@/lib/points-policy';
 
 export type WhatsNewItem = {
   href: string;
@@ -11,6 +15,14 @@ export type WhatsNewItem = {
 
 /** Featured new / easy-to-miss activities kids should discover. */
 export const WHATS_NEW_ITEMS: WhatsNewItem[] = [
+  {
+    href: '/audio-quiz',
+    emoji: '🎙️',
+    title: 'Audio Competition',
+    blurb: 'Listen to audio questions, record your voice answer, earn points!',
+    badge: 'NEW',
+    pointsHint: `+${AUDIO_COMPETITION_APPROVED_POINTS}`,
+  },
   {
     href: '/create',
     emoji: '🎨',
@@ -83,6 +95,14 @@ export const WHATS_NEW_ITEMS: WhatsNewItem[] = [
 
 /** Extra earn / explore links shown on Quiz / Games / Pledge. */
 export const EARN_MORE_LINKS: WhatsNewItem[] = [
+  {
+    href: '/audio-quiz',
+    emoji: '🎙️',
+    title: 'Audio Competition',
+    blurb: 'Voice answers to audio questions',
+    badge: 'NEW',
+    pointsHint: `+${AUDIO_COMPETITION_APPROVED_POINTS}`,
+  },
   {
     href: '/studio',
     emoji: '🎙️',

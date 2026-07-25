@@ -10,6 +10,9 @@ import {
   isMissingTableError,
   resolveAnswerUrl,
 } from '@/lib/audio-quiz-server';
+import { getAudioCompetitionAwardPoints } from '@/lib/points-policy';
+import { awardPointsWithDailyCapByUserId } from '@/lib/server-points';
+import { ensureUserRecords } from '@/lib/ensure-user-records';
 
 export const dynamic = 'force-dynamic';
 
@@ -26,6 +29,7 @@ function mapSubmission(row: Record<string, unknown>) {
     status: String(row.status || 'pending'),
     place: row.place != null ? Number(row.place) : null,
     judgeNotes: row.judge_notes ? String(row.judge_notes) : '',
+    pointsAwarded: Number(row.points_awarded ?? 0),
     submittedAt: row.submitted_at ? String(row.submitted_at) : null,
   };
 }
@@ -55,13 +59,14 @@ export async function GET(request: Request) {
     const rows = (data || []).map((r) => mapSubmission(r as Record<string, unknown>));
 
     if (asCsv) {
-      const header = ['Name', 'Age', 'Status', 'Place', 'Duration(s)', 'Submitted', 'Judge notes', 'Audio path'];
+      const header = ['Name', 'Age', 'Status', 'Place', 'Points', 'Duration(s)', 'Submitted', 'Judge notes', 'Audio path'];
       const lines = rows.map((r) =>
         [
           r.userName,
           r.age ?? '',
           r.status,
           r.place ?? '',
+          r.pointsAwarded,
           r.durationSeconds,
           r.submittedAt ?? '',
           (r.judgeNotes || '').replace(/"/g, '""'),
@@ -151,6 +156,15 @@ export async function PUT(request: Request) {
     const id = String(body.id || '').trim();
     if (!id) return NextResponse.json({ error: 'id is required' }, { status: 400 });
 
+    const { data: previous, error: previousError } = await supabaseAdmin
+      .from(AUDIO_SUBMISSIONS_TABLE)
+      .select('*')
+      .eq('id', id)
+      .maybeSingle();
+
+    if (previousError) throw previousError;
+    if (!previous) return NextResponse.json({ error: 'Submission not found' }, { status: 404 });
+
     const patch: Record<string, unknown> = { reviewed_at: new Date().toISOString() };
     if (body.status != null && (AUDIO_QUIZ_STATUSES as readonly string[]).includes(String(body.status))) {
       patch.status = String(body.status);
@@ -161,17 +175,49 @@ export async function PUT(request: Request) {
     if (hasPlace) {
       place = body.place == null || body.place === '' ? null : Math.max(1, Math.min(10, Number(body.place)));
       patch.place = place;
+      // Assigning a place implies approval.
+      if (place != null && patch.status == null) patch.status = 'approved';
     }
 
-    const { data, error } = await supabaseAdmin
+    const previousStatus = String(previous.status || 'pending');
+    const previousPlace = previous.place != null ? Number(previous.place) : null;
+    let previousPointsAwarded = Math.max(0, Number(previous.points_awarded ?? 0));
+    // If the column is new / empty but the entry was already approved, don't re-pay approval.
+    if (previousPointsAwarded === 0 && previousStatus === 'approved') {
+      previousPointsAwarded = getAudioCompetitionAwardPoints('approved', previousPlace);
+    }
+    const finalStatus = String(patch.status ?? previousStatus);
+    const finalPlace = hasPlace ? place : previousPlace;
+    // Never claw back — only award the positive delta vs points already given.
+    const desiredPoints = getAudioCompetitionAwardPoints(finalStatus, finalPlace);
+    const pointsToAward = Math.max(0, desiredPoints - previousPointsAwarded);
+
+    if (pointsToAward > 0) {
+      patch.points_awarded = previousPointsAwarded + pointsToAward;
+    }
+
+    let { data, error } = await supabaseAdmin
       .from(AUDIO_SUBMISSIONS_TABLE)
       .update(patch)
       .eq('id', id)
       .select('*')
       .single();
+
+    // Older DBs may not have points_awarded yet — still approve and award points.
+    if (error && patch.points_awarded != null && /points_awarded/i.test(String(error.message || ''))) {
+      delete patch.points_awarded;
+      ({ data, error } = await supabaseAdmin
+        .from(AUDIO_SUBMISSIONS_TABLE)
+        .update(patch)
+        .eq('id', id)
+        .select('*')
+        .single());
+    }
     if (error) throw error;
 
     const row = data as Record<string, unknown>;
+    let pointsAwardedNow = 0;
+    let awardMessage: string | null = null;
 
     // Keep the winners table in sync when a place is assigned/cleared.
     if (hasPlace) {
@@ -191,7 +237,31 @@ export async function PUT(request: Request) {
       }
     }
 
-    return NextResponse.json({ submission: mapSubmission(row) });
+    if (pointsToAward > 0 && row.user_id) {
+      const userId = String(row.user_id);
+      await ensureUserRecords(userId);
+      const award = await awardPointsWithDailyCapByUserId(userId, pointsToAward, {
+        countTowardDailyLimit: false,
+        successMessage: `+${pointsToAward} points for your Audio Competition entry!`,
+        skipEnsureUserRecords: true,
+      });
+
+      if (!award.success && award.reason === 'update_failed') {
+        return NextResponse.json(
+          { error: `Saved but failed to award points: ${award.message}`, submission: mapSubmission(row) },
+          { status: 500 }
+        );
+      }
+
+      pointsAwardedNow = award.pointsAwarded;
+      awardMessage = award.message;
+    }
+
+    return NextResponse.json({
+      submission: mapSubmission(row),
+      pointsAwarded: pointsAwardedNow,
+      awardMessage,
+    });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Unexpected error';
     return NextResponse.json({ error: message }, { status: 500 });

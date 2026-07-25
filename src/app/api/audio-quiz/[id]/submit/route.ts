@@ -31,7 +31,7 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
       .maybeSingle();
     if (quizError) {
       if (isMissingTableError(quizError)) {
-        return NextResponse.json({ error: 'Audio Quiz is not set up yet.' }, { status: 503 });
+        return NextResponse.json({ error: 'Audio Competition is not set up yet.' }, { status: 503 });
       }
       throw quizError;
     }
@@ -141,7 +141,7 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
         success: true,
         submissionId,
         answers: questionIds.length,
-        message: 'MashaAllah! All your answers have been submitted for judging.',
+        message: 'MashaAllah! All your answers have been submitted. Earn points when judges approve!',
       });
     }
 
@@ -168,7 +168,10 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
       }
       throw insertError;
     }
-    return NextResponse.json({ success: true, message: 'MashaAllah! Your answer has been submitted for judging.' });
+    return NextResponse.json({
+      success: true,
+      message: 'MashaAllah! Your answer has been submitted. Earn points when judges approve!',
+    });
   } catch (error: unknown) {
     // Best-effort rollback of any uploaded files.
     for (const p of uploadedPaths) {

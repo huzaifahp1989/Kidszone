@@ -1,9 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import {
   ACTIVITY_BONUS_POINTS,
+  AUDIO_COMPETITION_APPROVED_POINTS,
   DAILY_PLAN_TOTAL_POINTS,
   POINTS_DAILY_CAP,
   QUIZ_POINTS_PER_COMPLETION,
+  getAudioCompetitionAwardPoints,
   resolveBasePoints,
   resolvePointsToAward,
 } from '@/lib/points-policy';
@@ -35,5 +37,16 @@ describe('resolveBasePoints', () => {
     expect(resolveBasePoints(520, 500)).toBe(520);
     expect(resolveBasePoints(null, 120)).toBe(120);
     expect(resolveBasePoints(undefined, undefined)).toBe(0);
+  });
+});
+
+describe('getAudioCompetitionAwardPoints', () => {
+  it('awards approval points and place bonuses only when approved', () => {
+    expect(getAudioCompetitionAwardPoints('pending', null)).toBe(0);
+    expect(getAudioCompetitionAwardPoints('rejected', 1)).toBe(0);
+    expect(getAudioCompetitionAwardPoints('approved', null)).toBe(AUDIO_COMPETITION_APPROVED_POINTS);
+    expect(getAudioCompetitionAwardPoints('approved', 1)).toBe(AUDIO_COMPETITION_APPROVED_POINTS + 75);
+    expect(getAudioCompetitionAwardPoints('approved', 2)).toBe(AUDIO_COMPETITION_APPROVED_POINTS + 50);
+    expect(getAudioCompetitionAwardPoints('approved', 3)).toBe(AUDIO_COMPETITION_APPROVED_POINTS + 25);
   });
 });

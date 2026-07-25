@@ -122,7 +122,7 @@ export default function AudioQuizPlayerPage() {
       <Center>
         <p className="font-semibold text-rose-600">{error || 'Quiz not found.'}</p>
         <Link href="/audio-quiz" className="mt-3 inline-block font-bold text-[#6d28d9] hover:underline">
-          ← Back to Audio Quiz
+          ← Back to Audio Competition
         </Link>
       </Center>
     );
@@ -134,7 +134,7 @@ export default function AudioQuizPlayerPage() {
     <div className="min-h-screen bg-[#f5f3ff] pattern-islamic">
       <div className="mx-auto max-w-2xl space-y-5 px-4 py-6 md:py-8">
         <Link href="/audio-quiz" className="inline-flex items-center gap-1.5 text-sm font-bold text-[#6d28d9] hover:underline">
-          <ArrowLeft size={15} /> All audio quizzes
+          <ArrowLeft size={15} /> All audio competitions
         </Link>
 
         <div className="overflow-hidden rounded-3xl border border-[#c4b5fd]/40 bg-white shadow-lg">
@@ -166,8 +166,8 @@ export default function AudioQuizPlayerPage() {
           <div className="rounded-3xl border-2 border-emerald-300 bg-gradient-to-br from-emerald-50 to-white p-6 text-center shadow">
             <PartyPopper className="mx-auto text-emerald-500" size={36} />
             <p className="mt-2 text-xl font-black text-emerald-800">Answers submitted!</p>
-            <p className="mt-1 text-[#475569]">MashaAllah! Our judges will listen and announce winners soon.</p>
-            <Link href="/audio-quiz" className="mt-4 inline-block font-bold text-[#6d28d9] hover:underline">Back to Audio Quiz</Link>
+            <p className="mt-1 text-[#475569]">MashaAllah! Our judges will listen — when approved you earn points, and winners get prizes!</p>
+            <Link href="/audio-quiz" className="mt-4 inline-block font-bold text-[#6d28d9] hover:underline">Back to Audio Competition</Link>
           </div>
         ) : hasSubmitted ? (
           <div className="rounded-3xl border border-emerald-200 bg-emerald-50 p-6 text-center">

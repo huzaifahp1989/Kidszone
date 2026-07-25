@@ -1,5 +1,7 @@
 import { getReadableObjectUrl } from '@/lib/object-storage';
+import { supabaseAdmin } from '@/lib/supabase-admin';
 import type { AudioQuiz } from '@/lib/audio-quiz';
+import { TEST_AUDIO_QUIZ, TEST_AUDIO_QUIZ_TITLE } from '@/data/audio-quiz-seed';
 
 export const AUDIO_QUIZZES_TABLE = 'audio_quizzes';
 export const AUDIO_QUESTIONS_TABLE = 'audio_quiz_questions';
@@ -63,4 +65,64 @@ export async function resolveAnswerUrl(audioPath: string | null | undefined): Pr
   } catch {
     return null;
   }
+}
+
+/** Insert a ready-to-play test quiz with sample question audio (idempotent). */
+export async function seedTestAudioQuiz(): Promise<{
+  created: boolean;
+  quizId: string;
+  questionCount: number;
+}> {
+  const { data: existingQuiz } = await supabaseAdmin
+    .from(AUDIO_QUIZZES_TABLE)
+    .select('id')
+    .eq('title', TEST_AUDIO_QUIZ_TITLE)
+    .maybeSingle();
+
+  let quizId = existingQuiz?.id ? String(existingQuiz.id) : '';
+
+  if (!quizId) {
+    const { data: inserted, error } = await supabaseAdmin
+      .from(AUDIO_QUIZZES_TABLE)
+      .insert({
+        title: TEST_AUDIO_QUIZ.title,
+        description: TEST_AUDIO_QUIZ.description,
+        category: TEST_AUDIO_QUIZ.category,
+        age_group: TEST_AUDIO_QUIZ.ageGroup,
+        prize_details: TEST_AUDIO_QUIZ.prizeDetails,
+        max_recording_seconds: TEST_AUDIO_QUIZ.maxRecordingSeconds,
+        winners_count: TEST_AUDIO_QUIZ.winnersCount,
+        active: TEST_AUDIO_QUIZ.active,
+      })
+      .select('id')
+      .single();
+    if (error || !inserted?.id) {
+      throw new Error(error?.message || 'Could not create the test audio quiz.');
+    }
+    quizId = String(inserted.id);
+  }
+
+  const { count } = await supabaseAdmin
+    .from(AUDIO_QUESTIONS_TABLE)
+    .select('id', { count: 'exact', head: true })
+    .eq('quiz_id', quizId);
+
+  if ((count ?? 0) > 0) {
+    return { created: false, quizId, questionCount: Number(count) };
+  }
+
+  const rows = TEST_AUDIO_QUIZ.questions.map((q, index) => ({
+    quiz_id: quizId,
+    prompt: q.prompt,
+    audio_url: q.audioUrl,
+    audio_path: null,
+    sort_order: index,
+  }));
+
+  const { error: questionError } = await supabaseAdmin.from(AUDIO_QUESTIONS_TABLE).insert(rows);
+  if (questionError) {
+    throw new Error(questionError.message || 'Could not add test question audio.');
+  }
+
+  return { created: true, quizId, questionCount: rows.length };
 }

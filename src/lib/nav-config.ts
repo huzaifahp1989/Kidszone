@@ -104,9 +104,9 @@ export const NAV_GROUPS: NavGroup[] = [
       },
       {
         href: '/audio-quiz',
-        label: 'Audio Quiz',
+        label: 'Audio Competition',
         shortLabel: 'Audio',
-        description: 'Listen and record your voice answer to win prizes!',
+        description: 'Listen to audio questions, record your answer, and earn points!',
         icon: Mic,
         group: 'play',
       },

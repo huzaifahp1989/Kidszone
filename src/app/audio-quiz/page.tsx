@@ -56,9 +56,9 @@ export default function AudioQuizListPage() {
           <div className="mx-auto inline-flex h-16 w-16 items-center justify-center rounded-3xl bg-gradient-to-br from-[#7c3aed] to-[#6d28d9] text-3xl text-white shadow-lg">
             🎙️
           </div>
-          <h1 className="text-4xl font-black text-[#1e1b4b] md:text-5xl">Audio Quiz</h1>
+          <h1 className="text-4xl font-black text-[#1e1b4b] md:text-5xl">Audio Competition</h1>
           <p className="mx-auto max-w-2xl text-lg text-[#475569]">
-            Listen to the question, then record your answer with your voice! Judges pick the winners.
+            Listen to the audio questions, record your voice answers, earn points when approved — and winners get prizes!
           </p>
         </div>
 
@@ -71,7 +71,7 @@ export default function AudioQuizListPage() {
         ) : quizzes.length === 0 ? (
           <div className="rounded-3xl border border-[#c4b5fd]/40 bg-white p-8 text-center shadow">
             <Mic size={40} className="mx-auto mb-3 text-[#c4b5fd]" />
-            <p className="font-bold text-[#1e1b4b]">No audio quizzes right now</p>
+            <p className="font-bold text-[#1e1b4b]">No audio competitions right now</p>
             <p className="text-[#475569]">Check back soon for a new voice challenge!</p>
           </div>
         ) : (
@@ -135,7 +135,7 @@ export default function AudioQuizListPage() {
         )}
 
         <p className="flex items-center justify-center gap-1.5 text-center text-xs text-[#94a3b8]">
-          <Clock size={12} /> One entry per child. Winners are chosen by our judges after the quiz ends.
+          <Clock size={12} /> One entry per child. Approved recordings earn points; judges pick the winners.
         </p>
       </div>
     </div>

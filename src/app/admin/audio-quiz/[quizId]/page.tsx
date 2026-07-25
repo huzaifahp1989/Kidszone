@@ -75,7 +75,8 @@ export default function AdminAudioSubmissionsPage() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Update failed');
-      setMessage('Saved.');
+      const awarded = Number(data.pointsAwarded || 0);
+      setMessage(awarded > 0 ? `Saved. Awarded ${awarded} points.` : 'Saved.');
       load();
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Update failed');
@@ -109,7 +110,7 @@ export default function AdminAudioSubmissionsPage() {
     <div className="min-h-screen bg-slate-50 p-4 md:p-8">
       <div className="mx-auto max-w-4xl space-y-5">
         <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-black text-slate-900">Audio submissions</h1>
+          <h1 className="text-2xl font-black text-slate-900">Audio Competition submissions</h1>
           <Link href="/admin/audio-quiz" className="text-sm font-bold text-violet-700 hover:underline">
             ← Quizzes
           </Link>

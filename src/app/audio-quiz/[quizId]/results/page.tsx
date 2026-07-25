@@ -41,7 +41,7 @@ export default function AudioQuizResultsPage() {
     <div className="min-h-screen bg-[#f5f3ff] pattern-islamic">
       <div className="mx-auto max-w-2xl space-y-5 px-4 py-8">
         <Link href="/audio-quiz" className="inline-flex items-center gap-1.5 text-sm font-bold text-[#6d28d9] hover:underline">
-          <ArrowLeft size={15} /> All audio quizzes
+          <ArrowLeft size={15} /> All audio competitions
         </Link>
 
         {loading ? (

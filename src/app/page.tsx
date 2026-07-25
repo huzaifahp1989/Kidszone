@@ -238,6 +238,27 @@ export default function Home() {
 
         <KidsZoneFeatureLab />
 
+        <section className="feature-tile rounded-3xl border-amber-200 bg-gradient-to-br from-amber-50 via-white to-orange-50 p-6">
+          <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
+            <div className="max-w-2xl">
+              <div className="inline-flex items-center gap-2 rounded-full bg-amber-100 px-3 py-1 text-xs font-bold uppercase tracking-[0.18em] text-amber-900">
+                <Sparkles size={14} /> Voice Challenge
+              </div>
+              <h2 className="mt-3 text-2xl font-black text-amber-950 md:text-3xl">Audio Competition</h2>
+              <p className="mt-2 text-sm leading-6 text-amber-900/80 md:text-base">
+                Listen to audio questions, record your voice answers, and earn points when judges approve your entry.
+                Winners can also win prizes!
+              </p>
+            </div>
+            <Link
+              href="/audio-quiz"
+              className="inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-amber-600 to-orange-600 px-5 py-3 text-sm font-bold text-white shadow-lg transition hover:from-amber-500 hover:to-orange-500"
+            >
+              <Trophy size={18} /> Enter &amp; Record
+            </Link>
+          </div>
+        </section>
+
         <section className="feature-tile rounded-3xl border-teal-200 bg-gradient-to-br from-teal-50 via-white to-emerald-50 p-6">
           <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
             <div className="max-w-2xl">

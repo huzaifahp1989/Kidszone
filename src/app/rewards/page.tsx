@@ -457,6 +457,26 @@ export default function RewardsPage() {
 
         {activeTab === 'prizes' && (
           <>
+        <section className="mb-6 rounded-3xl border border-amber-200 bg-gradient-to-br from-amber-50 via-white to-orange-50 p-6 shadow-sm">
+          <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
+            <div className="max-w-2xl">
+              <div className="inline-flex items-center gap-2 rounded-full bg-amber-100 px-3 py-1 text-xs font-bold uppercase tracking-[0.18em] text-amber-900">
+                <Mic size={14} /> Voice Challenge
+              </div>
+              <p className="mt-3 font-extrabold text-amber-950 text-base md:text-lg">Audio Competition</p>
+              <p className="mt-2 text-sm text-amber-900/80">
+                Listen to audio questions, record your answers, earn points when approved, and compete for prizes.
+              </p>
+            </div>
+            <Link
+              href="/audio-quiz"
+              className="inline-flex items-center justify-center gap-2 rounded-2xl bg-amber-600 px-5 py-3 text-sm font-bold text-white shadow-lg transition hover:bg-amber-500"
+            >
+              <Mic size={18} /> Enter &amp; record
+            </Link>
+          </div>
+        </section>
+
         <section className="mb-6 rounded-3xl border border-amber-200 bg-gradient-to-br from-amber-50 via-white to-yellow-50 p-6 shadow-sm">
           <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
             <div className="max-w-2xl">

@@ -951,7 +951,7 @@ export default function AdminPanel() {
             onClick={() => router.push('/admin/audio-quiz')}
             className="px-5 py-2.5 rounded-lg font-bold transition bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 hover:border-violet-300 flex items-center gap-2 whitespace-nowrap"
           >
-            🎙️ Audio Quiz
+            🎙️ Audio Competition
           </button>
           <button
             onClick={() => router.push('/admin/fitness')}

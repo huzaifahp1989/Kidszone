@@ -48,10 +48,15 @@ create table if not exists public.audio_submissions (
   status text not null default 'pending' check (status in ('pending', 'approved', 'rejected')),
   place integer,
   judge_notes text,
+  points_awarded integer not null default 0,
   submitted_at timestamptz not null default timezone('utc', now()),
   reviewed_at timestamptz,
   unique (quiz_id, user_id)
 );
+
+-- Existing installs created before points wiring.
+alter table public.audio_submissions
+  add column if not exists points_awarded integer not null default 0;
 
 create index if not exists audio_submissions_quiz_idx
   on public.audio_submissions (quiz_id, status, submitted_at desc);

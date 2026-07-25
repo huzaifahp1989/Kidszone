@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { isAdminRequest } from '@/lib/admin-auth';
-import { AUDIO_QUIZZES_TABLE, isMissingTableError } from '@/lib/audio-quiz-server';
+import { AUDIO_QUIZZES_TABLE, isMissingTableError, seedTestAudioQuiz } from '@/lib/audio-quiz-server';
 
 export const dynamic = 'force-dynamic';
 
@@ -50,12 +50,14 @@ create table if not exists public.audio_submissions (
   status text not null default 'pending' check (status in ('pending', 'approved', 'rejected')),
   place integer,
   judge_notes text,
+  points_awarded integer not null default 0,
   submitted_at timestamptz not null default timezone('utc', now()),
   reviewed_at timestamptz,
   unique (quiz_id, user_id)
 );
 create index if not exists audio_submissions_quiz_idx on public.audio_submissions (quiz_id, status, submitted_at desc);
 alter table public.audio_submissions alter column audio_path drop not null;
+alter table public.audio_submissions add column if not exists points_awarded integer not null default 0;
 
 create table if not exists public.audio_answers (
   id uuid primary key default gen_random_uuid(),
@@ -144,5 +146,13 @@ export async function POST(request: Request) {
     );
   }
 
-  return NextResponse.json({ success: true, message: 'Audio Quiz tables are ready.' });
+  const seeded = await seedTestAudioQuiz().catch(() => null);
+
+  return NextResponse.json({
+    success: true,
+    message: seeded?.created
+      ? 'Audio Competition tables are ready. A test competition with sample audio was added.'
+      : 'Audio Competition tables are ready.',
+    testQuizId: seeded?.quizId ?? null,
+  });
 }
