@@ -379,6 +379,21 @@ export default function SignInPage() {
       setProgress('Redirecting…');
       const next = getPostSignInPath(authMeta, getNextPath());
       
+      // Verify session is persisted before redirecting
+      try {
+        const { data: verifySession } = await supabase.auth.getSession();
+        if (!verifySession.session?.user?.id) {
+          setError('Session verification failed. Please sign in again.');
+          setLoading(false);
+          setProgress(null);
+          authInFlightRef.current = false;
+          return;
+        }
+      } catch (err) {
+        console.warn('Session verification error:', err);
+        // Continue anyway, auth listener should handle it
+      }
+      
       // Don't use router.refresh() as it can cause auth state to reset
       // Just use router.replace() for navigation
       if (typeof window !== 'undefined') {
