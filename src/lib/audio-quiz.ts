@@ -75,6 +75,61 @@ export function isAudioQuizCategory(value: unknown): value is AudioQuizCategory 
   return typeof value === 'string' && (AUDIO_QUIZ_CATEGORIES as readonly string[]).includes(value);
 }
 
+export interface AudioQuizMetadata {
+  quizId: string;
+  userId: string;
+  timestamp: number;
+}
+
+export interface AudioQuizQuestionRecordingMetadata {
+  questionId: string;
+  recordingId: string;
+  duration: number;
+}
+
+export function buildAudioQuizMetadata(quizId: string, userId: string): AudioQuizMetadata {
+  return {
+    quizId,
+    userId,
+    timestamp: Date.now(),
+  };
+}
+
+export function buildAudioQuizQuestionRecordingMetadata(
+  questionId: string,
+  recordingId: string,
+  duration: number
+): AudioQuizQuestionRecordingMetadata {
+  return {
+    questionId,
+    recordingId,
+    duration,
+  };
+}
+
+export function buildAudioQuizQuestionRecordingTitle(
+  quizName: string,
+  questionNumber: number,
+  userId: string
+): string {
+  return `${quizName} - Q${questionNumber} - ${userId} - ${Date.now()}`;
+}
+
+export function parseAudioQuizQuestionRecordingMetadata(
+  metadata: unknown
+): AudioQuizQuestionRecordingMetadata | null {
+  if (typeof metadata !== 'object' || !metadata) return null;
+  const m = metadata as Record<string, unknown>;
+  if (typeof m.questionId !== 'string' || typeof m.recordingId !== 'string' || typeof m.duration !== 'number') {
+    return null;
+  }
+  return {
+    questionId: m.questionId,
+    recordingId: m.recordingId,
+    duration: m.duration,
+  };
+}
+
 /** A quiz is open for submissions when active and within its date window (if set). */
 export function isQuizOpen(quiz: { active: boolean; startDate: string | null; endDate: string | null }): boolean {
   if (!quiz.active) return false;

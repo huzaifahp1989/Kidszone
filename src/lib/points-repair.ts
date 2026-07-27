@@ -230,6 +230,23 @@ export async function repairUserPointsByUserId(userId: string, options?: { backf
       total_points: totalPoints,
       weekly_points: weeklyPoints,
       monthly_points: monthlyPoints,
+    };
+
+  return {
+    beforeRow,
+    afterRow,
+  };
+}
+
+export async function runPointsRepairBatch(userIds: string[]): Promise<void> {
+  for (const userId of userIds) {
+    try {
+      await repairUserPointsByUserId(userId);
+    } catch {
+      console.error(`Failed to repair points for user ${userId}`);
+    }
+  }
+}
       today_points: todayPoints,
       last_earned_date: dayKey,
       badges,

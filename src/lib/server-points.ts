@@ -243,27 +243,22 @@ export async function awardPointsWithDailyCapByUserId(
 
   if (upsertError) {
     return emptyFailure('update_failed', upsertError.message, {
-      totalPoints: baseTotal,
-      weeklyPoints: baseWeekly,
-      monthlyPoints: baseMonthly,
-      todayPoints: currentTodayPoints,
-      badges: Math.floor(baseTotal / 100),
-      level: 1 + Math.floor(Math.floor(baseTotal / 100) / 5),
       hasReliableTotals: true,
+      totalPoints,
+      weeklyPoints,
+      monthlyPoints,
+      todayPoints,
+      dailyLimit: POINTS_DAILY_CAP,
+      level,
+      badges,
     });
-  }
-
-  const usersSynced = await syncUsersTable(userId, totalPoints, weeklyPoints, monthlyPoints);
-  if (!usersSynced) {
-    // users_points already has the new totals — keep returning them so the client updates.
-    console.error('[server-points] users table sync failed after retries; users_points was updated');
   }
 
   return {
     success: true,
     reason: 'awarded',
-    message: options.successMessage || `Mission bonus claimed. +${pointsAwarded} points added.`,
-    pointsAwarded,
+    message: successMessage || '✅ Points awarded!',
+    pointsAwarded: pointsToAward,
     totalPoints,
     weeklyPoints,
     monthlyPoints,
@@ -273,4 +268,38 @@ export async function awardPointsWithDailyCapByUserId(
     level,
     hasReliableTotals: true,
   };
+}
+
+export async function syncUserPointsMirror(userId: string): Promise<void> {
+  if (supabaseUrlUnusable()) return;
+  
+  const { data: points, error } = await supabaseAdmin
+    .from('users_points')
+    .select('*')
+    .eq('user_id', userId)
+    .single();
+
+  if (error || !points) return;
+
+  // Ensure users table has the latest points
+  await supabaseAdmin
+    .from('users')
+    .update({
+      points: points.total_points,
+      level: points.level,
+      badges: points.badges,
+    })
+    .eq('id', userId);
+}
+
+export async function runPointsRepairBatch(userIds: string[]): Promise<void> {
+  if (supabaseUrlUnusable()) return;
+
+  for (const userId of userIds) {
+    try {
+      await syncUserPointsMirror(userId);
+    } catch {
+      console.error(`Failed to repair points for user ${userId}`);
+    }
+  }
 }
