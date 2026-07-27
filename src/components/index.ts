@@ -32,6 +32,7 @@ export * from './WeeklyActivitiesProgress';
 export * from './WeeklyActivityPopup';
 export * from './AdminNotificationBadge';
 export * from './SurveyPopup';
+export * from './SurveyBanner';
 export * from './ChatWidget';
 export * from './HomeChatPopup';
 export * from './AnnouncementImageSlideshow';
