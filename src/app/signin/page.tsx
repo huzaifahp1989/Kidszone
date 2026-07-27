@@ -495,11 +495,36 @@ export default function SignInPage() {
 
       setProgress('Saving session…');
       if (isMobile) {
-        supabase.auth.setSession({ access_token, refresh_token }).catch(() => {});
+        const { error: sessionErr } = await supabase.auth.setSession({ access_token, refresh_token });
+        if (sessionErr) {
+          console.error('Mobile setSession failed:', sessionErr);
+          setError('Failed to save session. Please try again.');
+          setLoading(false);
+          setProgress(null);
+          return;
+        }
         await finishSuccess(uid);
         return;
       }
-      await withTimeout(supabase.auth.setSession({ access_token, refresh_token }), 4000);
+      try {
+        const { error: sessionErr } = await withTimeout(
+          supabase.auth.setSession({ access_token, refresh_token }),
+          4000
+        );
+        if (sessionErr) {
+          console.error('setSession error:', sessionErr);
+          setError('Failed to save session. Please try signing in again.');
+          setLoading(false);
+          setProgress(null);
+          return;
+        }
+      } catch (err) {
+        console.error('setSession timeout/error:', err);
+        setError('Connection timeout while saving session. Please try again.');
+        setLoading(false);
+        setProgress(null);
+        return;
+      }
       await finishSuccess(uid);
       return;
     }
@@ -526,6 +551,10 @@ export default function SignInPage() {
     }
     if (!password || !passwordValid) { setError('Password must be at least 6 characters.'); return; }
     if (offline) { setError('You appear to be offline. Please reconnect and try again.'); return; }
+    
+    // Persist remember me preference BEFORE signing in
+    persistRemember(rememberMe);
+    
     try {
       const storage = mobileAuthHelper.checkStorageAvailability();
       if (!storage.localStorage && !storage.sessionStorage) {
