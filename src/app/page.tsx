@@ -4,7 +4,7 @@ import React, { useMemo } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/lib/auth-context';
 import { useAgeMode } from '@/lib/age-mode';
-import { BookOpen, Gamepad2, Sparkles, Star, Target, Zap, Trophy, Coins } from 'lucide-react';
+import { BookOpen, Gamepad2, Sparkles, Star, Target, Zap, Trophy, Coins, ChevronRight } from 'lucide-react';
 import DailyMissions from '@/components/DailyMissions';
 import { ComeBackNudge } from '@/components/ComeBackNudge';
 import { WeeklyChallengeCard } from '@/components/WeeklyChallengeCard';
@@ -17,7 +17,8 @@ import { WhatsNew } from '@/components/WhatsNew';
 import { Mascot } from '@/components/Mascot';
 import { ReadAloudButton } from '@/components/ReadAloudButton';
 import { PointsSummaryWidget } from '@/components/PointsSummaryWidget';
-import { SurveyPopup } from '@/components';
+import { SurveyPopup, SurveyBanner } from '@/components';
+import { QUIZ_TOPICS } from '@/lib/quiz-topics';
 import { DailyAyahCard } from '@/components/DailyAyahCard';
 import { AchievementGrid } from '@/components/AchievementGrid';
 import { StreakCalendar } from '@/components/StreakCalendar';
@@ -217,6 +218,29 @@ export default function Home() {
         </section>
 
         <PointsSummaryWidget />
+
+        <SurveyBanner />
+
+        <section className="space-y-3 stagger-in">
+          <div className="flex items-center justify-between px-1">
+            <h3 className="text-lg font-black text-[#1e1b4b]">Take a Quiz</h3>
+            <Link href="/quiz" className="inline-flex items-center gap-1 text-sm font-bold text-teal-700 hover:text-teal-600">
+              All Topics <ChevronRight size={16} />
+            </Link>
+          </div>
+          <div className="grid grid-cols-3 gap-2">
+            {QUIZ_TOPICS.filter(t => t.group === 'general').map((topic) => (
+              <Link
+                key={topic.id}
+                href={`/quiz?topic=${topic.id}`}
+                className="flex flex-col items-center gap-2 rounded-2xl border-2 border-teal-100 bg-gradient-to-br from-teal-50 to-emerald-50 p-3 transition hover:border-teal-300 hover:shadow-md"
+              >
+                <div className="text-2xl">{topic.emoji}</div>
+                <span className="text-xs font-bold text-center text-teal-900">{topic.label}</span>
+              </Link>
+            ))}
+          </div>
+        </section>
 
         <ComeBackNudge />
 
