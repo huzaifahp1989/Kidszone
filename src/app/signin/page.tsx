@@ -254,23 +254,14 @@ export default function SignInPage() {
       if (verifyErr) { setError(verifyErr.message || 'Invalid code. Please try again.'); return; }
       setInfo('Signed in! Redirecting…');
       const next = getNextPath();
-      router.replace(next);
-      const isMobile =
-        (() => {
-          try {
-            return mobileAuthHelper.isMobileBrowser() || mobileAuthHelper.isWebView();
-          } catch {
-            return false;
-          }
-        })();
-      if (isMobile && typeof window !== 'undefined') {
+      
+      // Don't use router.refresh() as it can cause auth state to reset
+      if (typeof window !== 'undefined') {
         window.setTimeout(() => {
-          try {
-            if (window.location.pathname.startsWith('/signin')) {
-              window.location.href = next;
-            }
-          } catch {}
-        }, 700);
+          router.replace(next);
+        }, 100);
+      } else {
+        router.replace(next);
       }
     } catch (err: any) {
       setError(err?.message || 'Could not verify code. Please try again.');
@@ -387,25 +378,16 @@ export default function SignInPage() {
       setInfo('Signed in! Redirecting…');
       setProgress('Redirecting…');
       const next = getPostSignInPath(authMeta, getNextPath());
-      router.replace(next);
-      router.refresh();
-
-      if (isMobile && typeof window !== 'undefined') {
-        window.setTimeout(() => {
-          try {
-            window.location.replace(next);
-          } catch {}
-        }, 650);
-      }
-
+      
+      // Don't use router.refresh() as it can cause auth state to reset
+      // Just use router.replace() for navigation
       if (typeof window !== 'undefined') {
+        // Give the auth listener a moment to update
         window.setTimeout(() => {
-          try {
-            if (window.location.pathname.startsWith('/signin')) {
-              window.location.href = next;
-            }
-          } catch {}
-        }, 900);
+          router.replace(next);
+        }, 100);
+      } else {
+        router.replace(next);
       }
     };
 
