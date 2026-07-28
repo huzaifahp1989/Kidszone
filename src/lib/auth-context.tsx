@@ -1,8 +1,8 @@
 "use client";
 
-import React, { createContext, useContext, useEffect, useMemo, useState, useCallback } from 'react';
+import React, { createContext, useContext, useEffect, useMemo, useRef, useState, useCallback } from 'react';
 import { ensureUserProfile } from '@/lib/user-profile';
-import { supabase } from '@/lib/supabase';
+import { readStoredAccessToken, supabase } from '@/lib/supabase';
 import { mobileAuthHelper } from '@/lib/mobile-auth';
 
 type KidProfile = {
@@ -125,6 +125,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<{ id: string; email?: string | null } | null>(null);
   const [profile, setProfile] = useState<KidProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  const isSigningOutRef = useRef(false);
 
   // Define refreshProfile early so it can be used in effects
   const refreshProfile = useCallback(async () => {
@@ -385,6 +386,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             console.error('Error loading profile on sign in:', err);
           }
         } else if (!u && event === 'SIGNED_OUT') {
+          if (isSigningOutRef.current) {
+            setProfile(null);
+            return;
+          }
+
+          const hasPersistedSession = Boolean(readStoredAccessToken());
+          if (hasPersistedSession) {
+            console.warn('Auth sign-out event arrived while a session token still exists; preserving local auth state for recovery.');
+            return;
+          }
+
           setProfile(null);
         }
       }
@@ -497,6 +509,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     logout: async () => {
       try {
         console.log('🔓 Starting logout process...');
+        isSigningOutRef.current = true;
         
         // Clear state immediately for faster UI feedback
         setUser(null);
@@ -546,6 +559,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (typeof window !== 'undefined') {
           window.location.href = '/signin';
         }
+      } finally {
+        isSigningOutRef.current = false;
       }
     },
     refreshProfile,

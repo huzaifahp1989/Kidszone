@@ -1,5 +1,13 @@
 import { readStoredAccessToken, supabase } from '@/lib/supabase';
 
+export function shouldAttemptAuthRefresh(
+  status: number | undefined,
+  hasStoredAccessToken: boolean,
+  hasActiveSession: boolean
+): boolean {
+  return status === 401 && hasStoredAccessToken && hasActiveSession;
+}
+
 async function resolveAccessToken(timeoutMs = 2_500): Promise<string | null> {
   const stored = readStoredAccessToken();
   if (stored) return stored;
@@ -59,7 +67,9 @@ export async function authJsonFetch(url: string, init: AuthJsonFetchOptions = {}
 
     // One retry after refresh when the session token expired.
     // refreshSession must be timed out — otherwise mobile can hang past the fetch abort.
-    if (response.status === 401) {
+    const hasStoredAccessToken = Boolean(readStoredAccessToken());
+    const hasActiveSession = Boolean((await supabase.auth.getSession()).data.session?.access_token);
+    if (shouldAttemptAuthRefresh(response.status, hasStoredAccessToken, hasActiveSession)) {
       try {
         const refreshed = await refreshSessionWithTimeout(3_000);
         if (refreshed) {
