@@ -33,6 +33,7 @@ export * from './WeeklyActivityPopup';
 export * from './AdminNotificationBadge';
 export * from './SurveyPopup';
 export * from './SurveyBanner';
+export * from './FeedbackSurveyBanner';
 export * from './ChatWidget';
 export * from './HomeChatPopup';
 export * from './AnnouncementImageSlideshow';

@@ -9,6 +9,7 @@ import { AppShell } from '@/components/AppShell';
 import { FirebaseAnalyticsInit } from '@/components/FirebaseAnalyticsInit';
 import { GoogleAnalyticsInit } from '@/components/GoogleAnalyticsInit';
 import { DailyTasksPopup } from '@/components/DailyTasksPopup';
+import { FeedbackSurveyBanner } from '@/components/FeedbackSurveyBanner';
 import { Nunito, Amiri } from 'next/font/google';
 import { LIVE_APP_URL } from '@/lib/app-url';
 import { QUIZ_STUCK_RECOVERY_SCRIPT } from '@/lib/quiz-stuck-recovery-script';
@@ -79,6 +80,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 <FirebaseAnalyticsInit />
                 <GoogleAnalyticsInit />
                 <DailyTasksPopup />
+                <FeedbackSurveyBanner />
               </Suspense>
               <AppShell>{children}</AppShell>
             </AgeModeProvider>
