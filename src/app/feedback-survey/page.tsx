@@ -14,6 +14,12 @@ type FormState = {
   wantsReminder: boolean;
   feedbackText: string;
   howBenefiting: string;
+  overallRating: number;
+  favoriteFeatures: string[];
+  userRole: string;
+  wouldRecommend: string;
+  wantsMore: string[];
+  heardFrom: string;
 };
 
 const INITIAL: FormState = {
@@ -24,6 +30,12 @@ const INITIAL: FormState = {
   wantsReminder: false,
   feedbackText: '',
   howBenefiting: '',
+  overallRating: 0,
+  favoriteFeatures: [],
+  userRole: '',
+  wouldRecommend: '',
+  wantsMore: [],
+  heardFrom: '',
 };
 
 export default function FeedbackSurveyPage() {
@@ -37,13 +49,24 @@ export default function FeedbackSurveyPage() {
   const [error, setError] = useState('');
 
   const set = (field: keyof FormState) => (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) => setForm(f => ({ ...f, [field]: e.target.value }));
+
+  const toggleArray = (field: 'favoriteFeatures' | 'wantsMore', value: string) => {
+    setForm(f => {
+      const current = f[field];
+      const next = current.includes(value)
+        ? current.filter(v => v !== value)
+        : [...current, value];
+      return { ...f, [field]: next };
+    });
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     if (!form.fullName.trim()) { setError('Please enter your full name.'); return; }
+    if (form.overallRating < 1 || form.overallRating > 5) { setError('Please tap a star rating.'); return; }
 
     setSubmitting(true);
     try {
@@ -59,6 +82,12 @@ export default function FeedbackSurveyPage() {
           wantsReminder: form.wantsReminder,
           feedbackText: form.feedbackText,
           howBenefiting: form.howBenefiting,
+          overallRating: form.overallRating || null,
+          favoriteFeatures: form.favoriteFeatures,
+          userRole: form.userRole || null,
+          wouldRecommend: form.wouldRecommend || null,
+          wantsMore: form.wantsMore,
+          heardFrom: form.heardFrom || null,
         }),
       });
       const data = await res.json();
@@ -181,6 +210,140 @@ export default function FeedbackSurveyPage() {
                   Yes, I want Kids Zone to remind me about daily tasks and activities! 🔔
                 </span>
               </label>
+            </div>
+          </div>
+
+          {/* Quick Survey */}
+          <div className="pb-2 border-b border-slate-100">
+            <p className="flex items-center gap-2 text-sm font-black uppercase tracking-wide text-violet-700 mb-4">
+              <Star size={14} /> Quick Survey
+            </p>
+            <div className="space-y-5">
+              {/* Overall rating */}
+              <div>
+                <label className={labelCls}>How would you rate Kids Zone? <span className="text-rose-500">*</span></label>
+                <div className="flex items-center gap-1">
+                  {[1, 2, 3, 4, 5].map(star => (
+                    <button
+                      key={star}
+                      type="button"
+                      onClick={() => setForm(f => ({ ...f, overallRating: star }))}
+                      className={`p-1 rounded transition ${star <= form.overallRating ? 'text-amber-400 hover:text-amber-500' : 'text-slate-300 hover:text-amber-300'}`}
+                      aria-label={`Rate ${star} stars`}
+                    >
+                      <Star size={32} className={star <= form.overallRating ? 'fill-amber-400' : ''} />
+                    </button>
+                  ))}
+                  <span className="ml-2 text-sm font-bold text-slate-600">
+                    {form.overallRating > 0 ? ['Poor', 'Okay', 'Good', 'Great', 'Excellent!'][form.overallRating - 1] : 'Tap a star'}
+                  </span>
+                </div>
+              </div>
+
+              {/* Who is filling this */}
+              <div>
+                <label className={labelCls}>Who is filling this survey?</label>
+                <select value={form.userRole} onChange={set('userRole')} className={inputCls}>
+                  <option value="">Choose one</option>
+                  <option value="kid">A Kid</option>
+                  <option value="parent">A Parent</option>
+                  <option value="teacher">A Teacher</option>
+                  <option value="other">Other</option>
+                </select>
+              </div>
+
+              {/* Favorite features */}
+              <div>
+                <label className={labelCls}>What do you like most? (pick all that apply)</label>
+                <div className="grid grid-cols-2 gap-2">
+                  {[
+                    'Quran Quiz',
+                    'Daily Tasks',
+                    'Games',
+                    'Recording Studio',
+                    'Coloring Pages',
+                    'Islamic Stories',
+                    'Leaderboard',
+                    'Pledge / Durood',
+                  ].map(option => (
+                    <label key={option} className="flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={form.favoriteFeatures.includes(option)}
+                        onChange={() => toggleArray('favoriteFeatures', option)}
+                        className="h-4 w-4 rounded accent-violet-500"
+                      />
+                      {option}
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              {/* Would recommend */}
+              <div>
+                <label className={labelCls}>Would you recommend Kids Zone to a friend?</label>
+                <div className="flex flex-wrap gap-2">
+                  {[
+                    { value: 'yes', label: 'Yes! 👍' },
+                    { value: 'maybe', label: 'Maybe 🤔' },
+                    { value: 'no', label: 'Not yet 👎' },
+                  ].map(({ value, label }) => (
+                    <button
+                      key={value}
+                      type="button"
+                      onClick={() => setForm(f => ({ ...f, wouldRecommend: value }))}
+                      className={`rounded-xl px-4 py-2 text-sm font-bold border-2 transition ${
+                        form.wouldRecommend === value
+                          ? 'bg-violet-600 border-violet-600 text-white'
+                          : 'bg-white border-slate-200 text-slate-700 hover:border-violet-300'
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Wants more */}
+              <div>
+                <label className={labelCls}>What would you like to see more of? (pick all that apply)</label>
+                <div className="grid grid-cols-2 gap-2">
+                  {[
+                    'Quran recitation',
+                    'Islamic stories',
+                    'Fun games',
+                    'Challenges',
+                    'Coloring pages',
+                    'Nasheeds',
+                    'Duas',
+                    'Daily tasks',
+                  ].map(option => (
+                    <label key={option} className="flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={form.wantsMore.includes(option)}
+                        onChange={() => toggleArray('wantsMore', option)}
+                        className="h-4 w-4 rounded accent-emerald-500"
+                      />
+                      {option}
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              {/* Heard from */}
+              <div>
+                <label className={labelCls}>How did you hear about Kids Zone?</label>
+                <select value={form.heardFrom} onChange={set('heardFrom')} className={inputCls}>
+                  <option value="">Choose one</option>
+                  <option value="friend-family">Friend or Family</option>
+                  <option value="school-madrassa">School / Madrassa</option>
+                  <option value="social-media">Social Media</option>
+                  <option value="whatsapp">WhatsApp</option>
+                  <option value="search">Search Engine</option>
+                  <option value="other">Other</option>
+                </select>
+              </div>
             </div>
           </div>
 

@@ -92,7 +92,8 @@ export function useAudioRecorder(maxSeconds = 600) {
         }
       };
 
-      recorder.start();
+      // Use a 1-second timeslice so Safari/iOS reliably delivers data chunks.
+      recorder.start(1000);
       mediaRecorderRef.current = recorder;
       setState('recording');
       setSeconds(0);

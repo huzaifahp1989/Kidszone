@@ -10,6 +10,15 @@ type Category = 'quran' | 'nasheed' | 'story';
 
 type StudioState = 'idle' | 'recording' | 'paused' | 'finished';
 
+function isMediaRecorderSupported(): boolean {
+  if (typeof window === 'undefined') return false;
+  if (!window.MediaRecorder) return false;
+  // iOS Safari has MediaRecorder but often only supports video/mp4; check audio support
+  return ['audio/webm;codecs=opus', 'audio/mp4', 'audio/webm', 'audio/ogg'].some(
+    t => MediaRecorder.isTypeSupported(t)
+  );
+}
+
 export default function StudioPage() {
   const router = useRouter();
   const { user, profile } = useAuth();
@@ -26,11 +35,17 @@ export default function StudioPage() {
   const [submitting, setSubmitting] = useState(false);
   const [elapsedMs, setElapsedMs] = useState(0);
   const [level, setLevel] = useState(0);
+  const [mimeType, setMimeType] = useState<string>('audio/webm');
   const [recordingQuality, setRecordingQuality] = useState<{
     duration: number;
     averageVolume: number;
     hasGoodQuality: boolean;
   } | null>(null);
+
+  // Upload fallback state
+  const [uploadedFile, setUploadedFile] = useState<File | null>(null);
+  const [uploadedUrl, setUploadedUrl] = useState<string | null>(null);
+  const supportsRecording = isMediaRecorderSupported();
 
   useEffect(() => {
     if (profile?.name) {
@@ -61,12 +76,18 @@ export default function StudioPage() {
     if (audioUrl) {
       URL.revokeObjectURL(audioUrl);
     }
+    if (uploadedUrl) {
+      URL.revokeObjectURL(uploadedUrl);
+    }
     chunksRef.current = [];
     lastBlobRef.current = null;
     setAudioUrl(null);
+    setUploadedFile(null);
+    setUploadedUrl(null);
     setStudioState('idle');
     setElapsedMs(0);
     setLevel(0);
+    setMimeType('audio/webm');
   };
 
   const setupAnalyser = (stream: MediaStream) => {
@@ -162,6 +183,7 @@ export default function StudioPage() {
         'audio/ogg',
       ];
       const supportedType = preferredTypes.find(t => typeof MediaRecorder !== 'undefined' && MediaRecorder.isTypeSupported(t));
+      setMimeType(supportedType || 'audio/webm');
       const recorder = supportedType ? new MediaRecorder(stream, { mimeType: supportedType }) : new MediaRecorder(stream);
       chunksRef.current = [];
       recorder.ondataavailable = e => {
@@ -193,7 +215,8 @@ export default function StudioPage() {
       setupAnalyser(stream);
     }
 
-    mediaRecorderRef.current.start();
+    // Use a 1-second timeslice so Safari/iOS reliably delivers data chunks.
+    mediaRecorderRef.current.start(1000);
     setStudioState('recording');
     startTimer();
     startLevelMeter();
@@ -235,7 +258,11 @@ export default function StudioPage() {
     return () => {
       stopTimer();
       if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
-        mediaRecorderRef.current.stop();
+        try {
+          mediaRecorderRef.current.stop();
+        } catch {
+          // ignore
+        }
       }
       if (streamRef.current) {
         streamRef.current.getTracks().forEach(t => t.stop());
@@ -243,15 +270,19 @@ export default function StudioPage() {
       if (audioContextRef.current) {
         audioContextRef.current.close();
       }
-    if (audioUrl) {
+      if (audioUrl) {
         URL.revokeObjectURL(audioUrl);
       }
+      if (uploadedUrl) {
+        URL.revokeObjectURL(uploadedUrl);
+      }
     };
-  }, [audioUrl]);
+  }, [audioUrl, uploadedUrl]);
 
   const handleSubmitRecording = async () => {
-    if (!lastBlobRef.current || !audioUrl) {
-      setSubmitError('Please record something first.');
+    const blobToSubmit = lastBlobRef.current || uploadedFile;
+    if (!blobToSubmit) {
+      setSubmitError('Please record or upload an audio file first.');
       return;
     }
     if (!category) {
@@ -263,18 +294,21 @@ export default function StudioPage() {
     setSubmitting(true);
     try {
       const formData = new FormData();
-      const blobType = lastBlobRef.current.type || 'audio/webm';
+      const blobType = (blobToSubmit as Blob).type || mimeType || 'audio/webm';
       const extension = blobType.includes('mp4')
         ? 'm4a'
         : blobType.includes('mpeg')
           ? 'mp3'
           : blobType.includes('ogg')
             ? 'ogg'
-            : 'webm';
-      formData.append('recording', lastBlobRef.current, `recording.${extension}`);
+            : blobType.includes('wav')
+              ? 'wav'
+              : 'webm';
+      const filenameBase = (blobToSubmit as File).name?.replace(/\.[^/.]+$/, '') || 'recording';
+      formData.append('recording', blobToSubmit, `${filenameBase}.${extension}`);
       formData.append('category', category);
-      formData.append('title', title || '');
-      const seconds = Math.floor(elapsedMs / 1000);
+      formData.append('title', title || filenameBase || '');
+      const seconds = Math.floor(elapsedMs / 1000) || 0;
       formData.append('duration', String(seconds));
       formData.append('childName', childName || profile?.name || '');
       if (user?.id) {
@@ -454,11 +488,14 @@ export default function StudioPage() {
                   className={`flex items-center justify-center rounded-full border-4 w-32 h-32 ${
                     studioState === 'recording'
                       ? 'border-red-400 bg-red-50 animate-pulse'
-                      : 'border-slate-200 bg-slate-50'
+                      : supportsRecording
+                        ? 'border-slate-200 bg-slate-50'
+                        : 'border-slate-100 bg-slate-100 opacity-60'
                   }`}
                 >
                   <button
                     type="button"
+                    disabled={!supportsRecording}
                     onClick={
                       studioState === 'recording' || studioState === 'paused'
                         ? handleStop
@@ -467,17 +504,21 @@ export default function StudioPage() {
                     className={`w-20 h-20 rounded-full flex items-center justify-center text-3xl font-bold shadow-lg transition ${
                       studioState === 'recording'
                         ? 'bg-red-500 text-white hover:bg-red-600'
-                        : 'bg-islamic-blue text-white hover:bg-blue-700'
+                        : supportsRecording
+                          ? 'bg-islamic-blue text-white hover:bg-blue-700'
+                          : 'bg-slate-400 text-white cursor-not-allowed'
                     }`}
                   >
                     {studioState === 'recording' || studioState === 'paused' ? '■' : '●'}
                   </button>
                 </div>
                 <p className="text-sm text-slate-600">
-                  {studioState === 'idle' && 'Tap to start recording'}
-                  {studioState === 'recording' && 'Recording... tap to stop'}
-                  {studioState === 'paused' && 'Paused... tap to stop'}
-                  {studioState === 'finished' && 'Recording finished'}
+                  {!supportsRecording
+                    ? 'Recording not supported — upload a file below'
+                    : studioState === 'idle' && 'Tap to start recording'}
+                  {supportsRecording && studioState === 'recording' && 'Recording... tap to stop'}
+                  {supportsRecording && studioState === 'paused' && 'Paused... tap to stop'}
+                  {supportsRecording && studioState === 'finished' && 'Recording finished'}
                 </p>
                 <p className="text-xs font-mono text-slate-600">
                   {formatTime(elapsedMs)}
@@ -510,17 +551,52 @@ export default function StudioPage() {
               {permissionError || supportError}
             </div>
           )}
+
+          {!supportsRecording && !permissionError && (
+            <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+              <strong>Recording not supported on this browser.</strong><br />
+              You can still upload an audio file below (mp3, m4a, webm, ogg, wav).
+            </div>
+          )}
         </div>
 
         <div className="bg-white rounded-3xl shadow-lg border border-slate-100 p-6 space-y-4">
           <h2 className="text-lg font-semibold text-islamic-dark flex items-center gap-2">
             <span>🎧 Listen to your recording</span>
-            {!audioUrl && <span className="text-xs font-normal text-slate-500">(Record something first)</span>}
+            {!audioUrl && !uploadedUrl && <span className="text-xs font-normal text-slate-500">(Record something first or upload a file)</span>}
           </h2>
-          {audioUrl ? (
+
+          {/* File upload fallback */}
+          <div className="rounded-xl border-2 border-dashed border-slate-200 bg-slate-50 p-4 text-center">
+            <p className="text-sm font-semibold text-slate-700 mb-2">Or upload an audio file</p>
+            <p className="text-xs text-slate-500 mb-3">mp3, m4a, ogg, webm, wav — max 25 MB</p>
+            <input
+              type="file"
+              accept="audio/*,.mp3,.m4a,.ogg,.webm,.wav"
+              onChange={e => {
+                const file = e.target.files?.[0];
+                if (!file) return;
+                if (file.size > 25 * 1024 * 1024) {
+                  setSubmitError('File is too large. Please upload a file under 25 MB.');
+                  return;
+                }
+                setUploadedFile(file);
+                const url = URL.createObjectURL(file);
+                setUploadedUrl(url);
+                setAudioUrl(null);
+                if (audioUrl) URL.revokeObjectURL(audioUrl);
+                setStudioState('finished');
+                setSubmitError(null);
+              }}
+              className="block w-full text-sm text-slate-600 file:mr-3 file:rounded-xl file:border-0 file:bg-violet-600 file:px-4 file:py-2 file:text-sm file:font-bold file:text-white hover:file:bg-violet-700"
+            />
+          </div>
+
+          {audioUrl || uploadedUrl ? (
             <div className="space-y-4">
               <audio controls className="w-full">
-                <source src={audioUrl} type="audio/webm" />
+                <source src={audioUrl || uploadedUrl || ''} type={mimeType} />
+                Your browser does not support the audio player.
               </audio>
 
               {/* Quality Indicator */}

@@ -6,10 +6,17 @@ import { getAuthenticatedRequestUser } from '@/lib/request-auth';
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { fullName, age, city, phoneNumber, wantsReminder, feedbackText, howBenefiting } = body;
+    const {
+      fullName, age, city, phoneNumber, wantsReminder, feedbackText, howBenefiting,
+      overallRating, favoriteFeatures, userRole, wouldRecommend, wantsMore, heardFrom,
+    } = body;
 
     if (!fullName || fullName.trim().length < 2) {
       return NextResponse.json({ error: 'Full name is required.' }, { status: 400 });
+    }
+    const rating = Number(overallRating);
+    if (!Number.isFinite(rating) || rating < 1 || rating > 5) {
+      return NextResponse.json({ error: 'Overall rating is required (1-5 stars).' }, { status: 400 });
     }
 
     // Get logged-in user if any (guests can also submit)
@@ -47,6 +54,12 @@ export async function POST(request: Request) {
         wants_reminder: Boolean(wantsReminder),
         feedback_text: feedbackText?.trim() || null,
         how_benefiting: howBenefiting?.trim() || null,
+        overall_rating: rating,
+        favorite_features: Array.isArray(favoriteFeatures) ? favoriteFeatures : [],
+        user_role: userRole?.trim() || null,
+        would_recommend: wouldRecommend?.trim() || null,
+        wants_more: Array.isArray(wantsMore) ? wantsMore : [],
+        heard_from: heardFrom?.trim() || null,
         status: 'pending',
       })
       .select('id')

@@ -1811,6 +1811,20 @@ export default function AdminPanel() {
                           {sub.age && <span>Age: {sub.age}</span>}
                           {sub.city && <span>📍 {sub.city}</span>}
                           {sub.phone_number && <span>📞 {sub.phone_number}</span>}
+                          {sub.user_role && <span className="font-semibold text-violet-600 capitalize">👤 {sub.user_role}</span>}
+                          {sub.would_recommend && (
+                            <span className={`font-semibold ${
+                              sub.would_recommend === 'yes' ? 'text-emerald-600' :
+                              sub.would_recommend === 'no' ? 'text-rose-600' : 'text-amber-600'
+                            }`}>
+                              {sub.would_recommend === 'yes' ? '👍 Recommends' : sub.would_recommend === 'no' ? '👎 Not yet' : '🤔 Maybe recommends'}
+                            </span>
+                          )}
+                          {sub.overall_rating && (
+                            <span className="text-amber-500 font-semibold">
+                              {'★'.repeat(sub.overall_rating)}{'☆'.repeat(5 - sub.overall_rating)} {sub.overall_rating}/5
+                            </span>
+                          )}
                           <span>{new Date(sub.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
                           {sub.wants_reminder && <span className="text-emerald-600 font-semibold">🔔 Wants reminders</span>}
                         </div>
@@ -1835,6 +1849,28 @@ export default function AdminPanel() {
                       <div className="rounded-lg bg-violet-50 border border-violet-100 p-3">
                         <p className="text-[10px] font-black uppercase tracking-wide text-violet-700 mb-1">Feedback</p>
                         <p className="text-sm text-slate-700">{sub.feedback_text}</p>
+                      </div>
+                    )}
+                    {(sub.favorite_features?.length > 0 || sub.wants_more?.length > 0 || sub.heard_from) && (
+                      <div className="grid gap-2 sm:grid-cols-2">
+                        {sub.favorite_features?.length > 0 && (
+                          <div className="rounded-lg bg-amber-50 border border-amber-100 p-3">
+                            <p className="text-[10px] font-black uppercase tracking-wide text-amber-700 mb-1">Likes most</p>
+                            <p className="text-sm text-slate-700">{sub.favorite_features.join(', ')}</p>
+                          </div>
+                        )}
+                        {sub.wants_more?.length > 0 && (
+                          <div className="rounded-lg bg-sky-50 border border-sky-100 p-3">
+                            <p className="text-[10px] font-black uppercase tracking-wide text-sky-700 mb-1">Wants more of</p>
+                            <p className="text-sm text-slate-700">{sub.wants_more.join(', ')}</p>
+                          </div>
+                        )}
+                        {sub.heard_from && (
+                          <div className="rounded-lg bg-slate-50 border border-slate-100 p-3">
+                            <p className="text-[10px] font-black uppercase tracking-wide text-slate-600 mb-1">Heard from</p>
+                            <p className="text-sm text-slate-700 capitalize">{sub.heard_from.replace('-', ' ')}</p>
+                          </div>
+                        )}
                       </div>
                     )}
 
