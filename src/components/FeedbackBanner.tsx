@@ -65,19 +65,20 @@ export function FeedbackBanner() {
   return (
     <>
       {/* Feedback trigger */}
-      <div className="text-center py-1 bg-indigo-700 border-b border-indigo-800">
+      <div className="fixed top-[72px] left-1/2 -translate-x-1/2 z-40 text-center py-1.5 px-4 bg-indigo-700 border border-indigo-600 rounded-full shadow-lg">
         <button
           onClick={() => setShowFeedback(!showFeedback)}
-          className="text-xs text-indigo-200 hover:text-white underline"
+          className="text-xs font-semibold text-white hover:text-indigo-100 flex items-center gap-1.5"
         >
-          Feedback
+          <Send size={14} />
+          Kids Feedback Survey
         </button>
       </div>
 
       {/* Feedback Box */}
       {showFeedback && (
-        <div className="bg-white border-b border-gray-200 shadow-lg">
-          <div className="max-w-2xl mx-auto p-4">
+        <div className="fixed top-[120px] left-1/2 -translate-x-1/2 z-50 w-[calc(100%-1rem)] max-w-2xl bg-white border border-gray-200 shadow-2xl rounded-2xl">
+          <div className="p-4">
             <div className="flex items-center justify-between mb-3">
               <h3 className="text-lg font-bold text-gray-800">📝 Send Feedback</h3>
               <button
