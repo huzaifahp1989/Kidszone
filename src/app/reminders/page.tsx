@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Bell, ChevronLeft, Clock, Save } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
 import { authJsonFetch } from '@/lib/auth-headers';
+import { supabase } from '@/lib/supabase';
 import {
   ACTIVITY_REMINDERS,
   ALL_REMINDER_KEYS,
@@ -27,6 +28,7 @@ export default function RemindersPage() {
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [pushStatus, setPushStatus] = useState<string | null>(null);
+  const [confirmingSession, setConfirmingSession] = useState(false);
 
   const load = useCallback(async () => {
     if (authLoading) return;
@@ -50,6 +52,33 @@ export default function RemindersPage() {
   useEffect(() => {
     load();
   }, [load]);
+
+  // Capacitor/Android WebViews can take longer to propagate the session from
+  // native storage back into the Supabase client. Give the auth listener a
+  // short extra window before we conclude the user is signed out.
+  useEffect(() => {
+    if (authLoading || user) return;
+    let cancelled = false;
+    setConfirmingSession(true);
+    const timer = setTimeout(async () => {
+      try {
+        const { data } = await supabase.auth.getSession();
+        if (!cancelled && !data.session?.user) {
+          setConfirmingSession(false);
+        }
+      } catch {
+        if (!cancelled) setConfirmingSession(false);
+      }
+    }, 2500);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [authLoading, user]);
+
+  useEffect(() => {
+    if (user) setConfirmingSession(false);
+  }, [user]);
 
   useEffect(() => {
     if (!user?.id) return;
@@ -105,7 +134,7 @@ export default function RemindersPage() {
     []
   );
 
-  if (authLoading) {
+  if (authLoading || (!user && confirmingSession)) {
     return (
       <div className="min-h-screen bg-islamic-light flex items-center justify-center px-4">
         <div className="mx-auto h-8 w-8 animate-spin rounded-full border-b-2 border-islamic-primary" />
