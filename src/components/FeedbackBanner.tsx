@@ -1,16 +1,33 @@
 "use client";
 
-import React, { useState } from 'react';
-import { X, Send, Mail, Copy } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { X, Send, Mail, Copy, CheckCircle2 } from 'lucide-react';
+
+const EMAIL_FEEDBACK_KEY = 'feedback_email_submitted';
 
 export function FeedbackBanner() {
   const [showFeedback, setShowFeedback] = useState(false);
   const [feedbackText, setFeedbackText] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [submittedViaEmail, setSubmittedViaEmail] = useState(false);
   const [copied, setCopied] = useState(false);
   
   const email = 'imediac786@gmail.com';
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      setSubmittedViaEmail(localStorage.getItem(EMAIL_FEEDBACK_KEY) === 'true');
+    }
+  }, []);
+
+  const markEmailSubmitted = () => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(EMAIL_FEEDBACK_KEY, 'true');
+    }
+    setSubmittedViaEmail(true);
+    setShowFeedback(false);
+  };
 
   const copyEmail = () => {
     navigator.clipboard.writeText(email);
@@ -30,7 +47,6 @@ export function FeedbackBanner() {
     setSubmitting(true);
 
     try {
-      // Send feedback to API
       const response = await fetch('/api/feedback', {
         method: 'POST',
         headers: {
@@ -44,8 +60,8 @@ export function FeedbackBanner() {
       const data = await response.json();
 
       if (response.ok) {
+        markEmailSubmitted();
         setSubmitted(true);
-        // Reset after 3 seconds
         setTimeout(() => {
           setFeedbackText('');
           setShowFeedback(false);
@@ -61,6 +77,10 @@ export function FeedbackBanner() {
       setSubmitting(false);
     }
   };
+
+  if (submittedViaEmail) {
+    return null;
+  }
 
   return (
     <>
@@ -104,8 +124,8 @@ export function FeedbackBanner() {
                   rows={4}
                   disabled={submitting}
                 />
-                <div className="flex items-center justify-between mt-3">
-                  <div className="flex items-center gap-2">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mt-3 gap-3">
+                  <div className="flex flex-wrap items-center gap-2">
                     <Mail size={16} className="text-gray-400" />
                     <p className="text-xs text-gray-500">
                       Send to: <span className="font-mono font-semibold">{email}</span>
@@ -117,6 +137,14 @@ export function FeedbackBanner() {
                       title="Copy email"
                     >
                       <Copy size={14} />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={markEmailSubmitted}
+                      className="text-xs font-semibold text-emerald-600 hover:text-emerald-700 flex items-center gap-1"
+                      title="I already sent feedback via email"
+                    >
+                      <CheckCircle2 size={14} /> I sent via email
                     </button>
                   </div>
                   <button
