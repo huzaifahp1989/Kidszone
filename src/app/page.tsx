@@ -4,7 +4,7 @@ import React, { useMemo } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/lib/auth-context';
 import { useAgeMode } from '@/lib/age-mode';
-import { BookOpen, Gamepad2, Sparkles, Star, Target, Zap, Trophy, Coins, ChevronRight } from 'lucide-react';
+import { BookOpen, Gamepad2, Sparkles, Star, Target, Zap, Trophy, Coins, ChevronRight, CheckCircle2, Mic, Bell, Clock } from 'lucide-react';
 import DailyMissions from '@/components/DailyMissions';
 import { ComeBackNudge } from '@/components/ComeBackNudge';
 import { WeeklyChallengeCard } from '@/components/WeeklyChallengeCard';
@@ -57,6 +57,44 @@ export default function Home() {
         <div className="page-wrap space-y-6">
           <WhatsNew />
           <RecordAndEarnBanner />
+          <section className="feature-tile rounded-3xl border-violet-200 bg-gradient-to-br from-violet-50 via-white to-fuchsia-50 p-6">
+            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+              <div className="max-w-2xl">
+                <div className="inline-flex items-center gap-2 rounded-full bg-violet-100 px-3 py-1 text-xs font-bold uppercase tracking-[0.18em] text-violet-800">
+                  <Bell size={14} /> Reminders
+                </div>
+                <h3 className="mt-3 text-2xl font-black text-violet-950">Set your daily alarms</h3>
+                <p className="mt-2 text-sm text-violet-900/80">
+                  Get adhan reminders, daily quiz alerts, and activity nudges — even when the app is closed.
+                </p>
+              </div>
+              <Link
+                href="/reminders"
+                className="inline-flex items-center justify-center gap-2 rounded-2xl bg-violet-600 px-5 py-3 text-sm font-bold text-white shadow-lg transition hover:bg-violet-500"
+              >
+                <Clock size={16} /> Set Reminders
+              </Link>
+            </div>
+          </section>
+          <section className="feature-tile rounded-3xl border-emerald-200 bg-gradient-to-br from-emerald-50 via-white to-lime-50 p-6">
+            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+              <div className="max-w-2xl">
+                <div className="inline-flex items-center gap-2 rounded-full bg-emerald-100 px-3 py-1 text-xs font-bold uppercase tracking-[0.18em] text-emerald-800">
+                  <CheckCircle2 size={14} /> Approved Recordings
+                </div>
+                <h3 className="mt-3 text-2xl font-black text-emerald-950">See your approved voices</h3>
+                <p className="mt-2 text-sm text-emerald-900/80">
+                  View approved Qur&apos;an, Nasheed, Story, and Hadith recordings in one place.
+                </p>
+              </div>
+              <Link
+                href="/approved-recordings"
+                className="inline-flex items-center justify-center gap-2 rounded-2xl bg-emerald-600 px-5 py-3 text-sm font-bold text-white shadow-lg transition hover:bg-emerald-500"
+              >
+                <Mic size={16} /> Open Approved
+              </Link>
+            </div>
+          </section>
           <EarnMorePointsLinks title="Earn more points today" />
           <DailyTasksBanner />
           <section className="hero-panel stagger-in">
@@ -166,6 +204,44 @@ export default function Home() {
       <div className="page-wrap space-y-7">
         <WhatsNew />
         <RecordAndEarnBanner />
+        <section className="feature-tile rounded-3xl border-violet-200 bg-gradient-to-br from-violet-50 via-white to-fuchsia-50 p-6">
+          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div className="max-w-2xl">
+              <div className="inline-flex items-center gap-2 rounded-full bg-violet-100 px-3 py-1 text-xs font-bold uppercase tracking-[0.18em] text-violet-800">
+                <Bell size={14} /> Reminders
+              </div>
+              <h3 className="mt-3 text-2xl font-black text-violet-950">Set your daily alarms</h3>
+              <p className="mt-2 text-sm text-violet-900/80">
+                Get adhan reminders, daily quiz alerts, and activity nudges — even when the app is closed.
+              </p>
+            </div>
+            <Link
+              href="/reminders"
+              className="inline-flex items-center justify-center gap-2 rounded-2xl bg-violet-600 px-5 py-3 text-sm font-bold text-white shadow-lg transition hover:bg-violet-500"
+            >
+              <Clock size={16} /> Set Reminders
+            </Link>
+          </div>
+        </section>
+        <section className="feature-tile rounded-3xl border-emerald-200 bg-gradient-to-br from-emerald-50 via-white to-lime-50 p-6">
+          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div className="max-w-2xl">
+              <div className="inline-flex items-center gap-2 rounded-full bg-emerald-100 px-3 py-1 text-xs font-bold uppercase tracking-[0.18em] text-emerald-800">
+                <CheckCircle2 size={14} /> Approved Recordings
+              </div>
+              <h3 className="mt-3 text-2xl font-black text-emerald-950">Your approved recordings</h3>
+              <p className="mt-2 text-sm text-emerald-900/80">
+                Track approved Qur&apos;an, Nasheed, Story, and Hadith recordings in one dedicated page.
+              </p>
+            </div>
+            <Link
+              href="/approved-recordings"
+              className="inline-flex items-center justify-center gap-2 rounded-2xl bg-emerald-600 px-5 py-3 text-sm font-bold text-white shadow-lg transition hover:bg-emerald-500"
+            >
+              <Mic size={16} /> Open Approved
+            </Link>
+          </div>
+        </section>
         <EarnMorePointsLinks title="Earn more points today" />
         <DailyTasksBanner />
         <section className="hero-panel stagger-in">

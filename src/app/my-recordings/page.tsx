@@ -160,6 +160,12 @@ export default function MyRecordingsPage() {
               Refresh
             </button>
             <Link
+              href="/approved-recordings"
+              className="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-semibold text-emerald-700 transition hover:bg-emerald-100"
+            >
+              <CheckCircle size={16} /> Approved only
+            </Link>
+            <Link
               href="/studio"
               className="bg-islamic-primary text-white px-6 py-2 rounded-full font-bold hover:bg-opacity-90 transition flex items-center"
             >

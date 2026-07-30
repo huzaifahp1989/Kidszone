@@ -5,8 +5,10 @@ import { useRouter } from 'next/navigation';
 import { Button } from '@/components';
 import { useAuth } from '@/lib/auth-context';
 import { trackQuranRecordingSubmitted } from '@/lib/analytics';
+import { getAuthFetchHeaders } from '@/lib/auth-headers';
+import { supabase } from '@/lib/supabase';
 
-type Category = 'quran' | 'nasheed' | 'story';
+type Category = 'quran' | 'nasheed' | 'story' | 'hadith';
 
 type StudioState = 'idle' | 'recording' | 'paused' | 'finished';
 
@@ -168,7 +170,7 @@ export default function StudioPage() {
 
   const handleStart = async () => {
     if (!category) {
-      setPermissionError('Choose what you want to record first (Qur’an, Nasheed, or Story).');
+      setPermissionError('Choose what you want to record first (Qur’an, Nasheed, Story, or Hadith).');
       return;
     }
     const stream = streamRef.current || (await requestMic());
@@ -286,7 +288,11 @@ export default function StudioPage() {
       return;
     }
     if (!category) {
-      setSubmitError('Please choose what you recorded (Qur’an, Nasheed, or Story).');
+      setSubmitError('Please choose what you recorded (Qur’an, Nasheed, Story, or Hadith).');
+      return;
+    }
+    if (!user?.id) {
+      setSubmitError('Please sign in to submit recordings.');
       return;
     }
     setSubmitError(null);
@@ -311,15 +317,24 @@ export default function StudioPage() {
       const seconds = Math.floor(elapsedMs / 1000) || 0;
       formData.append('duration', String(seconds));
       formData.append('childName', childName || profile?.name || '');
-      if (user?.id) {
-        formData.append('userId', user.id);
-      }
       formData.append('message', message || '');
 
-      const res = await fetch('/api/studio-submit', {
+      const headers = await getAuthFetchHeaders();
+      let res = await fetch('/api/studio-submit', {
         method: 'POST',
+        headers,
         body: formData,
       });
+
+      if (res.status === 401) {
+        await supabase.auth.refreshSession().catch(() => null);
+        const retryHeaders = await getAuthFetchHeaders();
+        res = await fetch('/api/studio-submit', {
+          method: 'POST',
+          headers: retryHeaders,
+          body: formData,
+        });
+      }
 
       const data = await res.json();
       if (!res.ok || !data.success) {
@@ -389,7 +404,7 @@ export default function StudioPage() {
             🎙️ Kids Recording Studio
           </h1>
           <p className="text-slate-600 max-w-2xl mx-auto">
-            Record your Qur&apos;an recitation, nasheeds, or stories using your microphone.
+            Record your Qur&apos;an recitation, nasheeds, stories, or Hadith using your microphone.
             Listen back and submit to your teacher.
           </p>
         </div>
@@ -423,6 +438,13 @@ export default function StudioPage() {
                   >
                     📚 Story
                   </Button>
+                  <Button
+                    variant={category === 'hadith' ? 'primary' : 'outline'}
+                    size="sm"
+                    onClick={() => setCategory('hadith')}
+                  >
+                    📜 Hadith
+                  </Button>
                 </div>
               </div>
 
@@ -444,7 +466,7 @@ export default function StudioPage() {
                 </p>
                 <input
                   className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-islamic-blue"
-                  placeholder="Example: Surah Al-Fatihah, My Eid Nasheed, Bedtime Story"
+                  placeholder="Example: Surah Al-Fatihah, My Eid Nasheed, Bedtime Story, Hadith Reflection"
                   value={title}
                   onChange={e => setTitle(e.target.value)}
                 />

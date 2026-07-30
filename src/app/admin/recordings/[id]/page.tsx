@@ -198,6 +198,10 @@ export default function AdminRecordingDetail({ params }: { params: Promise<{ id:
 
   const handleReject = async () => {
     if (!id) return;
+    if (!feedback.trim()) {
+      alert('Please enter a rejection reason before rejecting.');
+      return;
+    }
     if (!confirm('Are you sure you want to REJECT this recording? No points will be awarded.')) return;
 
     setProcessing(true);
@@ -208,33 +212,13 @@ export default function AdminRecordingDetail({ params }: { params: Promise<{ id:
         body: JSON.stringify({ feedback })
       });
 
-      if (!res.ok) throw new Error('Failed to reject');
+      const payload = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(payload?.error || 'Failed to reject');
 
-      // Send notification to user
-      if (recording?.profile?.email) {
-        try {
-          await fetch('/api/notify-recording', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              recordingId: id,
-              status: 'rejected',
-              points: 0,
-              feedback,
-              childName: recording.profile.name || recording.child_name,
-              childEmail: recording.profile.email
-            })
-          });
-        } catch (notifyError) {
-          console.error('Failed to send rejection notification:', notifyError);
-          // Don't fail the rejection if notification fails
-        }
-      }
-
-      alert('Recording rejected. User has been notified.');
+      alert(payload?.notificationSent ? 'Recording rejected. User has been notified.' : 'Recording rejected. Reason saved for the user in My Recordings.');
       fetchRecording(id);
     } catch (error) {
-      alert('Error rejecting recording');
+      alert(error instanceof Error ? error.message : 'Error rejecting recording');
       console.error(error);
     } finally {
       setProcessing(false);

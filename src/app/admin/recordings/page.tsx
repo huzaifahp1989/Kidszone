@@ -102,10 +102,11 @@ export default function AdminRecordingsList() {
           publish: preset.publish,
         }),
       });
-      if (!res.ok) throw new Error('Approve failed');
+      const payload = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(payload?.error || 'Approve failed');
       fetchRecordings();
-    } catch {
-      alert('Could not approve recording');
+    } catch (error) {
+      alert(error instanceof Error ? error.message : 'Could not approve recording');
     } finally {
       setRowActionId(null);
     }
@@ -123,10 +124,11 @@ export default function AdminRecordingsList() {
         headers: { 'Content-Type': 'application/json', 'x-admin-auth': 'true' },
         body: JSON.stringify({ feedback: preset.feedback }),
       });
-      if (!res.ok) throw new Error('Reject failed');
+      const payload = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(payload?.error || 'Reject failed');
       fetchRecordings();
-    } catch {
-      alert('Could not reject recording');
+    } catch (error) {
+      alert(error instanceof Error ? error.message : 'Could not reject recording');
     } finally {
       setRowActionId(null);
     }
@@ -311,6 +313,7 @@ export default function AdminRecordingsList() {
             <option value="quran">Qur'an</option>
             <option value="nasheed">Nasheed</option>
             <option value="story">Story</option>
+            <option value="hadith">Hadith</option>
           </select>
 
           <div className="ml-auto flex items-center bg-gray-100 rounded-lg px-3 py-2 w-full md:w-auto">

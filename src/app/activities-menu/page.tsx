@@ -202,7 +202,7 @@ export default function ActivitiesMenuPage() {
               </div>
               <div>
                 <p className="font-black text-violet-900 text-base">Kids Zone Feedback Survey</p>
-                <p className="text-xs text-violet-700 mt-0.5">Share your thoughts and earn <strong>+50 points</strong> when approved by our team!</p>
+                <p className="text-xs text-violet-700 mt-0.5">Share your thoughts, earn <strong>+50 points</strong> when approved, and enter our draw for a free personalised mug & key ring!</p>
               </div>
             </div>
             <span className="shrink-0 rounded-xl bg-violet-600 px-4 py-2 text-sm font-black text-white">Take Survey →</span>

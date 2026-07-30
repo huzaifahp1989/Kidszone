@@ -13,7 +13,7 @@ export interface Recording {
   id: string;
   user_id: string | null;
   story_id: string | null;
-  category?: 'quran' | 'nasheed' | 'story' | null;
+  category?: 'quran' | 'nasheed' | 'story' | 'hadith' | null;
   audio_path: string;
   audio_url?: string;
   duration?: number;

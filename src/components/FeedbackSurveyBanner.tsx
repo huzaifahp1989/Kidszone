@@ -2,10 +2,10 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { X, Star, MessageCircle } from 'lucide-react';
-import { canShowSessionPopup, markSessionPopupShown } from '@/lib/popup-session-cap';
+import { X, MessageCircle } from 'lucide-react';
 
-const STORAGE_KEY = 'feedback-survey-banner-dismissed-date';
+const DISMISS_KEY = 'feedback-survey-banner-dismissed-date';
+const COMPLETED_KEY = 'feedback-survey-completed';
 const MAX_IMPRESSIONS_PER_DAY = 3;
 
 export function FeedbackSurveyBanner() {
@@ -14,23 +14,22 @@ export function FeedbackSurveyBanner() {
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
-    const dismissedDate = window.localStorage.getItem(STORAGE_KEY);
+    // Never show again after the user has submitted feedback
+    if (window.localStorage.getItem(COMPLETED_KEY) === 'true') return;
+
+    const dismissedDate = window.localStorage.getItem(DISMISS_KEY);
     const today = new Date().toISOString().slice(0, 10);
     const todayCount = Number(window.localStorage.getItem(`feedback-survey-today-count:${today}`) || '0');
 
     // Do not show if user already dismissed today OR has seen it 3+ times today
     if (dismissedDate === today || todayCount >= MAX_IMPRESSIONS_PER_DAY) return;
 
-    // Respect global session popup cap (so we don't fight with DailyTasksPopup etc.)
-    if (!canShowSessionPopup('feedback-survey')) return;
-
     const timer = setTimeout(() => {
       setVisible(true);
-      markSessionPopupShown('feedback-survey');
       try {
         window.localStorage.setItem(`feedback-survey-today-count:${today}`, String(todayCount + 1));
       } catch {}
-    }, 6000);
+    }, 2000);
 
     return () => clearTimeout(timer);
   }, []);
@@ -38,7 +37,7 @@ export function FeedbackSurveyBanner() {
   const dismiss = () => {
     if (typeof window !== 'undefined') {
       const today = new Date().toISOString().slice(0, 10);
-      window.localStorage.setItem(STORAGE_KEY, today);
+      window.localStorage.setItem(DISMISS_KEY, today);
     }
     setVisible(false);
   };
@@ -46,8 +45,8 @@ export function FeedbackSurveyBanner() {
   if (!visible) return null;
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-50 p-3 sm:p-4 pointer-events-none">
-      <div className="pointer-events-auto mx-auto max-w-md w-full rounded-2xl border border-violet-200 bg-gradient-to-br from-violet-600 to-emerald-500 p-1 shadow-2xl">
+    <div className="fixed top-[72px] left-1/2 -translate-x-1/2 z-40 w-[calc(100%-1rem)] max-w-xl px-1">
+      <div className="rounded-2xl border border-violet-200 bg-gradient-to-br from-violet-600 to-emerald-500 p-1 shadow-2xl">
         <div className="rounded-xl bg-white/95 backdrop-blur-sm p-4">
           <div className="flex items-start gap-3">
             <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-violet-100 text-2xl">
@@ -63,23 +62,26 @@ export function FeedbackSurveyBanner() {
                 </button>
               </div>
               <p className="mt-1 text-xs text-slate-600">
-                Share your thoughts and earn <span className="font-black text-emerald-700">+50 points</span> when approved!
+                Share your thoughts and earn <span className="font-black text-emerald-700">+50 points</span> — plus a chance to win a free personalised mug & key ring!
               </p>
-              <div className="mt-3 flex items-center gap-2">
+              <div className="mt-3 flex flex-wrap items-center gap-2">
                 <Link
                   href="/feedback-survey"
                   onClick={() => setVisible(false)}
-                  className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-violet-600 px-3 py-2 text-xs font-black text-white transition hover:bg-violet-700"
+                  className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-violet-600 px-4 py-2 text-xs font-black text-white transition hover:bg-violet-700"
                 >
                   <MessageCircle size={13} /> Take Survey
                 </Link>
                 <button
                   onClick={dismiss}
-                  className="inline-flex items-center justify-center rounded-xl border-2 border-slate-200 px-3 py-2 text-xs font-bold text-slate-600 transition hover:bg-slate-50"
+                  className="inline-flex items-center justify-center rounded-xl border-2 border-slate-200 px-4 py-2 text-xs font-bold text-slate-600 transition hover:bg-slate-50"
                 >
-                  Later
+                  Maybe later
                 </button>
               </div>
+              <p className="text-[10px] text-slate-500 mt-2">
+                Every entry enters the draw for a free personalised mug & key ring.
+              </p>
             </div>
           </div>
         </div>

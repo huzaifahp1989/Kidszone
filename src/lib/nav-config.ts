@@ -18,6 +18,7 @@ import {
   Mic,
   Footprints,
   Star,
+  Bell,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -188,6 +189,22 @@ export const NAV_GROUPS: NavGroup[] = [
         shortLabel: 'Recordings',
         description: 'See when your recordings are approved or rejected',
         icon: Mic,
+        group: 'track',
+      },
+      {
+        href: '/approved-recordings',
+        label: 'Approved Recordings',
+        shortLabel: 'Approved',
+        description: "View approved Qur'an, Nasheed, Story and Hadith recordings",
+        icon: Mic,
+        group: 'track',
+      },
+      {
+        href: '/reminders',
+        label: 'Set Reminders',
+        shortLabel: 'Reminders',
+        description: 'Set adhan alarms and daily activity reminders',
+        icon: Bell,
         group: 'track',
       },
       {

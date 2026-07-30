@@ -116,7 +116,7 @@ export default function AdminPanel() {
   // Feedback survey state
   const [feedbackSubmissions, setFeedbackSubmissions] = useState<any[]>([]);
   const [feedbackTotal, setFeedbackTotal] = useState(0);
-  const [feedbackFilter, setFeedbackFilter] = useState<'all' | 'pending' | 'approved' | 'rejected'>('pending');
+  const [feedbackFilter, setFeedbackFilter] = useState<'all' | 'pending' | 'approved' | 'rejected'>('all');
   const [feedbackLoading, setFeedbackLoading] = useState(false);
   const [feedbackActing, setFeedbackActing] = useState<string | null>(null);
   const [feedbackMessage, setFeedbackMessage] = useState('');

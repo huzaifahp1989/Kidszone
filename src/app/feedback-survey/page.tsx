@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/lib/auth-context';
 import { CheckCircle2, ArrowLeft, Loader2, Star, MessageCircle, Phone, MapPin, User, Heart } from 'lucide-react';
@@ -47,6 +47,13 @@ export default function FeedbackSurveyPage() {
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState('');
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (window.localStorage.getItem('feedback-survey-completed') === 'true') {
+      setSubmitted(true);
+    }
+  }, []);
 
   const set = (field: keyof FormState) => (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
@@ -95,6 +102,11 @@ export default function FeedbackSurveyPage() {
         setError(data?.error || 'Could not submit. Please try again.');
         return;
       }
+      try {
+        if (typeof window !== 'undefined') {
+          window.localStorage.setItem('feedback-survey-completed', 'true');
+        }
+      } catch {}
       setSubmitted(true);
     } catch {
       setError('Network error. Please check your connection and try again.');
@@ -113,7 +125,7 @@ export default function FeedbackSurveyPage() {
           <h2 className="text-2xl font-black text-emerald-900 mb-2">JazakAllah Khair!</h2>
           <p className="text-slate-600 mb-2">Your feedback has been submitted successfully.</p>
           <p className="text-sm text-emerald-700 font-semibold bg-emerald-50 rounded-xl px-4 py-2 mb-6">
-            ✨ Once reviewed by our team, you will earn <strong>50 points</strong>!
+            ✨ Once reviewed by our team, you will earn <strong>50 points</strong> and be entered into our draw for a free personalised mug & key ring!
           </p>
           <Link href="/" className="inline-flex items-center gap-2 rounded-xl bg-emerald-500 px-6 py-3 font-bold text-white hover:bg-emerald-600 transition">
             Back to Home
@@ -140,6 +152,9 @@ export default function FeedbackSurveyPage() {
           </div>
           <h1 className="text-3xl font-black text-slate-900">Kids Zone Feedback</h1>
           <p className="mt-2 text-slate-600">Share your thoughts and earn <span className="font-black text-emerald-700">+50 points</span> when approved!</p>
+          <p className="mt-2 inline-flex items-center gap-2 rounded-full bg-amber-50 px-4 py-1.5 text-sm font-black text-amber-700">
+            🎁 Every entry enters a draw to win a free personalised mug & key ring!
+          </p>
         </div>
 
         <form onSubmit={handleSubmit} className="bg-white rounded-3xl shadow-xl border border-slate-100 p-6 sm:p-8 space-y-5">
@@ -380,7 +395,7 @@ export default function FeedbackSurveyPage() {
           <div className="flex items-center gap-3 rounded-xl bg-amber-50 border border-amber-200 px-4 py-3">
             <Star className="text-amber-500 fill-amber-400 shrink-0" size={20} />
             <p className="text-sm font-semibold text-amber-800">
-              Submit your feedback to earn <strong>+50 points</strong> once our team approves it!
+              Submit your feedback to earn <strong>+50 points</strong> once our team approves it, and enter our draw for a free personalised mug & key ring!
             </p>
           </div>
 

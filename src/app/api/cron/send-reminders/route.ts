@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { createReminderToken } from '@/lib/reminder-token';
-import { isOneSignalServerConfigured, sendOneSignalPush } from '@/lib/onesignal-server';
+import { isOneSignalServerConfigured, sendOneSignalPushMultiApp } from '@/lib/onesignal-server';
 import { runDuePushSchedules } from '@/lib/push-schedules';
 import { authorizeCron } from '@/lib/cron-auth';
 
@@ -17,6 +17,77 @@ type ReminderUser = {
   reminder_last_sent_at: string | null;
   reminder_unsubscribed_at: string | null;
 };
+
+const OPTIONAL_REMINDER_COLUMNS = [
+  'parent_email',
+  'reminder_frequency',
+  'reminder_last_sent_at',
+  'reminder_unsubscribed_at',
+  'reminder_opt_in',
+] as const;
+
+function getMissingColumnFromError(message: string): string | null {
+  const m = String(message || '');
+  const match = m.match(/Could not find the '([\w_]+)' column|column\s+"?([\w_]+)"?\s+does not exist/i);
+  return match?.[1] || match?.[2] || null;
+}
+
+async function loadReminderUsers() {
+  const activeColumns = new Set<string>([
+    'uid',
+    'name',
+    'email',
+    'parent_email',
+    'reminder_opt_in',
+    'reminder_frequency',
+    'reminder_last_sent_at',
+    'reminder_unsubscribed_at',
+  ]);
+
+  for (let attempt = 0; attempt <= OPTIONAL_REMINDER_COLUMNS.length; attempt += 1) {
+    const selectColumns = Array.from(activeColumns).join(',');
+    let query = supabaseAdmin.from('users').select(selectColumns).limit(500);
+    if (activeColumns.has('reminder_opt_in')) {
+      query = query.eq('reminder_opt_in', true);
+    }
+    if (activeColumns.has('reminder_unsubscribed_at')) {
+      query = query.is('reminder_unsubscribed_at', null);
+    }
+
+    const { data, error } = await query;
+    if (!error) {
+      const rows = ((data || []) as unknown as Array<Record<string, unknown>>);
+      return {
+        users: rows.map((row) => ({
+          uid: String(row.uid || ''),
+          name: row.name ? String(row.name) : null,
+          email: row.email ? String(row.email) : null,
+          parent_email: row.parent_email ? String(row.parent_email) : null,
+          reminder_opt_in:
+            typeof row.reminder_opt_in === 'boolean' ? row.reminder_opt_in : Boolean(row.reminder_opt_in),
+          reminder_frequency:
+            row.reminder_frequency === 'daily' ||
+            row.reminder_frequency === '3x_week' ||
+            row.reminder_frequency === 'weekly'
+              ? row.reminder_frequency
+              : null,
+          reminder_last_sent_at: row.reminder_last_sent_at ? String(row.reminder_last_sent_at) : null,
+          reminder_unsubscribed_at: row.reminder_unsubscribed_at ? String(row.reminder_unsubscribed_at) : null,
+        })) as ReminderUser[],
+      };
+    }
+
+    const missingColumn = getMissingColumnFromError(error.message);
+    if (missingColumn && activeColumns.has(missingColumn)) {
+      activeColumns.delete(missingColumn);
+      continue;
+    }
+
+    return { users: [] as ReminderUser[], error };
+  }
+
+  return { users: [] as ReminderUser[] };
+}
 
 function getMinDaysBetweenReminders(freq: ReminderUser['reminder_frequency']): number {
   if (freq === 'daily') return 1;
@@ -34,26 +105,40 @@ function shouldSendReminder(user: ReminderUser): boolean {
   return daysSinceLast >= getMinDaysBetweenReminders(user.reminder_frequency);
 }
 
+function looksLikeOneSignalId(id: string): boolean {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id);
+}
+
 async function sendPushReminder(userId: string, childName: string, resumeUrl: string) {
   if (!isOneSignalServerConfigured()) return { sent: false, reason: 'not_configured' as const };
 
   const { data } = await supabaseAdmin
     .from('push_notification_tokens')
-    .select('token')
+    .select('token, provider')
     .eq('user_id', userId)
-    .eq('provider', 'onesignal')
     .limit(20);
 
   const playerIds = Array.from(
-    new Set((data || []).map((row) => String(row.token || '').trim()).filter(Boolean))
+    new Set(
+      (data || [])
+        .map((row) => ({
+          token: String(row.token || '').trim(),
+          provider: row.provider ? String(row.provider) : null,
+        }))
+        .filter((row) => row.token)
+        .filter((row) => !row.provider || row.provider === 'onesignal')
+        .map((row) => row.token)
+        .filter(looksLikeOneSignalId)
+    )
   );
 
-  const result = await sendOneSignalPush({
+  const result = await sendOneSignalPushMultiApp({
     title: 'Daily Quiz is ready!',
     body: `${childName}, open Kids Zone and keep your learning streak going!`,
     url: resumeUrl,
     playerIds: playerIds.length ? playerIds : undefined,
-    externalUserIds: playerIds.length ? undefined : [userId],
+    externalUserIds: [userId],
+    preferBothTargets: true,
   });
 
   return { sent: result.ok, reason: result.error || null };
@@ -88,18 +173,8 @@ export async function GET(request: Request) {
     inactivityCutoff.setDate(inactivityCutoff.getDate() - 2);
     const cutoffDate = inactivityCutoff.toISOString().slice(0, 10);
 
-    const { data, error } = await supabaseAdmin
-      .from('users')
-      .select(
-        'uid,name,email,parent_email,reminder_opt_in,reminder_frequency,reminder_last_sent_at,reminder_unsubscribed_at'
-      )
-      .eq('reminder_opt_in', true)
-      .is('reminder_unsubscribed_at', null)
-      .limit(500);
-
+    const { users, error } = await loadReminderUsers();
     if (error) throw error;
-
-    const users = (data || []) as ReminderUser[];
     if (!users.length) {
       return NextResponse.json({ success: true, sent: 0, emails: 0, pushes: 0, scanned: 0 });
     }
@@ -189,10 +264,13 @@ export async function GET(request: Request) {
       }
 
       if (delivered) {
-        await supabaseAdmin
+        const updateResult = await supabaseAdmin
           .from('users')
           .update({ reminder_last_sent_at: new Date().toISOString() })
           .eq('uid', user.uid);
+        if (updateResult.error && !/reminder_last_sent_at|schema cache|does not exist/i.test(updateResult.error.message)) {
+          throw updateResult.error;
+        }
       }
     }
 

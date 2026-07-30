@@ -28,6 +28,17 @@ export default function StoryRecordingPage({ params }: { params: Promise<{ id: s
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const chunksRef = useRef<Blob[]>([]);
 
+  const finalizeRecordingBlob = useCallback(() => {
+    if (!chunksRef.current.length) return;
+    const activeRecorder = mediaRecorderRef.current;
+    const blobType = activeRecorder?.mimeType || chunksRef.current[0]?.type || 'audio/webm';
+    const blob = new Blob(chunksRef.current, { type: blobType });
+    if (!blob.size) return;
+    setAudioBlob(blob);
+    const url = URL.createObjectURL(blob);
+    setAudioUrl(url);
+  }, []);
+
   const fetchStory = useCallback(async (id: string) => {
     console.log('Fetching story with ID:', id);
     try {
@@ -92,20 +103,17 @@ export default function StoryRecordingPage({ params }: { params: Promise<{ id: s
       mediaRecorderRef.current.ondataavailable = (e) => {
         if (e.data.size > 0) chunksRef.current.push(e.data);
         if (mediaRecorderRef.current?.state === 'inactive') {
-          const blobType = mediaRecorderRef.current.mimeType || chunksRef.current[0]?.type || 'audio/webm';
-          const blob = new Blob(chunksRef.current, { type: blobType });
-          setAudioBlob(blob);
-          const url = URL.createObjectURL(blob);
-          setAudioUrl(url);
+          finalizeRecordingBlob();
           mediaRecorderRef.current.stream.getTracks().forEach(track => track.stop());
         }
       };
 
       mediaRecorderRef.current.onstop = () => {
-        return;
+        finalizeRecordingBlob();
       };
 
-      mediaRecorderRef.current.start();
+      // Timeslice improves chunk delivery reliability on iOS/Safari.
+      mediaRecorderRef.current.start(1000);
       setIsRecording(true);
       setRecordingTime(0);
       setAudioBlob(null);
@@ -167,11 +175,22 @@ export default function StoryRecordingPage({ params }: { params: Promise<{ id: s
       form.append('duration', String(recordingTime));
 
       const headers = await getAuthFetchHeaders();
-      const res = await fetch(`/api/stories/${story.id}/recordings/upload`, {
+      let res = await fetch(`/api/stories/${story.id}/recordings/upload`, {
         method: 'POST',
         headers,
         body: form,
       });
+
+      if (res.status === 401) {
+        await supabase.auth.refreshSession().catch(() => null);
+        const retryHeaders = await getAuthFetchHeaders();
+        res = await fetch(`/api/stories/${story.id}/recordings/upload`, {
+          method: 'POST',
+          headers: retryHeaders,
+          body: form,
+        });
+      }
+
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data?.error || 'Upload failed');
 
@@ -194,7 +213,8 @@ export default function StoryRecordingPage({ params }: { params: Promise<{ id: s
       router.push('/my-recordings');
     } catch (error) {
       console.error('Upload failed:', error);
-      alert('Failed to submit recording. Please try again.');
+      const message = error instanceof Error ? error.message : 'Failed to submit recording. Please try again.';
+      alert(message);
     } finally {
       setUploading(false);
     }

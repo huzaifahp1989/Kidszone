@@ -257,24 +257,34 @@ async function sleep(ms: number) {
 }
 
 async function persistToken(token: string, platform: string, provider: 'onesignal' | 'fcm') {
-  const headers = await getAuthFetchHeaders({ 'Content-Type': 'application/json' });
-  if (!headers.Authorization) {
-    console.warn('[Push] skip register — not signed in');
-    return false;
-  }
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    const headers = await getAuthFetchHeaders({ 'Content-Type': 'application/json' });
+    if (!headers.Authorization) {
+      console.warn('[Push] skip register — auth token not ready yet');
+      await sleep(500);
+      continue;
+    }
 
-  const res = await fetch('/api/push/register', {
-    method: 'POST',
-    headers,
-    body: JSON.stringify({ token, platform, provider }),
-  });
+    const res = await fetch('/api/push/register', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ token, platform, provider }),
+    });
 
-  if (!res.ok) {
+    if (res.ok) {
+      return true;
+    }
+
     const text = await res.text().catch(() => '');
     console.warn('[Push] register failed:', res.status, text);
-    return false;
+    if (res.status !== 401) {
+      return false;
+    }
+
+    await sleep(700);
   }
-  return true;
+
+  return false;
 }
 
 /**
@@ -320,14 +330,23 @@ export async function registerOneSignalPlayerId(options?: {
       promptWtn = false;
 
       if (playerId) {
-        await persistToken(playerId, platform, 'onesignal');
-        if (firebaseToken) await persistToken(firebaseToken, platform, 'fcm');
-        return playerId;
+        const playerSaved = await persistToken(playerId, platform, 'onesignal');
+        const firebaseSaved = firebaseToken
+          ? await persistToken(firebaseToken, platform, 'fcm')
+          : true;
+        if (playerSaved) {
+          if (!firebaseSaved) {
+            console.warn('[Push] OneSignal saved but FCM fallback token did not persist');
+          }
+          return playerId;
+        }
       }
 
       if (firebaseToken) {
-        await persistToken(firebaseToken, platform, 'fcm');
-        return firebaseToken;
+        const saved = await persistToken(firebaseToken, platform, 'fcm');
+        if (saved) {
+          return firebaseToken;
+        }
       }
     } catch (err) {
       console.warn('[OneSignal] resolve/register failed:', err);

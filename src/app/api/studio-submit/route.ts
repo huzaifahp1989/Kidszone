@@ -1,12 +1,67 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { buildStorageResponsePayload, deleteObject, uploadObject } from '@/lib/object-storage';
+import { getAuthenticatedRequestUser } from '@/lib/request-auth';
+
+const OPTIONAL_RECORDING_COLUMNS = ['category', 'description', 'submitted_at', 'child_name'] as const;
+
+function getMissingColumnFromError(message: string): string | null {
+  const m = String(message || '');
+  const match = m.match(/Could not find the '([\w_]+)' column|column\s+"?([\w_]+)"?\s+does not exist/i);
+  return match?.[1] || match?.[2] || null;
+}
+
+async function insertRecordingCompat(payload: Record<string, unknown>) {
+  let candidate = { ...payload };
+  let lastError: any = null;
+
+  for (let attempt = 0; attempt <= OPTIONAL_RECORDING_COLUMNS.length; attempt += 1) {
+    const { data, error } = await supabaseAdmin
+      .from('recordings')
+      .insert(candidate)
+      .select()
+      .single();
+
+    if (!error) {
+      return { data, error: null };
+    }
+
+    lastError = error;
+    const message = String(error.message || '');
+    const missingColumn = getMissingColumnFromError(message);
+    if (missingColumn && missingColumn in candidate) {
+      delete candidate[missingColumn];
+      continue;
+    }
+
+    const fallbackColumn = OPTIONAL_RECORDING_COLUMNS.find(
+      (column) =>
+        column in candidate &&
+        new RegExp(column, 'i').test(message) &&
+        /schema cache|column|does not exist|Could not find/i.test(message)
+    );
+
+    if (fallbackColumn) {
+      delete candidate[fallbackColumn];
+      continue;
+    }
+
+    break;
+  }
+
+  return { data: null, error: lastError };
+}
 
 export async function POST(request: NextRequest) {
   try {
     const contentType = request.headers.get('content-type') || '';
     if (!contentType.includes('multipart/form-data')) {
       return NextResponse.json({ error: 'Invalid content type' }, { status: 400 });
+    }
+
+    const authUser = await getAuthenticatedRequestUser(request);
+    if (!authUser?.id) {
+      return NextResponse.json({ error: 'Sign in required to submit recording' }, { status: 401 });
     }
 
     const formData = await request.formData();
@@ -16,7 +71,6 @@ export async function POST(request: NextRequest) {
     const duration = formData.get('duration') as string | null;
     const childName = formData.get('childName') as string | null;
     const message = formData.get('message') as string | null;
-    const userId = formData.get('userId') as string | null;
 
     if (!(file instanceof Blob)) {
       return NextResponse.json({ error: 'Recording file is required' }, { status: 400 });
@@ -50,7 +104,9 @@ export async function POST(request: NextRequest) {
           : 'webm';
     const extension = extFromName || extFromMime || 'webm';
 
-    const filename = `studio/${userId || 'guest'}_${timestamp}_${category || 'rec'}_${safeTitle.replace(/[^a-zA-Z0-9]/g, '-')}.${extension}`;
+    const filename = `studio/${authUser.id}_${timestamp}_${category || 'rec'}_${safeTitle.replace(/[^a-zA-Z0-9]/g, '-')}.${extension}`;
+
+    const durationSeconds = Number.parseInt(duration || '0', 10);
 
     try {
       await uploadObject({
@@ -65,23 +121,21 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(payload, { status: 500 });
     }
 
-    const { data: insertedRecord, error: dbError } = await supabaseAdmin
-      .from('recordings')
-      .insert({
-        user_id: userId || null,
-        story_id: null,
-        category: category || null,
-        child_name: safeChildName,
-        title: safeTitle,
-        description: message,
-        audio_path: filename,
-        duration: parseInt(duration || '0'),
-        status: 'submitted',
-        created_at: new Date().toISOString(),
-        submitted_at: new Date().toISOString(),
-      })
-      .select()
-      .single();
+    const insertPayload: Record<string, unknown> = {
+      user_id: authUser.id,
+      story_id: null,
+      category: category || null,
+      child_name: safeChildName,
+      title: safeTitle,
+      description: message,
+      audio_path: filename,
+      duration: Number.isFinite(durationSeconds) ? durationSeconds : 0,
+      status: 'submitted',
+      created_at: new Date().toISOString(),
+      submitted_at: new Date().toISOString(),
+    };
+
+    const { data: insertedRecord, error: dbError } = await insertRecordingCompat(insertPayload);
 
     if (dbError) {
       console.error('DB insert error:', dbError);
@@ -90,7 +144,7 @@ export async function POST(request: NextRequest) {
       } catch {
         /* ignore */
       }
-      return NextResponse.json({ error: 'Failed to save recording record' }, { status: 500 });
+      return NextResponse.json({ error: dbError.message || 'Failed to save recording record' }, { status: 500 });
     }
 
     // 3. Send Email

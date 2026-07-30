@@ -3,6 +3,7 @@ import { supabaseAdmin } from '@/lib/supabase-admin';
 import { ensureUserRecords } from '@/lib/ensure-user-records';
 import { awardPointsWithDailyCapByUserId } from '@/lib/server-points';
 import { isAdminRequest } from '@/lib/admin-auth';
+import { RECORDING_APPROVED_POINTS } from '@/lib/points-policy';
 
 export async function POST(
   request: NextRequest,
@@ -16,7 +17,10 @@ export async function POST(
     const { id } = await context.params;
     const body = await request.json();
     const { points, publish, feedback } = body;
-    const requestedPoints = Math.max(0, Number(points) || 0);
+    const requestedPoints = Number(points);
+    const targetApprovalPoints = Number.isFinite(requestedPoints)
+      ? Math.max(RECORDING_APPROVED_POINTS, requestedPoints)
+      : RECORDING_APPROVED_POINTS;
 
     const { data: recording, error: loadError } = await supabaseAdmin
       .from('recordings')
@@ -34,7 +38,7 @@ export async function POST(
     let pointsAwarded = 0;
     let awardMessage: string | null = null;
     const alreadyAwarded = Math.max(0, Number(recording.points_awarded || 0));
-    const pointsToAward = Math.max(0, requestedPoints - alreadyAwarded);
+    const pointsToAward = Math.max(0, targetApprovalPoints - alreadyAwarded);
 
     if (recording.user_id && pointsToAward > 0) {
       const userId = String(recording.user_id);
@@ -69,7 +73,7 @@ export async function POST(
       return NextResponse.json({ error: updateError.message }, { status: 500 });
     }
 
-    return NextResponse.json({ success: true, pointsAwarded, awardMessage });
+    return NextResponse.json({ success: true, pointsAwarded, awardMessage, targetApprovalPoints });
   } catch (error) {
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }

@@ -200,4 +200,12 @@ export const EARN_MORE_LINKS: WhatsNewItem[] = [
     badge: 'NEW',
     pointsHint: `+${ACTIVITY_BONUS_POINTS}`,
   },
+  {
+    href: '/feedback-survey',
+    emoji: '📝',
+    title: 'Feedback Survey',
+    blurb: 'Share thoughts, earn +50 points',
+    badge: 'NEW',
+    pointsHint: '+50 pts',
+  },
 ];

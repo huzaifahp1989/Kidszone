@@ -22,7 +22,6 @@ const PointsProgressPopup = dynamic(
   { ssr: false }
 );
 
-const FeedbackBanner = dynamic(() => import('@/components/FeedbackBanner').then(m => m.FeedbackBanner), { ssr: false });
 const Navbar = dynamic(() => import('./Navbar').then(m => m.Navbar), { ssr: false });
 const SiteAnnouncementPopup = dynamic(
   () => import('@/components/SiteAnnouncementPopup').then(m => m.SiteAnnouncementPopup),
@@ -154,7 +153,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       {!isSignedInHome && <ScrollingTicker />}
       {!isSignedInHome && <PromoSlideshow />}
       <InlineAnnouncementBelowSlider />
-      <FeedbackBanner />
       <SiteAnnouncementPopup />
       <OneSignalProvider />
       <PushNotificationInit />
@@ -205,6 +203,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               className="inline-flex items-center gap-2 rounded-xl border border-white/20 bg-white/10 px-4 py-2 text-sm font-bold text-white backdrop-blur-sm transition hover:bg-white/20"
             >
               🏆 Leaderboard
+            </Link>
+            <Link
+              href="/feedback-survey"
+              className="inline-flex items-center gap-2 rounded-xl border border-white/20 bg-white/10 px-4 py-2 text-sm font-bold text-white backdrop-blur-sm transition hover:bg-white/20"
+            >
+              📝 Feedback
             </Link>
           </div>
           <div className="mt-6 inline-flex items-center gap-2 rounded-2xl border border-white/15 bg-white/10 px-6 py-3 backdrop-blur-sm">
