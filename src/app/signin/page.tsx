@@ -206,6 +206,7 @@ export default function SignInPage() {
     const finalTimeoutMs = isMobile ? Math.max(timeoutMs, 15000) : timeoutMs;
     const controller = new AbortController();
     const t = window.setTimeout(() => controller.abort(), finalTimeoutMs);
+    try {
       const res = await fetch(url, { ...init, signal: controller.signal });
       const json = await res.json().catch(() => ({} as any));
       return { res, json };
@@ -228,6 +229,7 @@ export default function SignInPage() {
       promise,
       new Promise<T>((_, reject) =>
         window.setTimeout(() => reject(new Error('Request timed out. Please try again.')), finalTimeoutMs)
+      ),
     ]);
   };
 
@@ -316,7 +318,17 @@ export default function SignInPage() {
           selectedUsername: selectedUsername || undefined,
         }),
       },
-          20000
+      20000
+    );
+
+    if (!res.ok) {
+      setError(json?.error || 'Could not find that account.');
+      return null;
+    }
+
+    if (json?.needsMemberPick && Array.isArray(json.members)) {
+      setPendingMembers(json.members as FamilyPickMember[]);
+      setFamilyEmailHint(json.familyEmail || (loginIsEmail ? trimmedLogin.toLowerCase() : null));
       setInfo('Who is learning today? Pick a name, then we will sign you in.');
       return null;
     }
