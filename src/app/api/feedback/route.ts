@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 export async function POST(request: NextRequest) {
   try {
     const { feedback } = await request.json();
+    const feedbackRecipient = process.env.FEEDBACK_TO_EMAIL || 'imediac786@gmail.com';
 
     if (!feedback || !feedback.trim()) {
       return NextResponse.json(
@@ -30,15 +31,12 @@ export async function POST(request: NextRequest) {
       },
       body: JSON.stringify({
         from: 'Islamic Kids Platform <onboarding@resend.dev>',
-        to: ['huzaify786@gmail.com'], // Your verified email with Resend
+        to: [feedbackRecipient],
         subject: 'New Feedback - Islamic Kids Learning Platform',
         html: `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
             <h2 style="color: #2563eb;">New Feedback Received</h2>
             <p><strong>Date:</strong> ${new Date().toLocaleString()}</p>
-            <p style="background: #fef3c7; padding: 10px; border-left: 4px solid #f59e0b;">
-              <strong>⚠️ Note:</strong> Please forward this to <strong>imediac786@gmail.com</strong>
-            </p>
             <hr />
             <h3>Feedback Message:</h3>
             <div style="background: #f3f4f6; padding: 15px; border-radius: 8px; white-space: pre-wrap;">${feedback}</div>

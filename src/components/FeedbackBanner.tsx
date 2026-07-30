@@ -1,7 +1,9 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { X, Send, Mail, Copy } from 'lucide-react';
+
+const DISMISS_STORAGE_KEY = 'kz_feedback_banner_dismissed_session';
 
 export function FeedbackBanner() {
   const [showFeedback, setShowFeedback] = useState(false);
@@ -9,8 +11,17 @@ export function FeedbackBanner() {
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [copied, setCopied] = useState(false);
-  
+  const [dismissed, setDismissed] = useState(false);
+
   const email = 'imediac786@gmail.com';
+
+  useEffect(() => {
+    try {
+      setDismissed(window.sessionStorage.getItem(DISMISS_STORAGE_KEY) === '1');
+    } catch {
+      setDismissed(false);
+    }
+  }, []);
 
   const copyEmail = () => {
     navigator.clipboard.writeText(email);
@@ -21,6 +32,22 @@ export function FeedbackBanner() {
   const copyFeedback = () => {
     const text = `Feedback - Islamic Kids Learning Platform\n\n${feedbackText}`;
     navigator.clipboard.writeText(text);
+  };
+
+  const dismissBanner = () => {
+    setShowFeedback(false);
+    setDismissed(true);
+    try {
+      window.sessionStorage.setItem(DISMISS_STORAGE_KEY, '1');
+    } catch {
+      // Ignore storage errors so the dismiss action still works.
+    }
+  };
+
+  const openEmailFallback = () => {
+    const subject = encodeURIComponent('Feedback - Islamic Kids Learning Platform');
+    const body = encodeURIComponent(feedbackText.trim());
+    window.location.href = `mailto:${email}?subject=${subject}&body=${body}`;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -52,25 +79,42 @@ export function FeedbackBanner() {
           setSubmitted(false);
         }, 3000);
       } else {
-        alert('Failed to send feedback: ' + (data.error || 'Unknown error'));
+        copyFeedback();
+        openEmailFallback();
+        alert(`Automatic sending failed: ${data.error || 'Unknown error'}. Your email app has been opened and the feedback text was copied.`);
       }
     } catch (error) {
       console.error('Error sending feedback:', error);
-      alert('Failed to send feedback. Please try again or email us directly at ' + email);
+      copyFeedback();
+      openEmailFallback();
+      alert('Failed to send feedback automatically. Your email app has been opened and the feedback text was copied.');
     } finally {
       setSubmitting(false);
     }
   };
 
+  if (dismissed) {
+    return null;
+  }
+
   return (
     <>
       {/* Feedback trigger */}
-      <div className="text-center py-1 bg-indigo-700 border-b border-indigo-800">
+      <div className="flex items-center justify-center gap-3 px-3 py-1 bg-indigo-700 border-b border-indigo-800">
         <button
           onClick={() => setShowFeedback(!showFeedback)}
           className="text-xs text-indigo-200 hover:text-white underline"
         >
           Feedback
+        </button>
+        <button
+          type="button"
+          onClick={dismissBanner}
+          className="text-indigo-200 hover:text-white"
+          aria-label="Dismiss feedback banner"
+          title="Dismiss feedback banner"
+        >
+          <X size={14} />
         </button>
       </div>
 
@@ -113,7 +157,8 @@ export function FeedbackBanner() {
                       type="button"
                       onClick={copyEmail}
                       className="text-blue-600 hover:text-blue-800"
-                      title="Copy email"
+                      title={copied ? 'Copied' : 'Copy email'}
+                      aria-label={copied ? 'Email copied' : 'Copy email'}
                     >
                       <Copy size={14} />
                     </button>
@@ -124,7 +169,7 @@ export function FeedbackBanner() {
                     className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition"
                   >
                     <Send size={16} />
-                    {submitting ? 'Opening...' : 'Send Feedback'}
+                    {submitting ? 'Sending...' : 'Send Feedback'}
                   </button>
                 </div>
               </form>
