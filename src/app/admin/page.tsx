@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import React, { useState, useEffect } from 'react';
 import { Button, Modal, VoucherAdminPanel } from '@/components';
@@ -7,6 +7,7 @@ import { supabase } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
 import { AdminNotificationBadge } from '@/components/AdminNotificationBadge';
 import { SpinWheelWinnerPicker } from '@/components/SpinWheelWinnerPicker';
+import { DailyTasksReport } from '@/components/DailyTasksReport';
 import { useAdminNotificationCounts } from '@/lib/use-admin-notification-counts';
 
 type UserProgressMonth = {
@@ -130,7 +131,8 @@ export default function AdminPanel() {
     monthlypointsDelta: '',
     winnerTick: false,
     city: '',
-    age: ''
+    age: '',
+    contact_number: ''
   });
   const [quickAdjustingUser, setQuickAdjustingUser] = useState<string | null>(null);
   const [sessionPasswords, setSessionPasswords] = useState<Record<string, string>>({});
@@ -201,6 +203,7 @@ export default function AdminPanel() {
     password: '',
     age: '',
     city: '',
+    contact_number: '',
     points: 0,
     weeklypoints: 0,
     monthlypoints: 0,
@@ -441,6 +444,7 @@ export default function AdminPanel() {
           password: newUser.password,
           age: newUser.age.trim() === '' ? undefined : Number(newUser.age),
           city: newUser.city.trim() || undefined,
+          contact_number: newUser.contact_number.trim() || undefined,
           points: newUser.points,
           weeklypoints: newUser.weeklypoints,
           monthlypoints: newUser.monthlypoints,
@@ -463,6 +467,7 @@ export default function AdminPanel() {
         password: '',
         age: '',
         city: '',
+        contact_number: '',
         points: 0,
         weeklypoints: 0,
         monthlypoints: 0,
@@ -510,7 +515,8 @@ export default function AdminPanel() {
           monthlypointsDelta,
           winnerTick: editForm.winnerTick,
           city: editForm.city,
-          age: editForm.age === '' ? null : parseInt(editForm.age, 10)
+          age: editForm.age === '' ? null : parseInt(editForm.age, 10),
+          contact_number: editForm.contact_number || ''
         })
       });
 
@@ -1306,6 +1312,22 @@ export default function AdminPanel() {
                       placeholder="Min 6 characters"
                     />
                   </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">
+                      Contact / WhatsApp number <span className="text-rose-600 font-bold">*</span>
+                    </label>
+                    <p className="text-[11px] text-slate-500 mb-1">
+                      Required for winner contact & WhatsApp check-ins. Min 6 digits, include country code.
+                    </p>
+                    <input
+                      type="tel"
+                      value={newUser.contact_number}
+                      onChange={(e) => setNewUser({ ...newUser, contact_number: e.target.value })}
+                      className="w-full px-4 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-500 outline-none"
+                      placeholder="+44 7404 644610 or 07404 644610"
+                      required
+                    />
+                  </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-medium text-slate-700 mb-1">Age</label>
@@ -1380,6 +1402,7 @@ export default function AdminPanel() {
                       <th className="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Password</th>
                       <th className="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Role</th>
                       <th className="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Joined</th>
+                      <th className="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Phone</th>
                       <th className="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">City</th>
                       <th className="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Age</th>
                       <th className="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Total Points</th>
@@ -1393,11 +1416,11 @@ export default function AdminPanel() {
                   <tbody className="divide-y divide-slate-100">
                     {loadingUsers ? (
                       <tr>
-                        <td colSpan={12} className="px-6 py-8 text-center text-slate-500">Loading users...</td>
+                        <td colSpan={13} className="px-6 py-8 text-center text-slate-500">Loading users...</td>
                       </tr>
                     ) : filteredUsers.length === 0 ? (
                       <tr>
-                        <td colSpan={12} className="px-6 py-8 text-center text-slate-500">No users found</td>
+                        <td colSpan={13} className="px-6 py-8 text-center text-slate-500">No users found</td>
                       </tr>
                     ) : (
                       filteredUsers.map(user => (
@@ -1456,6 +1479,22 @@ export default function AdminPanel() {
                           </td>
                           <td className="px-6 py-4 text-sm text-slate-700">
                             {getJoinedAt(user) ? formatDayMonthYear(getJoinedAt(user)) : '-'}
+                          </td>
+                          <td className="px-6 py-4 text-sm text-slate-700 whitespace-nowrap">
+                            {getMobileNumber(user) ? (
+                              <a
+                                href={`https://wa.me/${getMobileNumber(user).replace(/[^\d]/g, '')}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-emerald-700 font-semibold hover:underline"
+                              >
+                                {getMobileNumber(user)}
+                              </a>
+                            ) : (
+                              <span className="inline-flex rounded-full bg-rose-100 px-2 py-0.5 text-xs font-bold text-rose-800">
+                                Missing
+                              </span>
+                            )}
                           </td>
                           <td className="px-6 py-4 text-sm text-slate-700">
                             {getCity(user) ? (
@@ -1565,7 +1604,8 @@ export default function AdminPanel() {
                                   monthlypointsDelta: '',
                                   winnerTick: user.winnerTick ?? false,
                                   city: getCity(user),
-                                  age: getAge(user)
+                                  age: getAge(user),
+                                  contact_number: getMobileNumber(user)
                                 });
                               }}
                               className="text-indigo-600 hover:text-indigo-900 mr-4 p-2 hover:bg-indigo-50 rounded-full transition-colors"
@@ -2444,6 +2484,18 @@ export default function AdminPanel() {
               />
             </div>
             <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">
+                Contact / WhatsApp number
+              </label>
+              <input
+                type="tel"
+                value={editForm.contact_number}
+                onChange={(e) => setEditForm({ ...editForm, contact_number: e.target.value })}
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
+                placeholder="+44 7404 644610 or 07404 644610"
+              />
+            </div>
+            <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">Age</label>
               <input
                 type="number"
@@ -2618,6 +2670,12 @@ export default function AdminPanel() {
                   ) : (
                     <p className="mt-2 text-xs text-indigo-700">No feature-lab tracking data yet for this user.</p>
                   )}
+                </div>
+
+                {/* Daily Tasks Report */}
+                <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-3">
+                  <p className="text-xs font-semibold uppercase tracking-[0.12em] text-emerald-700 mb-3">Daily Tasks Report (Salah · Quran · Good Deeds)</p>
+                  <DailyTasksReport userId={progressUser?.uid || ''} compact />
                 </div>
 
                 <div className="max-h-72 overflow-auto border border-slate-200 rounded-lg">

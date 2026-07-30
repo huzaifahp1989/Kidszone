@@ -83,7 +83,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     if (typeof window === 'undefined') return;
     const host = window.location.hostname.toLowerCase();
     if (host !== 'islamic-kids-platform.vercel.app') return;
-    const live = LIVE_APP_URL.replace(/\/$/, '');
+    const live = window.location.origin.replace(/\/$/, '') || LIVE_APP_URL.replace(/\/$/, '');
+    if (new URL(live).host.toLowerCase() === host) return;
     window.location.replace(`${live}${window.location.pathname}${window.location.search}${window.location.hash}`);
   }, []);
 

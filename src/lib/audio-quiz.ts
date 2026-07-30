@@ -85,6 +85,12 @@ export interface AudioQuizQuestionRecordingMetadata {
   questionId: string;
   recordingId: string;
   duration: number;
+  active?: boolean;
+  topicId?: string;
+  topicLabel?: string;
+  questionText?: string;
+  options?: string[];
+  source?: string;
 }
 
 export function buildAudioQuizMetadata(quizId: string, userId: string): AudioQuizMetadata {
@@ -96,23 +102,36 @@ export function buildAudioQuizMetadata(quizId: string, userId: string): AudioQui
 }
 
 export function buildAudioQuizQuestionRecordingMetadata(
-  questionId: string,
-  recordingId: string,
-  duration: number
+  questionIdOrMetadata: string | Partial<AudioQuizQuestionRecordingMetadata>,
+  recordingId?: string,
+  duration?: number,
+  extra?: Partial<AudioQuizQuestionRecordingMetadata>
 ): AudioQuizQuestionRecordingMetadata {
+  if (typeof questionIdOrMetadata === 'object' && questionIdOrMetadata !== null) {
+    return {
+      questionId: questionIdOrMetadata.questionId ?? '',
+      recordingId: questionIdOrMetadata.recordingId ?? '',
+      duration: questionIdOrMetadata.duration ?? 0,
+      ...questionIdOrMetadata,
+    };
+  }
+
   return {
-    questionId,
-    recordingId,
-    duration,
+    questionId: questionIdOrMetadata,
+    recordingId: recordingId ?? '',
+    duration: duration ?? 0,
+    ...extra,
   };
 }
 
 export function buildAudioQuizQuestionRecordingTitle(
   quizName: string,
-  questionNumber: number,
-  userId: string
+  questionNumberOrQuestionId: number | string,
+  userId?: string
 ): string {
-  return `${quizName} - Q${questionNumber} - ${userId} - ${Date.now()}`;
+  const questionNumber = typeof questionNumberOrQuestionId === 'number' ? questionNumberOrQuestionId : questionNumberOrQuestionId;
+  const safeUserId = userId ?? 'admin';
+  return `${quizName} - Q${questionNumber} - ${safeUserId} - ${Date.now()}`;
 }
 
 export function parseAudioQuizQuestionRecordingMetadata(
@@ -127,6 +146,12 @@ export function parseAudioQuizQuestionRecordingMetadata(
     questionId: m.questionId,
     recordingId: m.recordingId,
     duration: m.duration,
+    active: m.active === true,
+    topicId: typeof m.topicId === 'string' ? m.topicId : undefined,
+    topicLabel: typeof m.topicLabel === 'string' ? m.topicLabel : undefined,
+    questionText: typeof m.questionText === 'string' ? m.questionText : undefined,
+    options: Array.isArray(m.options) ? m.options.filter((item): item is string => typeof item === 'string') : undefined,
+    source: typeof m.source === 'string' ? m.source : undefined,
   };
 }
 

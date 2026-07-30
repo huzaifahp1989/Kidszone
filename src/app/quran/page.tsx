@@ -54,6 +54,25 @@ export default function QuranPage() {
           </Link>
 
           <Link
+            href="/quran/listen"
+            className="cta-panel group block min-h-11 bg-gradient-to-br from-amber-500 to-orange-600 text-white active:scale-[0.99]"
+          >
+            <div className="flex items-start justify-between gap-3 p-4 sm:gap-4 sm:p-6">
+              <div>
+                <div className="mb-2 inline-flex items-center gap-2 rounded-full bg-white/20 px-3 py-1 text-xs font-bold">
+                  <BookMarked size={14} /> Daily Points
+                </div>
+                <h2 className="text-xl font-bold sm:text-2xl">Quran Listening</h2>
+                <p className="mt-2 text-xs text-amber-100 sm:text-sm">
+                  Listen with top reciters. Choose short surahs or longer ones like Ya-Sin and Al-Mulk, then claim daily listening points.
+                </p>
+                <p className="mt-4 text-sm font-bold text-white/90 group-hover:underline">Start listening →</p>
+              </div>
+              <ChevronRight className="mt-2 shrink-0 opacity-80 transition group-hover:translate-x-1" size={28} />
+            </div>
+          </Link>
+
+          <Link
             href="/hifz"
             className="surface-card group block min-h-11 rounded-2xl p-4 transition active:scale-[0.99] sm:col-span-2 sm:p-6 sm:hover:ring-2 sm:hover:ring-violet-200"
           >

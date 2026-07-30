@@ -5,9 +5,10 @@ import { useAuth } from '@/lib/auth-context';
 import { BiWeeklyResetPopup, Button, WeeklyActivitiesProgress } from '@/components';
 import { Trophy, Star, Award, Lock, Crown, Mic, Sparkles, CheckCircle2, MessageCircle, CalendarDays } from 'lucide-react';
 import Link from 'next/link';
-import { SurveyPopup } from '@/components';
+import { SurveyBanner, SurveyPopup } from '@/components';
 import { SpinWheel } from '@/components/SpinWheel';
 import { WonPrizeVouchers } from '@/components/WonPrizeVouchers';
+import { DailyTasksReport } from '@/components/DailyTasksReport';
 
 type MonthlyCertificate = {
   key: string;
@@ -56,7 +57,7 @@ type SeerahProgressData = {
 export default function RewardsPage() {
   const { profile, loading, user } = useAuth() as any;
   const [mounted, setMounted] = useState(false);
-  const [activeTab, setActiveTab] = useState<'today' | 'week' | 'prizes'>('today');
+  const [activeTab, setActiveTab] = useState<'today' | 'week' | 'tasks' | 'prizes'>('today');
   const [certificates, setCertificates] = useState<MonthlyCertificate[]>([]);
   const [certLoading, setCertLoading] = useState(false);
   const [weeklyQuizAttempts, setWeeklyQuizAttempts] = useState(0);
@@ -295,11 +296,14 @@ export default function RewardsPage() {
           </div>
         </section>
 
+        <div className="mb-6">
+          <SurveyBanner compact />
+        </div>
+
         <div className="mb-6 flex flex-wrap gap-2 rounded-2xl border border-slate-200 bg-white p-2">
           {([
             { id: 'today' as const, label: 'Today' },
-            { id: 'week' as const, label: 'This week' },
-            { id: 'prizes' as const, label: 'My prizes' },
+            { id: 'week' as const, label: 'This week' },            { id: 'tasks' as const, label: '✅ Daily Tasks' },            { id: 'prizes' as const, label: 'My prizes' },
           ]).map((tab) => (
             <button
               key={tab.id}
@@ -452,7 +456,66 @@ export default function RewardsPage() {
             </div>
           )}
         </section>
+
+        <section className="mb-6 rounded-3xl border border-amber-200 bg-gradient-to-br from-amber-50 via-white to-violet-50 p-6 shadow-sm">
+          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div className="max-w-2xl">
+              <div className="inline-flex rounded-full bg-amber-100 px-3 py-1 text-xs font-bold uppercase tracking-wide text-amber-800">
+                ⭐ Star System
+              </div>
+              <h3 className="mt-3 text-2xl font-black text-slate-900">Weekly stars, monthly points, and quarterly prizes</h3>
+              <p className="mt-2 text-sm leading-6 text-slate-700">
+                Stay active for 2, 4, and 6 days each week to earn up to 3 stars. Monthly points keep adding for every user, and quarterly star totals unlock certificates and prize draws.
+              </p>
+            </div>
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <Link href="/stars" className="inline-flex items-center justify-center rounded-xl bg-amber-600 px-4 py-2 text-sm font-bold text-white hover:bg-amber-500">
+                Open Stars Page
+              </Link>
+              <Link href="/leaderboard" className="inline-flex items-center justify-center rounded-xl border border-amber-300 bg-white px-4 py-2 text-sm font-bold text-amber-800 hover:bg-amber-50">
+                View leaderboard
+              </Link>
+            </div>
+          </div>
+          <div className="mt-5 grid gap-3 md:grid-cols-3">
+            <div className="rounded-2xl border border-white/70 bg-white/80 p-4">
+              <p className="text-xs font-bold uppercase text-amber-700">2 days</p>
+              <p className="mt-1 text-2xl font-black text-slate-900">1 star</p>
+            </div>
+            <div className="rounded-2xl border border-white/70 bg-white/80 p-4">
+              <p className="text-xs font-bold uppercase text-amber-700">4 days</p>
+              <p className="mt-1 text-2xl font-black text-slate-900">2 stars</p>
+            </div>
+            <div className="rounded-2xl border border-white/70 bg-white/80 p-4">
+              <p className="text-xs font-bold uppercase text-amber-700">6 days</p>
+              <p className="mt-1 text-2xl font-black text-slate-900">3 stars</p>
+            </div>
+          </div>
+        </section>
           </>
+        )}
+
+        {activeTab === 'tasks' && (
+          <section className="mb-6 rounded-3xl border border-emerald-200 bg-gradient-to-br from-emerald-50 via-white to-teal-50 p-6 shadow-sm">
+            <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="text-xs font-black uppercase tracking-[0.18em] text-emerald-700">Daily Tasks Report</p>
+                <h3 className="mt-1 text-2xl font-black text-emerald-950">Salah, Quran &amp; Good Deeds</h3>
+                <p className="mt-1 text-sm text-emerald-800">Your weekly and monthly progress for daily Islamic tasks.</p>
+              </div>
+              <Link
+                href="/tracker"
+                className="inline-flex items-center justify-center rounded-xl bg-emerald-500 px-4 py-2 text-sm font-bold text-white hover:bg-emerald-600 shrink-0"
+              >
+                Go to My Tasks →
+              </Link>
+            </div>
+            {user?.id ? (
+              <DailyTasksReport userId={user.id} />
+            ) : (
+              <p className="text-sm text-emerald-700">Please sign in to view your daily tasks report.</p>
+            )}
+          </section>
         )}
 
         {activeTab === 'prizes' && (

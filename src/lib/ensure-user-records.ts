@@ -10,6 +10,27 @@ function isPlaceholderName(name: string | null | undefined): boolean {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{4}-[0-9a-f]{12}$/i.test(trimmed);
 }
 
+export function pickContactNumberFromMetadata(meta: Record<string, unknown> | null | undefined): string {
+  const candidates = [
+    meta?.contactNumber,
+    meta?.contact_number,
+    meta?.contactnumber,
+    meta?.phone,
+    meta?.phone_number,
+    meta?.mobile,
+    meta?.mobile_number,
+  ];
+
+  for (const candidate of candidates) {
+    if (typeof candidate === 'string') {
+      const trimmed = candidate.trim();
+      if (trimmed) return trimmed;
+    }
+  }
+
+  return '';
+}
+
 export type EnsureUserRecordsResult = {
   ok: boolean;
   userId: string;
@@ -45,6 +66,7 @@ export async function ensureUserRecords(userId: string): Promise<EnsureUserRecor
   let metaUsername = '';
   let metaFamilyEmail = '';
   let metaCity = '';
+  let metaContactNumber = '';
   try {
     const { data: authData, error: authErr } = await supabaseAdmin.auth.admin.getUserById(uid);
     if (authErr) {
@@ -57,6 +79,7 @@ export async function ensureUserRecords(userId: string): Promise<EnsureUserRecor
       metaUsername = normalizeUsername(String(meta.username || ''));
       metaFamilyEmail = normalizeFamilyEmail(String(meta.family_email || meta.familyEmail || authEmail || ''));
       metaCity = String(meta.city || meta.town || meta.location || '').trim();
+      metaContactNumber = pickContactNumberFromMetadata(meta as Record<string, unknown> | undefined);
     }
   } catch (err: any) {
     console.warn('[ensureUserRecords] auth lookup threw:', err?.message || err);
@@ -110,11 +133,16 @@ export async function ensureUserRecords(userId: string): Promise<EnsureUserRecor
     };
     if (metaUsername) insertPayload.username = metaUsername;
     if (metaCity) insertPayload.city = metaCity;
+    if (metaContactNumber) {
+      insertPayload.contact_number = metaContactNumber;
+      insertPayload.contactnumber = metaContactNumber;
+      insertPayload.contactNumber = metaContactNumber;
+    }
 
     let insertUserErr = (await supabaseAdmin.from('users').upsert(insertPayload, { onConflict: 'uid' })).error;
 
     if (insertUserErr?.code === '42703') {
-      const { username: _u, family_email: _f, city: _c, ...legacyPayload } = insertPayload;
+      const { username: _u, family_email: _f, city: _c, contact_number: _cn, contactnumber: _cn2, contactNumber: _cn3, ...legacyPayload } = insertPayload;
       insertUserErr = (await supabaseAdmin.from('users').upsert(legacyPayload, { onConflict: 'uid' })).error;
       if (!insertUserErr && metaCity) {
         for (const col of ['city', 'town', 'location'] as const) {
@@ -158,6 +186,11 @@ export async function ensureUserRecords(userId: string): Promise<EnsureUserRecor
     if (!existingUser.username && metaUsername) {
       patch.username = metaUsername;
     }
+    if (!existingUser.contact_number && !existingUser.contactnumber && !existingUser.contactNumber && metaContactNumber) {
+      patch.contact_number = metaContactNumber;
+      patch.contactnumber = metaContactNumber;
+      patch.contactNumber = metaContactNumber;
+    }
     // Never clobber an existing age; only fill when missing and metadata has age.
     const existingAge = existingUser.age as number | null | undefined;
     if ((existingAge == null || existingAge === 0) && metaAge != null) {
@@ -166,7 +199,7 @@ export async function ensureUserRecords(userId: string): Promise<EnsureUserRecor
     if (Object.keys(patch).length > 0) {
       const { error: patchErr } = await supabaseAdmin.from('users').update(patch).eq('uid', uid);
       if (patchErr?.code === '42703') {
-        const { username: _u, family_email: _f, ...legacyPatch } = patch;
+        const { username: _u, family_email: _f, contact_number: _cn, contactnumber: _cn2, contactNumber: _cn3, ...legacyPatch } = patch;
         if (Object.keys(legacyPatch).length > 0) {
           await supabaseAdmin.from('users').update(legacyPatch).eq('uid', uid);
         }

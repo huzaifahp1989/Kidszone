@@ -17,6 +17,7 @@ import {
   Sparkles,
   Mic,
   Footprints,
+  Star,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -95,6 +96,14 @@ export const NAV_GROUPS: NavGroup[] = [
         group: 'play',
       },
       {
+        href: '/activities-menu',
+        label: 'Activities Menu',
+        shortLabel: 'Activities',
+        description: 'Quick links to all activities that earn points',
+        icon: Sparkles,
+        group: 'play',
+      },
+      {
         href: '/create',
         label: 'Create & Play',
         shortLabel: 'Create',
@@ -131,6 +140,14 @@ export const NAV_GROUPS: NavGroup[] = [
         shortLabel: 'Surahs',
         description: 'Lessons & quizzes for famous surahs',
         icon: BookOpen,
+        group: 'learn',
+      },
+      {
+        href: '/quran/listen',
+        label: 'Quran Listening',
+        shortLabel: 'Listen',
+        description: 'Listen to short and long surahs with top reciters',
+        icon: Mic,
         group: 'learn',
       },
       {
@@ -257,6 +274,14 @@ export const NAV_GROUPS: NavGroup[] = [
         shortLabel: 'Rewards',
         description: 'Spin the wheel and win prizes',
         icon: Gift,
+        group: 'rewards',
+      },
+      {
+        href: '/stars',
+        label: 'Stars',
+        shortLabel: 'Stars',
+        description: 'Track weekly stars and quarterly prizes',
+        icon: Star,
         group: 'rewards',
       },
       {

@@ -147,10 +147,6 @@ export default function StoryRecordingPage({ params }: { params: Promise<{ id: s
       return;
     }
 
-    if (recordingTime < 30) {
-      alert('Recording is too short! Please record at least 30 seconds.');
-      return;
-    }
     if (recordingTime > 180) { // 3 minutes
       alert('Recording is too long! Please keep it under 3 minutes.');
       return;
@@ -237,7 +233,7 @@ export default function StoryRecordingPage({ params }: { params: Promise<{ id: s
                 <li>• Find a quiet place without background noise</li>
                 <li>• Speak clearly and slowly</li>
                 <li>• No background music please</li>
-                <li>• Keep it between 30 seconds and 3 minutes</li>
+                <li>• Keep it under 3 minutes</li>
               </ul>
             </div>
           </div>

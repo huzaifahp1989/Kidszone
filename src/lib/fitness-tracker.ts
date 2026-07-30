@@ -3,7 +3,7 @@ import {
   CapacitorPedometer,
   type Measurement,
   type PermissionStatus,
-} from '@capgo/capacitor-pedometer';
+} from '@/lib/capacitor-pedometer-shim';
 
 export type FitnessPlatform = 'android' | 'ios' | 'web';
 export type FitnessPermissionState = PermissionStatus['activityRecognition'] | 'unsupported';
@@ -258,7 +258,14 @@ export async function getFitnessStatus(options: { requestPermission?: boolean } 
   }
 
   try {
-    const availability = await CapacitorPedometer.isAvailable();
+    const pedometerAny = CapacitorPedometer as unknown as {
+      isAvailable?: () => Promise<Partial<Record<string, unknown>>>;
+    };
+
+    const availability =
+      typeof pedometerAny.isAvailable === 'function'
+        ? await pedometerAny.isAvailable()
+        : { stepCounting: true };
     const features: FitnessFeatures = {
       stepCounting: Boolean(availability.stepCounting),
       distance: Boolean(availability.distance),

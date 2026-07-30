@@ -22,7 +22,7 @@ export async function GET(req: Request) {
     const quarterKey = getQuarterKey();
     const monthKeys = getMonthKeysForQuarter(quarterKey);
     const monthStarts = monthKeys.map((k) => `${k}-01`);
-    const currentMonthStart = getMonthStartUtc();
+    const currentMonthStart = getMonthStartUtc().toISOString().slice(0, 10);
 
     const [progressRes, pointsRes] = await Promise.all([
       supabaseAdmin

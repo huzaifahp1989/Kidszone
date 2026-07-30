@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { resolvePublicSupabaseUrl } from '@/lib/supabase-public-config';
-import { resolveServiceRoleKey } from '@/lib/supabase-server-secrets';
+import {
+  resolvePublicSupabaseAnonKey,
+  resolvePublicSupabaseUrl,
+} from '@/lib/supabase-public-config';
 
 /** Parse "try again in X seconds" / "try again in M:SS" from an error message */
 function parseRetrySeconds(msg: string): number | null {
@@ -16,7 +18,7 @@ function parseRetrySeconds(msg: string): number | null {
 export async function POST(req: NextRequest) {
   try {
     const SUPABASE_URL = resolvePublicSupabaseUrl();
-    const SERVICE_ROLE_KEY = resolveServiceRoleKey();
+    const SUPABASE_ANON_KEY = resolvePublicSupabaseAnonKey();
 
     if (!SUPABASE_URL || SUPABASE_URL.includes('placeholder.supabase.co')) {
       return NextResponse.json(
@@ -24,9 +26,9 @@ export async function POST(req: NextRequest) {
         { status: 500 }
       );
     }
-    if (!SERVICE_ROLE_KEY) {
+    if (!SUPABASE_ANON_KEY || SUPABASE_ANON_KEY === 'placeholder') {
       return NextResponse.json(
-        { error: 'Server sign-in proxy is not configured (SUPABASE_SERVICE_ROLE_KEY is missing).', retryAfter: null },
+        { error: 'Server sign-in proxy is not configured (NEXT_PUBLIC_SUPABASE_ANON_KEY is missing).', retryAfter: null },
         { status: 500 }
       );
     }
@@ -36,15 +38,15 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Email and password are required.' }, { status: 400 });
     }
 
-    // Call GoTrue token endpoint directly with the service role key as the
-    // apikey header. The service-role key is exempt from the per-IP anon
-    // rate limits that block browser clients.
+    // Use the standard public auth key for a normal password grant.
+    // Supabase applies password sign-in rate limits at the Auth layer,
+    // so this proxy should mirror the documented client flow rather than
+    // treating sign-in like an admin operation.
     const gtrRes = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'apikey': SERVICE_ROLE_KEY,
-        'Authorization': `Bearer ${SERVICE_ROLE_KEY}`,
+        'apikey': SUPABASE_ANON_KEY,
       },
       body: JSON.stringify({ email, password }),
     });

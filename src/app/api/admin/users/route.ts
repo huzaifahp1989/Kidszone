@@ -357,6 +357,8 @@ export async function POST(request: Request) {
       username,
       age,
       city,
+      contact_number,
+      contactNumber,
       points,
       weeklypoints,
       monthlypoints,
@@ -366,6 +368,24 @@ export async function POST(request: Request) {
     if (!trimmedName) {
       return NextResponse.json({ error: 'Name is required' }, { status: 400 });
     }
+
+    const rawContact = String(
+      contact_number ?? contactNumber ?? ''
+    ).trim();
+    const contactDigits = rawContact.replace(/\D/g, '');
+    if (!rawContact || contactDigits.length < 6) {
+      return NextResponse.json(
+        { error: 'A valid contact number is required (min 6 digits; include country code if outside UK).' },
+        { status: 400 }
+      );
+    }
+    if (contactDigits.length > 18) {
+      return NextResponse.json(
+        { error: 'Contact number looks too long. Please check and try again.' },
+        { status: 400 }
+      );
+    }
+    const safeContactNumber = rawContact;
 
     const { assertValidUsername, normalizeFamilyEmail, normalizeUsername } = await import(
       '@/lib/family-accounts'
@@ -422,6 +442,8 @@ export async function POST(request: Request) {
         family_email: emailNormalized,
         age: safeAge,
         city: safeCity || undefined,
+        contactNumber: safeContactNumber,
+        contact_number: safeContactNumber,
       },
     });
 
@@ -466,15 +488,23 @@ export async function POST(request: Request) {
         ...baseProfile,
         family_email: emailNormalized,
         username: normalizedUsername,
+        contact_number: safeContactNumber,
+        contactnumber: safeContactNumber,
+        "contactNumber": safeContactNumber,
         ...(safeCity ? { city: safeCity } : {}),
       },
       {
         ...baseProfile,
         username: normalizedUsername,
+        contact_number: safeContactNumber,
+        contactnumber: safeContactNumber,
+        "contactNumber": safeContactNumber,
         ...(safeCity ? { city: safeCity } : {}),
       },
       {
         ...baseProfile,
+        contact_number: safeContactNumber,
+        contactnumber: safeContactNumber,
         ...(safeCity ? { city: safeCity } : {}),
       },
       baseProfile,
@@ -552,6 +582,8 @@ export async function PUT(request: Request) {
       winnerTick,
       city,
       age,
+      contact_number,
+      contactNumber,
     } = body;
 
     if (!uid) {
@@ -567,6 +599,20 @@ export async function PUT(request: Request) {
     if (city !== undefined) {
       const safeCity = typeof city === 'string' ? city.trim() : '';
       updates.city = safeCity || null;
+    }
+    if (contact_number !== undefined || contactNumber !== undefined) {
+      const rawContact = String(contact_number ?? contactNumber ?? '').trim();
+      const digits = rawContact.replace(/\D/g, '');
+      if (rawContact && (digits.length < 6 || digits.length > 18)) {
+        return NextResponse.json(
+          { error: 'Contact number must have 6-18 digits (include country code if outside UK).' },
+          { status: 400 }
+        );
+      }
+      const safePhone = rawContact || '';
+      updates.contact_number = safePhone;
+      updates.contactnumber = safePhone;
+      updates['contactNumber'] = safePhone;
     }
 
     // Ensure a users row exists for admin edits and point synchronization.
@@ -732,7 +778,7 @@ export async function PUT(request: Request) {
       }
     }
 
-    if (city !== undefined || age !== undefined) {
+    if (city !== undefined || age !== undefined || contact_number !== undefined || contactNumber !== undefined) {
       const { data: authRes, error: authReadErr } = await supabaseAdmin.auth.admin.getUserById(uid);
       if (authReadErr) {
         console.error('Admin metadata fetch error:', authReadErr);
@@ -757,6 +803,17 @@ export async function PUT(request: Request) {
           delete nextMeta.age;
         } else {
           nextMeta.age = safeAge;
+        }
+      }
+
+      if (contact_number !== undefined || contactNumber !== undefined) {
+        const safePhone = String(contact_number ?? contactNumber ?? '').trim();
+        if (safePhone) {
+          nextMeta.contactNumber = safePhone;
+          nextMeta.contact_number = safePhone;
+        } else {
+          delete nextMeta.contactNumber;
+          delete nextMeta.contact_number;
         }
       }
 

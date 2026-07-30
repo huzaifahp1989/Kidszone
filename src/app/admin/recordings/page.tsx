@@ -41,7 +41,9 @@ export default function AdminRecordingsList() {
         url += `?${params.toString()}`;
       }
       
-      const res = await fetch(url);
+      const res = await fetch(url, {
+        headers: { 'x-admin-auth': 'true' },
+      });
       if (!res.ok) throw new Error('Failed to fetch');
       const data = await res.json();
       setRecordings(data.recordings || data);
@@ -93,7 +95,7 @@ export default function AdminRecordingsList() {
     try {
       const res = await fetch(`/api/admin/recordings/${id}/approve`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'x-admin-auth': 'true' },
         body: JSON.stringify({
           points: preset.points,
           feedback: preset.feedback,
@@ -118,7 +120,7 @@ export default function AdminRecordingsList() {
     try {
       const res = await fetch(`/api/admin/recordings/${id}/reject`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'x-admin-auth': 'true' },
         body: JSON.stringify({ feedback: preset.feedback }),
       });
       if (!res.ok) throw new Error('Reject failed');
@@ -139,7 +141,7 @@ export default function AdminRecordingsList() {
       const promises = Array.from(selectedRecordings).map(id =>
         fetch(`/api/admin/recordings/${id}/approve`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json', 'x-admin-auth': 'true' },
           body: JSON.stringify({
             points: RECORDING_APPROVED_POINTS,
             feedback: 'Approved via bulk action',
@@ -210,7 +212,7 @@ export default function AdminRecordingsList() {
       const promises = Array.from(selectedRecordings).map(id =>
         fetch(`/api/admin/recordings/${id}/reject`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json', 'x-admin-auth': 'true' },
           body: JSON.stringify({
             feedback: 'Rejected via bulk action'
           })

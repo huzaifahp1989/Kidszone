@@ -27,7 +27,6 @@ type Props = {
 export function SurahRecorder({ surahNumber, surahName, arabicName, ayahCount }: Props) {
   const { user, profile } = useAuth();
   const maxSeconds = Math.min(600, Math.max(120, ayahCount * 25));
-  const minSeconds = ayahCount <= 6 ? 3 : 10;
 
   const {
     state,
@@ -100,7 +99,7 @@ export function SurahRecorder({ surahNumber, surahName, arabicName, ayahCount }:
     }
   };
 
-  const canSubmit = blob && seconds >= minSeconds && !isRecording;
+  const canSubmit = blob && seconds > 0 && !isRecording;
 
   return (
     <section className="surface-card rounded-2xl border border-rose-200/80 bg-gradient-to-br from-rose-50/50 to-white p-4 sm:p-6">
@@ -179,9 +178,9 @@ export function SurahRecorder({ surahNumber, surahName, arabicName, ayahCount }:
                 Save recording
               </Button>
             </div>
-            {seconds < minSeconds && (
+            {seconds <= 0 && (
               <p className="text-center text-xs text-amber-700">
-                Recording is a bit short — try at least {minSeconds} seconds.
+                Please record at least 1 second before saving.
               </p>
             )}
             {!user && (

@@ -46,7 +46,9 @@ export default function AdminRecordingDetail({ params }: { params: Promise<{ id:
 
   const fetchRecording = useCallback(async (recordingId: string) => {
     try {
-      const res = await fetch(`/api/admin/recordings/${recordingId}`);
+      const res = await fetch(`/api/admin/recordings/${recordingId}`, {
+        headers: { 'x-admin-auth': 'true' },
+      });
       if (!res.ok) throw new Error('Failed to fetch');
       const data = await res.json();
       setRecording(data);
@@ -152,7 +154,7 @@ export default function AdminRecordingDetail({ params }: { params: Promise<{ id:
     try {
       const res = await fetch(`/api/admin/recordings/${id}/approve`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'x-admin-auth': 'true' },
         body: JSON.stringify({
           points,
           feedback,
@@ -202,7 +204,7 @@ export default function AdminRecordingDetail({ params }: { params: Promise<{ id:
     try {
       const res = await fetch(`/api/admin/recordings/${id}/reject`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'x-admin-auth': 'true' },
         body: JSON.stringify({ feedback })
       });
 
@@ -247,7 +249,7 @@ export default function AdminRecordingDetail({ params }: { params: Promise<{ id:
     try {
       const res = await fetch(`/api/admin/recordings/${id}`, {
         method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' }
+        headers: { 'Content-Type': 'application/json', 'x-admin-auth': 'true' }
       });
 
       if (!res.ok) throw new Error('Failed to delete');

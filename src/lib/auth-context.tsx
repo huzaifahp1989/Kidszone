@@ -420,8 +420,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return;
       }
       setLoading(true);
-      await refreshProfile();
-      setLoading(false);
+      try {
+        await refreshProfile();
+      } finally {
+        setLoading(false);
+      }
     })();
   }, [user, refreshProfile]);
 

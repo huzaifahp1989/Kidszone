@@ -19,7 +19,7 @@ export async function POST(req: Request) {
   try {
     const summary = await runPointsRepairBatch({ triggerSource: 'admin' });
     return NextResponse.json({
-      ok: true,
+      success: true,
       ...summary,
       details: summary.details.slice(0, 100),
     });

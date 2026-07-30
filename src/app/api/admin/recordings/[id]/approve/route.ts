@@ -2,11 +2,16 @@ import { NextResponse, NextRequest } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { ensureUserRecords } from '@/lib/ensure-user-records';
 import { awardPointsWithDailyCapByUserId } from '@/lib/server-points';
+import { isAdminRequest } from '@/lib/admin-auth';
 
 export async function POST(
   request: NextRequest,
   context: { params: Promise<{ id: string }> }
 ) {
+  if (!isAdminRequest(request)) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
   try {
     const { id } = await context.params;
     const body = await request.json();

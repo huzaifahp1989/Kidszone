@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { buildAudioQuizMetadata } from '@/lib/audio-quiz';
-import { deleteObject, uploadObject } from '@/lib/object-storage';
+import { buildStorageResponsePayload, deleteObject, uploadObject } from '@/lib/object-storage';
 import { getAuthenticatedRequestUser } from '@/lib/request-auth';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 
@@ -78,12 +77,17 @@ export async function POST(request: NextRequest) {
       parsedOptions = [];
     }
 
-    await uploadObject({
-      bucket: 'story-recordings',
-      path: filename,
-      body: buffer,
-      contentType: mimeType,
-    });
+    try {
+      await uploadObject({
+        bucket: 'story-recordings',
+        path: filename,
+        body: buffer,
+        contentType: mimeType,
+      });
+    } catch (uploadError) {
+      console.error('Audio quiz storage upload error:', uploadError);
+      return NextResponse.json(buildStorageResponsePayload(uploadError), { status: 500 });
+    }
 
     const { data: userProfile } = await supabaseAdmin
       .from('users')
@@ -91,7 +95,7 @@ export async function POST(request: NextRequest) {
       .eq('id', authUser.id)
       .maybeSingle();
 
-    const metadata = buildAudioQuizMetadata({
+    const metadata = {
       source: 'audio-quiz',
       topicId,
       topicLabel,
@@ -103,7 +107,7 @@ export async function POST(request: NextRequest) {
       correctAnswerText: correctAnswerText || null,
       explanation: explanation || null,
       reference: reference || null,
-    });
+    };
 
     const { data: insertedRecord, error: dbError } = await supabaseAdmin
       .from('recordings')
@@ -117,6 +121,7 @@ export async function POST(request: NextRequest) {
         audio_path: filename,
         duration: Number.isFinite(duration) ? duration : 0,
         status: 'submitted',
+        created_at: new Date().toISOString(),
         submitted_at: new Date().toISOString(),
       })
       .select('id, status, submitted_at')

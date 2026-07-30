@@ -31,7 +31,8 @@ type PointsRow = {
 export async function snapshotAndResetMonthlyPoints(options?: {
   closingMonthStart?: string;
 }): Promise<MonthlyResetSummary> {
-  const closingMonthStart = options?.closingMonthStart || getPreviousMonthStartUtc();
+  const closingMonthStart =
+    options?.closingMonthStart || getPreviousMonthStartUtc().toISOString().slice(0, 10);
   const closingDate = new Date(`${closingMonthStart}T12:00:00.000Z`);
   const quarterKeyForClosedMonth = getQuarterKey(closingDate);
   const nowIso = new Date().toISOString();
@@ -170,7 +171,7 @@ async function snapshotRows(
 
 /** Admin mid-month reset: close the current calendar month. */
 export async function snapshotAndResetCurrentMonth(): Promise<MonthlyResetSummary> {
-  return snapshotAndResetMonthlyPoints({ closingMonthStart: getMonthStartUtc() });
+  return snapshotAndResetMonthlyPoints({ closingMonthStart: getMonthStartUtc().toISOString().slice(0, 10) });
 }
 
 export async function createPrizeWinRecord(input: {

@@ -25,6 +25,7 @@ import { StreakCalendar } from '@/components/StreakCalendar';
 import { getKidLevelTitle } from '@/lib/level-names';
 import { RecordAndEarnBanner } from '@/components/RecordAndEarnBanner';
 import { EarnMorePointsLinks } from '@/components/EarnMorePointsLinks';
+import { DailyTasksBanner } from '@/components/DailyTasksBanner';
 
 const TIP_TEXT =
   'Try to learn something new about Islam every day, even if it is just one verse or one hadith. Little by little, you build lasting knowledge. May Allah bless your journey!';
@@ -57,6 +58,7 @@ export default function Home() {
           <WhatsNew />
           <RecordAndEarnBanner />
           <EarnMorePointsLinks title="Earn more points today" />
+          <DailyTasksBanner />
           <section className="hero-panel stagger-in">
             <div className="relative flex flex-col items-center gap-5 px-5 py-8 text-center md:flex-row md:items-center md:justify-between md:text-left">
               <div className="space-y-3">
@@ -94,6 +96,28 @@ export default function Home() {
           </section>
 
           {progressBlock}
+
+          <section className="feature-tile rounded-3xl border-emerald-200 bg-gradient-to-br from-emerald-50 via-white to-cyan-50 p-6">
+            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+              <div className="max-w-2xl">
+                <div className="inline-flex items-center gap-2 rounded-full bg-emerald-100 px-3 py-1 text-xs font-bold uppercase tracking-[0.18em] text-emerald-800">
+                  <Sparkles size={14} /> Quran Listen
+                </div>
+                <h3 className="mt-3 text-2xl font-black text-emerald-950">Listen to Quran Daily</h3>
+                <p className="mt-2 text-sm text-emerald-900/80">
+                  Play short surahs or longer ones like Ya-Sin and Al-Mulk with top reciters. Complete listening and earn daily points.
+                </p>
+              </div>
+              <Link
+                href="/quran/listen"
+                className="inline-flex items-center justify-center rounded-2xl bg-emerald-600 px-5 py-3 text-sm font-bold text-white shadow-lg transition hover:bg-emerald-500"
+              >
+                Open Quran Listen
+              </Link>
+            </div>
+          </section>
+
+          <SurveyBanner compact />
 
           <ComeBackNudge />
 
@@ -143,6 +167,7 @@ export default function Home() {
         <WhatsNew />
         <RecordAndEarnBanner />
         <EarnMorePointsLinks title="Earn more points today" />
+        <DailyTasksBanner />
         <section className="hero-panel stagger-in">
           <div className="relative px-6 py-9 md:px-10 md:py-11">
             <div className="flex flex-col items-start gap-6 md:flex-row md:items-center md:justify-between">
@@ -220,6 +245,26 @@ export default function Home() {
         <PointsSummaryWidget />
 
         <SurveyBanner />
+
+        <section className="feature-tile rounded-3xl border-emerald-200 bg-gradient-to-br from-emerald-50 via-white to-cyan-50 p-6">
+          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div className="max-w-2xl">
+              <div className="inline-flex items-center gap-2 rounded-full bg-emerald-100 px-3 py-1 text-xs font-bold uppercase tracking-[0.18em] text-emerald-800">
+                <Sparkles size={14} /> Quran Listen
+              </div>
+              <h3 className="mt-3 text-2xl font-black text-emerald-950">Listen to Quran Daily</h3>
+              <p className="mt-2 text-sm text-emerald-900/80">
+                Easily find the Quran listening page here. Choose short surahs for quick practice or longer surahs like Ya-Sin and Al-Mulk.
+              </p>
+            </div>
+            <Link
+              href="/quran/listen"
+              className="inline-flex items-center justify-center rounded-2xl bg-emerald-600 px-5 py-3 text-sm font-bold text-white shadow-lg transition hover:bg-emerald-500"
+            >
+              Open Quran Listen
+            </Link>
+          </div>
+        </section>
 
         <section className="space-y-3 stagger-in">
           <div className="flex items-center justify-between px-1">

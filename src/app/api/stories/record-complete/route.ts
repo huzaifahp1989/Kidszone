@@ -47,9 +47,12 @@ export async function POST(req: Request) {
       .insert({
         user_id: userId,
         story_id: storyId,
+        category: 'story',
         audio_path: `external/${userId}/${Date.now()}`,
         duration: 0,
         status: 'approved',
+        created_at: new Date().toISOString(),
+        submitted_at: new Date().toISOString(),
       });
 
     if (recordingError) {

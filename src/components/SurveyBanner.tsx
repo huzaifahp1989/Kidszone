@@ -3,7 +3,7 @@
 import { MessageSquareHeart, ExternalLink, Sparkles } from 'lucide-react';
 
 const SURVEY_URL =
-  'https://docs.google.com/forms/d/e/1FAIpQLSeuuvHIxe10xDtSTw1wr8K6B66HEUrpF3Y5oZCIP4BMGuUiVA/viewform?usp=publish-editor';
+  'https://docs.google.com/forms/d/1Cl6yO9GA8UgvUfoSiFuSEyA3Q9O0WMSMLxtNo75DPG4/viewform';
 
 type SurveyBannerProps = {
   compact?: boolean;
@@ -23,7 +23,7 @@ export function SurveyBanner({ compact = false }: SurveyBannerProps) {
               <MessageSquareHeart size={22} />
             </div>
             <div>
-              <h3 className="text-xl font-black text-slate-900">Take the survey to win 50 points</h3>
+              <h3 className="text-xl font-black text-slate-900">Take the survey to earn 50 points</h3>
               <p className="mt-1 text-sm text-slate-600">
                 Share quick feedback about Kids Zone in our new survey form. It opens in a new tab so it is easy for children and parents to complete.
               </p>

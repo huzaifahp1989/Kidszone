@@ -1,14 +1,24 @@
-/** Canonical live app URL (GitHub auto-deploys here). */
-export const LIVE_APP_URL = 'https://huzaifahp1989-audio.vercel.app';
+const DEFAULT_LIVE_APP_URL = 'https://huzaifahp1989-audio.vercel.app';
+
+function normalizeUrl(url: string): string {
+  return url.replace(/\/$/, '');
+}
+
+export function getConfiguredAppUrl(): string | null {
+  return process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_SITE_URL || null;
+}
 
 /** Public URL used in emails, links, and fallbacks. */
 export function getAppUrl(): string {
-  return (
-    process.env.NEXT_PUBLIC_APP_URL ||
-    process.env.NEXT_PUBLIC_SITE_URL ||
-    LIVE_APP_URL
-  );
+  const configured = getConfiguredAppUrl();
+  if (configured) return normalizeUrl(configured);
+  if (typeof window !== 'undefined' && window.location.origin) {
+    return normalizeUrl(window.location.origin);
+  }
+  return DEFAULT_LIVE_APP_URL;
 }
+
+export const LIVE_APP_URL = getAppUrl();
 
 /**
  * Base URL for browser API calls (quiz submit, points refresh, game track).
@@ -16,10 +26,12 @@ export function getAppUrl(): string {
  * Cap/stale-host WebViews still use the canonical live deployment.
  */
 export function getClientApiBaseUrl(): string {
-  if (typeof window === 'undefined') return LIVE_APP_URL.replace(/\/$/, '');
+  if (typeof window === 'undefined') {
+    return normalizeUrl(getConfiguredAppUrl() || DEFAULT_LIVE_APP_URL);
+  }
   const host = window.location.hostname.toLowerCase();
   if (host === 'localhost' || host === '127.0.0.1') {
-    return window.location.origin.replace(/\/$/, '');
+    return normalizeUrl(window.location.origin);
   }
-  return LIVE_APP_URL.replace(/\/$/, '');
+  return normalizeUrl(getConfiguredAppUrl() || window.location.origin || DEFAULT_LIVE_APP_URL);
 }

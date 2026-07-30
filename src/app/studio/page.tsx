@@ -318,8 +318,8 @@ export default function StudioPage() {
       const rms = Math.sqrt(sum / channelData.length);
       const averageVolume = Math.round(rms * 100);
 
-      // Quality assessment
-      const hasGoodQuality = duration >= 30 && duration <= 300 && averageVolume > 5;
+      // Quality assessment is advisory only. Short recordings are allowed.
+      const hasGoodQuality = duration <= 300 && averageVolume > 5;
 
       setRecordingQuality({
         duration,
@@ -331,7 +331,7 @@ export default function StudioPage() {
       setRecordingQuality({
         duration,
         averageVolume: 0,
-        hasGoodQuality: duration >= 30 && duration <= 300
+        hasGoodQuality: duration <= 300
       });
     }
   };
@@ -534,12 +534,12 @@ export default function StudioPage() {
                     {recordingQuality.hasGoodQuality ? '✅' : '⚠️'} Recording Quality
                   </div>
                   <div className="text-xs mt-1 space-y-1">
-                    <div>Duration: {recordingQuality.duration}s {recordingQuality.duration < 30 ? '(too short)' : recordingQuality.duration > 300 ? '(too long)' : '(good)'}</div>
+                    <div>Duration: {recordingQuality.duration}s {recordingQuality.duration > 300 ? '(too long)' : '(ok)'}</div>
                     <div>Volume: {recordingQuality.averageVolume}% {recordingQuality.averageVolume < 5 ? '(too quiet)' : '(good)'}</div>
                   </div>
                   {!recordingQuality.hasGoodQuality && (
                     <div className="text-xs mt-2 font-medium">
-                      💡 Tip: {recordingQuality.duration < 30 ? 'Record for at least 30 seconds' : recordingQuality.duration > 300 ? 'Keep recordings under 5 minutes' : 'Speak louder or check your microphone'}
+                      💡 Tip: {recordingQuality.duration > 300 ? 'Keep recordings under 5 minutes' : 'Speak louder or check your microphone'}
                     </div>
                   )}
                 </div>
@@ -549,7 +549,7 @@ export default function StudioPage() {
                 <Button
                   variant="primary"
                   size="sm"
-                  disabled={submitting || !!(recordingQuality && !recordingQuality.hasGoodQuality)}
+                  disabled={submitting}
                   onClick={handleSubmitRecording}
                 >
                   {submitting ? 'Submitting...' : 'Submit Recording'}

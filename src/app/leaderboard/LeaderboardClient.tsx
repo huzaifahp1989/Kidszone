@@ -29,6 +29,7 @@ type Entry = {
   weeklyPoints?: number;
   todayPoints?: number;
   weeklyScore?: number;
+  weeklyStars?: number;
   maxWeeklyScore?: number;
   monthlyPoints?: number;
   weeklyActivityCount?: number;
@@ -55,6 +56,7 @@ type Row = {
   todayPoints: number;
   uid: string;
   badges: number;
+  weeklyStars: number;
   lastPlayedDate: string | null;
   winnerTick: boolean;
   weeklyChallengeDone: boolean;
@@ -119,6 +121,7 @@ export default function LeaderboardClient() {
       age: entry.age ?? null,
       level: entry.level,
       weeklyScore: entry.weeklyScore ?? 0,
+      weeklyStars: entry.weeklyStars ?? 0,
       maxWeeklyScore: entry.maxWeeklyScore ?? MAX_WEEKLY_SCORE,
       activityCount: entry.weeklyActivityCount ?? 0,
       weeklyPoints: entry.weeklyPoints ?? 0,
@@ -140,6 +143,7 @@ export default function LeaderboardClient() {
   }, [leaderboardData, profile?.uid]);
 
   const myRow = myRankIndex >= 0 ? leaderboardData[myRankIndex] : null;
+  const myWeeklyStars = myRow?.weeklyStars ?? 0;
 
   const currentUserWeeklyPoints = useMemo(() => {
     const uid = String(profile?.uid || '').trim();
@@ -258,6 +262,10 @@ export default function LeaderboardClient() {
                     </p>
                   </div>
                   <div className="rounded-xl bg-white px-3 py-2 text-center ring-1 ring-violet-100">
+                    <p className="text-xs font-bold uppercase text-violet-700">Weekly stars</p>
+                    <p className="text-xl font-black text-slate-900">{myRow ? `${myWeeklyStars}/3` : '—'}</p>
+                  </div>
+                  <div className="rounded-xl bg-white px-3 py-2 text-center ring-1 ring-violet-100">
                     <p className="text-xs font-bold uppercase text-violet-700">Weekly pts</p>
                     <p className="text-xl font-black text-slate-900">
                       {currentUserWeeklyPoints != null ? currentUserWeeklyPoints : '—'}
@@ -361,6 +369,25 @@ export default function LeaderboardClient() {
           </div>
         )}
 
+        {!loading && leaderboardData.length > 0 ? (
+          <div className="rounded-2xl border border-[#c4b5fd]/30 bg-white p-5 shadow-lg">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-wide text-violet-700">Top leaderboard</p>
+                <p className="text-lg font-black text-[#1e1b4b]">
+                  {leaderboardData[0].username} is leading {isMonthly ? 'this month' : 'this week'}
+                </p>
+              </div>
+              <div className="rounded-xl bg-[#f5f3ff] px-4 py-3 text-right ring-1 ring-violet-100">
+                <p className="text-xs font-bold uppercase text-violet-700">Last played</p>
+                <p className="text-sm font-black text-slate-900">
+                  {formatPlayedDate(leaderboardData[0].lastPlayedDate) || '—'}
+                </p>
+              </div>
+            </div>
+          </div>
+        ) : null}
+
         {!loading && leaderboardData.length > 0 && (
           <div className="overflow-hidden rounded-2xl border border-[#c4b5fd]/30 bg-white shadow-lg">
             <div className="bg-gradient-to-r from-[#7c3aed] to-[#6d28d9] p-6 text-white">
@@ -376,7 +403,7 @@ export default function LeaderboardClient() {
               className={`hidden gap-3 border-b border-[#c4b5fd]/20 bg-[#f5f3ff] px-4 py-3 text-xs font-bold uppercase tracking-wide text-[#6d28d9] sm:grid ${
                 isMonthly
                   ? 'grid-cols-[2rem_2.5rem_1fr_5rem_5.5rem]'
-                  : 'grid-cols-[2rem_2.5rem_1fr_4rem_4rem_4rem_5.5rem]'
+                  : 'grid-cols-[2rem_2.5rem_1fr_4rem_4rem_4rem_4rem_5.5rem]'
               }`}
             >
               <span>#</span>
@@ -385,6 +412,7 @@ export default function LeaderboardClient() {
               {!isMonthly ? (
                 <>
                   <span className="text-right">Days</span>
+                  <span className="text-right">Stars</span>
                   <span className="text-right">Week pts</span>
                   <span className="text-right">Today</span>
                 </>
@@ -470,6 +498,11 @@ export default function LeaderboardClient() {
                             </p>
                           </div>
                           <div className="hidden w-16 shrink-0 text-right sm:block">
+                            <p className="font-bold text-amber-600">
+                              {'⭐'.repeat(entry.weeklyStars || 0) || '—'}
+                            </p>
+                          </div>
+                          <div className="hidden w-16 shrink-0 text-right sm:block">
                             <p className="font-bold text-[#f59e0b]">{entry.weeklyPoints}</p>
                           </div>
                           <div className="hidden w-16 shrink-0 text-right sm:block">
@@ -490,7 +523,7 @@ export default function LeaderboardClient() {
                       </div>
                     </div>
 
-                    <div className={`mt-3 grid gap-2 sm:hidden ${isMonthly ? 'grid-cols-1' : 'grid-cols-3'}`}>
+                    <div className={`mt-3 grid gap-2 sm:hidden ${isMonthly ? 'grid-cols-1' : 'grid-cols-2'}`}>
                       {isMonthly ? (
                         <div className="rounded-xl border border-violet-200 bg-violet-50 px-2 py-2.5 text-center">
                           <p className="text-lg font-bold text-[#7c3aed]">{entry.monthlyPoints}</p>
@@ -501,17 +534,23 @@ export default function LeaderboardClient() {
                       ) : (
                         <>
                           <div className="rounded-xl border border-[#c4b5fd]/30 bg-[#f5f3ff] px-2 py-2.5 text-center">
-                            <p className="text-lg font-bold text-[#7c3aed]">
+                            <p className="text-base font-bold leading-tight tabular-nums text-[#7c3aed]">
                               {entry.weeklyScore}/{entry.maxWeeklyScore}
                             </p>
                             <p className="text-[10px] font-semibold uppercase tracking-wide text-[#6d28d9]">Days</p>
                           </div>
+                          <div className="rounded-xl border border-amber-200 bg-amber-50 px-2 py-2.5 text-center">
+                            <p className="text-base font-bold leading-tight text-amber-600">
+                              {'⭐'.repeat(entry.weeklyStars || 0) || '—'}
+                            </p>
+                            <p className="text-[10px] font-semibold uppercase tracking-wide text-amber-700">Stars</p>
+                          </div>
                           <div className="rounded-xl border border-[#fbbf24]/30 bg-[#fffbeb] px-2 py-2.5 text-center">
-                            <p className="text-lg font-bold text-[#f59e0b]">{entry.weeklyPoints}</p>
+                            <p className="text-base font-bold leading-tight tabular-nums text-[#f59e0b]">{entry.weeklyPoints}</p>
                             <p className="text-[10px] font-semibold uppercase tracking-wide text-[#475569]">Week</p>
                           </div>
                           <div className="rounded-xl border border-violet-200 bg-violet-50 px-2 py-2.5 text-center">
-                            <p className="text-lg font-bold text-[#6d28d9]">
+                            <p className="text-base font-bold leading-tight tabular-nums text-[#6d28d9]">
                               {entry.todayPoints}/{POINTS_DAILY_CAP}
                             </p>
                             <p className="text-[10px] font-semibold uppercase tracking-wide text-[#6d28d9]">Today</p>
@@ -548,6 +587,12 @@ export default function LeaderboardClient() {
                   <p className="mb-1 text-sm text-white/80">Days active</p>
                   <p className="text-3xl font-bold">
                     {myRow ? `${myRow.weeklyScore}/${myRow.maxWeeklyScore}` : '—'}
+                  </p>
+                </div>
+                <div className="rounded-xl bg-white/10 p-4 text-center">
+                  <p className="mb-1 text-sm text-white/80">Weekly stars</p>
+                  <p className="text-3xl font-bold">
+                    {myRow ? `${myRow.weeklyStars}/3` : '—'}
                   </p>
                 </div>
                 <div className="rounded-xl bg-white/10 p-4 text-center">

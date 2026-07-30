@@ -59,6 +59,13 @@ export default function FitnessPage() {
   const [liveSteps, setLiveSteps] = React.useState<number | null>(null);
   const [trackerMessage, setTrackerMessage] = React.useState('');
 
+  // Manual entry state (web fallback)
+  const [manualStepsInput, setManualStepsInput] = React.useState('');
+  const [manualMinutesInput, setManualMinutesInput] = React.useState('');
+  const [loggingManual, setLoggingManual] = React.useState(false);
+
+  const STEP_PRESETS = [2000, 5000, 7500, 10000];
+
   const pushSteps = React.useCallback(async (total: number, source: string, showToast = false) => {
     try {
       const headers = await getAuthFetchHeaders({ 'Content-Type': 'application/json' });
@@ -94,6 +101,42 @@ export default function FitnessPage() {
       setLoading(false);
     }
   }, []);
+
+  /** Submit manually entered steps/minutes (web fallback). */
+  const logManualSteps = React.useCallback(async (stepsOverride?: number) => {
+    const steps = stepsOverride ?? Math.max(0, parseInt(manualStepsInput, 10) || 0);
+    const minutes = Math.max(0, parseInt(manualMinutesInput, 10) || 0);
+    if (steps === 0 && minutes === 0) {
+      setError('Please enter the number of steps or minutes you walked today.');
+      return;
+    }
+    setLoggingManual(true);
+    setMessage('');
+    setError('');
+    try {
+      const headers = await getAuthFetchHeaders({ 'Content-Type': 'application/json' });
+      const res = await fetch('/api/fitness/sync', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ steps, minutes, source: 'manual' }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json?.error || 'Could not log steps');
+      if (json.status) setStatus(json.status as FitnessStatus);
+      if (json.newlyAwardedPoints > 0) {
+        setJustCompleted(true);
+        setMessage(`MashaAllah! +${json.newlyAwardedPoints} points for completing today's challenge! 🎉`);
+      } else {
+        setMessage(`Steps logged! Keep walking! 🚶`);
+      }
+      setManualStepsInput('');
+      setManualMinutesInput('');
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Could not log steps. Please try again.');
+    } finally {
+      setLoggingManual(false);
+    }
+  }, [manualStepsInput, manualMinutesInput]);
 
   const sync = React.useCallback(async (showToast = true) => {
     setSyncing(true);
@@ -157,7 +200,7 @@ export default function FitnessPage() {
     setNativeSupported(supported);
     void loadStatus();
 
-    if (!supported) return;
+    if (!supported) return; // web: no native sensor, no background sync needed
 
     let disposed = false;
     let stopUpdates: (() => Promise<void>) | null = null;
@@ -228,7 +271,11 @@ export default function FitnessPage() {
 
   const challenge = status?.challenge;
   const today = status?.today;
-  const displaySteps = Math.max(today?.steps ?? 0, liveSteps ?? 0);
+  // On native: take max of server value vs live sensor reading.
+  // On web: always use server value (updated after each manual log).
+  const displaySteps = nativeSupported
+    ? Math.max(today?.steps ?? 0, liveSteps ?? 0)
+    : (today?.steps ?? 0);
   const progressCurrent = challenge
     ? challenge.goalType === 'minutes'
       ? today?.minutes ?? 0
@@ -312,15 +359,83 @@ export default function FitnessPage() {
                   </div>
                 </div>
               ) : (
-                <div className="text-sm text-[#475569]">
-                  <div className="mx-auto mb-3 flex justify-center">
-                    <Smartphone className="text-amber-500" size={28} />
-                  </div>
-                  <p className="font-bold text-[#1e1b4b]">Open this page in the mobile app</p>
-                  <p className="mt-1">
-                    Step counting uses your phone&apos;s built-in motion sensor inside the Kids Zone app.
-                    It does not work in a regular browser tab.
-                  </p>
+                <div className="space-y-4">
+                  {/* Manual step entry — today's goal already met? */}
+                  {status?.today?.goalMet ? (
+                    <div className="flex flex-col items-center gap-2 py-2">
+                      <CheckCircle2 className="text-emerald-500" size={36} />
+                      <p className="font-black text-emerald-800 text-lg">Goal done for today! 🎉</p>
+                      <p className="text-sm text-slate-500">Come back tomorrow for a new challenge.</p>
+                    </div>
+                  ) : (
+                    <>
+                      <p className="font-bold text-[#1e1b4b]">🚶 Log today&apos;s steps</p>
+                      <p className="text-xs text-slate-500">
+                        On mobile the app counts steps automatically. On web, tap a preset or type your step count.
+                      </p>
+
+                      {/* Quick preset buttons */}
+                      <div className="grid grid-cols-4 gap-2">
+                        {STEP_PRESETS.map(preset => (
+                          <button
+                            key={preset}
+                            type="button"
+                            onClick={() => setManualStepsInput(String(preset))}
+                            className={`rounded-xl border-2 py-2 text-sm font-black transition ${
+                              manualStepsInput === String(preset)
+                                ? 'border-emerald-500 bg-emerald-50 text-emerald-800'
+                                : 'border-slate-200 bg-white text-slate-700 hover:border-emerald-300'
+                            }`}
+                          >
+                            {preset >= 1000 ? `${preset / 1000}k` : preset}
+                          </button>
+                        ))}
+                      </div>
+
+                      {/* Custom inputs row */}
+                      <div className="flex gap-2">
+                        <div className="flex-1">
+                          <label className="mb-1 block text-xs font-semibold text-slate-500">Steps</label>
+                          <input
+                            type="number"
+                            min={0}
+                            max={50000}
+                            placeholder="e.g. 6500"
+                            value={manualStepsInput}
+                            onChange={e => setManualStepsInput(e.target.value)}
+                            className="w-full rounded-xl border-2 border-slate-200 px-3 py-2.5 text-sm font-bold text-slate-800 outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100"
+                          />
+                        </div>
+                        <div className="w-28">
+                          <label className="mb-1 block text-xs font-semibold text-slate-500">Minutes active</label>
+                          <input
+                            type="number"
+                            min={0}
+                            max={300}
+                            placeholder="e.g. 30"
+                            value={manualMinutesInput}
+                            onChange={e => setManualMinutesInput(e.target.value)}
+                            className="w-full rounded-xl border-2 border-slate-200 px-3 py-2.5 text-sm font-bold text-slate-800 outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100"
+                          />
+                        </div>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => void logManualSteps()}
+                        disabled={loggingManual || (!manualStepsInput && !manualMinutesInput)}
+                        className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#16a34a] to-[#15803d] px-6 py-3 font-bold text-white shadow-lg transition hover:-translate-y-0.5 disabled:opacity-50 disabled:transform-none"
+                      >
+                        {loggingManual ? <Loader2 size={18} className="animate-spin" /> : <Footprints size={18} />}
+                        {loggingManual ? 'Logging…' : 'Log my steps'}
+                      </button>
+
+                      <p className="text-center text-xs text-slate-400 flex items-center justify-center gap-1">
+                        <Smartphone size={12} />
+                        Install the Kids Zone app for automatic step counting on your phone.
+                      </p>
+                    </>
+                  )}
                 </div>
               )}
             </div>

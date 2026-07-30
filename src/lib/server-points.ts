@@ -139,6 +139,7 @@ export async function awardPointsWithDailyCapByUserId(
   options: ServerAwardOptions = {}
 ): Promise<ServerAwardPointsResult> {
   const countTowardDailyLimit = options.countTowardDailyLimit !== false;
+  const successMessage = options.successMessage;
 
   if (!requestedPoints || requestedPoints <= 0) {
     return emptyFailure('invalid_points', 'Points must be greater than 0.');
@@ -258,7 +259,7 @@ export async function awardPointsWithDailyCapByUserId(
     success: true,
     reason: 'awarded',
     message: successMessage || '✅ Points awarded!',
-    pointsAwarded: pointsToAward,
+    pointsAwarded,
     totalPoints,
     weeklyPoints,
     monthlyPoints,

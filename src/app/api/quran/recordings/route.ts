@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
-import { deleteObject, getReadableObjectUrl, uploadObject } from '@/lib/object-storage';
+import { buildStorageResponsePayload, deleteObject, getReadableObjectUrl, uploadObject } from '@/lib/object-storage';
 
 export const dynamic = 'force-dynamic';
 
@@ -100,8 +100,8 @@ export async function POST(request: NextRequest) {
         contentType: mimeType,
       });
     } catch (uploadError) {
-      console.error('Quran recording upload error:', uploadError);
-      return NextResponse.json({ error: 'Failed to upload recording' }, { status: 500 });
+      console.error('Quran recording storage upload error:', uploadError);
+      return NextResponse.json(buildStorageResponsePayload(uploadError), { status: 500 });
     }
 
     const { data: inserted, error: dbError } = await supabaseAdmin
@@ -116,6 +116,7 @@ export async function POST(request: NextRequest) {
         audio_path: filename,
         duration: parseInt(duration || '0', 10),
         status: 'submitted',
+        created_at: new Date().toISOString(),
         submitted_at: new Date().toISOString(),
       })
       .select('id, title, duration, status, created_at, audio_path')

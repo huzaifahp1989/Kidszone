@@ -13,8 +13,8 @@ const STORY_POINTS = 25;
 
 export default function DailyStoryPage() {
   const router = useRouter();
-  const { user } = useAuth();
-  const { refreshPoints } = usePointsProgress();
+  const { user, refreshProfile } = useAuth();
+  const { showPointsProgress } = usePointsProgress();
   const [story, setStory] = useState<IslamicStory | null>(null);
   const [answers, setAnswers] = useState<Record<string, string | number>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -87,8 +87,13 @@ export default function DailyStoryPage() {
         `✅ Excellent work! You earned ${STORY_POINTS} points and learned a valuable lesson!`
       );
 
-      // Refresh points context
-      await refreshPoints();
+      showPointsProgress({
+        activity: 'other',
+        activityLabel: 'Daily Story',
+        pointsEarned: STORY_POINTS,
+      });
+
+      await refreshProfile();
 
       // Redirect after success
       setTimeout(() => {

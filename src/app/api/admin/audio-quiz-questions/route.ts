@@ -5,7 +5,7 @@ import {
   parseAudioQuizQuestionRecordingMetadata,
 } from '@/lib/audio-quiz';
 import { isAdminRequest } from '@/lib/admin-auth';
-import { deleteObject, getReadableObjectUrl, uploadObject } from '@/lib/object-storage';
+import { buildStorageResponsePayload, deleteObject, getReadableObjectUrl, uploadObject } from '@/lib/object-storage';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 
 export const dynamic = 'force-dynamic';
@@ -198,12 +198,17 @@ export async function POST(request: NextRequest) {
   const existingMetadata = parseAudioQuizQuestionRecordingMetadata(existing?.description ? String(existing.description) : null);
   const existingActive = existingMetadata?.active === true;
 
-  await uploadObject({
-    bucket: 'story-recordings',
-    path: filename,
-    body: buffer,
-    contentType: mimeType,
-  });
+  try {
+    await uploadObject({
+      bucket: 'story-recordings',
+      path: filename,
+      body: buffer,
+      contentType: mimeType,
+    });
+  } catch (uploadError) {
+    console.error('Admin audio-quiz storage upload error:', uploadError);
+    return NextResponse.json(buildStorageResponsePayload(uploadError), { status: 500 });
+  }
 
   let savedRecordingId: string | null = null;
 
@@ -261,6 +266,7 @@ export async function POST(request: NextRequest) {
         duration: Number.isFinite(duration) ? duration : 0,
         status: 'approved',
         is_published: false,
+        created_at: new Date().toISOString(),
         submitted_at: new Date().toISOString(),
         reviewed_at: new Date().toISOString(),
       })

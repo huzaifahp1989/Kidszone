@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
-import { deleteObject, uploadObject } from '@/lib/object-storage';
+import { buildStorageResponsePayload, deleteObject, uploadObject } from '@/lib/object-storage';
 
 export async function POST(request: NextRequest) {
   try {
@@ -61,7 +61,8 @@ export async function POST(request: NextRequest) {
       });
     } catch (uploadError) {
       console.error('Storage upload error:', uploadError);
-      return NextResponse.json({ error: 'Failed to upload recording to storage' }, { status: 500 });
+      const payload = buildStorageResponsePayload(uploadError);
+      return NextResponse.json(payload, { status: 500 });
     }
 
     const { data: insertedRecord, error: dbError } = await supabaseAdmin
@@ -76,6 +77,7 @@ export async function POST(request: NextRequest) {
         audio_path: filename,
         duration: parseInt(duration || '0'),
         status: 'submitted',
+        created_at: new Date().toISOString(),
         submitted_at: new Date().toISOString(),
       })
       .select()

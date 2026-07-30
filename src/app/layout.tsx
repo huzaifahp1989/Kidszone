@@ -8,6 +8,7 @@ import { AgeModeProvider } from '@/lib/age-mode';
 import { AppShell } from '@/components/AppShell';
 import { FirebaseAnalyticsInit } from '@/components/FirebaseAnalyticsInit';
 import { GoogleAnalyticsInit } from '@/components/GoogleAnalyticsInit';
+import { DailyTasksPopup } from '@/components/DailyTasksPopup';
 import { Nunito, Amiri } from 'next/font/google';
 import { LIVE_APP_URL } from '@/lib/app-url';
 import { QUIZ_STUCK_RECOVERY_SCRIPT } from '@/lib/quiz-stuck-recovery-script';
@@ -17,7 +18,9 @@ const STALE_HOST_REDIRECT = `
   try {
     var host = (location.hostname || '').toLowerCase();
     if (host !== 'islamic-kids-platform.vercel.app') return;
-    var target = ${JSON.stringify(LIVE_APP_URL)};
+    var target = (location.origin || ${JSON.stringify(LIVE_APP_URL)}).replace(/\/$/, '');
+    var targetHost = new URL(target).host.toLowerCase();
+    if (targetHost === host) return;
     var next = target + location.pathname + location.search + location.hash;
     if (location.href !== next) location.replace(next);
   } catch (e) {}
@@ -75,6 +78,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <Suspense fallback={null}>
                 <FirebaseAnalyticsInit />
                 <GoogleAnalyticsInit />
+                <DailyTasksPopup />
               </Suspense>
               <AppShell>{children}</AppShell>
             </AgeModeProvider>

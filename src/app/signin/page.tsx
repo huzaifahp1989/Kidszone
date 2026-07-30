@@ -335,6 +335,117 @@ export default function SignInPage() {
         }
       })();
 
+    const applyRetryWait = (wait: number) => {
+      const lockUntil = Date.now() + wait * 1000;
+      try {
+        window.localStorage.setItem('iklp_signin_locked_until', String(lockUntil));
+      } catch {}
+      setRetryIn(wait);
+      setError(`Too many requests. Please wait ${wait} seconds then try again.`);
+    };
+
+    const saveServerSession = async (accessToken: string, refreshToken: string) => {
+      setProgress('Saving session…');
+      try {
+        const { error: sessionErr } = await withTimeout(
+          supabase.auth.setSession({
+            access_token: accessToken,
+            refresh_token: refreshToken,
+          }),
+          isMobile ? 6000 : 4000
+        );
+        if (sessionErr) {
+          setError('Failed to save session. Please try signing in again.');
+          return null;
+        }
+      } catch (err) {
+        console.error('setSession timeout/error:', err);
+        setError('Connection timeout while saving session. Please try again.');
+        return null;
+      }
+
+      const session = await waitForSession(isMobile ? 20 : 12, isMobile ? 200 : 150);
+      if (!session?.user?.id) {
+        setError(
+          'Sign-in succeeded but your browser blocked the session. Please enable cookies/local storage and try again.'
+        );
+        return null;
+      }
+
+      return session.user.id;
+    };
+
+    const requestServerSignIn = async (): Promise<
+      | {
+          kind: 'ok';
+          accessToken: string;
+          refreshToken: string;
+          uid: string;
+        }
+      | {
+          kind: 'rate_limit';
+          wait: number;
+        }
+      | {
+          kind: 'error';
+          message: string;
+          canFallback: boolean;
+        }
+    > => {
+      try {
+        setProgress('Contacting server…');
+        const { res, json } = await fetchJsonWithTimeout(
+          '/api/auth/signin',
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: authEmail, password }),
+          },
+          8000
+        );
+
+        if (res.ok) {
+          const accessToken = String(json?.access_token || '').trim();
+          const refreshToken = String(json?.refresh_token || '').trim();
+          const uid = String(json?.user?.id || '').trim();
+          if (accessToken && refreshToken && uid) {
+            return { kind: 'ok', accessToken, refreshToken, uid };
+          }
+          return {
+            kind: 'error',
+            message: 'Sign-in succeeded but session tokens were missing. Please try again.',
+            canFallback: false,
+          };
+        }
+
+        const raw = String(json?.error || '').trim();
+        const waitFromApi = typeof json?.retryAfter === 'number' ? json.retryAfter : null;
+        const wait = waitFromApi ?? parseRetrySeconds(raw) ?? (res.status === 429 ? 60 : null);
+        if (wait && wait > 0) {
+          return { kind: 'rate_limit', wait };
+        }
+
+        return {
+          kind: 'error',
+          message: raw || 'Sign-in failed. Please check your details and password.',
+          canFallback: res.status >= 500,
+        };
+      } catch (err: any) {
+        if (err?.name === 'AbortError') {
+          return {
+            kind: 'error',
+            message: 'Sign-in is taking too long on this connection. Please try again.',
+            canFallback: true,
+          };
+        }
+        return {
+          kind: 'error',
+          message: err?.message || 'Could not reach the sign-in server. Please try again.',
+          canFallback: true,
+        };
+      }
+    };
+
     const finishSuccess = async (uid: string) => {
       setProgress('Finalizing sign-in…');
 
@@ -406,54 +517,24 @@ export default function SignInPage() {
       }
     };
 
-    if (isMobile) {
-      try {
-        setProgress('Contacting server…');
-        const { res, json } = await fetchJsonWithTimeout(
-          '/api/auth/signin',
-          {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email: authEmail, password }),
-          },
-          7000
-        );
+    const serverResult = await requestServerSignIn();
+    if (serverResult.kind === 'ok') {
+      const persistedUid =
+        (await saveServerSession(serverResult.accessToken, serverResult.refreshToken)) || null;
+      if (!persistedUid) return;
+      await finishSuccess(serverResult.uid || persistedUid);
+      return;
+    }
 
-        if (res.ok) {
-          const access_token = json?.access_token;
-          const refresh_token = json?.refresh_token;
-          const uid = json?.user?.id;
-          if (access_token && refresh_token && uid) {
-            setProgress('Saving session…');
-            supabase.auth.setSession({ access_token, refresh_token }).catch(() => {});
-            await finishSuccess(uid);
-            return;
-          }
-          setError('Sign-in succeeded but session tokens were missing. Please try again.');
-          setProgress(null);
-          return;
-        } else {
-          const raw: string = json?.error ?? '';
-          const waitFromApi: number | null = typeof json?.retryAfter === 'number' ? json.retryAfter : null;
-          const wait = waitFromApi ?? parseRetrySeconds(raw) ?? (res.status === 429 ? 60 : null);
-          if (wait && wait > 0) {
-            const lockUntil = Date.now() + wait * 1000;
-            try { window.localStorage.setItem('iklp_signin_locked_until', String(lockUntil)); } catch {}
-            setRetryIn(wait);
-            setError(`Too many requests. Please wait ${wait} seconds then try again.`);
-            return;
-          }
-          setError(raw || 'Sign-in failed. Please check your details and password.');
-          setProgress(null);
-          return;
-        }
-      } catch (err: any) {
-        if (err?.name === 'AbortError') {
-          setError('Sign-in is taking too long on this connection. Please try again.');
-          setProgress(null);
-          return;
-        }
-      }
+    if (serverResult.kind === 'rate_limit') {
+      applyRetryWait(serverResult.wait);
+      return;
+    }
+
+    if (!serverResult.canFallback) {
+      recordFailedAttempt();
+      setError(serverResult.message);
+      return;
     }
 
     setProgress('Signing in…');
@@ -470,77 +551,11 @@ export default function SignInPage() {
       return;
     }
 
-    const directMsg = directErr?.message || '';
-    const directWait = parseRetrySeconds(directMsg) ?? ((directErr as any)?.status === 429 ? 60 : null);
+    const directMsg = directErr?.message || serverResult.message || '';
+    const directWait =
+      parseRetrySeconds(directMsg) ?? ((directErr as { status?: number } | null)?.status === 429 ? 60 : null);
     if (directWait && directWait > 0) {
-      setProgress('Contacting server…');
-      const { res, json } = await fetchJsonWithTimeout(
-        '/api/auth/signin',
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email: authEmail, password }),
-        },
-        7000
-      );
-
-      if (!res.ok) {
-        const raw: string = json?.error ?? directMsg;
-        const waitFromApi: number | null =
-          typeof json?.retryAfter === 'number' ? json.retryAfter : null;
-        const wait = waitFromApi ?? parseRetrySeconds(raw) ?? directWait;
-        const lockUntil = Date.now() + wait * 1000;
-        try { window.localStorage.setItem('iklp_signin_locked_until', String(lockUntil)); } catch {}
-        setRetryIn(wait);
-        setError(`Too many requests. Please wait ${wait} seconds then try again.`);
-        return;
-      }
-
-      const access_token = json?.access_token;
-      const refresh_token = json?.refresh_token;
-      const uid = json?.user?.id;
-      if (!access_token || !refresh_token || !uid) {
-        const lockUntil = Date.now() + directWait * 1000;
-        try { window.localStorage.setItem('iklp_signin_locked_until', String(lockUntil)); } catch {}
-        setRetryIn(directWait);
-        setError(`Too many requests. Please wait ${directWait} seconds then try again.`);
-        setProgress(null);
-        return;
-      }
-
-      setProgress('Saving session…');
-      if (isMobile) {
-        const { error: sessionErr } = await supabase.auth.setSession({ access_token, refresh_token });
-        if (sessionErr) {
-          console.error('Mobile setSession failed:', sessionErr);
-          setError('Failed to save session. Please try again.');
-          setLoading(false);
-          setProgress(null);
-          return;
-        }
-        await finishSuccess(uid);
-        return;
-      }
-      try {
-        const { error: sessionErr } = await withTimeout(
-          supabase.auth.setSession({ access_token, refresh_token }),
-          4000
-        );
-        if (sessionErr) {
-          console.error('setSession error:', sessionErr);
-          setError('Failed to save session. Please try signing in again.');
-          setLoading(false);
-          setProgress(null);
-          return;
-        }
-      } catch (err) {
-        console.error('setSession timeout/error:', err);
-        setError('Connection timeout while saving session. Please try again.');
-        setLoading(false);
-        setProgress(null);
-        return;
-      }
-      await finishSuccess(uid);
+      applyRetryWait(directWait);
       return;
     }
 

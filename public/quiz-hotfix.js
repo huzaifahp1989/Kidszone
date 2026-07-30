@@ -4,7 +4,7 @@
  */
 (function () {
   try {
-    var live = 'https://huzaifahp1989-audio.vercel.app';
+    var live = (location.origin || 'https://huzaifahp1989-audio.vercel.app').replace(/\/$/, '');
     var host = (location.hostname || '').toLowerCase();
     var path = location.pathname || '';
 

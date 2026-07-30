@@ -91,7 +91,15 @@ export default function SignupPage() {
     const trimmedCity = city.trim();
     if (!trimmedCity || trimmedCity.length < 2) return setError('Please enter your city or town.');
     const trimmedMadrasah = madrasahName.trim();
-    const contactDigits = contactNumber.replace(/\D/g, '');
+    const trimmedContact = contactNumber.trim();
+    const contactDigits = trimmedContact.replace(/\D/g, '');
+
+    if (!trimmedContact || contactDigits.length < 6) {
+      return setError('Please enter a valid contact number (at least 6 digits, with country code if outside UK).');
+    }
+    if (contactDigits.length > 18) {
+      return setError('Contact number looks too long. Please check and try again.');
+    }
 
     if (!email) return setError('Please enter your family email.');
     if (password.length < 6) return setError('Password must be at least 6 characters.');
@@ -133,7 +141,7 @@ export default function SignupPage() {
             age: ageNumber,
             city: trimmedCity || undefined,
             madrasahName: trimmedMadrasah || undefined,
-            contactNumber: contactNumber.trim() || undefined,
+            contactNumber: trimmedContact || undefined,
             needsSignupForm: false,
           },
         },
@@ -168,7 +176,7 @@ export default function SignupPage() {
             age: ageNumber,
             city: trimmedCity || undefined,
             madrasahName: trimmedMadrasah || undefined,
-            contactNumber: contactNumber.trim() || undefined,
+            contactNumber: trimmedContact || undefined,
           },
         })
         .catch(() => {});
@@ -188,13 +196,11 @@ export default function SignupPage() {
         level: 'Beginner',
       };
 
-      const contactValue = contactNumber.trim();
+      const contactValue = trimmedContact;
       let profileRes = await supabase
         .from('users')
         .upsert(
-          contactValue
-            ? { ...baseProfile, contactnumber: contactValue }
-            : baseProfile,
+          { ...baseProfile, contactnumber: contactValue, contact_number: contactValue },
           { onConflict: 'uid', ignoreDuplicates: false }
         )
         .select();
@@ -451,7 +457,12 @@ export default function SignupPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-[#1e1b4b] mb-1">Contact number <span className="font-normal text-[#64748b]">(optional)</span></label>
+                <label className="block text-sm font-semibold text-[#1e1b4b] mb-1">
+                  Contact number <span className="font-semibold text-[#7c3aed]">* Required</span>
+                </label>
+                <p className="text-[11px] text-[#64748b] mb-1">
+                  WhatsApp or mobile number, with country code (e.g. +44 7404 644610 or 07404 644610).
+                </p>
                 <input
                   type="tel"
                   className="w-full rounded-xl border-2 border-[#c4b5fd]/40 px-4 py-3 interactive-focus touch-target transition"
@@ -459,6 +470,7 @@ export default function SignupPage() {
                   onChange={(e) => setContactNumber(e.target.value)}
                   placeholder="e.g., +44 7404 644610"
                   autoComplete="tel"
+                  required
                 />
               </div>
 

@@ -780,9 +780,9 @@ export async function runDuePushSchedules(now = new Date()): Promise<{
   let skipped = 0;
 
   /** Only deliver if the slot is recent — clear ancient backlog without spamming. */
-  const FRESH_WINDOW_MS = 2 * 60 * 60 * 1000; // 2 hours
-  /** Hard cap: one push per cron / Run due click */
-  const MAX_SENDS_PER_RUN = 1;
+  const FRESH_WINDOW_MS = 4 * 60 * 60 * 1000; // 4 hours
+  /** Hard cap: multiple schedules per cron / Run due click (hourly cron → 10/hour is safe) */
+  const MAX_SENDS_PER_RUN = 10;
 
   for (const row of dueAll) {
     const next = computeNextRunAt({
@@ -824,8 +824,8 @@ export async function runDuePushSchedules(now = new Date()): Promise<{
     const dueAt = row.next_run_at ? Date.parse(row.next_run_at) : now.getTime();
     const stale = now.getTime() - dueAt > FRESH_WINDOW_MS;
 
-    // Clear stale backlog (failed retries piled up) without sending
-    if (stale || sent >= MAX_SENDS_PER_RUN) {
+    if (stale) {
+      // Clear stale backlog (multi-hour outage missed slots) — advance next run WITHOUT sending
       await supabaseAdmin
         .from('push_schedules')
         .update({
@@ -840,9 +840,22 @@ export async function runDuePushSchedules(now = new Date()): Promise<{
         ok: true,
         recipients: 0,
         skipped: true,
-        error: stale
-          ? 'Skipped stale overdue slot — advanced to next run'
-          : 'Skipped — only one schedule sends per run',
+        error: 'Skipped stale overdue slot — advanced to next run',
+      });
+      continue;
+    }
+
+    if (sent >= MAX_SENDS_PER_RUN) {
+      // Rate cap hit — leave next_run_at UNCHANGED so the next cron tick picks this up.
+      // Do NOT advance to tomorrow — otherwise same-hour colliding schedules are skipped forever.
+      skipped += 1;
+      results.push({
+        id: row.id,
+        title: row.title,
+        ok: true,
+        recipients: 0,
+        skipped: true,
+        error: `Rate cap (${MAX_SENDS_PER_RUN}) hit — will retry on next scheduled cron run`,
       });
       continue;
     }
@@ -855,7 +868,7 @@ export async function runDuePushSchedules(now = new Date()): Promise<{
       audience: row.audience || 'onesignal',
     });
 
-    // Always advance next_run_at so a failed send cannot pile up and blast later
+    // Always advance next_run_at after a delivery attempt so repeated retries don't pile up.
     const updates: Record<string, unknown> = {
       next_run_at: next?.toISOString() || null,
       updated_at: now.toISOString(),

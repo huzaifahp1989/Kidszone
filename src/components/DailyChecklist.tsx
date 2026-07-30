@@ -8,10 +8,11 @@ type ChecklistItem = {
   id: string;
   label: string;
   icon: string;
-  section: 'salah' | 'dhikr' | 'quran' | 'sunnah';
+  section: 'salah' | 'dhikr' | 'quran' | 'sunnah' | 'gooddeeds';
+  fridayOnly?: boolean;
 };
 
-const ITEMS: ChecklistItem[] = [
+const ALL_ITEMS: ChecklistItem[] = [
   // Salah
   { id: 'fajr', label: 'Fajr', icon: '🌅', section: 'salah' },
   { id: 'dhuhr', label: 'Dhuhr', icon: '☀️', section: 'salah' },
@@ -19,7 +20,7 @@ const ITEMS: ChecklistItem[] = [
   { id: 'maghrib', label: 'Maghrib', icon: '🌇', section: 'salah' },
   { id: 'isha', label: 'Isha', icon: '🌙', section: 'salah' },
   // Dhikr
-  { id: 'durood', label: 'Durood / Salawat', icon: '📿', section: 'dhikr' },
+  { id: 'durood', label: 'Durood Ibrahim', icon: '📿', section: 'dhikr' },
   { id: 'istighfar', label: 'Istighfar', icon: '🌿', section: 'dhikr' },
   { id: 'tasbih', label: 'SubhanAllah / Alhamdulillah / Allahu Akbar', icon: '✨', section: 'dhikr' },
   { id: 'dua_parents', label: 'Make dua for parents', icon: '🤲', section: 'dhikr' },
@@ -29,12 +30,26 @@ const ITEMS: ChecklistItem[] = [
   { id: 'surah_ikhlas', label: 'Surah Al-Ikhlas', icon: '💛', section: 'quran' },
   { id: 'surah_falaq', label: 'Surah Al-Falaq', icon: '🌙', section: 'quran' },
   { id: 'surah_naas', label: 'Surah An-Naas', icon: '🛡️', section: 'quran' },
+  { id: 'surah_yasin', label: 'Surah Yasin', icon: '📜', section: 'quran' },
+  { id: 'surah_mulk', label: 'Surah Al-Mulk', icon: '👑', section: 'quran' },
+  { id: 'sajdah', label: 'Sajdah (Prostration of Recitation)', icon: '🙏', section: 'quran' },
+  { id: 'surah_kahf', label: 'Surah Al-Kahf 🌟 (Friday)', icon: '🕌', section: 'quran', fridayOnly: true },
   // Sunnah & Good habits
   { id: 'give_salam', label: 'Greet someone with Salam', icon: '👋', section: 'sunnah' },
   { id: 'help_parents', label: 'Help parents at home', icon: '🏡', section: 'sunnah' },
   { id: 'kind_words', label: 'Speak kind words', icon: '💬', section: 'sunnah' },
   { id: 'share', label: 'Share with someone', icon: '🎁', section: 'sunnah' },
   { id: 'charity', label: 'Give a small charity / sadaqah', icon: '🪙', section: 'sunnah' },
+  // Good Deeds (preset choices)
+  { id: 'deed_made_dua', label: 'Made dua for someone', icon: '🤲', section: 'gooddeeds' },
+  { id: 'deed_shared_food', label: 'Shared food or a snack', icon: '🍎', section: 'gooddeeds' },
+  { id: 'deed_made_smile', label: 'Made someone smile', icon: '😊', section: 'gooddeeds' },
+  { id: 'deed_helped_clean', label: 'Helped clean the house', icon: '🧹', section: 'gooddeeds' },
+  { id: 'deed_helped_friend', label: 'Helped a classmate or friend', icon: '🤝', section: 'gooddeeds' },
+  { id: 'deed_kind_animals', label: 'Was kind to an animal', icon: '🐾', section: 'gooddeeds' },
+  { id: 'deed_visited_relative', label: 'Called or visited a relative', icon: '📞', section: 'gooddeeds' },
+  { id: 'deed_picked_litter', label: 'Picked up litter', icon: '🗑️', section: 'gooddeeds' },
+  { id: 'deed_gave_gift', label: 'Gave a gift or surprise', icon: '🎁', section: 'gooddeeds' },
 ];
 
 export default function DailyChecklist() {
@@ -42,6 +57,10 @@ export default function DailyChecklist() {
   const [completedItems, setCompletedItems] = useState<string[]>([]);
   const [goodDeed, setGoodDeed] = useState('');
   const [pointsToday, setPointsToday] = useState(0);
+
+  // Determine today's day (0=Sun, 5=Fri)
+  const isFriday = new Date().getDay() === 5;
+  const ITEMS = ALL_ITEMS.filter(item => !item.fridayOnly || isFriday);
   const [checklistLoading, setChecklistLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -233,6 +252,9 @@ export default function DailyChecklist() {
         <section>
           <h3 className="flex items-center text-lg font-bold text-islamic-dark mb-4">
             <span className="bg-indigo-100 p-2 rounded-lg mr-2">📖</span> Quran & Duas
+            {isFriday && (
+              <span className="ml-2 text-xs font-semibold text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full">✨ Surah Kahf today!</span>
+            )}
             <span className="ml-auto text-xs font-normal text-indigo-600 bg-indigo-50 px-2 py-1 rounded-full">2 pts each</span>
           </h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -243,11 +265,13 @@ export default function DailyChecklist() {
                 className={`p-3 rounded-xl border-2 transition-all duration-200 flex items-center gap-3 text-left ${
                   completedItems.includes(item.id)
                     ? 'border-indigo-500 bg-indigo-50 shadow-sm'
-                    : 'border-slate-100 bg-slate-50 hover:border-indigo-200'
+                    : item.fridayOnly
+                      ? 'border-amber-200 bg-amber-50 hover:border-amber-400'
+                      : 'border-slate-100 bg-slate-50 hover:border-indigo-200'
                 }`}
               >
                 <span className="text-2xl">{item.icon}</span>
-                <span className={`font-medium flex-1 ${completedItems.includes(item.id) ? 'text-indigo-700' : 'text-slate-600'}`}>
+                <span className={`font-medium flex-1 ${completedItems.includes(item.id) ? 'text-indigo-700' : item.fridayOnly ? 'text-amber-800' : 'text-slate-600'}`}>
                   {item.label}
                 </span>
                 <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${
@@ -282,6 +306,38 @@ export default function DailyChecklist() {
                 </span>
                 <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${
                   completedItems.includes(item.id) ? 'bg-rose-500 border-rose-500' : 'border-slate-300'
+                }`}>
+                  {completedItems.includes(item.id) && <Check size={14} className="text-white" />}
+                </div>
+              </button>
+            ))}
+          </div>
+        </section>
+
+        {/* Good Deeds Preset Choices */}
+        <section className="bg-emerald-50 rounded-2xl p-5 border border-emerald-100">
+          <h3 className="flex items-center text-lg font-bold text-emerald-800 mb-1">
+            <span className="bg-emerald-100 p-2 rounded-lg mr-2">💚</span> What good did you do today?
+            <span className="ml-auto text-xs font-normal text-emerald-600 bg-emerald-100 px-2 py-1 rounded-full">2 pts each</span>
+          </h3>
+          <p className="text-sm text-emerald-700 mb-4">Pick everything that applies — every good deed counts! ✨</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {ITEMS.filter(i => i.section === 'gooddeeds').map(item => (
+              <button
+                key={item.id}
+                onClick={() => toggleItem(item.id)}
+                className={`p-3 rounded-xl border-2 transition-all duration-200 flex items-center gap-3 text-left ${
+                  completedItems.includes(item.id)
+                    ? 'border-emerald-500 bg-emerald-100 shadow-sm'
+                    : 'border-emerald-200 bg-white hover:border-emerald-400'
+                }`}
+              >
+                <span className="text-xl">{item.icon}</span>
+                <span className={`font-medium flex-1 text-sm ${completedItems.includes(item.id) ? 'text-emerald-800' : 'text-slate-600'}`}>
+                  {item.label}
+                </span>
+                <div className={`w-6 h-6 rounded-full border-2 flex-shrink-0 flex items-center justify-center ${
+                  completedItems.includes(item.id) ? 'bg-emerald-500 border-emerald-500' : 'border-emerald-300'
                 }`}>
                   {completedItems.includes(item.id) && <Check size={14} className="text-white" />}
                 </div>

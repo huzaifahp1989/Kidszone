@@ -7,6 +7,7 @@ import { usePointsProgress } from '@/lib/points-progress-context';
 import { Heart, MessageCircle, Trophy } from 'lucide-react';
 import { authJsonFetch } from '@/lib/auth-headers';
 import { EarnMorePointsLinks } from '@/components/EarnMorePointsLinks';
+import { DailyTasksBanner } from '@/components/DailyTasksBanner';
 
 const DUROOD_OPTIONS = [
   { label: 'Salallahu Alayhi Wasallam', value: 'short_durood' },
@@ -109,6 +110,7 @@ export default function PledgeClient() {
     <div className="min-h-screen bg-[#f5f3ff] pattern-islamic">
       <div className="max-w-4xl mx-auto px-4 py-8 space-y-8">
         <EarnMorePointsLinks title="Earn more points today" />
+        <DailyTasksBanner />
         {/* Header */}
         <div className="text-center space-y-4">
           <div className="inline-flex items-center gap-2 px-4 py-2 bg-[#fff5f5] rounded-full border border-[#ff6b6b]/20">

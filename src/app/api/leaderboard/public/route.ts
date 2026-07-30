@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { isTestModeEmail } from '@/lib/test-mode';
-import { isEligibleForWeeklyDraw } from '@/lib/leaderboard-rules';
+import { getWeeklyStarsFromActiveDays, isEligibleForWeeklyDraw } from '@/lib/leaderboard-rules';
 import {
   getAllScoreWeekActiveUserIds,
   getScoreWeekRangeUtc,
@@ -205,6 +205,7 @@ export async function GET(req: Request) {
       const weeklyPoints = Number.isFinite(rawWeeklyPoints) ? Math.max(0, rawWeeklyPoints) : 0;
       const monthlyPoints = Number.isFinite(rawMonthlyPoints) ? Math.max(0, rawMonthlyPoints) : 0;
       const weeklyScore = weeklyScoreByUser.get(String(row.user_id)) || 0;
+      const weeklyStars = getWeeklyStarsFromActiveDays(weeklyScore);
       const todayPoints = resolveTodayPoints(row.today_points, row.last_earned_date);
       const activity = weeklyActivityByUser.get(String(row.user_id)) || {
         quizCount: 0,
@@ -226,6 +227,7 @@ export async function GET(req: Request) {
         monthlyPoints,
         todayPoints,
         weeklyScore,
+        weeklyStars,
         maxWeeklyScore: MAX_WEEKLY_SCORE,
         badges: row.badges ?? 0,
         lastPlayedDate: row.last_earned_date ?? null,

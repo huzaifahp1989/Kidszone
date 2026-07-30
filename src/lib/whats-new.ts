@@ -16,6 +16,14 @@ export type WhatsNewItem = {
 /** Featured new / easy-to-miss activities kids should discover. */
 export const WHATS_NEW_ITEMS: WhatsNewItem[] = [
   {
+    href: '/quran/listen',
+    emoji: '🎧',
+    title: 'Quran Listening',
+    blurb: 'Listen to short and long surahs with top reciters',
+    badge: 'NEW',
+    pointsHint: `+${ACTIVITY_BONUS_POINTS}`,
+  },
+  {
     href: '/audio-quiz',
     emoji: '🎙️',
     title: 'Audio Quiz',
@@ -95,6 +103,14 @@ export const WHATS_NEW_ITEMS: WhatsNewItem[] = [
 
 /** Extra earn / explore links shown on Quiz / Games / Pledge. */
 export const EARN_MORE_LINKS: WhatsNewItem[] = [
+  {
+    href: '/quran/listen',
+    emoji: '🎧',
+    title: 'Quran Listen',
+    blurb: 'Short + long surahs with reciters',
+    badge: 'NEW',
+    pointsHint: `+${ACTIVITY_BONUS_POINTS}`,
+  },
   {
     href: '/audio-quiz',
     emoji: '🎙️',

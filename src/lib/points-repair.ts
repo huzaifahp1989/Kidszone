@@ -230,23 +230,6 @@ export async function repairUserPointsByUserId(userId: string, options?: { backf
       total_points: totalPoints,
       weekly_points: weeklyPoints,
       monthly_points: monthlyPoints,
-    };
-
-  return {
-    beforeRow,
-    afterRow,
-  };
-}
-
-export async function runPointsRepairBatch(userIds: string[]): Promise<void> {
-  for (const userId of userIds) {
-    try {
-      await repairUserPointsByUserId(userId);
-    } catch {
-      console.error(`Failed to repair points for user ${userId}`);
-    }
-  }
-}
       today_points: todayPoints,
       last_earned_date: dayKey,
       badges,
@@ -262,6 +245,49 @@ export async function runPointsRepairBatch(userIds: string[]): Promise<void> {
     missingTodayApplied: missingToday,
     before: beforeRow,
     after: afterRow,
+  };
+}
+
+export async function runPointsRepairBatch(
+  userIdsOrOptions: string[] | { triggerSource?: string; backfillToday?: boolean; userIds?: string[] },
+  options?: { backfillToday?: boolean }
+) {
+  const normalizedUserIds = Array.isArray(userIdsOrOptions)
+    ? userIdsOrOptions
+    : userIdsOrOptions.userIds ?? [];
+  const normalizedOptions = Array.isArray(userIdsOrOptions)
+    ? options
+    : { backfillToday: userIdsOrOptions.backfillToday ?? options?.backfillToday };
+
+  const results = [] as Array<Awaited<ReturnType<typeof repairUserPointsByUserId>>>;
+  for (const userId of normalizedUserIds) {
+    try {
+      results.push(await repairUserPointsByUserId(userId, normalizedOptions));
+    } catch (error) {
+      results.push({
+        userId,
+        ensured: { ok: false, error: error instanceof Error ? error.message : 'Unknown error' },
+        todaySummary: {
+          quizCompletions: 0,
+          gameSessions: 0,
+          pledgeSubmissions: 0,
+          storyQuizSessions: 0,
+          rawPoints: 0,
+          cappedTodayPoints: 0,
+        },
+        recordedToday: 0,
+        missingTodayApplied: 0,
+        before: null,
+        after: null,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      } as any);
+    }
+  }
+
+  return {
+    ok: true,
+    count: results.length,
+    details: results,
   };
 }
 

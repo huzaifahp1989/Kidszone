@@ -64,7 +64,7 @@ export async function POST(request: Request) {
       newPoints += 2;
     }
 
-    if (newPoints > 20) newPoints = 20;
+    if (newPoints > 40) newPoints = 40;
 
     // 1. Get previous points to calculate delta
     const { data: existing } = await supabaseAdmin

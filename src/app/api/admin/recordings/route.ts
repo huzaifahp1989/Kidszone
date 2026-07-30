@@ -1,13 +1,19 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { getReadableObjectUrl } from '@/lib/object-storage';
+import { isAdminRequest } from '@/lib/admin-auth';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(request: Request) {
+  if (!isAdminRequest(request)) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
   try {
     const { searchParams } = new URL(request.url);
-    const status = searchParams.get('status');
+    const rawStatus = searchParams.get('status');
+    const status = rawStatus === 'pending' ? 'submitted' : rawStatus;
     const category = searchParams.get('category');
     const search = searchParams.get('search');
     const storyId = searchParams.get('storyId');

@@ -3,6 +3,9 @@ export type WeeklyWinnerAnnouncement = {
   winner_name: string;
   madrasah_name: string | null;
   week_start_date: string;
+  weekly_points?: number | null;
+  monthly_points?: number | null;
+  total_points?: number | null;
   created_at: string;
 };
 

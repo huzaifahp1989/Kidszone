@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
-import { deleteObject, uploadObject } from '@/lib/object-storage';
+import { buildStorageResponsePayload, deleteObject, uploadObject } from '@/lib/object-storage';
 import { getAuthenticatedRequestUser } from '@/lib/request-auth';
 
 export const dynamic = 'force-dynamic';
@@ -45,21 +45,28 @@ export async function POST(
           : 'webm';
     const filename = `${authUser.id}/${Date.now()}_${storyId}.${extension}`;
 
-    await uploadObject({
-      bucket: 'story-recordings',
-      path: filename,
-      body: buffer,
-      contentType: mimeType,
-    });
+    try {
+      await uploadObject({
+        bucket: 'story-recordings',
+        path: filename,
+        body: buffer,
+        contentType: mimeType,
+      });
+    } catch (uploadError) {
+      console.error('Story recording storage upload error:', uploadError);
+      return NextResponse.json(buildStorageResponsePayload(uploadError), { status: 500 });
+    }
 
     const { data: insertedRecord, error: dbError } = await supabaseAdmin
       .from('recordings')
       .insert({
         user_id: authUser.id,
         story_id: storyId,
+        category: 'story',
         audio_path: filename,
         duration: Number.isFinite(duration) ? duration : 0,
         status: 'submitted',
+        created_at: new Date().toISOString(),
         submitted_at: new Date().toISOString(),
       })
       .select()

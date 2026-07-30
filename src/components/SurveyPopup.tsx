@@ -5,7 +5,7 @@ import { createPortal } from 'react-dom';
 import { canShowSessionPopup, markSessionPopupShown } from '@/lib/popup-session-cap';
 
 const SURVEY_URL =
-  'https://docs.google.com/forms/d/e/1FAIpQLSeEVZHFkbYB6isXFrKrdsJszF3rho_3_NqlMHFYdIQ5SypKXg/viewform?usp=header';
+  'https://docs.google.com/forms/d/1Cl6yO9GA8UgvUfoSiFuSEyA3Q9O0WMSMLxtNo75DPG4/viewform';
 const STORAGE_KEY = 'survey_popup_dismissed_date';
 
 export function SurveyPopup() {
@@ -86,7 +86,7 @@ export function SurveyPopup() {
             Assalamu Alaikum! 🌙
           </p>
           <p style={{ color: '#374151', fontSize: '14px', lineHeight: 1.6, margin: 0 }}>
-            Please fill this short survey on how you are finding this app. Your feedback helps us improve the experience for all kids! 🌟
+            Please fill this short survey on how you are finding this app. Complete it to earn 50 points and help us improve the experience for all kids! 🌟
           </p>
           <div style={{ display: 'flex', gap: '12px', paddingTop: '4px' }}>
             <a

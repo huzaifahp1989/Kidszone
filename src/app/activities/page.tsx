@@ -2,7 +2,15 @@
 
 import React, { useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { Button } from '@/components';
+import {
+  ACTIVITY_BONUS_POINTS,
+  AUDIO_COMPETITION_APPROVED_POINTS,
+  DAILY_EARNING_PLAN,
+  POINTS_DAILY_CAP,
+  RECORDING_APPROVED_POINTS,
+} from '@/lib/points-policy';
 
 type TemplateId = 'makkah' | 'madinah' | 'aqsa';
 
@@ -31,6 +39,45 @@ const palette = [
   '#ec4899',
   '#111827',
   '#ffffff',
+];
+
+const EXTRA_POINT_ACTIVITIES: Array<{
+  title: string;
+  href: string;
+  pointsLabel: string;
+  limitLabel: string;
+  note: string;
+  external?: boolean;
+}> = [
+  {
+    title: 'Quran Listening Club',
+    href: '/quran/listen',
+    pointsLabel: `+${ACTIVITY_BONUS_POINTS} points`,
+    limitLabel: '1 time/day',
+    note: 'Listen for at least 3 minutes before claiming daily points.',
+  },
+  {
+    title: 'Audio Quiz',
+    href: '/audio-quiz',
+    pointsLabel: `+${AUDIO_COMPETITION_APPROVED_POINTS} points`,
+    limitLabel: 'When approved',
+    note: 'Submit your voice answer and points are added after approval.',
+  },
+  {
+    title: 'Recording Studio',
+    href: '/studio',
+    pointsLabel: `+${RECORDING_APPROVED_POINTS} points`,
+    limitLabel: 'When approved',
+    note: "Record Qur'an, nasheed, hadith, or story audio to earn points.",
+  },
+  {
+    title: 'Kids Survey Reward',
+    href: 'https://docs.google.com/forms/d/e/1FAIpQLScPwSgQimR0x2Qk8mxvQ1q_LDdAXZGqX14ZxgVLz7Y2AmA5GQ/viewform',
+    pointsLabel: '+50 points',
+    limitLabel: 'As announced',
+    note: 'Open the survey form and submit it to claim the reward.',
+    external: true,
+  },
 ];
 
 function downloadTextFile(filename: string, text: string, mimeType: string) {
@@ -103,6 +150,80 @@ export default function ActivitiesPage() {
         </div>
 
         <div className="bg-white rounded-3xl shadow-kids border-2 border-slate-100 p-6 md:p-8">
+          <div className="mb-8 rounded-2xl border-2 border-violet-200 bg-violet-50 p-4 sm:p-5">
+            <p className="text-xs font-black uppercase tracking-[0.16em] text-violet-700">Activities</p>
+            <h2 className="mt-1 text-2xl font-black text-violet-950">All activities that can earn points</h2>
+            <p className="mt-1 text-sm text-violet-800">
+              You can earn up to <span className="font-black">{POINTS_DAILY_CAP} points per day</span>. Pick any mix of activities below.
+            </p>
+
+            <div className="mt-4 grid gap-3 sm:grid-cols-2">
+              {DAILY_EARNING_PLAN.map((item) => {
+                const maxPoints = item.limit * item.pointsEach;
+                return (
+                  <Link
+                    key={item.activity}
+                    href={item.href}
+                    className="rounded-xl border border-violet-200 bg-white p-4 transition hover:border-violet-300 hover:bg-violet-100/30"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <p className="text-base font-black text-slate-900">{item.title}</p>
+                        <p className="mt-1 text-xs font-semibold uppercase tracking-wide text-violet-700">
+                          {item.limit}x daily · +{item.pointsEach} each
+                        </p>
+                      </div>
+                      <span className="rounded-lg bg-violet-700 px-2.5 py-1 text-xs font-black text-white">
+                        +{maxPoints} max
+                      </span>
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
+
+            <p className="mt-5 text-xs font-black uppercase tracking-[0.16em] text-violet-700">More point activities</p>
+            <div className="mt-3 grid gap-3 sm:grid-cols-2">
+              {EXTRA_POINT_ACTIVITIES.map((item) => (
+                <div key={item.title} className="rounded-xl border border-violet-200 bg-white p-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <p className="text-base font-black text-slate-900">{item.title}</p>
+                    <span className="rounded-lg bg-emerald-600 px-2.5 py-1 text-xs font-black text-white">{item.pointsLabel}</span>
+                  </div>
+                  <p className="mt-1 text-xs font-semibold uppercase tracking-wide text-violet-700">{item.limitLabel}</p>
+                  <p className="mt-1 text-sm text-slate-700">{item.note}</p>
+                  {item.external ? (
+                    <a
+                      href={item.href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="mt-3 inline-flex text-sm font-bold text-violet-700 hover:underline"
+                    >
+                      Open activity →
+                    </a>
+                  ) : (
+                    <Link href={item.href} className="mt-3 inline-flex text-sm font-bold text-violet-700 hover:underline">
+                      Open activity →
+                    </Link>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="mb-6 rounded-2xl border border-emerald-200 bg-gradient-to-r from-emerald-50 via-white to-cyan-50 p-4 sm:p-5">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-[0.14em] text-emerald-700">Activity to do</p>
+                <h2 className="mt-1 text-xl font-black text-emerald-950">Listen to Quran Daily</h2>
+                <p className="mt-1 text-sm text-emerald-900/80">Choose short surahs or longer ones like Ya-Sin and Al-Mulk, then claim daily points.</p>
+              </div>
+              <Button variant="primary" onClick={() => router.push('/quran/listen')}>
+                Open Quran Listen
+              </Button>
+            </div>
+          </div>
+
           <div className="flex flex-col md:flex-row gap-6">
             <div className="md:w-72 space-y-5">
               <div className="space-y-2">

@@ -9,12 +9,13 @@ import { QUIZ_CLIENT_VERSION } from '@/lib/quiz-client-version';
 export const QUIZ_STUCK_RECOVERY_SCRIPT = `
 (function () {
   try {
-    var live = ${JSON.stringify(LIVE_APP_URL)}.replace(/\\/$/, '');
+    var live = (location.origin || ${JSON.stringify(LIVE_APP_URL)}).replace(/\/$/, '');
     var host = (location.hostname || '').toLowerCase();
     var path = location.pathname || '';
+    var liveHost = new URL(live).host.toLowerCase();
 
     // Kids Zone may still be parked on the stale Vercel project after old redirects.
-    if (host === 'islamic-kids-platform.vercel.app') {
+    if (host === 'islamic-kids-platform.vercel.app' && liveHost !== host) {
       location.replace(live + path + location.search + location.hash);
       return;
     }
