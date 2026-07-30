@@ -106,13 +106,49 @@ interface User {
 
 export default function AdminPanel() {
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<'users' | 'winner-contacts' | 'competitions' | 'questions' | 'surahs' | 'hadiths' | 'system' | 'rewards' | 'claims'>('users');
+  const [activeTab, setActiveTab] = useState<'users' | 'winner-contacts' | 'competitions' | 'questions' | 'surahs' | 'hadiths' | 'system' | 'rewards' | 'claims' | 'feedback'>('users');
   const [showAddModal, setShowAddModal] = useState(false);
   const [winner, setWinner] = useState<any>(null);
   const [pickingWinner, setPickingWinner] = useState(false);
   const [spinWheelData, setSpinWheelData] = useState<any>(null);
   const [loadingSpinWheel, setLoadingSpinWheel] = useState(false);
-  
+
+  // Feedback survey state
+  const [feedbackSubmissions, setFeedbackSubmissions] = useState<any[]>([]);
+  const [feedbackTotal, setFeedbackTotal] = useState(0);
+  const [feedbackFilter, setFeedbackFilter] = useState<'all' | 'pending' | 'approved' | 'rejected'>('pending');
+  const [feedbackLoading, setFeedbackLoading] = useState(false);
+  const [feedbackActing, setFeedbackActing] = useState<string | null>(null);
+  const [feedbackMessage, setFeedbackMessage] = useState('');
+
+  const fetchFeedback = async (filter = feedbackFilter) => {
+    setFeedbackLoading(true);
+    setFeedbackMessage('');
+    try {
+      const res = await fetch(`/api/feedback/survey?status=${filter}`, { headers: { 'x-admin-auth': 'true' }, cache: 'no-store' });
+      const data = await res.json();
+      if (res.ok) { setFeedbackSubmissions(data.submissions || []); setFeedbackTotal(data.total || 0); }
+    } catch { /* ignore */ } finally { setFeedbackLoading(false); }
+  };
+
+  const handleFeedbackAction = async (id: string, action: 'approve' | 'reject') => {
+    setFeedbackActing(id);
+    setFeedbackMessage('');
+    try {
+      const res = await fetch('/api/feedback/survey/approve', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-admin-auth': 'true' },
+        body: JSON.stringify({ id, action }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setFeedbackMessage(action === 'approve' ? `✅ Approved! +${data.pointsAwarded} pts awarded.` : '❌ Rejected.');
+        fetchFeedback(feedbackFilter);
+      } else {
+        setFeedbackMessage(data?.error || 'Failed');
+      }
+    } catch { setFeedbackMessage('Network error'); } finally { setFeedbackActing(null); }
+  };
   // User Management State
   const [users, setUsers] = useState<User[]>([]);
   const [loadingUsers, setLoadingUsers] = useState(false);
@@ -238,7 +274,9 @@ export default function AdminPanel() {
   }, [router]);
 
   useEffect(() => {
-    if (activeTab === 'rewards') {
+    if (activeTab === 'feedback') {
+      fetchFeedback();
+    } else if (activeTab === 'rewards') {
       fetchCurrentWinner();
       fetchSpinWheelResults();
     } else if (activeTab === 'users' || activeTab === 'winner-contacts') {
@@ -994,6 +1032,17 @@ export default function AdminPanel() {
           </button>
 
           <button
+            onClick={() => setActiveTab('feedback')}
+            className={`px-5 py-2.5 rounded-lg font-bold transition flex items-center gap-2 whitespace-nowrap ${
+              activeTab === 'feedback'
+                ? 'bg-violet-600 text-white shadow-md'
+                : 'bg-white text-slate-600 hover:bg-slate-50'
+            }`}
+          >
+            📋 Feedback
+          </button>
+
+          <button
             onClick={() => setActiveTab('competitions')}
             className={`px-5 py-2.5 rounded-lg font-bold transition flex items-center gap-2 whitespace-nowrap ${
               activeTab === 'competitions'
@@ -1711,6 +1760,106 @@ export default function AdminPanel() {
                 </table>
               </div>
             </div>
+          </div>
+        )}
+
+        {/* Feedback Survey Tab */}
+        {activeTab === 'feedback' && (
+          <div className="space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 bg-white p-4 rounded-xl shadow-sm border border-slate-100">
+              <div>
+                <h2 className="text-2xl font-bold text-slate-800">Kids Zone Feedback Submissions</h2>
+                <p className="text-sm text-slate-500 mt-1">Approve to award +50 points to the user.</p>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {(['pending', 'approved', 'rejected', 'all'] as const).map(f => (
+                  <button
+                    key={f}
+                    onClick={() => { setFeedbackFilter(f); fetchFeedback(f); }}
+                    className={`px-3 py-1.5 rounded-lg text-sm font-bold capitalize transition ${feedbackFilter === f ? 'bg-violet-600 text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'}`}
+                  >
+                    {f}
+                  </button>
+                ))}
+                <button onClick={() => fetchFeedback(feedbackFilter)} className="px-3 py-1.5 rounded-lg text-sm font-bold bg-slate-100 text-slate-700 hover:bg-slate-200">
+                  ↻ Refresh
+                </button>
+              </div>
+            </div>
+
+            {feedbackMessage && (
+              <div className={`rounded-xl px-4 py-2 text-sm font-semibold ${feedbackMessage.startsWith('✅') ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700'}`}>
+                {feedbackMessage}
+              </div>
+            )}
+
+            {feedbackLoading ? (
+              <div className="p-8 text-center text-slate-500">Loading feedback…</div>
+            ) : feedbackSubmissions.length === 0 ? (
+              <div className="p-8 text-center text-slate-400 bg-white rounded-xl border border-slate-100">
+                No {feedbackFilter !== 'all' ? feedbackFilter : ''} feedback submissions yet.
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <p className="text-xs text-slate-500 pl-1">{feedbackTotal} total · showing {feedbackSubmissions.length}</p>
+                {feedbackSubmissions.map((sub: any) => (
+                  <div key={sub.id} className="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 space-y-3">
+                    <div className="flex flex-wrap items-start justify-between gap-3">
+                      <div>
+                        <p className="font-black text-slate-900 text-base">{sub.full_name}</p>
+                        <div className="flex flex-wrap gap-x-4 gap-y-0.5 text-xs text-slate-500 mt-1">
+                          {sub.age && <span>Age: {sub.age}</span>}
+                          {sub.city && <span>📍 {sub.city}</span>}
+                          {sub.phone_number && <span>📞 {sub.phone_number}</span>}
+                          <span>{new Date(sub.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
+                          {sub.wants_reminder && <span className="text-emerald-600 font-semibold">🔔 Wants reminders</span>}
+                        </div>
+                      </div>
+                      <span className={`rounded-full px-3 py-1 text-xs font-black uppercase ${
+                        sub.status === 'approved' ? 'bg-emerald-100 text-emerald-700' :
+                        sub.status === 'rejected' ? 'bg-rose-100 text-rose-700' :
+                        'bg-amber-100 text-amber-700'
+                      }`}>
+                        {sub.status}
+                        {sub.status === 'approved' && sub.points_awarded > 0 && ` · +${sub.points_awarded} pts`}
+                      </span>
+                    </div>
+
+                    {sub.how_benefiting && (
+                      <div className="rounded-lg bg-emerald-50 border border-emerald-100 p-3">
+                        <p className="text-[10px] font-black uppercase tracking-wide text-emerald-700 mb-1">How benefiting</p>
+                        <p className="text-sm text-slate-700">{sub.how_benefiting}</p>
+                      </div>
+                    )}
+                    {sub.feedback_text && (
+                      <div className="rounded-lg bg-violet-50 border border-violet-100 p-3">
+                        <p className="text-[10px] font-black uppercase tracking-wide text-violet-700 mb-1">Feedback</p>
+                        <p className="text-sm text-slate-700">{sub.feedback_text}</p>
+                      </div>
+                    )}
+
+                    {sub.status === 'pending' && (
+                      <div className="flex gap-2 pt-1">
+                        <button
+                          onClick={() => handleFeedbackAction(sub.id, 'approve')}
+                          disabled={feedbackActing === sub.id}
+                          className="flex-1 rounded-xl bg-emerald-500 py-2 text-sm font-black text-white transition hover:bg-emerald-600 disabled:opacity-50"
+                        >
+                          {feedbackActing === sub.id ? 'Processing…' : '✅ Approve +50 pts'}
+                        </button>
+                        <button
+                          onClick={() => handleFeedbackAction(sub.id, 'reject')}
+                          disabled={feedbackActing === sub.id}
+                          className="flex-1 rounded-xl border-2 border-rose-200 py-2 text-sm font-black text-rose-600 transition hover:bg-rose-50 disabled:opacity-50"
+                        >
+                          ✕ Reject
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
 

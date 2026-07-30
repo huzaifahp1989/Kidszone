@@ -168,6 +168,46 @@ export default function ActivitiesMenuPage() {
             Open points guide -&gt;
           </Link>
         </section>
+
+        {/* Daily Tasks Section */}
+        <section className="mt-6">
+          <h2 className="mb-3 text-xl font-black text-slate-900">Daily Tasks</h2>
+          <Link
+            href="/tracker"
+            className="flex items-center justify-between gap-4 rounded-2xl border-2 border-emerald-200 bg-gradient-to-r from-emerald-50 to-teal-50 px-5 py-4 shadow-sm transition hover:border-emerald-400 hover:shadow-md"
+          >
+            <div className="flex items-center gap-4">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-emerald-500 text-2xl shadow">
+                ✅
+              </div>
+              <div>
+                <p className="font-black text-emerald-900 text-base">5 Daily Salah · Durood · Quran · Good Deeds</p>
+                <p className="text-xs text-emerald-700 mt-0.5">Tick each task every day and earn up to <strong>40 points</strong></p>
+              </div>
+            </div>
+            <span className="shrink-0 rounded-xl bg-emerald-500 px-4 py-2 text-sm font-black text-white">My Tasks →</span>
+          </Link>
+        </section>
+
+        {/* Feedback Survey Section */}
+        <section className="mt-6">
+          <h2 className="mb-3 text-xl font-black text-slate-900">Feedback &amp; Survey</h2>
+          <Link
+            href="/feedback-survey"
+            className="flex items-center justify-between gap-4 rounded-2xl border-2 border-violet-200 bg-gradient-to-r from-violet-50 to-fuchsia-50 px-5 py-4 shadow-sm transition hover:border-violet-400 hover:shadow-md"
+          >
+            <div className="flex items-center gap-4">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-violet-600 text-2xl shadow">
+                📋
+              </div>
+              <div>
+                <p className="font-black text-violet-900 text-base">Kids Zone Feedback Survey</p>
+                <p className="text-xs text-violet-700 mt-0.5">Share your thoughts and earn <strong>+50 points</strong> when approved by our team!</p>
+              </div>
+            </div>
+            <span className="shrink-0 rounded-xl bg-violet-600 px-4 py-2 text-sm font-black text-white">Take Survey →</span>
+          </Link>
+        </section>
       </main>
     </div>
   );
