@@ -25,11 +25,15 @@ export async function GET(request: Request) {
   return NextResponse.json({ settings: mergeReminderSettings(data?.reminder_settings) });
 }
 
+export async function HEAD(request: Request) {
+  return GET(request);
+}
+
 export async function POST(request: Request) {
   const user = await getAuthenticatedRequestUser(request);
   if (!user) return NextResponse.json({ error: 'Sign in required' }, { status: 401 });
 
-  const body = await request.json();
+  const body = await request.json().catch(() => ({}));
   const settings = mergeReminderSettings(body?.settings);
 
   const { error } = await supabaseAdmin
@@ -48,4 +52,8 @@ export async function POST(request: Request) {
   }
 
   return NextResponse.json({ settings });
+}
+
+export async function PUT(request: Request) {
+  return POST(request);
 }
