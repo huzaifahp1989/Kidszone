@@ -56,6 +56,12 @@ const EXTRA_ACTIVITIES: Array<{
   external?: boolean;
 }> = [
   {
+    title: 'August 2026 Manual Quiz',
+    href: '/quiz-challenge/aug-2026-mixed',
+    note: '40 questions across 8 Islamic themes. Write answers, admins score them, points added after review.',
+    pointsLabel: 'Up to +200 points',
+  },
+  {
     title: 'Quran Listening Club',
     href: '/quran/listen',
     note: 'Listen at least 3 minutes, then claim your daily reward.',

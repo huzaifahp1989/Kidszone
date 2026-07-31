@@ -76,6 +76,25 @@ export default function Home() {
               </Link>
             </div>
           </section>
+          <section className="feature-tile rounded-3xl border-amber-200 bg-gradient-to-br from-amber-50 via-white to-orange-50 p-6">
+            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+              <div className="max-w-2xl">
+                <div className="inline-flex items-center gap-2 rounded-full bg-amber-100 px-3 py-1 text-xs font-bold uppercase tracking-[0.18em] text-amber-800">
+                  <Sparkles size={14} /> August 2026 Quiz
+                </div>
+                <h3 className="mt-3 text-2xl font-black text-amber-950">Manual Review Islamic Quiz</h3>
+                <p className="mt-2 text-sm text-amber-900/80">
+                  40 fun questions across 8 themes! Write your answers and a real admin reads them. Try your best and earn points!
+                </p>
+              </div>
+              <Link
+                href="/quiz-challenge/aug-2026-mixed"
+                className="inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-amber-500 to-orange-500 px-5 py-3 text-sm font-bold text-white shadow-lg transition hover:from-amber-600 hover:to-orange-600"
+              >
+                <Trophy size={16} /> Try the Quiz!
+              </Link>
+            </div>
+          </section>
           <section className="feature-tile rounded-3xl border-emerald-200 bg-gradient-to-br from-emerald-50 via-white to-lime-50 p-6">
             <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
               <div className="max-w-2xl">
@@ -400,6 +419,28 @@ export default function Home() {
               className="inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-amber-600 to-orange-600 px-5 py-3 text-sm font-bold text-white shadow-lg transition hover:from-amber-500 hover:to-orange-500"
             >
               <Trophy size={18} /> Enter &amp; Record
+            </Link>
+          </div>
+        </section>
+
+        <section className="feature-tile rounded-3xl border-amber-200 bg-gradient-to-br from-amber-50 via-white to-orange-50 p-6">
+          <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
+            <div className="max-w-2xl">
+              <div className="inline-flex items-center gap-2 rounded-full bg-amber-100 px-3 py-1 text-xs font-bold uppercase tracking-[0.18em] text-amber-900">
+                <Sparkles size={14} /> August 2026 Special
+              </div>
+              <h2 className="mt-3 text-2xl font-black text-amber-950 md:text-3xl">Manual Review Islamic Quiz</h2>
+              <p className="mt-2 text-sm leading-6 text-amber-900/80 md:text-base">
+                40 unique questions across 8 themes — Seerah, Hadith, Quran, Sahabah, Prophets, Akhlaq, Fiqh, and
+                General knowledge. Write full answers, a real admin reads them, and in sha Allah you earn bonus
+                points for the effort you show!
+              </p>
+            </div>
+            <Link
+              href="/quiz-challenge/aug-2026-mixed"
+              className="inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-amber-500 to-orange-500 px-5 py-3 text-sm font-bold text-white shadow-lg transition hover:from-amber-600 hover:to-orange-600"
+            >
+              <Trophy size={18} /> Enter Manual Quiz
             </Link>
           </div>
         </section>

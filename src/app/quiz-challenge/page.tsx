@@ -79,25 +79,46 @@ export default function QuizChallengePage() {
             const quiz = CHALLENGE_QUIZZES[key];
             const status = statuses[key];
             const mainCount = quiz.questions.filter((q) => !q.isBonus).length;
+            const bonusCount = quiz.questions.length - mainCount;
+            const isManual = Boolean(quiz.manualReview);
             return (
               <div
                 key={key}
-                className="flex flex-col rounded-3xl border border-[#c4b5fd]/40 bg-white p-6 shadow-lg"
+                className={`flex flex-col rounded-3xl border bg-white p-6 shadow-lg ${
+                  isManual
+                    ? 'border-amber-300 ring-2 ring-amber-200/60'
+                    : 'border-[#c4b5fd]/40'
+                }`}
               >
                 <div className="flex items-center gap-3">
-                  <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#f5f3ff] text-3xl">
+                  <div className={`flex h-14 w-14 items-center justify-center rounded-2xl text-3xl ${
+                    isManual ? 'bg-gradient-to-br from-amber-50 to-orange-100' : 'bg-[#f5f3ff]'
+                  }`}>
                     {quiz.emoji}
                   </div>
                   <div>
-                    <h2 className="text-xl font-black text-[#1e1b4b]">{quiz.title}</h2>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h2 className="text-xl font-black text-[#1e1b4b]">{quiz.title}</h2>
+                    </div>
                     <p className="text-sm font-semibold text-[#7c3aed]">
-                      {mainCount} questions + 1 bonus
+                      {mainCount} questions{bonusCount ? ` + ${bonusCount} bonus` : ''}
                     </p>
                   </div>
                 </div>
                 <p className="mt-4 flex-1 text-sm leading-6 text-[#475569]">{quiz.description}</p>
 
-                {quiz.awardsBadge ? (
+                {isManual ? (
+                  <div className="mt-3 grid gap-2">
+                    <p className="inline-flex items-center gap-1.5 rounded-xl bg-amber-50 px-3 py-2 text-xs font-bold text-amber-800 border border-amber-200">
+                      ✍️ Manual Review — Admins read every answer and award points.
+                    </p>
+                    <p className="inline-flex items-center gap-1.5 rounded-xl bg-amber-50/60 px-3 py-2 text-xs font-semibold text-amber-900">
+                      📝 Long text answers · One submission only · Points added after review
+                    </p>
+                  </div>
+                ) : null}
+
+                {quiz.awardsBadge && !isManual ? (
                   <p className="mt-3 inline-flex items-center gap-1.5 rounded-xl bg-amber-50 px-3 py-2 text-xs font-bold text-amber-700">
                     <Award size={14} /> Earn a certificate for {quiz.passScore}/{mainCount} or above!
                   </p>
@@ -122,7 +143,11 @@ export default function QuizChallengePage() {
                 ) : (
                   <Link
                     href={`/quiz-challenge/${key}`}
-                    className="mt-4 inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#7c3aed] to-[#6d28d9] px-5 py-3 font-bold text-white shadow-lg transition hover:-translate-y-0.5 hover:shadow-xl"
+                    className={`mt-4 inline-flex items-center justify-center gap-2 rounded-xl px-5 py-3 font-bold text-white shadow-lg transition hover:-translate-y-0.5 hover:shadow-xl ${
+                      isManual
+                        ? 'bg-gradient-to-r from-amber-500 to-orange-500'
+                        : 'bg-gradient-to-r from-[#7c3aed] to-[#6d28d9]'
+                    }`}
                   >
                     Start {quiz.title} <ArrowRight size={16} />
                   </Link>

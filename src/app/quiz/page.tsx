@@ -511,6 +511,32 @@ export default function QuizPage() {
             </div>
           </Link>
 
+          {/* August 2026 Manual Review Quiz — big card */}
+          <Link
+            href="/quiz-challenge/aug-2026-mixed"
+            className="block rounded-2xl border-2 border-amber-400 bg-gradient-to-r from-amber-50 via-white to-orange-50 p-4 shadow-lg transition hover:-translate-y-0.5 hover:shadow-2xl sm:p-6"
+          >
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex items-center gap-3 sm:gap-4">
+                <span className="text-3xl sm:text-4xl" aria-hidden>🎯</span>
+                <div>
+                  <div className="mb-1 inline-flex items-center gap-1.5 rounded-full bg-amber-500 px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider text-white sm:text-xs">
+                    ✨ August 2026 Special
+                  </div>
+                  <p className="text-lg font-black leading-tight text-amber-950 sm:text-2xl">
+                    Manual Review Islamic Quiz
+                  </p>
+                  <p className="mt-1 text-xs font-semibold text-amber-900/80 sm:text-sm">
+                    40 questions · Seerah, Hadith, Quran, Sahabah, Prophets, Akhlaq, Fiqh — admins read every answer!
+                  </p>
+                </div>
+              </div>
+              <span className="hidden shrink-0 items-center gap-1 rounded-full bg-gradient-to-r from-amber-500 to-orange-500 px-4 py-2 text-sm font-bold text-white shadow sm:inline-flex">
+                Start Quiz →
+              </span>
+            </div>
+          </Link>
+
           <EarnMorePointsLinks title="Earn more points today" />
 
           <DailyTasksBanner />

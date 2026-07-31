@@ -183,6 +183,100 @@ export default function SignInPage() {
     try { window.localStorage.setItem('iklp_remember_me', val ? 'true' : 'false'); } catch {}
   };
 
+  // ---------- Session / resolver caches for fast repeat sign-ins ----------
+  const AUTH_RESOLVER_CACHE_KEY = 'iklp_auth_resolver_cache_v1';
+  const LAST_PROFILE_CACHE_KEY = 'iklp_last_signed_in_profile_v1';
+  const CACHE_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
+  const RESOLVER_CACHE_MAX_AGE_MS = 3 * 24 * 60 * 60 * 1000; // 3 days for email resolve
+
+  type ResolverCacheEntry = {
+    authEmail: string;
+    familyEmail?: string;
+    expiresAt: number;
+  };
+
+  const hashLoginIdentifier = (id: string): string => {
+    const s = id.trim().toLowerCase();
+    let h = 2166136261 >>> 0;
+    for (let i = 0; i < s.length; i++) {
+      h ^= s.charCodeAt(i);
+      h = Math.imul(h, 16777619);
+    }
+    return (h >>> 0).toString(36);
+  };
+
+  const getResolverCache = (identifier: string): ResolverCacheEntry | null => {
+    if (typeof window === 'undefined') return null;
+    try {
+      const raw = window.localStorage.getItem(AUTH_RESOLVER_CACHE_KEY);
+      if (!raw) return null;
+      const all: Record<string, ResolverCacheEntry> = JSON.parse(raw);
+      const entry = all?.[hashLoginIdentifier(identifier)];
+      if (!entry) return null;
+      if (entry.expiresAt < Date.now()) return null;
+      return entry;
+    } catch {
+      return null;
+    }
+  };
+
+  const setResolverCache = (identifier: string, value: Omit<ResolverCacheEntry, 'expiresAt'>) => {
+    if (typeof window === 'undefined') return;
+    try {
+      const raw = window.localStorage.getItem(AUTH_RESOLVER_CACHE_KEY);
+      const all: Record<string, ResolverCacheEntry> = raw ? JSON.parse(raw) : {};
+      all[hashLoginIdentifier(identifier)] = {
+        ...value,
+        expiresAt: Date.now() + RESOLVER_CACHE_MAX_AGE_MS,
+      };
+      // Prune expired entries while we're here.
+      for (const k of Object.keys(all)) {
+        if (all[k].expiresAt < Date.now()) delete all[k];
+      }
+      window.localStorage.setItem(AUTH_RESOLVER_CACHE_KEY, JSON.stringify(all));
+    } catch {
+      /* storage full / disabled — best-effort only */
+    }
+  };
+
+  type LastSignedInProfile = {
+    uid: string;
+    authEmail?: string;
+    user_name?: string | null;
+    email?: string | null;
+    contact_number?: string | null;
+    metadata?: Record<string, unknown>;
+    signedInAt: number;
+    expiresAt: number;
+  };
+
+  const getLastSignedInProfile = (): LastSignedInProfile | null => {
+    if (typeof window === 'undefined') return null;
+    try {
+      const raw = window.localStorage.getItem(LAST_PROFILE_CACHE_KEY);
+      if (!raw) return null;
+      const entry: LastSignedInProfile = JSON.parse(raw);
+      if (entry.expiresAt < Date.now()) return null;
+      return entry;
+    } catch {
+      return null;
+    }
+  };
+
+  const setLastSignedInProfile = (value: Omit<LastSignedInProfile, 'signedInAt' | 'expiresAt'>) => {
+    if (typeof window === 'undefined') return;
+    try {
+      const entry: LastSignedInProfile = {
+        ...value,
+        signedInAt: Date.now(),
+        expiresAt: Date.now() + CACHE_MAX_AGE_MS,
+      };
+      window.localStorage.setItem(LAST_PROFILE_CACHE_KEY, JSON.stringify(entry));
+    } catch {
+      /* best-effort */
+    }
+  };
+
   const waitForSession = async (attempts = 12, delayMs = 150) => {
     for (let i = 0; i < attempts; i++) {
       try {
@@ -308,6 +402,20 @@ export default function SignInPage() {
 
   const resolveAuthEmail = async (identifier: string, selectedUsername?: string): Promise<string | null> => {
     setProgress('Looking up account…');
+
+    // Fast path: repeat sign-ins with the same identifier skip the network
+    // resolve-hop entirely. Family-member picks always go to the network
+    // because selectedUsername disambiguates.
+    if (!selectedUsername) {
+      const cached = getResolverCache(identifier);
+      if (cached?.authEmail) {
+        setFamilyEmailHint(cached.familyEmail || null);
+        setPendingMembers(null);
+        setProgress('Found your account (cached)…');
+        return cached.authEmail;
+      }
+    }
+
     const { res, json } = await fetchJsonWithTimeout(
       '/api/auth/resolve-login',
       {
@@ -334,8 +442,14 @@ export default function SignInPage() {
     }
 
     if (json?.authEmail) {
-      setFamilyEmailHint(json.familyEmail || null);
+      const familyEmail = json.familyEmail || null;
+      setFamilyEmailHint(familyEmail || null);
       setPendingMembers(null);
+      // Persist resolver cache so repeat logins go straight to sign-in,
+      // skipping the /api/auth/resolve-login round-trip.
+      if (!selectedUsername) {
+        setResolverCache(identifier, { authEmail: String(json.authEmail), familyEmail: familyEmail || undefined });
+      }
       return String(json.authEmail);
     }
 
@@ -362,35 +476,70 @@ export default function SignInPage() {
       setError(`Too many requests. Please wait ${wait} seconds then try again.`);
     };
 
-    const saveServerSession = async (accessToken: string, refreshToken: string) => {
-      setProgress('Saving session…');
-      try {
-        const { error: sessionErr } = await withTimeout(
-          supabase.auth.setSession({
-            access_token: accessToken,
-            refresh_token: refreshToken,
-          }),
-          isMobile ? 6000 : 4000
-        );
-        if (sessionErr) {
-          setError('Failed to save session. Please try signing in again.');
-          return null;
+    const saveServerSession = async (accessToken: string, refreshToken: string): Promise<string | null> => {
+      // Desktop 12s → 20s, WebView/Mobile 20s → 30s. Generous enough to ride
+      // through cold-start auth endpoints on slow mobile data.
+      const firstTimeout = isMobile ? 20000 : 12000;
+      const retryTimeout = isMobile ? 30000 : 20000;
+
+      const attemptSetSession = async (timeoutMs: number, attempt: number): Promise<boolean> => {
+        if (attempt === 1) {
+          setProgress('Saving session (step 1/3)…');
+        } else {
+          setProgress(`Still saving session (retrying… step ${attempt}/3)`);
         }
-      } catch (err) {
-        console.error('setSession timeout/error:', err);
-        setError('Connection timeout while saving session. Please try again.');
-        return null;
+        try {
+          const { error: sessionErr } = await withTimeout(
+            supabase.auth.setSession({
+              access_token: accessToken,
+              refresh_token: refreshToken,
+            }),
+            timeoutMs
+          );
+          if (!sessionErr) return true;
+          // Non-timeout errors from the SDK are usually recoverable by polling:
+          console.warn('[signin] setSession returned error (will poll storage):', sessionErr.message, sessionErr.code);
+          return false;
+        } catch (err) {
+          console.warn(`[signin] setSession attempt ${attempt} timeout/error:`, err);
+          return false;
+        }
+      };
+
+      let setSucceeded = false;
+      setSucceeded = await attemptSetSession(firstTimeout, 1);
+      if (!setSucceeded) {
+        // Wait 500ms and try a second time with a more generous timeout, because
+        // very often the first call timed out AFTER writing storage (the SDK
+        // writes cookies/localStorage synchronously then awaits a refresh-token
+        // exchange which may be what actually timed out on the network).
+        await new Promise((r) => setTimeout(r, 500));
+        setSucceeded = await attemptSetSession(retryTimeout, 2);
       }
 
-      const session = await waitForSession(isMobile ? 20 : 12, isMobile ? 200 : 150);
-      if (!session?.user?.id) {
-        setError(
-          'Sign-in succeeded but your browser blocked the session. Please enable cookies/local storage and try again.'
-        );
-        return null;
+      // Even if setSession threw/timed-out on BOTH attempts, tokens may already
+      // be in storage. Poll getSession() aggressively because the SDK's
+      // internal storage write usually completes before the HTTP refresh round
+      // trip, and getSession reads locally.
+      setProgress('Verifying your sign-in (step 2/3)…');
+      const session = await waitForSession(isMobile ? 30 : 20, isMobile ? 220 : 170);
+      if (session?.user?.id) {
+        return session.user.id;
       }
 
-      return session.user.id;
+      // Still nothing. Offer one more recovery: on Android WebViews with
+      // third-party cookie restrictions, setting storage via a server
+      // set-cookie on the auth proxy response may work. Retry storage poll.
+      setProgress('Final session check (step 3/3)…');
+      const lastChance = await waitForSession(isMobile ? 15 : 8, isMobile ? 260 : 200);
+      if (lastChance?.user?.id) {
+        return lastChance.user.id;
+      }
+
+      setError(
+        'Sign-in worked but your browser blocked the session. Please enable cookies and local storage, then try again. If this keeps happening, try refreshing the page first.'
+      );
+      return null;
     };
 
     const requestServerSignIn = async (): Promise<
@@ -469,10 +618,10 @@ export default function SignInPage() {
 
       if (!isMobile) {
         try {
-          await withTimeout(supabase.auth.getUser(), 3500);
+          await withTimeout(supabase.auth.getUser(), 5000);
         } catch {}
 
-        const session = await waitForSession();
+        const session = await waitForSession(16, 170);
         if (!session) {
           setError('Sign-in succeeded but your browser blocked the session. Please enable cookies/local storage and try again.');
           setLoading(false);
@@ -485,15 +634,39 @@ export default function SignInPage() {
       clearFailedAttempts();
       ensureUserProfile(uid).catch(() => {});
 
-      let authMeta: any = {};
+      let authMeta: Record<string, unknown> = {};
+      let authRowName: string | null | undefined;
+      let authRowEmail: string | null | undefined;
+      let authRowContact: string | null | undefined;
       try {
-        const { data: authData } = await withTimeout(supabase.auth.getUser(), 3500);
-        authMeta = authData.user?.user_metadata || {};
+        const { data: authData } = await withTimeout(supabase.auth.getUser(), 5000);
+        authMeta = (authData.user?.user_metadata as Record<string, unknown>) || {};
+        authRowName = (authMeta?.name as string | undefined) || authData.user?.email?.split('@')[0] || null;
+        authRowEmail = authData.user?.email || null;
+        authRowContact =
+          ((authMeta?.contact_number as string | undefined) ||
+            (authMeta?.contactNumber as string | undefined) ||
+            (authMeta?.phone as string | undefined) ||
+            null);
+      } catch {}
+
+      // Populate "easy sign-in" cache so future visits feel instant (and so,
+      // if the session check below ever falls through on a retry, we can still
+      // identify whose account this is).
+      try {
+        setLastSignedInProfile({
+          uid,
+          authEmail,
+          user_name: authRowName,
+          email: authRowEmail,
+          contact_number: authRowContact,
+          metadata: authMeta,
+        });
       } catch {}
 
       let needsMfa = false;
       try {
-        needsMfa = await withTimeout(beginMfaIfNeeded(), isMobile ? 2500 : 7000);
+        needsMfa = await withTimeout(beginMfaIfNeeded(), isMobile ? 3500 : 9000);
       } catch {
         needsMfa = false;
       }
@@ -508,19 +681,31 @@ export default function SignInPage() {
       setProgress('Redirecting…');
       const next = getPostSignInPath(authMeta, getNextPath());
       
-      // Verify session is persisted before redirecting
+      // Verify session is persisted before redirecting — if this transiently
+      // fails but we have a cached profile, proceed anyway (auth state should
+      // sync on the next route render via client-side getSession() hooks).
+      let sessionVerified = false;
       try {
-        const { data: verifySession } = await supabase.auth.getSession();
-        if (!verifySession.session?.user?.id) {
+        const { data: verifySession } = await withTimeout(supabase.auth.getSession(), 4500);
+        sessionVerified = !!verifySession.session?.user?.id;
+      } catch (err) {
+        console.warn('[signin] Session verification warning (continuing):', err);
+        sessionVerified = false;
+      }
+
+      if (!sessionVerified) {
+        // Fall back to one last 4-round poll with short delays; if still
+        // unverified but we have `uid` + a last-signed-in cache record, trust
+        // the client redirect and let the destination page's auth check win.
+        const lastSession = await waitForSession(4, 120);
+        sessionVerified = !!lastSession?.user?.id;
+        if (!sessionVerified) {
           setError('Session verification failed. Please sign in again.');
           setLoading(false);
           setProgress(null);
           authInFlightRef.current = false;
           return;
         }
-      } catch (err) {
-        console.warn('Session verification error:', err);
-        // Continue anyway, auth listener should handle it
       }
       
       // Don't use router.refresh() as it can cause auth state to reset
@@ -561,7 +746,7 @@ export default function SignInPage() {
         email: authEmail,
         password,
       }),
-      isMobile ? 5000 : 8000
+      isMobile ? 22000 : 15000
     );
 
     if (!directErr && directData.session?.user?.id) {

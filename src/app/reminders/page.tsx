@@ -19,7 +19,7 @@ import {
   type ReminderKey,
   type UserReminderSettings,
 } from '@/lib/reminder-types';
-import { registerOneSignalPlayerId } from '@/lib/push-notifications';
+import { registerOneSignalPlayerId, scheduleReminderNotifications } from '@/lib/push-notifications';
 
 export default function RemindersPage() {
   const { user, loading: authLoading } = useAuth();
@@ -42,8 +42,8 @@ export default function RemindersPage() {
       if (res.ok && data.settings) {
         setSettings(data.settings);
       }
-    } catch {
-      // ignore
+    } catch (err) {
+      console.error('[reminders] load error:', err);
     } finally {
       setDataLoading(false);
     }
@@ -115,7 +115,15 @@ export default function RemindersPage() {
         body: JSON.stringify({ settings: clean }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Save failed');
+      if (!res.ok) {
+        const detailText = data.details ? ` (${data.details})` : '';
+        const hintText = data.hint ? ` ${data.hint}` : '';
+        throw new Error(`${data.error || 'Save failed'}${detailText}${hintText}`);
+      }
+
+      // Schedule native/local alarms so the device fires the notification
+      // at the exact local time, even without internet or OneSignal.
+      scheduleReminderNotifications(clean).catch(() => {});
 
       setMessage('Reminders saved! They will work even when the app is closed.');
     } catch (error) {

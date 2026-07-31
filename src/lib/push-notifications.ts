@@ -9,6 +9,11 @@ import {
   canRegisterWtnNotification,
   registerWtnNotification,
 } from '@/lib/wtn-onesignal';
+import {
+  ALL_REMINDER_KEYS,
+  REMINDER_META,
+  type UserReminderSettings,
+} from '@/lib/reminder-types';
 
 export type NotificationPrefs = {
   dailyQuiz: boolean;
@@ -383,4 +388,95 @@ export async function cancelAllReminders() {
   if (isNativeApp()) {
     await LocalNotifications.cancel({ notifications: [{ id: 1 }, { id: 2 }, { id: 3 }] });
   }
+}
+
+const REMINDER_NOTIFICATION_ID_BASE = 1000;
+
+function nextAtTime(time: string): Date {
+  const [hour, minute] = time.split(':').map(Number);
+  const d = new Date();
+  d.setHours(hour, minute, 0, 0);
+  if (d.getTime() <= Date.now()) d.setDate(d.getDate() + 1);
+  return d;
+}
+
+/**
+ * Schedule native local notifications from user reminder settings.
+ * Works offline and fires at the device's local time, independent of OneSignal.
+ */
+export async function scheduleReminderNotifications(settings: UserReminderSettings) {
+  if (!isNativeApp()) {
+    scheduleWebReminderNotifications(settings);
+    return;
+  }
+
+  const granted = await ensureNotificationPermission();
+  if (!granted) return;
+
+  await ensureAndroidChannel();
+
+  const existingIds = ALL_REMINDER_KEYS.map((_, i) => ({ id: REMINDER_NOTIFICATION_ID_BASE + i }));
+  await LocalNotifications.cancel({ notifications: existingIds });
+
+  const notifications = ALL_REMINDER_KEYS
+    .filter((key) => settings[key]?.enabled)
+    .map((key, i) => {
+      const meta = REMINDER_META[key];
+      const time = settings[key]?.time ?? '08:00';
+      return {
+        id: REMINDER_NOTIFICATION_ID_BASE + i,
+        title: meta.label,
+        body: meta.body,
+        channelId: CHANNEL_ID,
+        schedule: {
+          at: nextAtTime(time),
+          repeats: true,
+          every: 'day' as const,
+        },
+      };
+    });
+
+  if (notifications.length) {
+    await LocalNotifications.schedule({ notifications });
+  }
+}
+
+const WEB_REMINDER_TIMEOUTS_KEY = 'kz_web_reminder_timeouts';
+
+function scheduleWebReminderNotifications(settings: UserReminderSettings) {
+  if (typeof window === 'undefined' || !('Notification' in window)) return;
+  if (Notification.permission !== 'granted') return;
+
+  const existing = sessionStorage.getItem(WEB_REMINDER_TIMEOUTS_KEY);
+  if (existing) {
+    try {
+      const ids = JSON.parse(existing) as number[];
+      ids.forEach((id) => window.clearTimeout(id));
+    } catch {
+      // ignore
+    }
+  }
+
+  const ids: number[] = [];
+
+  for (const key of ALL_REMINDER_KEYS) {
+    const entry = settings[key];
+    if (!entry?.enabled) continue;
+
+    const [hour, minute] = entry.time.split(':').map(Number);
+    const target = new Date();
+    target.setHours(hour, minute, 0, 0);
+    if (target.getTime() <= Date.now()) target.setDate(target.getDate() + 1);
+
+    const msUntil = target.getTime() - Date.now();
+    const meta = REMINDER_META[key];
+    const id = window.setTimeout(() => {
+      new Notification(meta.label, { body: meta.body });
+      // schedule next day roughly
+      scheduleWebReminderNotifications(settings);
+    }, Math.min(msUntil, 2147483647));
+    ids.push(id);
+  }
+
+  sessionStorage.setItem(WEB_REMINDER_TIMEOUTS_KEY, JSON.stringify(ids));
 }

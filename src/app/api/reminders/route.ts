@@ -17,7 +17,14 @@ export async function GET(request: Request) {
 
   if (error) {
     if (/reminder_settings|does not exist|schema cache/i.test(error.message)) {
-      return NextResponse.json({ settings: mergeReminderSettings({}), setupRequired: true });
+      return NextResponse.json(
+        {
+          settings: mergeReminderSettings({}),
+          setupRequired: true,
+          details: error.message,
+          hint: 'If you already ran the SQL, run: NOTIFY pgrst, \'reload schema\'; in the SQL Editor and wait 20s.',
+        }
+      );
     }
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
@@ -38,13 +45,17 @@ export async function POST(request: Request) {
 
   const { error } = await supabaseAdmin
     .from('users')
-    .update({ reminder_settings: settings, updated_at: new Date().toISOString() })
+    .update({ reminder_settings: settings })
     .eq('uid', user.id);
 
   if (error) {
     if (/reminder_settings|does not exist|schema cache/i.test(error.message)) {
       return NextResponse.json(
-        { error: 'reminder_settings column missing — run SETUP_USER_REMINDERS.sql in Supabase' },
+        {
+          error: 'reminder_settings column missing — run SETUP_USER_REMINDERS.sql in Supabase',
+          details: error.message,
+          hint: 'If you already ran the SQL, run: NOTIFY pgrst, \'reload schema\'; in the SQL Editor and wait 20s.',
+        },
         { status: 503 }
       );
     }

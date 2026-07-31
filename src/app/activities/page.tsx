@@ -50,6 +50,13 @@ const EXTRA_POINT_ACTIVITIES: Array<{
   external?: boolean;
 }> = [
   {
+    title: 'August 2026 Manual Quiz',
+    href: '/quiz-challenge/aug-2026-mixed',
+    pointsLabel: 'Up to +200 points',
+    limitLabel: 'One submission',
+    note: '40 questions — Seerah, Hadith, Quran, Sahabah, Prophets, Akhlaq, Fiqh. Admins read each answer and award points.',
+  },
+  {
     title: 'Quran Listening Club',
     href: '/quran/listen',
     pointsLabel: `+${ACTIVITY_BONUS_POINTS} points`,

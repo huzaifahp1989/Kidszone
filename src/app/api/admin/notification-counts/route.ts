@@ -10,6 +10,7 @@ export type AdminNotificationCounts = {
   recordings: number;
   competition: number;
   seerah: number;
+  manualQuiz: number;
 };
 
 export async function GET(request: Request) {
@@ -22,6 +23,7 @@ export async function GET(request: Request) {
     recordings: 0,
     competition: 0,
     seerah: 0,
+    manualQuiz: 0,
   };
 
   try {
@@ -91,6 +93,17 @@ export async function GET(request: Request) {
     if (!isMissingChatTable(error)) {
       console.error('[admin notification-counts] chat:', getErrorMessage(error));
     }
+  }
+
+  try {
+    const { count: manualCount, error: manualErr } = await supabaseAdmin
+      .from('manual_quiz_submissions')
+      .select('*', { count: 'exact', head: true })
+      .in('status', ['pending', 'reviewing']);
+
+    if (!manualErr) counts.manualQuiz = manualCount || 0;
+  } catch {
+    /* table may not exist */
   }
 
   return NextResponse.json({ counts });

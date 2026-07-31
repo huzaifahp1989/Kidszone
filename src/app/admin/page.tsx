@@ -928,6 +928,31 @@ export default function AdminPanel() {
           </span>
         </button>
 
+        <div className="mb-6 flex w-full flex-col gap-4 rounded-2xl border-2 border-violet-300 bg-gradient-to-r from-violet-50 via-fuchsia-50 to-pink-50 p-5 shadow-sm transition hover:border-violet-400 hover:shadow-md sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-[0.16em] text-violet-800">August 2026 Manual Quiz</p>
+            <p className="mt-1 text-lg font-black text-violet-950">🎯 Review submissions · grade 40 answers · award points per question</p>
+            <p className="mt-1 text-sm text-violet-900/80">8 Islamic themes (Seerah, Hadith, Quran, Sahabah, Prophets, Akhlaq, Fiqh, General). Kids type answers — you read, comment, and score each one.</p>
+          </div>
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+            <button
+              type="button"
+              onClick={() => router.push('/admin/manual-quiz')}
+              className="inline-flex items-center justify-center gap-2 rounded-xl bg-violet-600 px-5 py-3 text-sm font-bold text-white shadow hover:bg-violet-700"
+            >
+              <AdminNotificationBadge count={adminNotifyCounts.manualQuiz} />
+              Review Submissions
+            </button>
+            <button
+              type="button"
+              onClick={() => router.push('/admin/quiz-challenge')}
+              className="inline-flex items-center justify-center gap-2 rounded-xl bg-white border-2 border-violet-200 px-5 py-3 text-sm font-bold text-violet-800 hover:bg-violet-100"
+            >
+              ✏️ Edit 40 Questions
+            </button>
+          </div>
+        </div>
+
         {/* Tabs */}
         <div className="flex gap-2 mb-8 flex-wrap overflow-x-auto pb-2">
           <button
@@ -1011,6 +1036,13 @@ export default function AdminPanel() {
             className="px-5 py-2.5 rounded-lg font-bold transition bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 hover:border-violet-300 flex items-center gap-2 whitespace-nowrap"
           >
             🌙 Quiz Challenge
+          </button>
+          <button
+            onClick={() => router.push('/admin/manual-quiz')}
+            className="px-5 py-2.5 rounded-lg font-bold transition bg-gradient-to-r from-amber-400 to-orange-400 text-white shadow-md hover:from-amber-500 hover:to-orange-500 flex items-center gap-2 whitespace-nowrap"
+          >
+            🎯 Manual Quiz
+            <AdminNotificationBadge count={adminNotifyCounts.manualQuiz} />
           </button>
           <button
             onClick={() => router.push('/admin/fitness')}

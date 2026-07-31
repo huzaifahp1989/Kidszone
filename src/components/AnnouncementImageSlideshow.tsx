@@ -1,12 +1,40 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import { getAnnouncementImageFallbackUrl } from '@/lib/announcement-image-fallback';
 
 type Props = {
   slides: string[];
   intervalSeconds?: number;
   alt?: string;
 };
+
+function SlideImage({ src, alt }: { src: string; alt: string }) {
+  const [currentSrc, setCurrentSrc] = useState(src);
+
+  useEffect(() => {
+    setCurrentSrc(src);
+  }, [src]);
+
+  return (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={currentSrc}
+      alt={alt}
+      className="max-h-[min(60vh,420px)] w-full object-contain"
+      onError={(e) => {
+        const fallback = getAnnouncementImageFallbackUrl(src);
+        if (fallback && fallback !== currentSrc) {
+          setCurrentSrc(fallback);
+          return;
+        }
+        // Hide broken images so text-only announcements still look okay.
+        const target = e.currentTarget as HTMLImageElement;
+        target.style.display = 'none';
+      }}
+    />
+  );
+}
 
 export function AnnouncementImageSlideshow({ slides, intervalSeconds = 5, alt = 'Announcement slide' }: Props) {
   const [index, setIndex] = useState(0);
@@ -29,12 +57,7 @@ export function AnnouncementImageSlideshow({ slides, intervalSeconds = 5, alt = 
   if (slides.length === 1) {
     return (
       <div className="overflow-hidden rounded-xl border border-slate-200 bg-slate-50">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={slides[0]}
-          alt={alt}
-          className="max-h-[min(60vh,420px)] w-full object-contain"
-        />
+        <SlideImage src={slides[0]} alt={alt} />
       </div>
     );
   }
@@ -48,11 +71,9 @@ export function AnnouncementImageSlideshow({ slides, intervalSeconds = 5, alt = 
         >
           {slides.map((url, slideIndex) => (
             <div key={`${url}-${slideIndex}`} className="w-full shrink-0">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
+              <SlideImage
                 src={url}
                 alt={`${alt} ${slideIndex + 1} of ${slides.length}`}
-                className="max-h-[min(60vh,420px)] w-full object-contain"
               />
             </div>
           ))}

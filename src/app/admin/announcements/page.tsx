@@ -366,7 +366,7 @@ export default function AdminAnnouncements() {
           <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-4">
             <label className="block text-sm font-medium text-slate-700 mb-2">Popup slides (optional)</label>
             <p className="mb-3 text-xs text-slate-500">
-              Add one or more images for popup mode. Multiple slides auto-rotate on the site. JPG, PNG, or WebP.
+              Add one or more images for inline or popup mode. Multiple slides auto-rotate on the site. JPG, PNG, or WebP.
             </p>
 
             {imageSlides.length > 0 && (
