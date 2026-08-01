@@ -21,13 +21,12 @@
       "schedule": "0 * * * *"
     },
     {
-<<<<<<< HEAD
       "path": "/api/cron/send-user-reminders",
       "schedule": "*/5 * * * *"
-=======
+    },
+    {
       "path": "/api/cron/points-health",
       "schedule": "0 * * * *"
->>>>>>> 24425b8 (Add points health guardian endpoints and docs)
     }
   ]
 }
