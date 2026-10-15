@@ -10,6 +10,7 @@
     "lint": "eslint . --ext .js,.jsx,.ts,.tsx",
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:points": "vitest run src/lib/points-policy.test.ts src/lib/points-health.test.ts",
     "cap:sync": "npx cap sync",
     "cap:add:android": "npx cap add android",
     "cap:add:ios": "npx cap add ios"
