@@ -15,6 +15,7 @@ export type PushSchedule = {
   url: string | null;
   image_url: string | null;
   audience: string;
+  target_user_id?: string | null;
   frequency: PushFrequency;
   time_of_day: string;
   /** Legacy single day (0=Sun … 6=Sat). Prefer days_of_week. */
@@ -153,6 +154,15 @@ function getZonedParts(date: Date, timeZone: string) {
     second: Number(get('second')),
     weekday: weekdayMap[get('weekday')] ?? 0,
   };
+}
+
+function isValidTimeZone(timeZone: string): boolean {
+  try {
+    new Intl.DateTimeFormat('en-US', { timeZone });
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 /** Approximate UTC Date for a wall-clock time in a timezone (good enough for schedules). */
@@ -294,6 +304,7 @@ export async function createPushSchedule(input: {
   url?: string;
   imageUrl?: string | null;
   audience?: string;
+  targetUserId?: string | null;
   frequency: PushFrequency;
   timeOfDay: string;
   dayOfWeek?: number | null;
@@ -318,6 +329,12 @@ export async function createPushSchedule(input: {
   }
 
   const timezone = input.timezone || DEFAULT_TZ;
+  if (!isValidTimeZone(timezone)) return { error: 'timezone must be a valid IANA timezone' };
+  const audience = input.audience || 'onesignal';
+  const targetUserId = String(input.targetUserId || '').trim() || null;
+  if (audience === 'user' && !targetUserId) {
+    return { error: 'Select a learner for this schedule' };
+  }
   const next = computeNextRunAt({
     frequency: input.frequency,
     timeOfDay: input.timeOfDay,
@@ -333,7 +350,8 @@ export async function createPushSchedule(input: {
     body: input.body,
     url: input.url || '/quiz',
     image_url: imageUrl,
-    audience: input.audience || 'onesignal',
+    audience,
+    target_user_id: audience === 'user' ? targetUserId : null,
     frequency: input.frequency,
     time_of_day: input.timeOfDay,
     day_of_week: input.frequency === 'weekly' ? primaryDay : null,
@@ -398,6 +416,9 @@ function formatScheduleWriteError(message: string): string {
   if (/row-level security|42501/i.test(message)) {
     return 'Schedule blocked by RLS. Add SUPABASE_SERVICE_ROLE_KEY (Supabase → Project Settings → API → service_role) to Vercel and .env.local, then restart/redeploy.';
   }
+  if (/target_user_id/i.test(message)) {
+    return 'Push schedule learner targeting is not installed — run supabase/migrations/20260714_push_schedule_target_user.sql in Supabase.';
+  }
   if (message.includes('does not exist') || message.includes('schema cache')) {
     return 'push_schedules table missing — run SETUP_PUSH_SCHEDULES.sql in Supabase';
   }
@@ -417,6 +438,7 @@ export async function updatePushSchedule(
     dayOfWeek: number | null;
     daysOfWeek: number[] | null;
     timezone: string;
+    targetUserId: string | null;
     enabled: boolean;
   }>
 ): Promise<{ schedule?: PushSchedule; error?: string; warning?: string }> {
@@ -430,8 +452,17 @@ export async function updatePushSchedule(
 
   const existingRow = existing as PushSchedule;
   const frequency = (patch.frequency || existingRow.frequency) as PushFrequency;
+  const audience = patch.audience ?? existingRow.audience;
+  const targetUserId =
+    patch.targetUserId !== undefined
+      ? String(patch.targetUserId || '').trim() || null
+      : existingRow.target_user_id || null;
+  if (audience === 'user' && !targetUserId) {
+    return { error: 'Select a learner for this schedule' };
+  }
   const timeOfDay = patch.timeOfDay ?? existingRow.time_of_day;
   const timezone = patch.timezone || existingRow.timezone || DEFAULT_TZ;
+  if (!isValidTimeZone(timezone)) return { error: 'timezone must be a valid IANA timezone' };
 
   const days =
     frequency === 'weekly'
@@ -467,6 +498,9 @@ export async function updatePushSchedule(
   if (patch.url !== undefined) updates.url = patch.url;
   if (patch.imageUrl !== undefined) updates.image_url = patch.imageUrl || null;
   if (patch.audience !== undefined) updates.audience = patch.audience;
+  if (patch.targetUserId !== undefined || patch.audience !== undefined) {
+    updates.target_user_id = audience === 'user' ? targetUserId : null;
+  }
   if (patch.frequency !== undefined) updates.frequency = patch.frequency;
   if (patch.timeOfDay !== undefined) updates.time_of_day = patch.timeOfDay;
   if (patch.timezone !== undefined) updates.timezone = patch.timezone;
@@ -488,6 +522,9 @@ export async function updatePushSchedule(
     .single();
 
   if (error) {
+    if (/target_user_id/i.test(error.message)) {
+      return { error: formatScheduleWriteError(error.message) };
+    }
     const missingDays = /days_of_week|schema cache|column/i.test(error.message);
     const missingImage =
       patch.imageUrl !== undefined && /image_url|schema cache|column/i.test(error.message);
@@ -605,6 +642,7 @@ export async function broadcastScheduledPush(input: {
   url?: string;
   imageUrl?: string | null;
   audience?: string;
+  targetUserId?: string | null;
 }): Promise<OneSignalMultiAppResult & { campaignId?: string | null; usedAudience?: string }> {
   if (!isOneSignalServerConfigured()) {
     return { ok: false, recipients: 0, perApp: [], error: 'ONESIGNAL_REST_API_KEY not configured' };
@@ -613,6 +651,15 @@ export async function broadcastScheduledPush(input: {
   // Default to full OneSignal list — Kids Zone DB tokens often sit on the web app and
   // return 0 recipients on the primary WTN app alone.
   const requested = String(input.audience || 'onesignal').trim() || 'onesignal';
+  const targetUserId = String(input.targetUserId || '').trim();
+  if (requested === 'user' && !targetUserId) {
+    return {
+      ok: false,
+      recipients: 0,
+      perApp: [],
+      error: 'Single-learner schedule has no target user.',
+    };
+  }
   const imageUrl = String(input.imageUrl || '').trim() || undefined;
   const baseUrl = absoluteUrl(input.url || '/quiz');
   const campaignId = await createPushCampaign({
@@ -648,7 +695,19 @@ export async function broadcastScheduledPush(input: {
   // Prefer saved player IDs first (exact devices). Fall back to OneSignal
   // "Subscribed Users" only when tokens deliver nobody — avoids empty segment
   // notifications stacking on top of token sends.
-  if (requested === 'onesignal' || requested === 'subscribed') {
+  if (requested === 'user') {
+    parts.push(
+      await sendOneSignalPushMultiApp({
+        title: input.title,
+        body: input.body,
+        url: trackedUrl,
+        imageUrl,
+        externalUserIds: [targetUserId],
+        preferBothTargets: true,
+        data,
+      })
+    );
+  } else if (requested === 'onesignal' || requested === 'subscribed') {
     const tokenParts = await pushSavedTokens(tokenOpts);
     parts.push(...tokenParts);
     const tokenOk = tokenParts.some((p) => p.ok && (p.recipients ?? 0) > 0);
@@ -683,7 +742,7 @@ export async function broadcastScheduledPush(input: {
       perApp: [],
       campaignId,
       usedAudience: requested,
-      error: `Unknown audience "${requested}". Use onesignal, kids_zone, or all.`,
+      error: `Unknown audience "${requested}". Use user, onesignal, kids_zone, or all.`,
     };
   }
 
@@ -711,7 +770,7 @@ export async function runDuePushSchedules(now = new Date()): Promise<{
     .order('next_run_at', { ascending: true })
     .limit(50);
 
-  // 2) Also match by London clock time (covers wrong/null next_run_at + infrequent crons)
+  // 2) Match each schedule's local clock (covers wrong/null next_run_at).
   const allEnabled = await supabaseAdmin
     .from('push_schedules')
     .select('*')
@@ -731,21 +790,20 @@ export async function runDuePushSchedules(now = new Date()): Promise<{
     byId.set(row.id, row);
   }
 
-  const london = getZonedParts(now, DEFAULT_TZ);
-  const nowMinutes = london.hour * 60 + london.minute;
-
   for (const row of (allEnabled.data || []) as PushSchedule[]) {
     if (byId.has(row.id)) continue;
     const time = parseTimeOfDay(row.time_of_day);
     if (!time) continue;
+    const local = getZonedParts(now, row.timezone || DEFAULT_TZ);
+    const nowMinutes = local.hour * 60 + local.minute;
 
     if (row.frequency === 'weekly') {
       const days = normalizeDaysOfWeek(row);
-      if (!days.includes(london.weekday)) continue;
+      if (!days.includes(local.weekday)) continue;
     }
 
     const targetMinutes = time.hour * 60 + time.minute;
-    // Once today's UK time has passed, include it — Hobby may only cron once/day.
+    // Include the schedule once its local wall-clock time has passed.
     const delta = nowMinutes - targetMinutes;
     if (delta < 0) continue;
 
@@ -866,6 +924,7 @@ export async function runDuePushSchedules(now = new Date()): Promise<{
       url: row.url || '/quiz',
       imageUrl: row.image_url,
       audience: row.audience || 'onesignal',
+      targetUserId: row.target_user_id,
     });
 
     // Always advance next_run_at after a delivery attempt so repeated retries don't pile up.
@@ -927,6 +986,7 @@ export async function sendPushScheduleNow(
     url: schedule.url || '/quiz',
     imageUrl: schedule.image_url,
     audience: schedule.audience || 'onesignal',
+    targetUserId: schedule.target_user_id,
   });
 
   const next = computeNextRunAt({

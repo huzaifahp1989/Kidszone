@@ -49,7 +49,10 @@ export async function POST(request: Request) {
           { onConflict: 'user_id,token' }
         );
         if (fallback.error?.message?.includes('does not exist')) {
-          return NextResponse.json({ ok: false, setupRequired: true }, { status: 200 });
+          return NextResponse.json(
+            { ok: false, setupRequired: true, error: 'Push token storage is not configured.' },
+            { status: 503 }
+          );
         }
         if (fallback.error) throw fallback.error;
         return NextResponse.json({ ok: true, setupRequired: error.message?.includes('provider') });

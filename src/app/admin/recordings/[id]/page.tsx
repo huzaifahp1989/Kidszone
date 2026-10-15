@@ -285,6 +285,15 @@ export default function AdminRecordingDetail({ params }: { params: Promise<{ id:
   const durationSeconds = recording.duration ?? recording.duration_seconds ?? 0;
   const submittedAt = recording.submitted_at || recording.created_at;
   const extension = (recording.audio_path?.split('.').pop() || 'webm').toLowerCase();
+  let recordingDescription = recording.description || '';
+  try {
+    const metadata = JSON.parse(recordingDescription);
+    recordingDescription = metadata.partLabel
+      ? `${metadata.source === 'hifz' ? 'Hifz recording' : 'Quran recording'} · ${metadata.partLabel}`
+      : recordingDescription;
+  } catch {
+    /* Keep plain-text studio descriptions unchanged. */
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 py-8 px-4">
@@ -318,10 +327,10 @@ export default function AdminRecordingDetail({ params }: { params: Promise<{ id:
                 </div>
               </div>
               
-              {(recording.story?.summary || recording.description) && (
+              {(recording.story?.summary || recordingDescription) && (
                 <div className="bg-gray-50 p-4 rounded-xl mb-4">
                   <p className="text-sm text-gray-600 italic">
-                    "{recording.story?.summary || recording.description}"
+                    "{recording.story?.summary || recordingDescription}"
                   </p>
                 </div>
               )}

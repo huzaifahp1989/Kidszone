@@ -190,7 +190,7 @@ export async function POST(request: Request) {
       });
     }
 
-    const periodType = String(body?.periodType || 'weekly').trim() as 'weekly' | 'monthly' | 'quarterly';
+    const periodType = String(body?.periodType || 'quarterly').trim() as 'weekly' | 'monthly' | 'quarterly';
     const periodKey = String(body?.periodKey || '').trim();
     const displayName = String(body?.displayName || body?.winnerName || '').trim();
     let userId = String(body?.userId || '').trim() || null;

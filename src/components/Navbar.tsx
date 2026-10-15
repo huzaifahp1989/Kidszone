@@ -1,8 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Heart, LogOut, Menu, X, ChevronDown } from 'lucide-react';
+import { Heart, LogOut, Menu, X, ChevronDown, UserRound } from 'lucide-react';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
+import { GlobalNoticeBell } from '@/components/GlobalNoticeBell';
 import {
   ALL_NAV_ITEMS,
   CHAT_ITEM,
@@ -12,9 +13,7 @@ import {
   isGroupActive,
   isNavActive,
 } from '@/lib/nav-config';
-import { getKidLevelTitle } from '@/lib/level-names';
-
-const SUPPORT_DONATE_URL = 'https://islam-media-donate.vercel.app/';
+import { getKidRank } from '@/lib/level-names';
 
 interface NavbarUser {
   name: string;
@@ -33,29 +32,6 @@ interface NavbarProps {
   loading?: boolean;
 }
 
-function SupportDonateLink({ compact = false }: { compact?: boolean }) {
-  return (
-    <a
-      href={SUPPORT_DONATE_URL}
-      target="_blank"
-      rel="noopener noreferrer"
-      title="Support with a little donation"
-      aria-label="Support with a little donation"
-      className={
-        compact
-          ? 'inline-flex items-center gap-1 rounded-xl bg-gradient-to-r from-rose-500 to-rose-600 px-2.5 py-2 text-xs font-bold text-white shadow-md transition hover:shadow-lg interactive-focus touch-target sm:px-3 sm:text-sm'
-          : 'inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-rose-500 to-rose-600 px-3.5 py-2.5 text-sm font-bold text-white shadow-md transition transition-bouncy hover:shadow-lg interactive-focus touch-target'
-      }
-    >
-      <Heart size={compact ? 14 : 16} className="fill-white/90" aria-hidden />
-      <span className="leading-tight">
-        {compact ? 'Donate' : 'Support'}
-        {!compact && <span className="hidden xl:inline"> · little gift</span>}
-      </span>
-    </a>
-  );
-}
-
 export const Navbar: React.FC<NavbarProps> = ({ username, points, level, badges, onLogout, user, loading }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [openGroup, setOpenGroup] = useState<NavGroupId | null>(null);
@@ -66,8 +42,8 @@ export const Navbar: React.FC<NavbarProps> = ({ username, points, level, badges,
 
   const displayUsername = username || user?.name;
   const displayPoints = points !== undefined ? points : user?.points;
-  const displayLevel = getKidLevelTitle(level || user?.level);
   const displayBadges = badges !== undefined ? badges : user?.badges;
+  const displayRank = getKidRank(displayPoints);
 
   // Close any open menus when the route changes.
   useEffect(() => {
@@ -123,7 +99,7 @@ export const Navbar: React.FC<NavbarProps> = ({ username, points, level, badges,
                 Kids Zone
               </h1>
               <p className="hidden text-[10px] font-semibold uppercase tracking-[0.16em] text-sand-500 sm:block">
-                Islamic Learning
+                Islam Media Central
               </p>
             </div>
           </Link>
@@ -227,20 +203,30 @@ export const Navbar: React.FC<NavbarProps> = ({ username, points, level, badges,
 
           {/* Desktop User Actions */}
           <div className="hidden md:flex items-center gap-3">
-            <SupportDonateLink />
+            <GlobalNoticeBell />
             {loading ? (
               <div className="flex items-center gap-2">
-                <div className="w-20 h-8 bg-[#dbeafe] rounded-xl animate-pulse"></div>
-                <div className="w-12 h-8 bg-[#dbeafe] rounded-xl animate-pulse"></div>
+                <div className="w-20 h-8 bg-teal-100 rounded-xl animate-pulse"></div>
+                <div className="w-12 h-8 bg-teal-100 rounded-xl animate-pulse"></div>
               </div>
             ) : displayUsername ? (
               <>
-                <div className="flex items-center gap-2 rounded-xl border border-sand-200/60 bg-gradient-to-r from-sand-50 to-teal-50/50 px-4 py-2 shadow-sm">
+                <Link href="/rank" className="flex items-center gap-2 rounded-xl border border-sand-200/60 bg-gradient-to-r from-sand-50 to-teal-50/50 px-4 py-2 shadow-sm transition hover:border-teal-300 hover:bg-teal-50 interactive-focus">
                   <div className="text-right">
                     <p className="text-sm font-bold text-sand-900">{displayUsername}</p>
-                    <p className="text-xs text-sand-600">{displayLevel || 'Beginner'}</p>
+                    <p className="text-xs text-teal-700">{displayRank.emoji} {displayRank.title}</p>
                   </div>
-                </div>
+                </Link>
+
+                <Link
+                  href="/profile"
+                  aria-label="Profile"
+                  title="Profile"
+                  className="inline-flex items-center gap-2 rounded-xl border border-teal-200 bg-white px-3 py-2 text-sm font-semibold text-teal-800 shadow-sm transition hover:bg-teal-50 interactive-focus touch-target"
+                >
+                  <UserRound size={18} aria-hidden="true" />
+                  <span>Profile</span>
+                </Link>
 
                 <div className="flex gap-2">
                   <div className="rounded-xl bg-gradient-to-br from-gold-400 to-gold-600 px-3 py-2 text-white shadow-md">
@@ -270,7 +256,7 @@ export const Navbar: React.FC<NavbarProps> = ({ username, points, level, badges,
               <div className="flex items-center gap-2">
                 <Link
                   href="/signin"
-                  className="px-4 py-2.5 text-[#1e3a8a] font-semibold hover:bg-[#dbeafe] rounded-xl transition interactive-focus touch-target"
+                  className="px-4 py-2.5 text-teal-900 font-semibold hover:bg-teal-100 rounded-xl transition interactive-focus touch-target"
                 >
                   Sign In
                 </Link>
@@ -284,11 +270,19 @@ export const Navbar: React.FC<NavbarProps> = ({ username, points, level, badges,
             )}
           </div>
 
-          {/* Tablet / phone: donate (phones) + auth + hamburger */}
+          {/* Tablet / phone: profile, auth, and hamburger */}
           <div className="flex items-center gap-1.5 sm:gap-2 lg:hidden shrink-0">
-            <span className="md:hidden">
-              <SupportDonateLink compact />
-            </span>
+            {!loading && displayUsername && (
+              <Link
+                href="/profile"
+                aria-label="Profile"
+                title="Profile"
+                className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-teal-200 bg-white text-teal-800 shadow-sm transition hover:bg-teal-50 interactive-focus touch-target"
+              >
+                <UserRound size={19} aria-hidden="true" />
+              </Link>
+            )}
+            <GlobalNoticeBell compact />
             {!loading && !displayUsername && (
               <>
                 <Link
@@ -306,7 +300,7 @@ export const Navbar: React.FC<NavbarProps> = ({ username, points, level, badges,
               </>
             )}
             <button
-              className="hidden sm:inline-flex p-2.5 text-[#1e3a8a] hover:bg-[#dbeafe] rounded-xl transition interactive-focus touch-target border border-[#bfdbfe]/60 bg-white/60"
+              className="hidden sm:inline-flex p-2.5 text-teal-900 hover:bg-teal-100 rounded-xl transition interactive-focus touch-target border border-teal-200/60 bg-white/60"
               onClick={() => setIsMenuOpen(!isMenuOpen)}
               aria-expanded={isMenuOpen}
               aria-controls="mobile-main-menu"
@@ -322,7 +316,7 @@ export const Navbar: React.FC<NavbarProps> = ({ username, points, level, badges,
           {isMenuOpen && (
           <motion.div
             id="mobile-main-menu"
-            className="lg:hidden py-4 border-t border-[#93c5fd]/40"
+            className="lg:hidden py-4 border-t border-teal-300/40"
             initial={reduceMotion ? undefined : { opacity: 0, y: -8 }}
             animate={reduceMotion ? undefined : { opacity: 1, y: 0 }}
             exit={reduceMotion ? undefined : { opacity: 0, y: -8 }}
@@ -343,8 +337,8 @@ export const Navbar: React.FC<NavbarProps> = ({ username, points, level, badges,
                           href={item.href}
                           className={`flex items-center gap-3 px-4 py-3 rounded-xl font-semibold transition-all interactive-focus touch-target ${
                             active
-                              ? 'bg-gradient-to-r from-[#dbeafe] to-[#dbeafe] text-[#1d4ed8]'
-                              : 'text-[#1e3a8a] hover:bg-[#eff6ff] hover:text-[#1d4ed8]'
+                              ? 'bg-gradient-to-r from-teal-100 to-teal-100 text-teal-700'
+                              : 'text-teal-900 hover:bg-teal-50 hover:text-teal-700'
                           }`}
                           onClick={() => setIsMenuOpen(false)}
                           aria-current={active ? 'page' : undefined}
@@ -368,8 +362,8 @@ export const Navbar: React.FC<NavbarProps> = ({ username, points, level, badges,
                       href={item.href}
                       className={`flex items-center gap-3 px-4 py-3 rounded-xl font-semibold transition-all interactive-focus touch-target ${
                         active
-                          ? 'bg-gradient-to-r from-[#dbeafe] to-[#dbeafe] text-[#1d4ed8]'
-                          : 'text-[#1e3a8a] hover:bg-[#eff6ff] hover:text-[#1d4ed8]'
+                          ? 'bg-gradient-to-r from-teal-100 to-teal-100 text-teal-700'
+                          : 'text-teal-900 hover:bg-teal-50 hover:text-teal-700'
                       }`}
                       onClick={() => setIsMenuOpen(false)}
                       aria-current={active ? 'page' : undefined}
@@ -381,22 +375,22 @@ export const Navbar: React.FC<NavbarProps> = ({ username, points, level, badges,
                 })}
               </div>
 
-              <div className="mt-2 pt-4 border-t border-[#93c5fd]/30">
+              <div className="mt-2 pt-4 border-t border-teal-300/30">
                 {loading ? (
                   <div className="px-4 py-3">
-                    <div className="w-32 h-6 bg-[#dbeafe] rounded animate-pulse mb-2"></div>
-                    <div className="w-20 h-4 bg-[#dbeafe] rounded animate-pulse"></div>
+                    <div className="w-32 h-6 bg-teal-100 rounded animate-pulse mb-2"></div>
+                    <div className="w-20 h-4 bg-teal-100 rounded animate-pulse"></div>
                   </div>
                 ) : displayUsername ? (
                   <div className="space-y-3 px-4">
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="font-bold text-[#1e3a8a]">{displayUsername}</p>
-                        <p className="text-sm text-[#475569]">{displayLevel || 'Beginner'}</p>
+                        <p className="font-bold text-teal-900">{displayUsername}</p>
+                        <p className="text-sm text-teal-700">{displayRank.emoji} {displayRank.title}</p>
                       </div>
                       <div className="flex gap-2">
                         <span className="text-sm font-bold text-[#f59e0b]">⭐ {displayPoints || 0}</span>
-                        <span className="text-sm font-bold text-[#1d4ed8]">🏆 {displayBadges || 0}</span>
+                        <span className="text-sm font-bold text-teal-700">🏆 {displayBadges || 0}</span>
                       </div>
                     </div>
 
@@ -420,7 +414,7 @@ export const Navbar: React.FC<NavbarProps> = ({ username, points, level, badges,
                     <Link
                       href="/signin"
                       onClick={() => setIsMenuOpen(false)}
-                      className="w-full text-center py-3 text-[#1e3a8a] font-semibold hover:bg-[#dbeafe] rounded-xl transition interactive-focus touch-target"
+                      className="w-full text-center py-3 text-teal-900 font-semibold hover:bg-teal-100 rounded-xl transition interactive-focus touch-target"
                     >
                       Sign In
                     </Link>

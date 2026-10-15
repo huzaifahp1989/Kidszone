@@ -10,7 +10,7 @@ export type AdminNotificationCounts = {
   recordings: number;
   competition: number;
   seerah: number;
-  manualQuiz: number;
+  writtenCompetition: number;
 };
 
 export async function GET(request: Request) {
@@ -23,7 +23,7 @@ export async function GET(request: Request) {
     recordings: 0,
     competition: 0,
     seerah: 0,
-    manualQuiz: 0,
+    writtenCompetition: 0,
   };
 
   try {
@@ -55,6 +55,17 @@ export async function GET(request: Request) {
       .is('reviewed_at', null);
 
     if (!seerahError) counts.seerah = seerahCount || 0;
+  } catch {
+    /* table may not exist */
+  }
+
+  try {
+    const { count: writtenCount, error: writtenError } = await supabaseAdmin
+      .from('written_competition_submissions')
+      .select('*', { count: 'exact', head: true })
+      .in('status', ['pending_review', 'under_review']);
+
+    if (!writtenError) counts.writtenCompetition = writtenCount || 0;
   } catch {
     /* table may not exist */
   }
@@ -93,17 +104,6 @@ export async function GET(request: Request) {
     if (!isMissingChatTable(error)) {
       console.error('[admin notification-counts] chat:', getErrorMessage(error));
     }
-  }
-
-  try {
-    const { count: manualCount, error: manualErr } = await supabaseAdmin
-      .from('manual_quiz_submissions')
-      .select('*', { count: 'exact', head: true })
-      .in('status', ['pending', 'reviewing']);
-
-    if (!manualErr) counts.manualQuiz = manualCount || 0;
-  } catch {
-    /* table may not exist */
   }
 
   return NextResponse.json({ counts });

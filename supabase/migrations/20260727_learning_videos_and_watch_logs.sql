@@ -8,6 +8,7 @@ CREATE TABLE IF NOT EXISTS public.learning_videos (
   thumbnail_url TEXT,
   duration_seconds INT,
   points_reward INT NOT NULL DEFAULT 25 CHECK (points_reward >= 0 AND points_reward <= 200),
+  category TEXT NOT NULL DEFAULT 'other' CHECK (category IN ('quran', 'nasheed', 'story', 'hadith', 'other')),
   is_active BOOLEAN NOT NULL DEFAULT TRUE,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()

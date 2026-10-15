@@ -15,8 +15,13 @@ export const RELATION_MISSING = '42P01';
  * True when an error means the table is not available: either it does not exist
  * (`42P01`) or PostgREST cannot see it in its schema cache yet (`PGRST205`).
  */
-export function isMissingTableError(error: { code?: string } | null | undefined): boolean {
-  return error?.code === '42P01' || error?.code === 'PGRST205';
+export function isMissingTableError(
+  error: { code?: string; message?: string } | null | undefined
+): boolean {
+  if (!error) return false;
+  if (error.code === '42P01' || error.code === 'PGRST205') return true;
+  const message = String(error.message || '').toLowerCase();
+  return message.includes('schema cache') && message.includes('could not find the table');
 }
 
 function mapRow(row: Record<string, unknown>): ChallengeQuestion {

@@ -2,7 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { Sparkles, HelpCircle } from 'lucide-react';
+import { Sparkles, HelpCircle, Trophy } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
 import {
   ACTIVITY_BONUS_POINTS,
@@ -11,6 +11,7 @@ import {
   MAX_DAILY_QUIZ_ATTEMPTS,
   POINTS_DAILY_CAP,
   QUIZ_POINTS_PER_COMPLETION,
+  getBadgePointProgress,
 } from '@/lib/points-policy';
 
 type DailyPointsBarProps = {
@@ -25,8 +26,10 @@ export function DailyPointsBar({ quizAttemptsUsed, compact = false, className = 
   if (!user) return null;
 
   const todayPoints = Number(profile?.todayPoints ?? 0);
+  const totalPoints = Math.max(0, Number(profile?.points ?? 0));
   const remaining = Math.max(0, POINTS_DAILY_CAP - todayPoints);
   const progressPct = Math.min(100, (todayPoints / POINTS_DAILY_CAP) * 100);
+  const badgeProgress = getBadgePointProgress(totalPoints);
   const atDailyCap = remaining <= 0;
   const quizzesDone = typeof quizAttemptsUsed === 'number' && quizAttemptsUsed >= MAX_DAILY_QUIZ_ATTEMPTS;
   const showActivityHint = quizzesDone && !atDailyCap;
@@ -34,27 +37,39 @@ export function DailyPointsBar({ quizAttemptsUsed, compact = false, className = 
   if (compact) {
     return (
       <div
-        className={`flex items-center gap-2 rounded-xl border border-violet-200 bg-violet-50/90 px-3 py-2 text-sm ${className}`}
+        className={`flex items-center gap-2 rounded-xl border border-teal-200 bg-teal-50/90 px-3 py-2 text-sm ${className}`}
         aria-label={`${remaining} points left today out of ${POINTS_DAILY_CAP}`}
       >
-        <Sparkles size={16} className="shrink-0 text-violet-600" />
+        <Sparkles size={16} className="shrink-0 text-teal-600" />
         <div className="min-w-0 flex-1">
-          <div className="flex items-center justify-between gap-2 text-xs font-bold text-violet-900">
+          <div className="flex items-center justify-between gap-2 text-xs font-bold text-teal-900">
             <span>Today: {todayPoints}/{POINTS_DAILY_CAP}</span>
-            <span className={atDailyCap ? 'text-emerald-700' : 'text-violet-700'}>
+            <span className={atDailyCap ? 'text-emerald-700' : 'text-teal-700'}>
               {atDailyCap ? 'Daily max reached!' : `${remaining} left`}
             </span>
           </div>
-          <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-violet-100">
+          <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-teal-100">
             <div
-              className="h-full rounded-full bg-gradient-to-r from-violet-500 to-fuchsia-500 transition-all"
+              className="h-full rounded-full bg-gradient-to-r from-teal-500 to-gold-400 transition-all"
               style={{ width: `${progressPct}%` }}
+            />
+          </div>
+          <div className="mt-2 flex items-center justify-between gap-2 text-[10px] font-bold text-amber-800">
+            <span className="inline-flex items-center gap-1">
+              <Trophy size={12} aria-hidden="true" /> Next badge
+            </span>
+            <span>{badgeProgress.pointsToNextBadge} pts to go</span>
+          </div>
+          <div className="mt-1 h-1 overflow-hidden rounded-full bg-amber-100">
+            <div
+              className="h-full rounded-full bg-amber-500 transition-all"
+              style={{ width: `${badgeProgress.progressPercent}%` }}
             />
           </div>
         </div>
         <Link
           href="/guide"
-          className="shrink-0 inline-flex items-center gap-1 rounded-lg bg-white px-2 py-1 text-[10px] font-bold text-violet-800 ring-1 ring-violet-200 hover:bg-violet-100"
+          className="shrink-0 inline-flex items-center gap-1 rounded-lg bg-white px-2 py-1 text-[10px] font-bold text-teal-800 ring-1 ring-teal-200 hover:bg-teal-100"
           title="How to earn points"
         >
           <HelpCircle size={12} />
@@ -65,60 +80,72 @@ export function DailyPointsBar({ quizAttemptsUsed, compact = false, className = 
   }
 
   return (
-    <div className={`rounded-2xl border border-violet-200 bg-gradient-to-br from-violet-50 to-white p-4 ${className}`}>
+    <div className={`rounded-2xl border border-teal-200 bg-gradient-to-br from-teal-50 to-white p-4 ${className}`}>
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <p className="flex items-center gap-2 text-sm font-bold text-violet-900">
-            <Sparkles size={16} className="text-violet-600" />
+          <p className="flex items-center gap-2 text-sm font-bold text-teal-900">
+            <Sparkles size={16} className="text-teal-600" />
             Daily points
           </p>
-          <p className="mt-1 text-2xl font-black text-slate-900">
+          <p className="mt-1 text-2xl font-black text-sand-900">
             {todayPoints}
-            <span className="text-lg font-bold text-slate-500"> / {POINTS_DAILY_CAP}</span>
+            <span className="text-lg font-bold text-sand-500"> / {POINTS_DAILY_CAP}</span>
           </p>
         </div>
         <div className="text-right">
-          <p className="text-xs font-bold uppercase tracking-wide text-slate-500">Points left today</p>
-          <p className={`text-3xl font-black ${atDailyCap ? 'text-emerald-600' : 'text-violet-700'}`}>
+          <p className="text-xs font-bold uppercase tracking-wide text-sand-500">Points left today</p>
+          <p className={`text-3xl font-black ${atDailyCap ? 'text-emerald-600' : 'text-teal-700'}`}>
             {atDailyCap ? '0' : remaining}
           </p>
         </div>
       </div>
 
-      <div className="mt-3 h-3 overflow-hidden rounded-full bg-violet-100">
+      <div className="mt-3 h-3 overflow-hidden rounded-full bg-teal-100">
         <div
-          className="h-full rounded-full bg-gradient-to-r from-violet-500 via-fuchsia-500 to-amber-400 transition-all duration-500"
+          className="h-full rounded-full bg-gradient-to-r from-teal-500 via-teal-400 to-gold-400 transition-all duration-500"
           style={{ width: `${progressPct}%` }}
         />
       </div>
 
-      <p className="mt-2 text-xs text-slate-600">
+      <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2">
+        <div className="flex items-center justify-between gap-2 text-sm font-bold text-amber-900">
+          <span className="inline-flex items-center gap-1.5">
+            <Trophy size={15} aria-hidden="true" /> Next badge
+          </span>
+          <span>{badgeProgress.pointsToNextBadge} points to go</span>
+        </div>
+        <div className="mt-2 h-2 overflow-hidden rounded-full bg-amber-100">
+          <div className="h-full rounded-full bg-amber-500 transition-all" style={{ width: `${badgeProgress.progressPercent}%` }} />
+        </div>
+      </div>
+
+      <p className="mt-2 text-xs text-sand-600">
         Daily plan ({DAILY_PLAN_TOTAL_POINTS} pts): {MAX_DAILY_QUIZ_ATTEMPTS} quizzes × {QUIZ_POINTS_PER_COMPLETION} ·{' '}
         {MAX_DAILY_GAME_COMPLETIONS} games × {ACTIVITY_BONUS_POINTS} · Story quiz · Durood · Zikr · Hadith · Salah ·{' '}
-        <Link href="/guide" className="font-bold text-violet-700 hover:underline">
+        <Link href="/guide" className="font-bold text-teal-700 hover:underline">
           Full guide
         </Link>
       </p>
 
       {showActivityHint && (
-        <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-950">
+        <div className="mt-3 rounded-xl border border-gold-200 bg-gold-50 p-3 text-sm text-sand-900">
           <p className="font-bold">Both quizzes done — {remaining} points left today!</p>
           <p className="mt-1">Try games, story quizzes, Durood, Zikr, Hadith, or Salah — each earns +{ACTIVITY_BONUS_POINTS} points.</p>
           <div className="mt-3 flex flex-wrap gap-2">
-            <Link href="/games" className="rounded-lg bg-white px-3 py-1.5 text-xs font-bold text-violet-800 ring-1 ring-violet-200 hover:bg-violet-50">
-              🎮 Games
+            <Link href="/games" className="rounded-lg bg-white px-3 py-1.5 text-xs font-bold text-teal-800 ring-1 ring-teal-200 hover:bg-teal-50">
+              Games
             </Link>
-            <Link href="/stories" className="rounded-lg bg-white px-3 py-1.5 text-xs font-bold text-violet-800 ring-1 ring-violet-200 hover:bg-violet-50">
-              📚 Stories
+            <Link href="/stories" className="rounded-lg bg-white px-3 py-1.5 text-xs font-bold text-teal-800 ring-1 ring-teal-200 hover:bg-teal-50">
+              Stories
             </Link>
-            <Link href="/pledge" className="rounded-lg bg-white px-3 py-1.5 text-xs font-bold text-violet-800 ring-1 ring-violet-200 hover:bg-violet-50">
-              📿 Pledge
+            <Link href="/pledge" className="rounded-lg bg-white px-3 py-1.5 text-xs font-bold text-teal-800 ring-1 ring-teal-200 hover:bg-teal-50">
+              Pledge
             </Link>
-            <Link href="/hadith" className="rounded-lg bg-white px-3 py-1.5 text-xs font-bold text-violet-800 ring-1 ring-violet-200 hover:bg-violet-50">
-              📖 Hadith
+            <Link href="/hadith" className="rounded-lg bg-white px-3 py-1.5 text-xs font-bold text-teal-800 ring-1 ring-teal-200 hover:bg-teal-50">
+              Hadith
             </Link>
-            <Link href="/salah" className="rounded-lg bg-white px-3 py-1.5 text-xs font-bold text-violet-800 ring-1 ring-violet-200 hover:bg-violet-50">
-              🕌 Salah
+            <Link href="/salah" className="rounded-lg bg-white px-3 py-1.5 text-xs font-bold text-teal-800 ring-1 ring-teal-200 hover:bg-teal-50">
+              Salah
             </Link>
           </div>
         </div>

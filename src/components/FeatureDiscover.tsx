@@ -23,6 +23,7 @@ const YOUNGER_EMOJI: Record<string, string> = {
   '/quiz': '🧠',
   '/games': '🎮',
   '/create': '🎨',
+  '/kids-channel': '📺',
   '/quiz-challenge': '✨',
   '/audio-quiz': '🎙️',
   '/quran/learn': '📖',
@@ -41,8 +42,12 @@ const YOUNGER_EMOJI: Record<string, string> = {
   '/donations': '🪙',
   '/leaderboard': '🏆',
   '/rewards': '🎁',
+  '/stars': '⭐',
+  '/points-calendar': '📅',
   '/guide': '⭐',
   '/chat': '💬',
+  '/competitions/written': '✍️',
+  '/competitions/rabi-ul-awwal': '🌙',
 };
 
 const YOUNGER_COLOR_ROTATION: Array<'blue' | 'green' | 'yellow' | 'pink' | 'purple' | 'orange'> = [

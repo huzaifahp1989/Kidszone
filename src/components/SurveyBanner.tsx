@@ -3,7 +3,7 @@
 import { MessageSquareHeart, ExternalLink, Sparkles } from 'lucide-react';
 
 const SURVEY_URL =
-  'https://docs.google.com/forms/d/1Cl6yO9GA8UgvUfoSiFuSEyA3Q9O0WMSMLxtNo75DPG4/viewform';
+  'https://docs.google.com/forms/d/1BUqre1m5LhF9ImlIgJ-C3s_r-2xV66M1y1WUWXmIfoY/viewform';
 
 type SurveyBannerProps = {
   compact?: boolean;
@@ -23,9 +23,9 @@ export function SurveyBanner({ compact = false }: SurveyBannerProps) {
               <MessageSquareHeart size={22} />
             </div>
             <div>
-              <h3 className="text-xl font-black text-slate-900">Take the survey to earn 50 points</h3>
+              <h3 className="text-xl font-black text-slate-900">Please take 1 minute to fill in the survey</h3>
               <p className="mt-1 text-sm text-slate-600">
-                Share quick feedback about Kids Zone in our new survey form. It opens in a new tab so it is easy for children and parents to complete.
+                It is very important for us. Share quick feedback about Kids Zone — the form opens in a new tab.
               </p>
             </div>
           </div>
@@ -35,7 +35,7 @@ export function SurveyBanner({ compact = false }: SurveyBannerProps) {
             href={SURVEY_URL}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-[#7c3aed] to-[#6d28d9] px-5 py-3 text-sm font-bold text-white shadow-lg transition hover:-translate-y-0.5 hover:shadow-xl"
+            className="inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-teal-600 to-teal-700 px-5 py-3 text-sm font-bold text-white shadow-lg transition hover:-translate-y-0.5 hover:shadow-xl"
           >
             Take the survey
             <ExternalLink size={16} />

@@ -4,7 +4,7 @@ import {
   isPlaceholderSupabaseUrl,
   resolvePublicSupabaseUrl,
 } from '@/lib/supabase-public-config';
-import { LIVE_APP_URL } from '@/lib/app-url';
+import { getAppUrl } from '@/lib/app-url';
 
 describe('supabase-public-config', () => {
   it('detects placeholder URLs', () => {
@@ -39,7 +39,11 @@ describe('supabase-public-config', () => {
 });
 
 describe('live app URL', () => {
-  it('points at the deployment with the fixed quiz bundle', () => {
-    expect(LIVE_APP_URL).toContain('huzaifahp1989-audio.vercel.app');
+  it('points at the canonical Vercel deployment when configured', () => {
+    const prev = process.env.NEXT_PUBLIC_APP_URL;
+    process.env.NEXT_PUBLIC_APP_URL = 'https://islamic-kids-platform.vercel.app';
+    expect(getAppUrl()).toBe('https://islamic-kids-platform.vercel.app');
+    if (prev === undefined) delete process.env.NEXT_PUBLIC_APP_URL;
+    else process.env.NEXT_PUBLIC_APP_URL = prev;
   });
 });

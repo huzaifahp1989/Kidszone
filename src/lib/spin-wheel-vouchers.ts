@@ -7,7 +7,6 @@ const REWARD_SLUG_HINTS: Record<string, string[]> = {
   'grubbins-eat-out': ['grubbins-eat', 'grubbins eat', 'eat-out'],
   'asli-zaiqa': ['asli-zaiqa', 'asli zaiqa', 'zaiqa'],
   'spin-pin': ['spin-pin', 'spin pin'],
-  'munch-out-takeaway': ['munch-out', 'munch out'],
   'al-qasswah': ['al-qasswah', 'qasswah', 'al qasswah'],
   grubbins: ['grubbins'],
 };

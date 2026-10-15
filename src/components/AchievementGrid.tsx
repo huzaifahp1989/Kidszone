@@ -19,15 +19,24 @@ const CATEGORY_LABELS: Record<string, string> = {
   habits: 'Habits',
   sadaqah: 'Sadaqah',
   general: 'All-rounder',
+  quran: 'Quran',
+  arabic: 'Arabic',
+  hadith: 'Hadith',
 };
 
 export function AchievementGrid({ compact = false }: { compact?: boolean }) {
   const { user, profile } = useAuth();
   const [summary, setSummary] = useState<ActivitySummary | null>(null);
+  const profileStreak = profile?.streak;
+  const profilePoints = profile?.points;
+  const profileSummary = useMemo(
+    () => EMPTY_SUMMARY({ streak: profileStreak, points: profilePoints }),
+    [profileStreak, profilePoints]
+  );
 
   useEffect(() => {
     if (!user?.id) {
-      setSummary(EMPTY_SUMMARY(profile));
+      setSummary(profileSummary);
       return;
     }
 
@@ -38,21 +47,21 @@ export function AchievementGrid({ compact = false }: { compact?: boolean }) {
         if (!active) return;
         if (data?.stats) {
           setSummary({
-            ...EMPTY_SUMMARY(profile),
+            ...profileSummary,
             ...(data.stats as Partial<ActivitySummary>),
           });
         } else {
-          setSummary(EMPTY_SUMMARY(profile));
+          setSummary(profileSummary);
         }
       })
       .catch(() => {
-        if (active) setSummary(EMPTY_SUMMARY(profile));
+        if (active) setSummary(profileSummary);
       });
 
     return () => {
       active = false;
     };
-  }, [user?.id, profile?.streak, profile?.points]);
+  }, [user?.id, profileSummary]);
 
   const achievements = useMemo<AchievementStatus[]>(() => {
     if (!summary) return [];
@@ -88,7 +97,7 @@ export function AchievementGrid({ compact = false }: { compact?: boolean }) {
           {achievements.map((a) => (
             <span
               key={a.id}
-              title={a.description}
+              title={`${a.description} (${a.progress}/${a.target} ${a.unit})`}
               className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-bold ${
                 a.unlocked
                   ? 'bg-amber-100 text-amber-900 border border-amber-300'
@@ -97,6 +106,7 @@ export function AchievementGrid({ compact = false }: { compact?: boolean }) {
             >
               <span>{a.emoji}</span>
               <span>{a.label}</span>
+              <span className="text-[10px] opacity-80">{a.progress}/{a.target}</span>
             </span>
           ))}
         </div>
@@ -111,7 +121,7 @@ export function AchievementGrid({ compact = false }: { compact?: boolean }) {
           <p className="text-xs font-bold uppercase tracking-[0.14em] text-amber-800">Collectibles</p>
           <h3 className="mt-1 font-heading text-xl font-bold text-sand-900">Badge gallery</h3>
           <p className="mt-1 text-sm text-sand-600">
-            {unlocked} of {achievements.length} unlocked — habits, quizzes & sadaqah!
+            {unlocked} of {achievements.length} unlocked — quizzes, Quran, streaks & good habits!
           </p>
         </div>
       </div>
@@ -136,6 +146,22 @@ export function AchievementGrid({ compact = false }: { compact?: boolean }) {
                   <div className="text-3xl">{a.emoji}</div>
                   <p className="mt-2 text-sm font-bold text-sand-900">{a.label}</p>
                   <p className="mt-1 text-[11px] leading-snug text-sand-600">{a.description}</p>
+                  <p className="mt-2 text-[11px] font-semibold text-sand-700">
+                    {a.progress}/{a.target} {a.unit}
+                  </p>
+                  <div
+                    className="mt-1 h-1.5 overflow-hidden rounded-full bg-slate-100"
+                    role="progressbar"
+                    aria-label={`${a.label} progress`}
+                    aria-valuemin={0}
+                    aria-valuemax={a.target}
+                    aria-valuenow={a.progress}
+                  >
+                    <div
+                      className={`h-full rounded-full ${a.unlocked ? 'bg-amber-500' : 'bg-teal-500'}`}
+                      style={{ width: `${(a.progress / a.target) * 100}%` }}
+                    />
+                  </div>
                 </div>
               ))}
             </div>

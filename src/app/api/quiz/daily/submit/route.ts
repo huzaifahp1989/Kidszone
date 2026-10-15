@@ -4,10 +4,11 @@ import { ensureUserRecords } from '@/lib/ensure-user-records';
 import { awardPointsWithDailyCapByUserId, readAuthoritativePointsSnapshot } from '@/lib/server-points';
 import { getStaticQuiz } from '@/lib/quiz-generator';
 import { filterQuestionsByTopic, getDailyTopicSeed, parseTopicQuizId } from '@/lib/quiz-topics';
-import { resolveTopicQuizQuestionsFromIds, resolveSubmittedTopicQuestions } from '@/lib/quiz-topic-questions';
+import { resolveTopicQuizQuestionsFromIds, resolveSubmittedTopicQuestions, rotateTopicQuizOptions } from '@/lib/quiz-topic-questions';
 import { getTopicQuestionExclusions } from '@/lib/quiz-user-history';
 import { isTestModeEmail } from '@/lib/test-mode';
-import { POINTS_DAILY_CAP, QUIZ_POINTS_PER_COMPLETION, MAX_DAILY_QUIZ_ATTEMPTS } from '@/lib/points-policy';
+import { POINTS_DAILY_CAP, MAX_DAILY_QUIZ_ATTEMPTS } from '@/lib/points-policy';
+import { getPointsConfigValue } from '@/lib/points-config';
 import { createSessionQuizRecordId, createSessionQuizRecordIdResilient } from '@/lib/topic-quiz-record';
 import { insertQuizAttempt } from '@/lib/quiz-attempt-insert';
 import { randomUUID } from 'crypto';
@@ -192,7 +193,7 @@ async function awardQuizPoints(userId: string, totalPoints: number, isTestMode: 
   }
 
   const result = await awardPointsWithDailyCapByUserId(userId, totalPoints, {
-    successMessage: `Topic completed! +${QUIZ_POINTS_PER_COMPLETION} points added to leaderboard.`,
+    successMessage: `Topic completed! +${totalPoints} points added to leaderboard.`,
     knownIsTestMode: isTestMode,
     skipEnsureUserRecords: true,
   });
@@ -284,6 +285,7 @@ export async function POST(req: Request) {
 
     // Compute test mode from the already-validated token email (no extra auth round trip).
     const isTestMode = isTestModeEmail(auth.user.email);
+    const quizPoints = await getPointsConfigValue('quiz_correct');
 
     if (quizId.startsWith('topic-')) {
       const parsed = parseTopicQuizId(String(quizId));
@@ -331,7 +333,7 @@ export async function POST(req: Request) {
       }
       const priorAttemptsToday = limit.attemptsToday;
 
-      const activeQuestions =
+      const selectedQuestions =
         hasTrustedClientQuestions
           ? fromClient
           : resolveTopicQuizQuestionsFromIds(
@@ -342,6 +344,13 @@ export async function POST(req: Request) {
               [...new Set([...exclusions.today, ...exclusions.recent])],
               exclusions.attemptsToday
             );
+
+      const activeQuestions = rotateTopicQuizOptions(
+        selectedQuestions,
+        daySeedFromId,
+        userId,
+        topicFromId
+      );
 
       if (!activeQuestions.length) {
         return json(req, { error: 'No questions available for this topic.' }, { status: 400 });
@@ -381,7 +390,7 @@ export async function POST(req: Request) {
       const score = correctCount * 10;
       const maxScore = activeQuestions.length * 10;
       const isCompletedTopic = activeQuestions.every((q: any) => Object.prototype.hasOwnProperty.call(answers, String(q.id)));
-      const totalPoints = isCompletedTopic ? QUIZ_POINTS_PER_COMPLETION : 0;
+      const totalPoints = isCompletedTopic ? quizPoints : 0;
 
       const { error: attemptError } = await insertQuizAttempt({
         user_id: userId,
@@ -423,7 +432,7 @@ export async function POST(req: Request) {
       const finalPointsAwarded = awardResult.pointsAwarded;
       const awardMessage =
         finalPointsAwarded > 0
-          ? `Topic completed! +${QUIZ_POINTS_PER_COMPLETION} points added to leaderboard.`
+          ? `Topic completed! +${quizPoints} points added to leaderboard.`
           : awardResult.reason === 'daily_limit_reached'
             ? `You have reached today's ${POINTS_DAILY_CAP}-point limit. Quiz completed, but no points were added.`
             : awardResult.reason === 'update_failed'
@@ -499,7 +508,7 @@ export async function POST(req: Request) {
       const score = correctCount * 10;
       const maxScore = scoredQuestions.length * 10;
       const isCompletedTopic = scoredQuestions.every((q: any) => Object.prototype.hasOwnProperty.call(answers, String(q.id)));
-      const totalPoints = isCompletedTopic ? QUIZ_POINTS_PER_COMPLETION : 0;
+      const totalPoints = isCompletedTopic ? quizPoints : 0;
 
       const { error: attemptError } = await insertQuizAttempt({
         user_id: userId,
@@ -530,7 +539,7 @@ export async function POST(req: Request) {
       const finalPointsAwarded = awardResult.pointsAwarded;
       const awardMessage =
         finalPointsAwarded > 0
-          ? `Topic completed! +${QUIZ_POINTS_PER_COMPLETION} points added to leaderboard.`
+          ? `Topic completed! +${quizPoints} points added to leaderboard.`
           : awardResult.reason === 'daily_limit_reached'
             ? `You have reached today's ${POINTS_DAILY_CAP}-point limit. Quiz completed, but no points were added.`
             : awardResult.reason === 'update_failed'
@@ -644,7 +653,7 @@ export async function POST(req: Request) {
       .single();
 
     const isCompletedTopic = activeQuestionIds.every((id) => Object.prototype.hasOwnProperty.call(answers, id));
-    const totalPoints = isCompletedTopic ? QUIZ_POINTS_PER_COMPLETION : 0;
+    const totalPoints = isCompletedTopic ? quizPoints : 0;
 
     if (attemptError) {
       if (isTestMode && attemptError.code === '23505') {
@@ -663,7 +672,7 @@ export async function POST(req: Request) {
     const finalPointsAwarded = awardResult.pointsAwarded;
     const awardMessage =
       finalPointsAwarded > 0
-        ? `Topic completed! +${QUIZ_POINTS_PER_COMPLETION} points added to leaderboard.`
+        ? `Topic completed! +${quizPoints} points added to leaderboard.`
         : awardResult.reason === 'daily_limit_reached'
           ? `You have reached today's ${POINTS_DAILY_CAP}-point limit. Quiz completed, but no points were added.`
           : awardResult.reason === 'update_failed'

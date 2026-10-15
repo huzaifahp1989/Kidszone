@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { isAdminRequest } from '@/lib/admin-auth';
+import { supabaseAdmin } from '@/lib/supabase-admin';
 import {
   createPushSchedule,
   deletePushSchedule,
@@ -66,6 +67,7 @@ export async function POST(request: Request) {
     const message = String(body?.body || '').trim();
     const url = String(body?.url || '/quiz').trim() || '/quiz';
     const audience = String(body?.audience || 'onesignal').trim() || 'onesignal';
+    const targetUserId = String(body?.targetUserId || body?.target_user_id || '').trim() || null;
     const frequency = String(body?.frequency || '').trim() as PushFrequency;
     const timeOfDay = String(body?.timeOfDay || body?.time_of_day || '').trim();
     const dayOfWeek =
@@ -88,6 +90,20 @@ export async function POST(request: Request) {
     if (frequency !== 'daily' && frequency !== 'weekly') {
       return NextResponse.json({ error: 'frequency must be daily or weekly' }, { status: 400 });
     }
+    if (audience === 'user' && !targetUserId) {
+      return NextResponse.json({ error: 'Select a learner for this schedule.' }, { status: 400 });
+    }
+    if (audience === 'user') {
+      const { data: targetUser, error: targetError } = await supabaseAdmin
+        .from('users')
+        .select('uid')
+        .eq('uid', targetUserId)
+        .maybeSingle();
+      if (targetError) {
+        return NextResponse.json({ error: targetError.message }, { status: 500 });
+      }
+      if (!targetUser) return NextResponse.json({ error: 'Selected learner was not found.' }, { status: 404 });
+    }
 
     const result = await createPushSchedule({
       title,
@@ -95,6 +111,7 @@ export async function POST(request: Request) {
       url,
       imageUrl: String(body?.imageUrl || body?.image_url || '').trim() || null,
       audience,
+      targetUserId,
       frequency,
       timeOfDay,
       dayOfWeek: daysOfWeek?.[0] ?? dayOfWeek,
@@ -136,6 +153,21 @@ export async function PUT(request: Request) {
       patch.imageUrl = String(body.imageUrl ?? body.image_url ?? '').trim() || null;
     }
     if (body.audience !== undefined) patch.audience = String(body.audience).trim();
+    if (body.targetUserId !== undefined || body.target_user_id !== undefined) {
+      const targetUserId = String(body.targetUserId ?? body.target_user_id ?? '').trim() || null;
+      if (targetUserId) {
+        const { data: targetUser, error: targetError } = await supabaseAdmin
+          .from('users')
+          .select('uid')
+          .eq('uid', targetUserId)
+          .maybeSingle();
+        if (targetError) {
+          return NextResponse.json({ error: targetError.message }, { status: 500 });
+        }
+        if (!targetUser) return NextResponse.json({ error: 'Selected learner was not found.' }, { status: 404 });
+      }
+      patch.targetUserId = targetUserId;
+    }
     if (body.frequency !== undefined) {
       patch.frequency = String(body.frequency).trim() as PushFrequency;
     }

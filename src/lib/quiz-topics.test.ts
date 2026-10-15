@@ -79,6 +79,12 @@ describe('topic quiz ids', () => {
   })
 })
 
+describe('general topic banks', () => {
+  it('has enough Daily Duas questions for two no-repeat attempts', () => {
+    expect(getTopicQuestionCount(quizPool, 'duas')).toBeGreaterThanOrEqual(10)
+  })
+})
+
 describe('prophet story quiz topics', () => {
   it('registers all Quranic prophet story topics', () => {
     for (const topicId of PROPHET_STORY_TOPICS) {

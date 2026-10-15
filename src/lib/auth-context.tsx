@@ -315,77 +315,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     initAuth();
 
-    // Also listen for auth changes
-    const { data: authListener } = supabase.auth.onAuthStateChange(async (event: any, session: any) => {
+    // Keep this callback synchronous: Supabase holds an auth lock while
+    // notifying listeners, so queries here can deadlock the sign-in flow.
+    const { data: authListener } = supabase.auth.onAuthStateChange((event: any, session: any) => {
       console.log('Auth event:', event, 'Session:', session?.user?.id);
       if (isMounted) {
         const u = session?.user ? { id: session.user.id, email: session.user.email } : null;
         console.log('Auth state changed:', u?.id);
         setUser(u);
-        
-        // If user has a valid session event, ensure profile is loaded immediately.
-        if (u && (event === 'SIGNED_IN' || event === 'INITIAL_SESSION')) {
-          console.log('User signed in, loading profile...');
-          try {
-            const { data, error } = await supabase
-              .from('users')
-              .select('*')
-              .eq('uid', u.id)
-              .maybeSingle();
-            
-            if (error) {
-              console.error('Profile load error on sign in:', error);
-              // Try to create profile if it doesn't exist
-              const created = await ensureUserProfile(u.id);
-              if (created) {
-                const { data: newData } = await supabase
-                  .from('users')
-                  .select('*')
-                  .eq('uid', u.id)
-                  .maybeSingle();
-                if (newData) {
-                  const { data: pointsRow, error: pointsError } = await supabase
-                    .from('users_points')
-                    .select(POINTS_SELECT)
-                    .eq('user_id', u.id)
-                    .maybeSingle();
-                  
-                  if (pointsError) {
-                    console.warn('users_points fetch error on sign in:', pointsError.message);
-                  }
-                  
-                  const mapped = mapProfile(newData, pointsRow);
-                  const finalName = await getBestName(mapped.name, mapped.email);
-                  if (finalName !== mapped.name && finalName && !isPlaceholderName(finalName)) {
-                    const { error: updateErr } = await supabase.from('users').update({ name: finalName }).eq('uid', u.id);
-                    if (updateErr) {}
-                  }
-                  setProfile({ ...mapped, name: finalName });
-                }
-              }
-            } else if (data) {
-              const { data: pointsRow, error: pointsError } = await supabase
-                .from('users_points')
-                .select(POINTS_SELECT)
-                .eq('user_id', u.id)
-                .maybeSingle();
-              
-              if (pointsError) {
-                console.warn('users_points fetch error on sign in:', pointsError.message);
-              }
-              
-              const mapped = mapProfile(data, pointsRow);
-              const finalName = await getBestName(mapped.name, mapped.email);
-              if (finalName !== mapped.name && finalName && !isPlaceholderName(finalName)) {
-                const { error: updateErr } = await supabase.from('users').update({ name: finalName }).eq('uid', u.id);
-                if (updateErr) {}
-              }
-              setProfile({ ...mapped, name: finalName });
-            }
-          } catch (err) {
-            console.error('Error loading profile on sign in:', err);
-          }
-        } else if (!u && event === 'SIGNED_OUT') {
+
+        if (!u && event === 'SIGNED_OUT') {
           if (isSigningOutRef.current) {
             setProfile(null);
             return;

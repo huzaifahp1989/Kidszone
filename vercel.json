@@ -9,16 +9,16 @@
       "schedule": "0 16 * * *"
     },
     {
+      "path": "/api/cron/story-competition",
+      "schedule": "5 0 * * *"
+    },
+    {
       "path": "/api/cron/reset-monthly",
       "schedule": "0 0 1 * *"
     },
     {
-      "path": "/api/cron/pick-weekly-winners",
-      "schedule": "30 0 * * 6"
-    },
-    {
       "path": "/api/cron/send-scheduled-pushes",
-      "schedule": "0 * * * *"
+      "schedule": "*/5 * * * *"
     },
     {
       "path": "/api/cron/send-user-reminders",

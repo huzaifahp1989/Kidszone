@@ -5,6 +5,15 @@ import { ArrowLeft } from 'lucide-react';
 
 const games = [
   {
+    href: '/games/hajj/virtual-world',
+    icon: '🕋',
+    title: '3D Kaaba Courtyard',
+    description: 'Explore a mobile-friendly 3D Tawaf learning route and daily knowledge challenge.',
+    color: 'from-sky-500 to-blue-700',
+    bg: 'bg-sky-50 border-sky-200',
+    badge: '3D Lesson',
+  },
+  {
     href: '/games/hajj/tawaf',
     icon: '🕋',
     title: 'Tawaf',
@@ -66,7 +75,7 @@ export default function HajjHub() {
         <div className="text-7xl mb-3">🕌</div>
         <h1 className="text-4xl font-black text-blue-900">Hajj Learning Games</h1>
         <p className="text-gray-500 mt-2 text-lg max-w-xl mx-auto">
-          Learn the pillars of Hajj through fun interactive games. Complete all 5 challenges!
+          Learn about Hajj through interactive activities, including a new 3D Tawaf learning lesson.
         </p>
       </div>
 
@@ -98,7 +107,7 @@ export default function HajjHub() {
 
       <div className="max-w-4xl mx-auto mt-10 bg-amber-50 border-2 border-amber-200 rounded-3xl p-6 text-center">
         <p className="text-amber-800 font-bold">
-          🌟 Complete all 5 games to become a Hajj Champion! Each completed game earns you bonus points.
+          🌟 Earn points for server-checked learning challenges. Playing a game does not fulfil Hajj or Umrah.
         </p>
       </div>
     </div>

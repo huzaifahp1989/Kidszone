@@ -2,7 +2,11 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import { CreateShell } from '@/components/CreateShell';
-import { COLOURING_PALETTE } from '@/data/kids-create-activities';
+import {
+  COLOURING_PALETTE,
+  getCreateFinishedToday,
+  markCreateFinishedToday,
+} from '@/data/kids-create-activities';
 
 const PROMPTS = [
   'Draw something kind you did today',
@@ -16,8 +20,10 @@ export default function DrawPage() {
   const drawing = useRef(false);
   const [color, setColor] = useState(COLOURING_PALETTE[1]);
   const [prompt] = useState(() => PROMPTS[Math.floor(Math.random() * PROMPTS.length)]);
+  const [finishedToday, setFinishedToday] = useState(false);
 
   useEffect(() => {
+    setFinishedToday(getCreateFinishedToday().includes('draw'));
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
@@ -69,9 +75,25 @@ export default function DrawPage() {
     ctx.fillRect(0, 0, canvas.width, canvas.height);
   };
 
+  const download = () => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const link = document.createElement('a');
+    link.download = `kids-zone-drawing-${Date.now()}.png`;
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+    markCreateFinishedToday('draw');
+    setFinishedToday(true);
+  };
+
   return (
     <CreateShell title="Draw & Share">
-      <p className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-900">
+      {finishedToday && (
+        <p className="rounded-2xl border border-teal-200 bg-teal-50 px-4 py-2 text-sm font-bold text-teal-800">
+          ✓ Drawing saved sticker for today — download again anytime!
+        </p>
+      )}
+      <p className="rounded-2xl border border-gold-200 bg-gold-50 px-4 py-3 text-sm font-semibold text-sand-900">
         Prompt: {prompt}
       </p>
       <div className="flex flex-wrap gap-2">
@@ -95,9 +117,18 @@ export default function DrawPage() {
         onPointerUp={end}
         onPointerLeave={end}
       />
-      <button type="button" onClick={clear} className="rounded-xl border border-sand-200 bg-white px-4 py-2 font-bold">
-        Clear
-      </button>
+      <div className="flex flex-wrap gap-2">
+        <button type="button" onClick={clear} className="rounded-xl border border-sand-200 bg-white px-4 py-2 font-bold text-sand-800">
+          Clear
+        </button>
+        <button
+          type="button"
+          onClick={download}
+          className="rounded-xl bg-teal-700 px-4 py-2 font-bold text-white hover:bg-teal-600"
+        >
+          Download drawing
+        </button>
+      </div>
     </CreateShell>
   );
 }

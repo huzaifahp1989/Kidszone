@@ -51,17 +51,11 @@ export function OneSignalProvider() {
           requestPermission: false,
         });
       }, user.id);
-
-      if (cancelled) return;
-      await registerOneSignalPlayerId({
-        attempts: 4,
-        delayMs: 1200,
-        promptWtn: false,
-        requestPermission: false,
-      });
     };
 
-    void setup();
+    void setup().catch((error: unknown) => {
+      console.error('[OneSignal] initialization failed:', error);
+    });
 
     return () => {
       cancelled = true;

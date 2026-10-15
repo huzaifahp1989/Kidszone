@@ -21,6 +21,7 @@ type PushScheduleRow = {
   url: string | null;
   image_url?: string | null;
   audience: string;
+  target_user_id?: string | null;
   frequency: 'daily' | 'weekly';
   time_of_day: string;
   day_of_week: number | null;
@@ -115,7 +116,7 @@ function audienceLabel(value: string) {
   if (value === 'onesignal' || value === 'subscribed') return 'Full OneSignal list';
   if (value === 'kids_zone' || value === 'tokens') return 'Kids Zone push sign-ups';
   if (value === 'all') return 'Both lists';
-  if (value === 'user') return 'Single user';
+  if (value === 'user') return 'Selected learner';
   return value;
 }
 
@@ -146,9 +147,10 @@ export default function AdminPushPage() {
   const [scheduleTime, setScheduleTime] = useState('16:00');
   const [scheduleDays, setScheduleDays] = useState<number[]>([1]);
   const [scheduleUrl, setScheduleUrl] = useState('/quiz');
-  const [scheduleAudience, setScheduleAudience] = useState<'onesignal' | 'kids_zone' | 'all'>(
-    'onesignal'
-  );
+  const [scheduleAudience, setScheduleAudience] = useState<
+    'onesignal' | 'kids_zone' | 'all' | 'user'
+  >('onesignal');
+  const [scheduleTimezone, setScheduleTimezone] = useState('Europe/London');
   const [scheduleBusy, setScheduleBusy] = useState(false);
   const [scheduleMsg, setScheduleMsg] = useState<string | null>(null);
   const [editingScheduleId, setEditingScheduleId] = useState<string | null>(null);
@@ -228,6 +230,9 @@ export default function AdminPushPage() {
     try {
       const frequency = ready.suggestedFrequency || 'daily';
       const timeOfDay = ready.suggestedTime || scheduleTime || '16:00';
+      if (scheduleAudience === 'user' && !userId.trim()) {
+        throw new Error('Select a learner before creating an individual schedule.');
+      }
       const res = await fetch('/api/admin/push/schedules', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-admin-auth': 'true' },
@@ -237,6 +242,7 @@ export default function AdminPushPage() {
           url: ready.url,
           imageUrl: imageUrl.trim() || null,
           audience: scheduleAudience,
+          targetUserId: scheduleAudience === 'user' ? userId.trim() : null,
           frequency,
           timeOfDay,
           dayOfWeek:
@@ -247,19 +253,19 @@ export default function AdminPushPage() {
             frequency === 'weekly'
               ? [ready.suggestedDay ?? scheduleDays[0] ?? 1]
               : null,
-          timezone: 'Europe/London',
+          timezone: scheduleTimezone.trim() || 'Europe/London',
           enabled: true,
         }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data?.error || 'Failed to save schedule');
       setScheduleMsg(
-        `Saved ready reminder “${ready.label}” · ${frequency} at ${timeOfDay} UK → ${audienceLabel(
+        `Saved ready reminder “${ready.label}” · ${frequency} at ${timeOfDay} ${scheduleTimezone} → ${audienceLabel(
           scheduleAudience
         )}. Next: ${
           data.schedule?.next_run_at
             ? new Date(data.schedule.next_run_at).toLocaleString('en-GB', {
-                timeZone: 'Europe/London',
+                timeZone: scheduleTimezone.trim() || 'Europe/London',
               })
             : '—'
         }`
@@ -505,8 +511,16 @@ export default function AdminPushPage() {
     setScheduleUrl(row.url || '/quiz');
     setImageUrl(row.image_url || '');
     setScheduleAudience(
-      row.audience === 'all' || row.audience === 'onesignal' ? row.audience : 'kids_zone'
+      row.audience === 'all' ||
+        row.audience === 'onesignal' ||
+        row.audience === 'user'
+        ? row.audience
+        : 'kids_zone'
     );
+    setUserId(row.target_user_id || '');
+    const selectedUser = info?.registeredUsers.find((u) => u.userId === row.target_user_id);
+    setUserQuery(selectedUser?.name || '');
+    setScheduleTimezone(row.timezone || 'Europe/London');
     setScheduleFrequency(row.frequency);
     setScheduleTime(String(row.time_of_day || '16:00').slice(0, 5));
     const days =
@@ -540,6 +554,10 @@ export default function AdminPushPage() {
       setScheduleMsg('Title and body are required to schedule.');
       return;
     }
+    if (scheduleAudience === 'user' && !userId.trim()) {
+      setScheduleMsg('Select a learner before saving an individual schedule.');
+      return;
+    }
     if (scheduleFrequency === 'weekly' && scheduleDays.length === 0) {
       setScheduleMsg('Select at least one day of the week.');
       return;
@@ -554,11 +572,12 @@ export default function AdminPushPage() {
         url: openPath,
         imageUrl: imageUrl.trim() || null,
         audience: scheduleAudience,
+        targetUserId: scheduleAudience === 'user' ? userId.trim() : null,
         frequency: scheduleFrequency,
         timeOfDay: scheduleTime,
         dayOfWeek: scheduleFrequency === 'weekly' ? scheduleDays[0] : null,
         daysOfWeek: scheduleFrequency === 'weekly' ? scheduleDays : null,
-        timezone: 'Europe/London',
+        timezone: scheduleTimezone.trim() || 'Europe/London',
         enabled: true,
       };
 
@@ -580,12 +599,12 @@ export default function AdminPushPage() {
                 .filter(Boolean)
                 .join(', ')
             : 'every day'
-        } at ${scheduleTime} UK → opens ${openPath} · ${audienceLabel(
+        } at ${scheduleTime} ${scheduleTimezone} → opens ${openPath} · ${audienceLabel(
           scheduleAudience
         )}${imageUrl.trim() ? ' · with image' : ''}. Next: ${
           data.schedule?.next_run_at
             ? new Date(data.schedule.next_run_at).toLocaleString('en-GB', {
-                timeZone: 'Europe/London',
+                timeZone: scheduleTimezone.trim() || 'Europe/London',
               })
             : '—'
         }${warning}`
@@ -998,11 +1017,14 @@ export default function AdminPushPage() {
               </select>
             </label>
 
-            {audience === 'user' && (
-              <div className="space-y-3 rounded-2xl border border-violet-100 bg-violet-50/60 p-4">
+            {(audience === 'user' || scheduleAudience === 'user') && (
+              <div
+                id="push-user-picker"
+                className="space-y-3 rounded-2xl border border-violet-100 bg-violet-50/60 p-4"
+              >
                 <div className="flex items-center gap-2 text-violet-900">
                   <UserRound size={16} />
-                  <p className="text-sm font-bold">Choose who receives this push</p>
+                  <p className="text-sm font-bold">Choose the learner for this push or schedule</p>
                 </div>
 
                 <label className="block">
@@ -1018,6 +1040,7 @@ export default function AdminPushPage() {
                       value={userQuery}
                       onChange={(e) => {
                         setUserQuery(e.target.value);
+                        setUserId('');
                         // Allow pasting a raw uid directly
                         const raw = e.target.value.trim();
                         if (
@@ -1142,13 +1165,13 @@ export default function AdminPushPage() {
           <p className="mb-4 text-xs text-slate-600">
             Uses the title, body &amp; image above. Pick a <strong>ready reminder</strong>, then save
             a schedule — or tap <strong>Quick schedule</strong> below to add different reminders in
-            one go. Times are <strong>Europe/London</strong>.
+            one go. Choose a single learner or a broadcast audience.
           </p>
 
           <div className="mb-4 rounded-xl border border-indigo-100 bg-indigo-50/60 p-3">
             <p className="text-xs font-bold uppercase text-indigo-800">Quick schedule ready reminders</p>
             <p className="mt-1 text-[11px] text-indigo-900/80">
-              Adds a separate schedule for each message (suggested UK time). Audience:{' '}
+              Adds a separate schedule for each message (suggested time). Audience:{' '}
               {audienceLabel(scheduleAudience)}.
             </p>
             <div className="mt-2 flex flex-wrap gap-2">
@@ -1156,7 +1179,7 @@ export default function AdminPushPage() {
                 <button
                   key={`qs-${p.key}`}
                   type="button"
-                  disabled={scheduleBusy}
+                  disabled={scheduleBusy || (scheduleAudience === 'user' && !userId)}
                   onClick={() => quickScheduleReminder(p.key)}
                   className="rounded-lg border border-indigo-200 bg-white px-2.5 py-1.5 text-xs font-bold text-indigo-900 hover:bg-indigo-100 disabled:opacity-50"
                   title={`${p.title} · ${p.suggestedFrequency || 'daily'} ${p.suggestedTime || ''}`}
@@ -1211,15 +1234,52 @@ export default function AdminPushPage() {
             <span className="text-xs font-bold uppercase text-slate-500">Send to</span>
             <select
               value={scheduleAudience}
-              onChange={(e) =>
-                setScheduleAudience(e.target.value as 'onesignal' | 'kids_zone' | 'all')
-              }
+              onChange={(e) => {
+                setScheduleAudience(
+                  e.target.value as 'onesignal' | 'kids_zone' | 'all' | 'user'
+                );
+                setScheduleMsg(null);
+              }}
               className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
             >
               <option value="onesignal">Full OneSignal list</option>
               <option value="all">Both lists</option>
               <option value="kids_zone">Kids Zone push sign-ups only</option>
+              <option value="user">One selected learner</option>
             </select>
+          </label>
+          {scheduleAudience === 'user' && (
+            <div className="mb-4 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-violet-100 bg-violet-50 px-3 py-2 text-sm text-violet-950">
+              <span>
+                {userId
+                  ? `Schedule recipient: ${selectedRegistered?.name || userQuery || 'Selected learner'}`
+                  : 'Choose one learner in the push panel above.'}
+              </span>
+              <button
+                type="button"
+                onClick={() =>
+                  document
+                    .getElementById('push-user-picker')
+                    ?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+                }
+                className="font-bold underline"
+              >
+                {userId ? 'Change learner' : 'Choose learner'}
+              </button>
+            </div>
+          )}
+
+          <label className="mb-4 block">
+          <span className="text-xs font-bold uppercase text-slate-500">Schedule timezone</span>
+          <input
+            value={scheduleTimezone}
+            onChange={(e) => setScheduleTimezone(e.target.value)}
+            placeholder="Europe/London"
+            className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm"
+          />
+          <span className="mt-1 block text-xs text-slate-500">
+            Times follow this IANA timezone, e.g. Europe/London or America/New_York.
+          </span>
           </label>
 
           <div className="grid gap-3 sm:grid-cols-2">
@@ -1239,7 +1299,9 @@ export default function AdminPushPage() {
               </select>
             </label>
             <label className="block">
-              <span className="text-xs font-bold uppercase text-slate-500">Time (UK)</span>
+              <span className="text-xs font-bold uppercase text-slate-500">
+                Time ({scheduleTimezone})
+              </span>
               <input
                 type="time"
                 value={scheduleTime}
@@ -1281,14 +1343,19 @@ export default function AdminPushPage() {
           )}
 
           <p className="mt-2 text-xs text-slate-500">
-            Times are UK (Europe/London). In production, due schedules are checked every hour.
+            Times use the timezone above. In production, due schedules are checked every five minutes.
             Locally use <strong>Run due now</strong> or <strong>Send now</strong> to deliver.
           </p>
 
           <div className="mt-4 flex flex-col gap-2 sm:flex-row">
             <button
               type="button"
-              disabled={scheduleBusy || !title.trim() || !body.trim()}
+              disabled={
+                scheduleBusy ||
+                !title.trim() ||
+                !body.trim() ||
+                (scheduleAudience === 'user' && !userId)
+              }
               onClick={saveSchedule}
               className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-indigo-700 px-4 py-3 text-sm font-bold text-white hover:bg-indigo-800 disabled:opacity-50"
             >
@@ -1345,6 +1412,8 @@ export default function AdminPushPage() {
                           <code className="rounded bg-slate-100 px-1">{s.url || '/'}</code>
                           <br />
                           {audienceLabel(s.audience)}
+                          {s.target_user_id ? ` · ${s.target_user_id}` : ''}
+                          {` · ${s.timezone || 'Europe/London'}`}
                           {s.image_url ? ' · has image' : ''}
                         </div>
                         {s.image_url && (

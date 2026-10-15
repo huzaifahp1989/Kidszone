@@ -45,10 +45,10 @@ type MissionPayload = {
 
 const accentStyles: Record<string, { badge: string; panel: string; progress: string; link: string }> = {
   teal: {
-    badge: 'bg-[#f5f3ff] text-[#6d28d9] border-[#7c3aed]/20',
-    panel: 'from-[#7c3aed]/12 to-white',
-    progress: 'from-[#7c3aed] to-[#5b21b6]',
-    link: 'text-[#6d28d9]',
+    badge: 'bg-teal-50 text-teal-700 border-teal-600/20',
+    panel: 'from-teal-600/12 to-white',
+    progress: 'from-teal-600 to-teal-800',
+    link: 'text-teal-700',
   },
   amber: {
     badge: 'bg-[#fffbeb] text-[#b45309] border-[#f59e0b]/20',
@@ -63,10 +63,10 @@ const accentStyles: Record<string, { badge: string; panel: string; progress: str
     link: 'text-[#be123c]',
   },
   violet: {
-    badge: 'bg-[#f5f3ff] text-[#7c3aed] border-[#8b5cf6]/20',
-    panel: 'from-[#8b5cf6]/14 to-white',
-    progress: 'from-[#8b5cf6] to-[#6366f1]',
-    link: 'text-[#6d28d9]',
+    badge: 'bg-teal-50 text-teal-600 border-teal-400/20',
+    panel: 'from-teal-400/14 to-white',
+    progress: 'from-teal-400 to-teal-500',
+    link: 'text-teal-700',
   },
 };
 
@@ -181,12 +181,12 @@ export default function DailyMissions() {
 
   if (loading) {
     return (
-      <section className="bg-white rounded-2xl p-6 shadow-lg border border-[#c4b5fd]/20">
+      <section className="bg-white rounded-2xl p-6 shadow-lg border border-teal-300/20">
         <div className="animate-pulse space-y-4">
-          <div className="h-6 w-48 rounded bg-[#f3e7d8]" />
+          <div className="h-6 w-48 rounded bg-sand-100" />
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="h-36 rounded-2xl bg-[#ede9fe]" />
-            <div className="h-36 rounded-2xl bg-[#ede9fe]" />
+            <div className="h-36 rounded-2xl bg-teal-100" />
+            <div className="h-36 rounded-2xl bg-teal-100" />
           </div>
         </div>
       </section>
@@ -198,15 +198,15 @@ export default function DailyMissions() {
   }
 
   return (
-    <section className="bg-white rounded-2xl p-6 shadow-lg border border-[#c4b5fd]/20 space-y-5">
+    <section className="bg-white rounded-2xl p-6 shadow-lg border border-teal-300/20 space-y-5">
       <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <div>
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-[#f5f3ff] rounded-full border border-[#7c3aed]/20 text-sm font-semibold text-[#6d28d9]">
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-teal-50 rounded-full border border-teal-600/20 text-sm font-semibold text-teal-700">
             <Sparkles size={16} />
             Daily Missions
           </div>
-          <h3 className="mt-3 text-2xl font-bold text-[#1e1b4b]">Today&apos;s Kids Zone Challenge</h3>
-          <p className="text-[#475569] text-sm mt-1">
+          <h3 className="mt-3 text-2xl font-bold text-teal-900">Today&apos;s Kids Zone Challenge</h3>
+          <p className="text-sand-700 text-sm mt-1">
             Finish missions across quiz, games, tracker, and rewards. Any sibling completing all missions keeps your family streak going!
           </p>
         </div>
@@ -225,15 +225,15 @@ export default function DailyMissions() {
             </div>
           ) : null}
 
-          <div className="rounded-2xl bg-[#f5f3ff] border border-[#c4b5fd]/30 px-4 py-3 min-w-[180px]">
-          <p className="text-xs uppercase tracking-[0.2em] text-[#475569]">Completed</p>
-          <div className="mt-1 flex items-center gap-2 text-[#1e1b4b]">
-            <Target size={18} className="text-[#7c3aed]" />
+          <div className="rounded-2xl bg-teal-50 border border-teal-300/30 px-4 py-3 min-w-[180px]">
+          <p className="text-xs uppercase tracking-[0.2em] text-sand-700">Completed</p>
+          <div className="mt-1 flex items-center gap-2 text-teal-900">
+            <Target size={18} className="text-teal-600" />
             <span className="text-2xl font-bold">
               {payload.summary.completedCount}/{payload.summary.totalCount}
             </span>
           </div>
-          <p className="text-sm text-[#475569] mt-1">
+          <p className="text-sm text-sand-700 mt-1">
             {payload.summary.allCompleted ? 'All missions complete. Amazing work today.' : 'Keep going to finish the full set.'}
           </p>
           </div>
@@ -258,7 +258,7 @@ export default function DailyMissions() {
               </p>
             ) : null}
             {claimMessage ? (
-              <p className="text-xs text-[#1e1b4b] mt-2">{claimMessage}</p>
+              <p className="text-xs text-teal-900 mt-2">{claimMessage}</p>
             ) : null}
           </div>
 
@@ -269,7 +269,7 @@ export default function DailyMissions() {
             className={`px-5 py-3 rounded-xl font-bold transition-all ${
               payload.reward.available && !claiming
                 ? 'bg-gradient-to-r from-[#f59e0b] to-[#d97706] text-white shadow-lg hover:shadow-xl hover:-translate-y-0.5'
-                : 'bg-white text-[#475569] border border-[#c4b5fd]/40 cursor-not-allowed'
+                : 'bg-white text-sand-700 border border-teal-300/40 cursor-not-allowed'
             }`}
           >
             {claiming ? 'Claiming...' : payload.reward.claimed ? 'Bonus Claimed' : `Claim +${payload.reward.points}`}
@@ -286,7 +286,7 @@ export default function DailyMissions() {
           return (
             <div
               key={mission.key}
-              className={`rounded-2xl border border-[#c4b5fd]/20 bg-gradient-to-br ${styles.panel} p-5 shadow-sm`}
+              className={`rounded-2xl border border-teal-300/20 bg-gradient-to-br ${styles.panel} p-5 shadow-sm`}
             >
               <div className="flex items-start justify-between gap-3">
                 <div className="flex items-center gap-3">
@@ -294,8 +294,8 @@ export default function DailyMissions() {
                     {mission.icon}
                   </div>
                   <div>
-                    <h4 className="font-bold text-[#1e1b4b]">{mission.title}</h4>
-                    <p className="text-sm text-[#475569] mt-1">{mission.description}</p>
+                    <h4 className="font-bold text-teal-900">{mission.title}</h4>
+                    <p className="text-sm text-sand-700 mt-1">{mission.description}</p>
                   </div>
                 </div>
 
@@ -305,7 +305,7 @@ export default function DailyMissions() {
               </div>
 
               <div className="mt-4">
-                <div className="flex items-center justify-between text-sm text-[#1e1b4b] mb-2">
+                <div className="flex items-center justify-between text-sm text-teal-900 mb-2">
                   <span>
                     {displayProgress} of {mission.target} {mission.unit}
                   </span>

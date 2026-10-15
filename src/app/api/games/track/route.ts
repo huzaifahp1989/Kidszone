@@ -4,11 +4,11 @@ import { supabaseAdmin } from '@/lib/supabase-admin';
 import { ensureUserRecords } from '@/lib/ensure-user-records';
 import { tryAwardDailyActivity } from '@/lib/daily-activity-award';
 import {
-  ACTIVITY_BONUS_POINTS,
   MAX_DAILY_GAME_COMPLETIONS,
   resolveBasePoints,
   resolveTodayPoints,
 } from '@/lib/points-policy';
+import { getPointsConfigValue } from '@/lib/points-config';
 import { canEarnActivityPoints } from '@/lib/daily-activity-limits';
 import { requireMatchingUser } from '@/lib/request-auth';
 import { apiCorsHeaders } from '@/lib/quiz-cors';
@@ -51,6 +51,7 @@ export async function POST(req: Request) {
 
     await ensureUserRecords(userId);
 
+    const pointsPerGame = await getPointsConfigValue('game_activity');
     let pointsAwarded = 0;
     let message = '';
     let activityLimitReached = false;
@@ -66,7 +67,7 @@ export async function POST(req: Request) {
         message = gate.message || `You have already earned points for ${MAX_DAILY_GAME_COMPLETIONS} games today.`;
       } else {
         const award = await tryAwardDailyActivity(userId, 'game', {
-          successMessage: `+${ACTIVITY_BONUS_POINTS} points for finishing ${gameTitle}!`,
+          successMessage: `+${pointsPerGame} points for finishing ${gameTitle}!`,
         });
         pointsAwarded = award.pointsAwarded;
         message = award.message;
@@ -122,7 +123,7 @@ export async function POST(req: Request) {
       gamesUsedToday,
       gamesRemaining,
       maxDailyGames: MAX_DAILY_GAME_COMPLETIONS,
-      pointsPerGame: ACTIVITY_BONUS_POINTS,
+      pointsPerGame,
       // Only attach a profile when we have a real snapshot — never push zeros that wipe the UI.
       profile:
         pointsRow || userRow

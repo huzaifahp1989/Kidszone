@@ -19,7 +19,6 @@ export default function AdminWeeklyWinnersPage() {
   const [winners, setWinners] = React.useState<WeeklyWinnerAnnouncement[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [saving, setSaving] = React.useState(false);
-  const [autoPicking, setAutoPicking] = React.useState(false);
   const [setupRequired, setSetupRequired] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const [message, setMessage] = React.useState<string | null>(null);
@@ -97,37 +96,6 @@ export default function AdminWeeklyWinnersPage() {
     }
   };
 
-  const handleAutoPick = async (force = false) => {
-    if (force && !window.confirm('Re-pick winners for the last completed week? This replaces the current auto-pick for that week.')) {
-      return;
-    }
-    setAutoPicking(true);
-    setError(null);
-    setMessage(null);
-    try {
-      const res = await fetch('/api/admin/weekly-winners/pick', {
-        method: 'POST',
-        headers: { ...adminHeaders, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ force }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data?.error || 'Auto-pick failed');
-      if (data.skipped) {
-        setMessage(data.message || 'Winners were already picked for that week.');
-      } else {
-        const names = Array.isArray(data.winners)
-          ? data.winners.map((w: { name: string }) => w.name).join(', ')
-          : '';
-        setMessage(data.message || `Picked winners: ${names}`);
-      }
-      await load();
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Auto-pick failed');
-    } finally {
-      setAutoPicking(false);
-    }
-  };
-
   const handleDelete = async (id: string) => {
     if (!window.confirm('Remove this winner entry?')) return;
     setError(null);
@@ -153,18 +121,12 @@ export default function AdminWeeklyWinnersPage() {
           <div>
             <h1 className="text-2xl font-black text-slate-900">Weekly Winners</h1>
             <p className="text-sm text-slate-600">
-              Five winners are auto-picked each Saturday from Kids Zone activity. You can still add manual entries or run auto-pick now.
+              Choose and manage weekly winners manually.
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
             <Button variant="outline" onClick={() => router.push('/admin')}>
               ← Admin home
-            </Button>
-            <Button variant="outline" onClick={() => handleAutoPick(false)} disabled={autoPicking || setupRequired}>
-              {autoPicking ? 'Picking…' : 'Auto-pick now'}
-            </Button>
-            <Button variant="outline" onClick={() => handleAutoPick(true)} disabled={autoPicking || setupRequired}>
-              Force re-pick
             </Button>
             <Button variant="outline" onClick={load} disabled={loading}>
               Refresh
@@ -176,8 +138,7 @@ export default function AdminWeeklyWinnersPage() {
           <div className="rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900">
             <p className="font-bold">Database setup required</p>
             <p className="mt-1">
-              Run <code className="rounded bg-white px-1">SETUP_WEEKLY_WINNER_ANNOUNCEMENTS.sql</code> and{' '}
-              <code className="rounded bg-white px-1">SETUP_AUTO_WEEKLY_WINNERS.sql</code> in the Supabase SQL editor, then refresh.
+              Run <code className="rounded bg-white px-1">SETUP_WEEKLY_WINNER_ANNOUNCEMENTS.sql</code> in the Supabase SQL editor, then refresh.
             </p>
           </div>
         )}

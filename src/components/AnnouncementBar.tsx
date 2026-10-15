@@ -1,10 +1,12 @@
 'use client';
 
 import React from 'react';
+import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { AnnouncementImageSlideshow } from './AnnouncementImageSlideshow';
 import { getAnnouncementSlides } from '@/lib/announcement-images';
 import { getAnnouncementImageFallbackUrl } from '@/lib/announcement-image-fallback';
+import { OCTOBER_HADITH_QUIZ_LAST_DAY } from '@/lib/october-hadith-quiz';
 
 function AnnouncementBarImage({ src }: { src: string }) {
   const [currentSrc, setCurrentSrc] = React.useState(src);
@@ -139,5 +141,26 @@ export function InlineAnnouncementBelowSlider() {
         );
       })}
     </>
+  );
+}
+
+export function OctoberHadithQuizBanner() {
+  const today = new Date().toISOString().slice(0, 10);
+  if (today < '2026-10-01' || today > OCTOBER_HADITH_QUIZ_LAST_DAY) return null;
+
+  return (
+    <div className="w-full border-b border-emerald-950/10 bg-gradient-to-r from-emerald-700 to-teal-700 text-white">
+      <div className="mx-auto flex max-w-7xl flex-col items-center justify-center gap-2 px-4 py-2.5 text-center sm:flex-row sm:gap-4">
+        <p className="text-sm font-bold sm:text-base">
+          ✨ What&apos;s new: Take the October Hadith Quiz — 10 written answers, reviewed by our admin team.
+        </p>
+        <Link
+          href="/hadith/quiz/october-2026"
+          className="shrink-0 rounded-full bg-white px-4 py-1.5 text-sm font-extrabold text-emerald-800 transition hover:bg-emerald-50"
+        >
+          Take the quiz · ends 30 October
+        </Link>
+      </div>
+    </div>
   );
 }

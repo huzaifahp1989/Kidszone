@@ -47,15 +47,15 @@ export default function PreviousWinnersClient() {
   const groupedWinners = React.useMemo(() => groupWinnersByWeek(winners), [winners]);
 
   return (
-    <div className="min-h-screen bg-[#f5f3ff] pattern-islamic">
+    <div className="min-h-screen bg-teal-50 pattern-islamic">
       <div className="mx-auto max-w-5xl space-y-6 px-4 py-8 md:space-y-8">
         <div className="space-y-4 text-center">
           <div className="inline-flex items-center gap-2 rounded-full border border-[#fbbf24]/30 bg-[#fffbeb] px-4 py-2">
             <Trophy size={16} className="text-[#f59e0b]" />
             <span className="text-sm font-semibold text-[#b45309]">Competition Winners Archive</span>
           </div>
-          <h1 className="text-4xl font-bold text-[#1e1b4b] md:text-5xl">Previous Winners</h1>
-          <p className="text-lg text-[#475569]">
+          <h1 className="text-4xl font-bold text-teal-900 md:text-5xl">Previous Winners</h1>
+          <p className="text-lg text-sand-700">
             See past winners and their live monthly points as the leaderboard updates.
           </p>
           <div className="flex flex-wrap items-center justify-center gap-3">
@@ -78,37 +78,37 @@ export default function PreviousWinnersClient() {
           </div>
         </div>
 
-        <div className="rounded-2xl border border-[#7c3aed]/30 bg-gradient-to-r from-[#ecfeff] to-[#f5f3ff] p-5 text-center">
-          <p className="text-base font-bold text-[#5b21b6] md:text-lg">
+        <div className="rounded-2xl border border-teal-600/30 bg-gradient-to-r from-teal-50 to-teal-50 p-5 text-center">
+          <p className="text-base font-bold text-teal-800 md:text-lg">
             Winner points now come from the live leaderboard profile when a match is found.
           </p>
-          <p className="mt-2 text-sm text-[#5b21b6] md:text-base">
+          <p className="mt-2 text-sm text-teal-800 md:text-base">
             This page refreshes automatically, so weekly, monthly, and total points stay up to date.
           </p>
         </div>
 
         {loading ? (
-          <div className="rounded-2xl border border-[#c4b5fd]/30 bg-white p-8 shadow-lg">
+          <div className="rounded-2xl border border-teal-300/30 bg-white p-8 shadow-lg">
             <div className="space-y-4">
               {[1, 2, 3].map((i) => (
-                <div key={i} className="h-24 animate-pulse rounded-2xl bg-[#ede9fe]" />
+                <div key={i} className="h-24 animate-pulse rounded-2xl bg-teal-100" />
               ))}
             </div>
           </div>
         ) : groupedWinners.length === 0 ? (
-          <div className="rounded-2xl border border-[#c4b5fd]/30 bg-white p-8 text-center shadow-lg">
-            <CalendarDays size={48} className="mx-auto mb-4 text-[#c4b5fd]" />
-            <p className="font-semibold text-[#1e1b4b]">No winners added yet</p>
-            <p className="text-[#475569]">Winners will appear here once they are announced.</p>
+          <div className="rounded-2xl border border-teal-300/30 bg-white p-8 text-center shadow-lg">
+            <CalendarDays size={48} className="mx-auto mb-4 text-teal-300" />
+            <p className="font-semibold text-teal-900">No winners added yet</p>
+            <p className="text-sand-700">Winners will appear here once they are announced.</p>
           </div>
         ) : (
           <div className="space-y-5">
             {groupedWinners.map(({ weekStartDate, winners: weekWinners }) => (
               <section
                 key={weekStartDate}
-                className="overflow-hidden rounded-2xl border border-[#c4b5fd]/30 bg-white shadow-lg"
+                className="overflow-hidden rounded-2xl border border-teal-300/30 bg-white shadow-lg"
               >
-                <div className="bg-gradient-to-r from-[#7c3aed] to-[#6d28d9] px-6 py-4 text-white">
+                <div className="bg-gradient-to-r from-teal-600 to-teal-700 px-6 py-4 text-white">
                   <p className="text-xs font-bold uppercase tracking-wide text-white/80">Week of</p>
                   <h2 className="text-xl font-bold">{formatWeekLabel(weekStartDate)}</h2>
                 </div>
@@ -117,8 +117,8 @@ export default function PreviousWinnersClient() {
                   {weekWinners.map((winner) => (
                     <div key={winner.id} className="grid gap-3 px-5 py-4 sm:grid-cols-[1fr_auto] sm:items-center">
                       <div>
-                        <p className="text-lg font-black text-[#1e1b4b]">{winner.winner_name}</p>
-                        <p className="text-sm text-[#475569]">
+                        <p className="text-lg font-black text-teal-900">{winner.winner_name}</p>
+                        <p className="text-sm text-sand-700">
                           {winner.madrasah_name?.trim() || 'No madrasah listed'}
                         </p>
                       </div>

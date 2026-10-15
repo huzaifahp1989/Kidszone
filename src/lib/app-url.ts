@@ -1,4 +1,4 @@
-const DEFAULT_LIVE_APP_URL = 'https://huzaifahp1989-audio.vercel.app';
+const DEFAULT_LIVE_APP_URL = 'https://islamic-kids-platform.vercel.app';
 
 function normalizeUrl(url: string): string {
   return url.replace(/\/$/, '');

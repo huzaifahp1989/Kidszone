@@ -2,10 +2,11 @@
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { BookMarked, Star, Trophy } from 'lucide-react';
+import { BookMarked, MessageSquare, Mic, Star, Trophy, X } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
 import { supabase } from '@/lib/supabase';
 import { HIFZ_SURAH_LIST, type HifzSurah } from '@/data/hifz-surahs';
+import { SurahRecorder } from '@/components/SurahRecorder';
 
 type HifzRow = {
   surah_number: number;
@@ -26,6 +27,7 @@ export default function HifzPage() {
   const [saving, setSaving] = useState<number | null>(null);
   const [filter, setFilter] = useState<'all' | 'beginner' | 'intermediate' | 'advanced'>('all');
   const [setupRequired, setSetupRequired] = useState(false);
+  const [recordingSurah, setRecordingSurah] = useState<number | null>(null);
 
   const progressMap = useMemo(() => {
     const m = new Map<number, HifzRow>();
@@ -118,8 +120,16 @@ export default function HifzPage() {
         <div className="badge-chip mb-3">Memorization</div>
         <h1 className="font-heading text-3xl font-bold text-sand-900 sm:text-4xl">Hifz Tracker</h1>
         <p className="mt-2 max-w-2xl text-sand-700">
-          Track surahs you are learning and memorized. Start with short surahs from Juz Amma!
+          A focused memorization space for children and adults. Track progress, record a recitation, and receive teacher feedback directly in your account.
         </p>
+        <div className="mt-4 flex flex-wrap items-center gap-2">
+          <span className="rounded-full bg-emerald-100 px-3 py-1.5 text-xs font-bold text-emerald-800">
+            Hifz recording is free through 30 September 2026
+          </span>
+          <Link href="/my-recordings" className="inline-flex items-center gap-1.5 text-sm font-bold text-violet-700 underline">
+            <MessageSquare size={15} /> View all feedback
+          </Link>
+        </div>
         <div className="mt-6 grid grid-cols-3 gap-4 max-w-md">
           <div className="stat-pill p-4 text-center">
             <Trophy className="mx-auto mb-1 text-violet-600" size={22} />
@@ -169,7 +179,8 @@ export default function HifzPage() {
             const isMem = row?.status === 'memorized';
             const isLearning = row?.status === 'learning';
             return (
-              <div key={surah.number} className="surface-card flex flex-col gap-3 rounded-2xl p-4 sm:flex-row sm:items-center sm:justify-between">
+              <React.Fragment key={surah.number}>
+              <div className="surface-card flex flex-col gap-3 rounded-2xl p-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <p className="font-arabic text-xl text-violet-800">{surah.arabicName}</p>
                   <p className="font-bold text-sand-900">
@@ -217,19 +228,37 @@ export default function HifzPage() {
                   {isMem && (
                     <span className="rounded-xl bg-emerald-100 px-4 py-2 text-sm font-bold text-emerald-800">✓ Memorized</span>
                   )}
+                  <button
+                    type="button"
+                    onClick={() => setRecordingSurah((current) => current === surah.number ? null : surah.number)}
+                    aria-expanded={recordingSurah === surah.number}
+                    className="inline-flex items-center gap-2 rounded-xl bg-rose-100 px-4 py-2 text-sm font-bold text-rose-800 hover:bg-rose-200"
+                  >
+                    {recordingSurah === surah.number ? <X size={16} /> : <Mic size={16} />}
+                    {recordingSurah === surah.number ? 'Close recorder' : 'Record for feedback'}
+                  </button>
                   <Link href="/quran/learn" className="rounded-xl border border-violet-200 px-4 py-2 text-sm font-bold text-violet-700 hover:bg-violet-50">
                     Read
                   </Link>
                 </div>
               </div>
+              {recordingSurah === surah.number && (
+                <SurahRecorder
+                  surahNumber={surah.number}
+                  surahName={surah.englishName}
+                  arabicName={surah.arabicName}
+                  ayahCount={surah.ayahCount}
+                  source="hifz"
+                />
+              )}
+              </React.Fragment>
             );
           })}
         </div>
       )}
 
       <div className="feature-tile rounded-2xl p-5 text-sm text-violet-900">
-        <strong>Tip:</strong> Practice a little every day. Pair this with the{' '}
-        <Link href="/studio" className="font-bold underline">Recording Studio</Link> to record your recitation!
+        <strong>Practice tip:</strong> Listen first, recite from memory in a quiet place, then play your recording back before sending it. A parent can help younger learners with microphone permission and submission.
       </div>
     </div>
   );

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { countGameEarningSessions, isGameEarningSessionRow } from '@/lib/daily-activity-limits';
+import { getCurrentWeekRangeUtc } from '@/lib/weekly-activity';
 
 export const dynamic = 'force-dynamic';
 
@@ -32,7 +33,7 @@ export async function GET(req: Request) {
     const days = lastNDays(28);
     const startIso = `${days[0]}T00:00:00.000Z`;
 
-    const [quizRes, gameRes, salahRes, userRes, quizCountRes, gameCountRes, salahDaysRes, habitRes, sadaqahRes] =
+    const [quizRes, gameRes, salahRes, userRes, quizCountRes, gameCountRes, salahDaysRes, habitRes, sadaqahRes, quranCountRes, hadithCountRes, arabicCountRes, milestoneRes] =
       await Promise.all([
         supabaseAdmin
           .from('quiz_attempts')
@@ -64,6 +65,36 @@ export async function GET(req: Request) {
           .from('kids_donations')
           .select('id', { count: 'exact', head: true })
           .eq('user_id', userId),
+        supabaseAdmin
+          .from('quiz_attempts')
+          .select('id', { count: 'exact', head: true })
+          .eq('user_id', userId)
+          .ilike('topic', '%quran%'),
+        supabaseAdmin
+          .from('quiz_attempts')
+          .select('id', { count: 'exact', head: true })
+          .eq('user_id', userId)
+          .ilike('topic', '%hadith%'),
+        supabaseAdmin
+          .from('game_progress')
+          .select('id', { count: 'exact', head: true })
+          .eq('uid', userId)
+          .ilike('gameid', '%arabic%'),
+        (async () => {
+          const { weekStartIso } = getCurrentWeekRangeUtc();
+          const d = new Date(weekStartIso);
+          const year = d.getUTCFullYear();
+          const onejan = new Date(Date.UTC(year, 0, 1));
+          const weekNum = Math.ceil(
+            ((d.getTime() - onejan.getTime()) / 86400000 + onejan.getUTCDay() + 1) / 7
+          );
+          const weekKey = `${year}-W${String(weekNum).padStart(2, '0')}`;
+          return supabaseAdmin
+            .from('weekly_milestone_claims')
+            .select('id', { count: 'exact', head: true })
+            .eq('user_id', userId)
+            .eq('week_key', weekKey);
+        })(),
       ]);
 
     const activeDates = new Set<string>();
@@ -91,6 +122,8 @@ export async function GET(req: Request) {
     }
 
     const gameRows = (gameCountRes.data || []).filter(isGameEarningSessionRow);
+    const quizTotal = Number(quizCountRes.count ?? 0);
+    const gameTotal = countGameEarningSessions(gameRows);
 
     const habitDaySet = new Set<string>();
     for (const row of habitRes.data || []) {
@@ -109,17 +142,28 @@ export async function GET(req: Request) {
     const totalPoints =
       Number(pointsRow?.total_points ?? userRes.data?.points ?? 0) || 0;
 
+    const quranCount = Number(quranCountRes.count ?? 0);
+    const hadithCount = Number(hadithCountRes.count ?? 0);
+    const arabicCount = Number(arabicCountRes.count ?? 0);
+    const weeklyMilestoneClaimed = Number(milestoneRes.count ?? 0) > 0;
+
     return NextResponse.json({
       activeDates: days.filter((d) => activeDates.has(d)),
       days,
       stats: {
-        quizCount: Number(quizCountRes.count ?? 0),
-        gameCount: countGameEarningSessions(gameRows),
+        quizCount: quizTotal,
+        gameCount: gameTotal,
         salahDays: salahDaySet.size,
         streak: Number(userRes.data?.streak ?? 0),
         totalPoints,
         habitDays: habitDaySet.size,
+        activeDays: activeDates.size,
         sadaqahCount: Number(sadaqahRes.count ?? 0),
+        quranCount,
+        hadithCount,
+        arabicCount,
+        totalActivities: quizTotal + gameTotal + quranCount + hadithCount + arabicCount,
+        weeklyMilestoneClaimed,
       },
     });
   } catch (error: unknown) {

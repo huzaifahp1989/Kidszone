@@ -45,7 +45,7 @@ export default function TraceArabicPage() {
     const ctx = canvasRef.current?.getContext('2d');
     if (!ctx) return;
     const { x, y } = pos(e);
-    ctx.strokeStyle = '#0f766e';
+    ctx.strokeStyle = '#1d4ed8';
     ctx.lineWidth = 6;
     ctx.lineCap = 'round';
     ctx.lineTo(x, y);

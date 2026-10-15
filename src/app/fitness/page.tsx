@@ -38,10 +38,10 @@ interface FitnessStatus {
 function StatCard({ icon, label, value, tint }: { icon: React.ReactNode; label: string; value: string; tint: string }) {
   return (
     <div className={`rounded-2xl border p-4 ${tint}`}>
-      <div className="flex items-center gap-2 text-sm font-semibold text-[#475569]">
+      <div className="flex items-center gap-2 text-sm font-semibold text-sand-700">
         {icon} {label}
       </div>
-      <p className="mt-1 text-2xl font-black text-[#1e1b4b]">{value}</p>
+      <p className="mt-1 text-2xl font-black text-teal-900">{value}</p>
     </div>
   );
 }
@@ -247,9 +247,9 @@ export default function FitnessPage() {
 
   if (authLoading || loading) {
     return (
-      <div className="min-h-screen bg-[#f5f3ff] pattern-islamic">
+      <div className="min-h-screen bg-teal-50 pattern-islamic">
         <div className="mx-auto max-w-md px-4 py-16 text-center">
-          <Loader2 className="mx-auto animate-spin text-[#7c3aed]" size={32} />
+          <Loader2 className="mx-auto animate-spin text-teal-600" size={32} />
         </div>
       </div>
     );
@@ -257,12 +257,12 @@ export default function FitnessPage() {
 
   if (!user) {
     return (
-      <div className="min-h-screen bg-[#f5f3ff] pattern-islamic">
+      <div className="min-h-screen bg-teal-50 pattern-islamic">
         <div className="mx-auto max-w-md px-4 py-16">
           <div className="rounded-3xl border border-amber-300 bg-amber-50 p-8 text-center">
             <Footprints className="mx-auto text-amber-500" size={36} />
             <p className="mt-2 font-bold text-amber-800">Sign in to join the Fitness Challenge</p>
-            <Link href="/signin?next=/fitness" className="mt-3 inline-block rounded-xl bg-[#7c3aed] px-5 py-2.5 font-bold text-white">Sign in</Link>
+            <Link href="/signin?next=/fitness" className="mt-3 inline-block rounded-xl bg-teal-600 px-5 py-2.5 font-bold text-white">Sign in</Link>
           </div>
         </div>
       </div>
@@ -285,12 +285,12 @@ export default function FitnessPage() {
   const distanceKm = ((today?.distanceM ?? 0) / 1000).toFixed(2);
 
   return (
-    <div className="min-h-screen bg-[#f5f3ff] pattern-islamic">
+    <div className="min-h-screen bg-teal-50 pattern-islamic">
       <div className="mx-auto max-w-3xl space-y-6 px-4 py-8">
         <div className="text-center">
-          <div className="mx-auto inline-flex h-16 w-16 items-center justify-center rounded-3xl bg-gradient-to-br from-[#16a34a] to-[#15803d] text-3xl text-white shadow-lg">🏃</div>
-          <h1 className="mt-2 text-4xl font-black text-[#1e1b4b] md:text-5xl">Kids Fitness Challenge</h1>
-          <p className="text-lg text-[#475569]">Walk every day, earn points, and climb the leaderboard!</p>
+          <div className="mx-auto inline-flex h-16 w-16 items-center justify-center rounded-3xl bg-gradient-to-br from-[#2563eb] to-[#1d4ed8] text-3xl text-white shadow-lg">🏃</div>
+          <h1 className="mt-2 text-4xl font-black text-teal-900 md:text-5xl">Kids Fitness Challenge</h1>
+          <p className="text-lg text-sand-700">Walk every day, earn points, and climb the leaderboard!</p>
         </div>
 
         {status?.tableMissing ? (
@@ -299,7 +299,7 @@ export default function FitnessPage() {
           </div>
         ) : (
           <>
-            <div className="overflow-hidden rounded-3xl border border-[#c4b5fd]/40 bg-gradient-to-br from-[#4c1d95] via-[#6d28d9] to-[#7c3aed] p-6 text-white shadow-lg">
+            <div className="overflow-hidden rounded-3xl border border-teal-300/40 bg-gradient-to-br from-teal-900 via-teal-700 to-teal-600 p-6 text-white shadow-lg">
               <p className="text-sm font-semibold uppercase tracking-wide text-amber-200">Today&apos;s challenge</p>
               <p className="mt-1 text-2xl font-black">{challenge ? challenge.name : 'No active challenge'}</p>
               {challenge ? (
@@ -329,12 +329,12 @@ export default function FitnessPage() {
             {message ? <p className="rounded-xl bg-emerald-50 px-4 py-2 text-center text-sm font-semibold text-emerald-700">{message}</p> : null}
             {error ? <p className="rounded-xl bg-rose-50 px-4 py-2 text-center text-sm font-semibold text-rose-700">{error}</p> : null}
 
-            <div className="rounded-2xl border border-[#c4b5fd]/40 bg-white p-4 text-center shadow">
+            <div className="rounded-2xl border border-teal-300/40 bg-white p-4 text-center shadow">
               {nativeSupported ? (
                 <div className="space-y-3">
-                  <p className="font-bold text-[#1e1b4b]">🚶 Phone step counter</p>
-                  <p className="text-4xl font-black text-[#16a34a] tabular-nums">{displaySteps.toLocaleString()}</p>
-                  <p className="text-xs text-[#64748b]">
+                  <p className="font-bold text-teal-900">🚶 Phone step counter</p>
+                  <p className="text-4xl font-black text-[#2563eb] tabular-nums">{displaySteps.toLocaleString()}</p>
+                  <p className="text-xs text-sand-600">
                     {trackerMessage || 'Steps update automatically while this page is open.'}
                   </p>
                   <div className="flex flex-wrap justify-center gap-2">
@@ -342,7 +342,7 @@ export default function FitnessPage() {
                       type="button"
                       onClick={() => void sync(true)}
                       disabled={syncing}
-                      className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-[#16a34a] to-[#15803d] px-6 py-3 font-bold text-white shadow-lg transition hover:-translate-y-0.5 disabled:opacity-50"
+                      className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-[#2563eb] to-[#1d4ed8] px-6 py-3 font-bold text-white shadow-lg transition hover:-translate-y-0.5 disabled:opacity-50"
                     >
                       {syncing ? <Loader2 size={18} className="animate-spin" /> : <RefreshCw size={18} />}
                       {syncing ? 'Syncing steps…' : 'Sync my steps'}
@@ -369,7 +369,7 @@ export default function FitnessPage() {
                     </div>
                   ) : (
                     <>
-                      <p className="font-bold text-[#1e1b4b]">🚶 Log today&apos;s steps</p>
+                      <p className="font-bold text-teal-900">🚶 Log today&apos;s steps</p>
                       <p className="text-xs text-slate-500">
                         On mobile the app counts steps automatically. On web, tap a preset or type your step count.
                       </p>
@@ -424,7 +424,7 @@ export default function FitnessPage() {
                         type="button"
                         onClick={() => void logManualSteps()}
                         disabled={loggingManual || (!manualStepsInput && !manualMinutesInput)}
-                        className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#16a34a] to-[#15803d] px-6 py-3 font-bold text-white shadow-lg transition hover:-translate-y-0.5 disabled:opacity-50 disabled:transform-none"
+                        className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#2563eb] to-[#1d4ed8] px-6 py-3 font-bold text-white shadow-lg transition hover:-translate-y-0.5 disabled:opacity-50 disabled:transform-none"
                       >
                         {loggingManual ? <Loader2 size={18} className="animate-spin" /> : <Footprints size={18} />}
                         {loggingManual ? 'Logging…' : 'Log my steps'}
@@ -454,8 +454,8 @@ export default function FitnessPage() {
               <StatCard icon={<Trophy size={15} />} label="Fitness points" value={(status?.totalPoints ?? 0).toLocaleString()} tint="border-amber-200 bg-amber-50" />
             </div>
 
-            <div className="rounded-3xl border border-[#c4b5fd]/40 bg-white p-6 shadow">
-              <h2 className="mb-3 flex items-center gap-2 text-lg font-black text-[#1e1b4b]">
+            <div className="rounded-3xl border border-teal-300/40 bg-white p-6 shadow">
+              <h2 className="mb-3 flex items-center gap-2 text-lg font-black text-teal-900">
                 <Award size={20} className="text-amber-500" /> Achievements
               </h2>
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -465,14 +465,14 @@ export default function FitnessPage() {
                     className={`rounded-2xl border p-3 text-center ${a.earned ? 'border-amber-300 bg-amber-50' : 'border-slate-200 bg-slate-50 opacity-60'}`}
                   >
                     <div className="text-3xl">{a.earned ? a.emoji : '🔒'}</div>
-                    <p className="mt-1 text-xs font-bold text-[#1e1b4b]">{a.label}</p>
+                    <p className="mt-1 text-xs font-bold text-teal-900">{a.label}</p>
                   </div>
                 ))}
               </div>
             </div>
 
             <div className="text-center">
-              <Link href="/fitness/leaderboard" className="inline-flex items-center gap-2 rounded-xl border border-[#7c3aed]/30 bg-white px-5 py-3 font-bold text-[#6d28d9] shadow-sm transition hover:bg-[#f5f3ff]">
+              <Link href="/fitness/leaderboard" className="inline-flex items-center gap-2 rounded-xl border border-teal-600/30 bg-white px-5 py-3 font-bold text-teal-700 shadow-sm transition hover:bg-teal-50">
                 <Trophy size={18} /> Fitness Leaderboard
               </Link>
             </div>

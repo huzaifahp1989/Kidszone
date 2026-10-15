@@ -22,7 +22,6 @@ const SUPABASE_URL =
   (!isPlaceholderSupabaseUrl(envUrl) && envUrl) ||
   (allowFallback ? PRODUCTION_SUPABASE_URL : 'https://placeholder.supabase.co');
 
-const SERVICE_ROLE_KEY = resolveServiceRoleKey();
 const envAnon =
   cleanEnv(process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) || cleanEnv(process.env.SUPABASE_ANON_KEY);
 const ANON_KEY =
@@ -35,7 +34,7 @@ export function hasSupabaseServiceRole(): boolean {
 }
 
 const SUPABASE_SERVICE_ROLE_KEY = hasSupabaseServiceRole()
-  ? SERVICE_ROLE_KEY
+  ? resolveServiceRoleKey()
   : ANON_KEY || 'placeholder';
 
 if (!cleanEnv(process.env.NEXT_PUBLIC_SUPABASE_URL) && !cleanEnv(process.env.SUPABASE_URL)) {

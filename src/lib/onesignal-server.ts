@@ -6,7 +6,10 @@
  * deliver when the WTN app is backgrounded/closed (not force-stopped).
  */
 
-import { getOneSignalAppTargets, getServerOneSignalAppId } from '@/lib/onesignal-server-config';
+import {
+  getOneSignalAppTargets,
+  getServerOneSignalAppId,
+} from '@/lib/onesignal-server-config';
 
 const ONESIGNAL_API = 'https://api.onesignal.com/notifications';
 const ONESIGNAL_PLAYERS_API = 'https://onesignal.com/api/v1/players';
@@ -55,7 +58,7 @@ function getRestApiKey(override?: string | null): string | null {
 }
 
 export function isOneSignalServerConfigured(): boolean {
-  return Boolean(getRestApiKey() && getServerOneSignalAppId());
+  return getOneSignalAppTargets().length > 0;
 }
 
 function authHeaders(apiKey: string, mode: 'key' | 'basic'): Record<string, string> {

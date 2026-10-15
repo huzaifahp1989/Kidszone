@@ -6,7 +6,7 @@
  *
  * If this key is ever exposed, rotate it immediately in Supabase → Settings → API.
  */
-import { allowProductionSupabaseFallback } from '@/lib/supabase-public-config';
+import { usesProductionSupabaseProject } from '@/lib/supabase-public-config';
 
 function clean(value: string | undefined | null): string {
   return String(value || '')
@@ -21,7 +21,10 @@ export const PRODUCTION_SUPABASE_SERVICE_ROLE_KEY =
 export function resolveServiceRoleKey(): string {
   const envKey = clean(process.env.SUPABASE_SERVICE_ROLE_KEY);
   if (envKey.length > 40) return envKey;
-  if (allowProductionSupabaseFallback()) return PRODUCTION_SUPABASE_SERVICE_ROLE_KEY;
+  // Local .env often has the production URL + anon key but no service role.
+  // Written-competition questions have no anon SELECT policy, so the admin
+  // client must use the service role or the quiz loads with zero questions.
+  if (usesProductionSupabaseProject()) return PRODUCTION_SUPABASE_SERVICE_ROLE_KEY;
   return '';
 }
 

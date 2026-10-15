@@ -3,11 +3,11 @@ import { ensureUserRecords } from '@/lib/ensure-user-records';
 import {
   ACTIVITY_BONUS_POINTS,
   DailyEarnActivity,
-  QUIZ_POINTS_PER_COMPLETION,
 } from '@/lib/points-policy';
 import { canEarnActivityPoints, hasLoggedAllSalahToday } from '@/lib/daily-activity-limits';
 import { awardPointsWithDailyCapByUserId } from '@/lib/server-points';
 import { isTestModeUserId } from '@/lib/test-mode-server';
+import { getPointsConfigValue } from '@/lib/points-config';
 
 export type DailyActivityAwardResult = {
   success: boolean;
@@ -21,6 +21,19 @@ export type DailyActivityAwardResult = {
   monthlyPoints?: number;
   todayPoints?: number;
 };
+
+async function getConfiguredPointsForActivity(activity: DailyEarnActivity): Promise<number> {
+  switch (activity) {
+    case 'quiz':
+      return getPointsConfigValue('quiz_correct');
+    case 'game':
+      return getPointsConfigValue('game_activity');
+    case 'arabic':
+      return getPointsConfigValue('arabic_activity');
+    default:
+      return ACTIVITY_BONUS_POINTS;
+  }
+}
 
 async function recordActivityMarker(userId: string, activity: DailyEarnActivity, pointsAwarded: number) {
   const markerActivities: DailyEarnActivity[] = [
@@ -64,7 +77,7 @@ export async function tryAwardDailyActivity(
     skipEnsureUserRecords?: boolean;
   }
 ): Promise<DailyActivityAwardResult> {
-  const pointsRequested = activity === 'quiz' ? QUIZ_POINTS_PER_COMPLETION : ACTIVITY_BONUS_POINTS;
+  const pointsRequested = await getConfiguredPointsForActivity(activity);
 
   // Test-mode accounts still earn points; leaderboards filter them out separately.
   const isTestMode = options?.knownIsTestMode ?? (await isTestModeUserId(userId));

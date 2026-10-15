@@ -80,7 +80,7 @@ export function EnablePushPrompt() {
         setMessage(
           canRegisterWtnNotification()
             ? 'Tap Allow on the system popup. If none appeared, check phone notification settings for Kids Zone.'
-            : 'Tap Allow on the browser popup. For closed-app push, open Kids Zone inside the WTN mobile app.'
+            : 'Tap Allow on the browser popup. If it does not appear, check this site’s notification permission and Web Push setup.'
         );
       }
     } catch {

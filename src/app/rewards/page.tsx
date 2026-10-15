@@ -2,13 +2,14 @@
 
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '@/lib/auth-context';
-import { BiWeeklyResetPopup, Button, WeeklyActivitiesProgress } from '@/components';
+import { Button } from '@/components';
 import { Trophy, Star, Award, Lock, Crown, Mic, Sparkles, CheckCircle2, MessageCircle, CalendarDays } from 'lucide-react';
 import Link from 'next/link';
-import { SurveyBanner, SurveyPopup } from '@/components';
 import { SpinWheel } from '@/components/SpinWheel';
 import { WonPrizeVouchers } from '@/components/WonPrizeVouchers';
 import { DailyTasksReport } from '@/components/DailyTasksReport';
+import { getBadgePointProgress } from '@/lib/points-policy';
+import { AchievementGrid } from '@/components/AchievementGrid';
 
 type MonthlyCertificate = {
   key: string;
@@ -184,7 +185,6 @@ export default function RewardsPage() {
   if (!mounted || loading) {
     return (
       <div className="page-inner">
-        <BiWeeklyResetPopup pageKey="rewards" />
         <div className="flex h-[60vh] items-center justify-center">
           <div className="animate-pulse text-xl text-islamic-blue">Loading Rewards...</div>
         </div>
@@ -203,10 +203,10 @@ export default function RewardsPage() {
     Number(profile?.monthlyPoints ?? 0)
   );
   const monthsWithPoints = certificates.filter((cert) => Number(cert.monthlyPoints || 0) > 0);
-  const pointsPerBadge = 100;
-  const nextBadgePoints = (badgeCount + 1) * pointsPerBadge;
-  const pointsToNext = Math.max(0, nextBadgePoints - totalPoints);
-  const progressPercent = Math.min(100, ((pointsPerBadge - pointsToNext) / pointsPerBadge) * 100);
+  const badgeProgress = getBadgePointProgress(totalPoints);
+  const nextBadgePoints = badgeProgress.nextBadgePoints;
+  const pointsToNext = badgeProgress.pointsToNextBadge;
+  const progressPercent = badgeProgress.progressPercent;
 
   const level = Number(profile?.level ?? 1);
   const nextLevel = level + 1;
@@ -274,14 +274,11 @@ export default function RewardsPage() {
 
   return (
     <div className="page-inner">
-      <SurveyPopup />
-      <BiWeeklyResetPopup pageKey="rewards" />
-
       <main className="mx-auto max-w-4xl">
         <section className="mb-6 rounded-3xl border border-slate-200 bg-white/80 p-5 shadow-sm">
           <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
             <div>
-              <p className="text-xs font-black uppercase tracking-[0.18em] text-[#5b21b6]">Kids Zone Progress</p>
+              <p className="text-xs font-black uppercase tracking-[0.18em] text-teal-800">Kids Zone Progress</p>
               <h2 className="mt-2 text-2xl font-black text-slate-900">Points, badges, and competitions</h2>
               <p className="mt-1 text-sm text-slate-600">Earn points through quizzes, games, and activities. Check your badges, level progress, and monthly certificates below.</p>
             </div>
@@ -295,10 +292,6 @@ export default function RewardsPage() {
             </div>
           </div>
         </section>
-
-        <div className="mb-6">
-          <SurveyBanner compact />
-        </div>
 
         <div className="mb-6 flex flex-wrap gap-2 rounded-2xl border border-slate-200 bg-white p-2">
           {([
@@ -320,6 +313,10 @@ export default function RewardsPage() {
           ))}
         </div>
 
+        <section className="mb-6">
+          <AchievementGrid compact />
+        </section>
+
         {activeTab === 'today' && (
           <>
         <WonPrizeVouchers />
@@ -340,10 +337,9 @@ export default function RewardsPage() {
 
         {activeTab === 'week' && (
           <>
-        <section className="mb-6 rounded-2xl border border-[#7c3aed]/30 bg-[#ecfdf5] p-4 text-center">
-          <p className="text-[#5b21b6] font-bold">Complete any 5 activities every week to finish your weekly challenge.</p>
+        <section className="mb-6 rounded-2xl border border-teal-600/30 bg-[#eff6ff] p-4 text-center">
+          <p className="text-teal-800 font-bold">Complete any 5 activities every week to finish your weekly challenge.</p>
         </section>
-        <WeeklyActivitiesProgress />
 
         <section className="mb-6 rounded-2xl border border-violet-200 bg-violet-50 p-4 text-center">
           <p className="font-bold text-violet-900">Climb the leaderboard by being active every day (Sat–Fri).</p>
@@ -364,12 +360,20 @@ export default function RewardsPage() {
                 {currentMonthRecord?.label || 'Current month'} — quiz, games, and more
               </p>
             </div>
-            <Link
-              href="/leaderboard"
-              className="inline-flex items-center justify-center rounded-xl border border-violet-300 bg-white px-4 py-2 text-sm font-bold text-violet-800 hover:bg-violet-50"
-            >
-              Monthly leaderboard →
-            </Link>
+            <div className="flex flex-col gap-2 sm:items-stretch">
+              <Link
+                href="/points-calendar"
+                className="inline-flex items-center justify-center rounded-xl border border-violet-300 bg-white px-4 py-2 text-sm font-bold text-violet-800 hover:bg-violet-50"
+              >
+                Points calendar →
+              </Link>
+              <Link
+                href="/leaderboard"
+                className="inline-flex items-center justify-center rounded-xl border border-violet-300 bg-white px-4 py-2 text-sm font-bold text-violet-800 hover:bg-violet-50"
+              >
+                Monthly leaderboard →
+              </Link>
+            </div>
           </div>
         </section>
 
@@ -540,6 +544,26 @@ export default function RewardsPage() {
           </div>
         </section>
 
+        <section className="mb-6 rounded-3xl border border-emerald-200 bg-gradient-to-br from-emerald-50 via-white to-amber-50 p-6 shadow-sm">
+          <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
+            <div className="max-w-2xl">
+              <div className="inline-flex items-center gap-2 rounded-full bg-emerald-100 px-3 py-1 text-xs font-bold uppercase tracking-[0.18em] text-emerald-800">
+                <Sparkles size={14} /> Rabi ul Awwal
+              </div>
+              <p className="mt-3 font-extrabold text-emerald-950 text-base md:text-lg">Seerah Written Quiz</p>
+              <p className="mt-2 text-sm text-emerald-800">
+                Type your own answers about the Seerah. Admin marks every entry. Win An-Nasihah World yearly access or a stationery bundle.
+              </p>
+            </div>
+            <Link
+              href="/competitions/rabi-ul-awwal"
+              className="inline-flex items-center justify-center gap-2 rounded-2xl bg-emerald-700 px-5 py-3 text-sm font-bold text-white shadow-lg transition hover:bg-emerald-600"
+            >
+              <Trophy size={18} /> Enter Seerah Quiz
+            </Link>
+          </div>
+        </section>
+
         <section className="mb-6 rounded-3xl border border-amber-200 bg-gradient-to-br from-amber-50 via-white to-yellow-50 p-6 shadow-sm">
           <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
             <div className="max-w-2xl">
@@ -589,15 +613,15 @@ export default function RewardsPage() {
           </div>
         </section>
 
-        <Link href="/tasks" className="mb-6 flex items-center justify-between gap-4 rounded-2xl border-2 border-[#7c3aed]/40 bg-gradient-to-r from-[#f5f3ff] to-[#ecfdf5] px-5 py-4 shadow-sm hover:border-[#7c3aed]/70 hover:shadow-md transition">
+        <Link href="/tasks" className="mb-6 flex items-center justify-between gap-4 rounded-2xl border-2 border-teal-600/40 bg-gradient-to-r from-teal-50 to-[#eff6ff] px-5 py-4 shadow-sm hover:border-teal-600/70 hover:shadow-md transition">
           <div className="flex items-center gap-3">
             <span className="text-3xl">📋</span>
             <div>
-              <p className="font-extrabold text-[#5b21b6] text-base md:text-lg">Check the Tasks page to gain more points</p>
-              <p className="text-sm text-[#6d28d9]">Record stories, pledge Durood &amp; Zikr, play games and invite friends</p>
+              <p className="font-extrabold text-teal-800 text-base md:text-lg">Check the Tasks page to gain more points</p>
+              <p className="text-sm text-teal-700">Record stories, pledge Durood &amp; Zikr, play games and invite friends</p>
             </div>
           </div>
-          <span className="shrink-0 rounded-xl bg-[#7c3aed] px-4 py-2 text-sm font-bold text-white">Go to Tasks →</span>
+          <span className="shrink-0 rounded-xl bg-teal-600 px-4 py-2 text-sm font-bold text-white">Go to Tasks →</span>
         </Link>
 
         <section className="mb-8 grid gap-6">
@@ -685,7 +709,7 @@ export default function RewardsPage() {
             href="https://chat.whatsapp.com/BxmFkYb0b4CCMSQwLQdF4k"
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center justify-center gap-2 rounded-xl border border-[#128c7e] bg-[#25D366] px-5 py-3 text-sm font-bold text-white shadow-sm hover:bg-[#1ebe5d] transition"
+            className="inline-flex items-center justify-center gap-2 rounded-xl border border-[#1e40af] bg-[#2563eb] px-5 py-3 text-sm font-bold text-white shadow-sm hover:bg-[#1d4ed8] transition"
             aria-label="Join WhatsApp Group"
           >
             <MessageCircle size={18} />
@@ -740,9 +764,9 @@ export default function RewardsPage() {
         <div className="bg-white p-8 rounded-3xl shadow-sm border border-gray-100 mb-12">
           <div className="flex justify-between items-end mb-4">
             <div>
-              <h3 className="text-xl font-bold text-gray-800">Next Badge Progress</h3>
+              <h3 className="text-xl font-bold text-gray-800">Next 100-Point Badge</h3>
               <p className="text-gray-500 text-sm">
-                {pointsToNext} more points to reach Badge #{badgeCount + 1}
+                {pointsToNext} more points to reach {nextBadgePoints} lifetime points
               </p>
             </div>
             <div className="text-right">
@@ -791,8 +815,8 @@ export default function RewardsPage() {
             <div className="bg-gray-200 text-gray-400 w-16 h-16 rounded-full flex items-center justify-center mb-3">
               <Lock size={32} />
             </div>
-            <span className="font-bold text-gray-500">Badge #{badgeCount + 1}</span>
-            <span className="text-xs text-gray-400 mt-1">{nextBadgePoints} Points</span>
+            <span className="font-bold text-gray-500">Next points badge</span>
+            <span className="text-xs text-gray-400 mt-1">At {nextBadgePoints} points</span>
           </div>
 
           {Array.from({ length: Math.max(0, 4 - (badgeCount % 5)) }).map((_, i) => (

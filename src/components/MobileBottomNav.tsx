@@ -11,6 +11,7 @@ import {
   NAV_GROUPS,
   isNavActive,
 } from '@/lib/nav-config';
+import { getKidRank } from '@/lib/level-names';
 
 export const MobileBottomNav = () => {
   const pathname = usePathname();
@@ -35,6 +36,7 @@ export const MobileBottomNav = () => {
   }, [isSheetOpen]);
 
   const displayName = profile?.name;
+    const displayRank = getKidRank(profile?.points);
   const menuActive = isSheetOpen || NAV_GROUPS.some((g) =>
     g.items.some((i) => !BOTTOM_TABS.includes(i) && isNavActive(pathname, i.href))
   ) || isNavActive(pathname, CHAT_ITEM.href);
@@ -72,7 +74,7 @@ export const MobileBottomNav = () => {
               role="dialog"
               aria-modal="true"
               aria-label="Menu"
-              className="absolute inset-x-0 bottom-0 max-h-[85vh] overflow-y-auto rounded-t-3xl border-t border-violet-200/60 bg-white p-5 pb-[calc(env(safe-area-inset-bottom)+1.5rem)] shadow-2xl"
+              className="absolute inset-x-0 bottom-0 max-h-[85vh] overflow-y-auto rounded-t-3xl border-t border-teal-200/60 bg-white p-5 pb-[calc(env(safe-area-inset-bottom)+1.5rem)] shadow-2xl"
               initial={reduceMotion ? undefined : { y: '100%' }}
               animate={reduceMotion ? undefined : { y: 0 }}
               exit={reduceMotion ? undefined : { y: '100%' }}
@@ -119,12 +121,12 @@ export const MobileBottomNav = () => {
                             onClick={() => setIsSheetOpen(false)}
                             className={`flex items-center gap-2.5 rounded-2xl px-3 py-3 text-base font-bold transition interactive-focus touch-target ${
                               active
-                                ? 'bg-violet-50 text-violet-700 ring-1 ring-violet-200/60'
-                                : 'bg-sand-50 text-sand-800 hover:bg-violet-50 hover:text-violet-700'
+                                ? 'bg-teal-50 text-teal-800 ring-1 ring-teal-200/60'
+                                : 'bg-sand-50 text-sand-800 hover:bg-teal-50 hover:text-teal-700'
                             }`}
                             aria-current={active ? 'page' : undefined}
                           >
-                            <item.icon size={20} className={active ? 'text-violet-600' : 'text-sand-500'} />
+                            <item.icon size={20} className={active ? 'text-teal-600' : 'text-sand-500'} />
                             <span>{item.label}</span>
                           </Link>
                         );
@@ -144,12 +146,12 @@ export const MobileBottomNav = () => {
                         onClick={() => setIsSheetOpen(false)}
                         className={`flex items-center gap-2.5 rounded-2xl px-3 py-3 text-base font-bold transition interactive-focus touch-target ${
                           active
-                            ? 'bg-violet-50 text-violet-700 ring-1 ring-violet-200/60'
-                            : 'bg-sand-50 text-sand-800 hover:bg-violet-50 hover:text-violet-700'
+                            ? 'bg-teal-50 text-teal-800 ring-1 ring-teal-200/60'
+                            : 'bg-sand-50 text-sand-800 hover:bg-teal-50 hover:text-teal-700'
                         }`}
                         aria-current={active ? 'page' : undefined}
                       >
-                        <item.icon size={20} className={active ? 'text-violet-600' : 'text-sand-500'} />
+                        <item.icon size={20} className={active ? 'text-teal-600' : 'text-sand-500'} />
                         <span>{item.label}</span>
                       </Link>
                     );
@@ -163,7 +165,10 @@ export const MobileBottomNav = () => {
                   <div className="space-y-3">
                     <div className="flex items-center justify-between px-1">
                       <p className="font-bold text-sand-900">{displayName}</p>
-                      <span className="text-sm font-bold text-gold-600">⭐ {profile?.points ?? 0}</span>
+                      <Link href="/rank" onClick={() => setIsSheetOpen(false)} className="text-right text-sm font-bold text-teal-700 interactive-focus">
+                        <span className="block">{displayRank.emoji} {displayRank.title}</span>
+                        <span className="block text-xs text-gold-600">⭐ {profile?.points ?? 0} points</span>
+                      </Link>
                     </div>
                     <button
                       type="button"
@@ -212,13 +217,13 @@ export const MobileBottomNav = () => {
                 key={item.href}
                 href={item.href}
                 className={`flex flex-col items-center justify-center gap-1 px-1 py-2.5 text-[11px] font-bold transition interactive-focus ${
-                  active ? 'text-violet-700' : 'text-sand-500'
+                  active ? 'text-teal-700' : 'text-sand-500'
                 }`}
                 aria-current={active ? 'page' : undefined}
               >
                 <span
                   className={`flex h-9 w-9 items-center justify-center rounded-2xl transition ${
-                    active ? 'bg-violet-100 text-violet-700' : 'text-sand-500'
+                    active ? 'bg-teal-100 text-teal-700' : 'text-sand-500'
                   }`}
                 >
                   <item.icon size={20} />
@@ -234,12 +239,12 @@ export const MobileBottomNav = () => {
             aria-label="Open full menu"
             aria-expanded={isSheetOpen}
             className={`flex flex-col items-center justify-center gap-1 px-1 py-2.5 text-[11px] font-bold transition interactive-focus ${
-              menuActive ? 'text-violet-700' : 'text-sand-500'
+              menuActive ? 'text-teal-700' : 'text-sand-500'
             }`}
           >
             <span
               className={`flex h-9 w-9 items-center justify-center rounded-2xl transition ${
-                menuActive ? 'bg-violet-100 text-violet-700' : 'text-sand-500'
+                menuActive ? 'bg-teal-100 text-teal-700' : 'text-sand-500'
               }`}
             >
               <LayoutGrid size={20} />

@@ -297,7 +297,40 @@ export default function KidsZoneFeatureLab() {
     return themed ?? CHALLENGES[idx];
   }, [challengeRoll, dayKey]);
 
-  const weeklyTheme = useMemo(() => getWeeklyTheme(), []);
+  const challengeProgressKey = useMemo(
+    () => `kidszone-challenge-progress:${dayKey}:${challenge.id}`,
+    [challenge.id, dayKey]
+  );
+
+  const [challengeStatus, setChallengeStatus] = useState<'fresh' | 'started' | 'done'>(() => {
+    if (typeof window === 'undefined') return 'fresh';
+    try {
+      const raw = window.localStorage.getItem(`kidszone-challenge-progress:${dayKey}:${challenge.id}`);
+      if (raw === 'done' || raw === 'started') return raw;
+      return 'fresh';
+    } catch {
+      return 'fresh';
+    }
+  });
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      const raw = window.localStorage.getItem(challengeProgressKey);
+      setChallengeStatus(raw === 'done' || raw === 'started' ? raw : 'fresh');
+    } catch {
+      setChallengeStatus('fresh');
+    }
+  }, [challengeProgressKey]);
+
+  const markChallenge = (status: 'started' | 'done') => {
+    setChallengeStatus(status);
+    try {
+      window.localStorage.setItem(challengeProgressKey, status);
+    } catch {
+      /* ignore */
+    }
+  };
 
   const completedHabits = useMemo(
     () => HABITS.filter((habit) => checkedHabits[habit.key]).length,
@@ -404,43 +437,27 @@ export default function KidsZoneFeatureLab() {
 
   return (
     <section className="space-y-4 stagger-in">
-      <article className={`rounded-2xl border border-white/20 bg-gradient-to-r ${weeklyTheme.accent} p-5 text-white shadow-lg`}>
-        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-          <div>
-            <p className="text-xs font-bold uppercase tracking-[0.16em] text-white/80">Weekly theme</p>
-            <h3 className="mt-1 text-2xl font-black">{weeklyTheme.emoji} {weeklyTheme.title}</h3>
-            <p className="mt-2 max-w-2xl text-sm text-white/90">{weeklyTheme.bonusCopy}</p>
-          </div>
-          <Link
-            href={weeklyTheme.href}
-            className="inline-flex shrink-0 items-center justify-center rounded-xl bg-white px-5 py-3 text-sm font-bold text-[#1e1b4b] shadow hover:bg-white/90"
-          >
-            Start {weeklyTheme.title}
-          </Link>
-        </div>
-      </article>
-
     <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
       <article className="surface-card p-5 xl:col-span-1">
-        <div className="inline-flex items-center gap-2 rounded-full border border-[#7c3aed]/20 bg-[#f5f3ff] px-3 py-1 text-xs font-bold uppercase tracking-[0.16em] text-[#5b21b6]">
+        <div className="inline-flex items-center gap-2 rounded-full border border-teal-200 bg-teal-50 px-3 py-1 text-xs font-bold uppercase tracking-[0.16em] text-teal-800">
           <BookHeart size={14} /> Ayah of the Day
         </div>
-        <p className="mt-4 text-lg font-bold text-[#1e1b4b] leading-7">{ayah.text}</p>
-        <p className="mt-2 text-sm font-semibold text-[#5b21b6]">{ayah.reference}</p>
-        <p className="mt-3 text-sm text-[#7c4b2f]">{ayah.reflection}</p>
+        <p className="mt-4 text-lg font-bold leading-7 text-sand-900">{ayah.text}</p>
+        <p className="mt-2 text-sm font-semibold text-teal-700">{ayah.reference}</p>
+        <p className="mt-3 text-sm text-sand-600">{ayah.reflection}</p>
       </article>
 
       <article className="surface-card p-5 xl:col-span-1">
         <div className="flex items-center justify-between gap-3">
           <div>
-            <div className="inline-flex items-center gap-2 rounded-full border border-[#fbbf24]/30 bg-[#fffbeb] px-3 py-1 text-xs font-bold uppercase tracking-[0.16em] text-[#b45309]">
+            <div className="inline-flex items-center gap-2 rounded-full border border-gold-200 bg-gold-50 px-3 py-1 text-xs font-bold uppercase tracking-[0.16em] text-sand-800">
               <CheckCircle2 size={14} /> Good Deeds Tracker
             </div>
-            <p className="mt-2 text-sm text-[#8c5a3c]">Small deeds today build big habits tomorrow.</p>
+            <p className="mt-2 text-sm text-sand-600">Small deeds today build big habits tomorrow.</p>
           </div>
           <div className="text-right">
-            <p className="text-2xl font-black text-[#1e1b4b]">{loading ? '...' : `${habitPercent}%`}</p>
-            <p className="text-xs text-[#475569]">{loading ? 'Syncing...' : `${completedHabits}/${HABITS.length} done`}</p>
+            <p className="text-2xl font-black text-sand-900">{loading ? '...' : `${habitPercent}%`}</p>
+            <p className="text-xs text-sand-500">{loading ? 'Syncing...' : `${completedHabits}/${HABITS.length} done`}</p>
           </div>
         </div>
 
@@ -454,23 +471,23 @@ export default function KidsZoneFeatureLab() {
                 onClick={() => toggleHabit(habit.key)}
                 className={`w-full rounded-xl border p-3 text-left transition-all ${
                   checked
-                    ? 'border-[#7c3aed]/40 bg-[#f5f3ff]'
-                    : 'border-[#c4b5fd]/30 bg-white hover:border-[#d6b18a]'
+                    ? 'border-teal-300 bg-teal-50'
+                    : 'border-sand-200 bg-white hover:border-teal-200'
                 }`}
               >
                 <div className="flex items-start gap-3">
                   <div
-                    className={`mt-0.5 h-5 w-5 rounded-full border-2 flex items-center justify-center ${
+                    className={`mt-0.5 flex h-5 w-5 items-center justify-center rounded-full border-2 ${
                       checked
-                        ? 'border-[#6d28d9] bg-[#6d28d9] text-white'
-                        : 'border-[#d6b18a] bg-transparent'
+                        ? 'border-teal-600 bg-teal-600 text-white'
+                        : 'border-sand-300 bg-transparent'
                     }`}
                   >
                     {checked ? <CheckCircle2 size={12} /> : null}
                   </div>
                   <div>
-                    <p className="font-semibold text-[#1e1b4b]">{habit.label}</p>
-                    <p className="text-xs text-[#475569] mt-0.5">{habit.description}</p>
+                    <p className="font-semibold text-sand-900">{habit.label}</p>
+                    <p className="mt-0.5 text-xs text-sand-500">{habit.description}</p>
                   </div>
                 </div>
               </button>
@@ -479,34 +496,60 @@ export default function KidsZoneFeatureLab() {
         </div>
       </article>
 
-      <article className="surface-card p-5 xl:col-span-1 bg-gradient-to-br from-[#eef2ff] via-white to-[#f5f3ff] border border-[#c7d2fe]">
-        <div className="inline-flex items-center gap-2 rounded-full border border-[#6366f1]/25 bg-white px-3 py-1 text-xs font-bold uppercase tracking-[0.16em] text-[#4338ca]">
-          <Compass size={14} /> Mystery Challenge
+      <article className="surface-card border border-teal-200 bg-gradient-to-br from-teal-50 via-white to-sand-50 p-5 xl:col-span-1">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="inline-flex items-center gap-2 rounded-full border border-teal-200 bg-white px-3 py-1 text-xs font-bold uppercase tracking-[0.16em] text-teal-800">
+            <Compass size={14} /> Mystery Challenge
+          </div>
+          <span
+            className={`rounded-full px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wide ${
+              challengeStatus === 'done'
+                ? 'bg-teal-600 text-white'
+                : challengeStatus === 'started'
+                  ? 'bg-gold-400 text-sand-900'
+                  : 'bg-sand-100 text-sand-600'
+            }`}
+          >
+            {challengeStatus === 'done' ? 'Done today' : challengeStatus === 'started' ? 'Started' : 'Ready'}
+          </span>
         </div>
 
-        <h3 className="mt-4 text-xl font-black text-[#312e81]">{challenge.title}</h3>
-        <p className="mt-2 text-sm text-[#4f46e5]">{challenge.description}</p>
+        <h3 className="mt-4 text-xl font-black text-teal-900">{challenge.title}</h3>
+        <p className="mt-2 text-sm text-sand-600">{challenge.description}</p>
 
-        <div className="mt-4 rounded-xl bg-white/80 border border-[#c7d2fe] px-3 py-3">
-          <p className="text-xs uppercase tracking-[0.14em] text-[#6366f1]">Potential Reward</p>
-          <p className="text-2xl font-black text-[#1e1b4b]">+{challenge.points} points</p>
+        <div className="mt-4 rounded-xl border border-teal-100 bg-white/80 px-3 py-3">
+          <p className="text-xs uppercase tracking-[0.14em] text-teal-700">Practice activity</p>
+          <p className="text-sm font-semibold text-sand-800">
+            Open the activity to practise. Points come from that activity&apos;s own rules — not a separate claim here.
+          </p>
         </div>
 
         <div className="mt-4 flex flex-wrap gap-2">
           <button
             type="button"
             onClick={rollChallenge}
-            className="inline-flex items-center gap-2 rounded-xl border border-[#6366f1]/30 bg-white px-4 py-2 text-sm font-bold text-[#4338ca] hover:bg-[#eef2ff]"
+            className="inline-flex items-center gap-2 rounded-xl border border-teal-200 bg-white px-4 py-2 text-sm font-bold text-teal-800 hover:bg-teal-50"
           >
             <Shuffle size={16} /> New Challenge
           </button>
 
           <Link
             href={challenge.href}
-            className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-[#6366f1] to-[#4338ca] px-4 py-2 text-sm font-bold text-white shadow hover:opacity-95"
+            onClick={() => markChallenge(challengeStatus === 'done' ? 'done' : 'started')}
+            className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-teal-600 to-teal-800 px-4 py-2 text-sm font-bold text-white shadow hover:opacity-95"
           >
-            <Sparkles size={16} /> Start Challenge
+            <Sparkles size={16} /> {challengeStatus === 'done' ? 'Practise again' : 'Start Challenge'}
           </Link>
+
+          {challengeStatus === 'started' && (
+            <button
+              type="button"
+              onClick={() => markChallenge('done')}
+              className="inline-flex items-center gap-2 rounded-xl border border-gold-300 bg-gold-50 px-4 py-2 text-sm font-bold text-sand-900"
+            >
+              <CheckCircle2 size={16} /> Mark done
+            </button>
+          )}
         </div>
       </article>
     </div>

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { buildStorageResponsePayload, deleteObject, getReadableObjectUrl, uploadObject } from '@/lib/object-storage';
+import { getAuthenticatedRequestUser } from '@/lib/request-auth';
 
 export const dynamic = 'force-dynamic';
 
@@ -20,21 +21,22 @@ async function attachAudioUrls(recordings: Array<{ audio_path?: string; audio_ur
 
 export async function GET(request: NextRequest) {
   const surahNumber = Number(request.nextUrl.searchParams.get('surahNumber'));
-  const userId = request.nextUrl.searchParams.get('userId');
+  const source = request.nextUrl.searchParams.get('source');
+  const user = await getAuthenticatedRequestUser(request);
 
-  if (!Number.isInteger(surahNumber) || surahNumber < 78 || surahNumber > 114) {
+  if (!Number.isInteger(surahNumber) || surahNumber < 1 || surahNumber > 114) {
     return NextResponse.json({ error: 'Invalid surah number' }, { status: 400 });
   }
-  if (!userId) {
-    return NextResponse.json({ recordings: [] });
+  if (!user?.id) {
+    return NextResponse.json({ error: 'Sign in required' }, { status: 401 });
   }
 
   try {
     const { data, error } = await supabaseAdmin
       .from('recordings')
-      .select('id, title, duration, status, created_at, submitted_at, audio_path, child_name')
+      .select('id, title, duration, status, created_at, submitted_at, audio_path, child_name, description, admin_notes, reviewed_at')
       .eq('category', 'quran')
-      .eq('user_id', userId)
+      .eq('user_id', user.id)
       .ilike('title', `Surah ${surahNumber}:%`)
       .order('created_at', { ascending: false })
       .limit(10);
@@ -43,7 +45,16 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    const withUrls = await attachAudioUrls(data || []);
+    const filtered = source
+      ? (data || []).filter((recording) => {
+          try {
+            return JSON.parse(recording.description || '{}').source === source;
+          } catch {
+            return false;
+          }
+        })
+      : data || [];
+    const withUrls = await attachAudioUrls(filtered);
     return NextResponse.json({ recordings: withUrls });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Failed to load recordings';
@@ -58,19 +69,36 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid content type' }, { status: 400 });
     }
 
+    const user = await getAuthenticatedRequestUser(request);
+    if (!user?.id) {
+      return NextResponse.json({ error: 'Sign in required to submit a recording' }, { status: 401 });
+    }
+
     const formData = await request.formData();
     const file = formData.get('recording');
     const surahNumber = Number(formData.get('surahNumber'));
     const surahName = (formData.get('surahName') as string) || 'Surah';
     const duration = formData.get('duration') as string | null;
     const childName = formData.get('childName') as string | null;
-    const userId = formData.get('userId') as string | null;
+    const source = formData.get('source') === 'hifz' ? 'hifz' : 'juz-amma-learn';
+    const recordingPart = String(formData.get('recordingPart') || 'full-surah');
+    const partDetail = String(formData.get('partDetail') || '').trim().slice(0, 100);
+    const validParts = ['full-surah', 'juz', 'ayah-range', 'other'];
 
     if (!(file instanceof Blob)) {
       return NextResponse.json({ error: 'Recording file is required' }, { status: 400 });
     }
-    if (!Number.isInteger(surahNumber) || surahNumber < 78 || surahNumber > 114) {
+    if (!Number.isInteger(surahNumber) || surahNumber < 1 || surahNumber > 114) {
       return NextResponse.json({ error: 'Invalid surah number' }, { status: 400 });
+    }
+    if (!validParts.includes(recordingPart)) {
+      return NextResponse.json({ error: 'Invalid recording part' }, { status: 400 });
+    }
+    if (source === 'hifz' && recordingPart !== 'full-surah' && !partDetail) {
+      return NextResponse.json({ error: 'Recording part details are required' }, { status: 400 });
+    }
+    if (recordingPart === 'juz' && (!/^\d+$/.test(partDetail) || Number(partDetail) < 1 || Number(partDetail) > 30)) {
+      return NextResponse.json({ error: 'Juz number must be between 1 and 30' }, { status: 400 });
     }
 
     const buffer = Buffer.from(await file.arrayBuffer());
@@ -89,8 +117,15 @@ export async function POST(request: NextRequest) {
           : 'webm';
 
     const timestamp = Date.now();
-    const filename = `quran/${userId || 'guest'}/surah-${surahNumber}_${timestamp}.${extension}`;
+    const filename = `quran/${user.id}/surah-${surahNumber}_${timestamp}.${extension}`;
     const title = `Surah ${surahNumber}: ${surahName}`;
+    const partLabel = recordingPart === 'full-surah'
+      ? 'Full surah'
+      : recordingPart === 'juz'
+        ? `Juz ${partDetail}`
+        : recordingPart === 'ayah-range'
+          ? partDetail
+          : `Other: ${partDetail}`;
 
     try {
       await uploadObject({
@@ -107,12 +142,12 @@ export async function POST(request: NextRequest) {
     const { data: inserted, error: dbError } = await supabaseAdmin
       .from('recordings')
       .insert({
-        user_id: userId || null,
+        user_id: user.id,
         story_id: null,
         category: 'quran',
         child_name: childName?.trim() || null,
         title,
-        description: JSON.stringify({ surahNumber, source: 'juz-amma-learn' }),
+        description: JSON.stringify({ surahNumber, source, recordingPart, partDetail, partLabel }),
         audio_path: filename,
         duration: parseInt(duration || '0', 10),
         status: 'submitted',

@@ -6,6 +6,7 @@ CREATE TABLE IF NOT EXISTS push_schedules (
   url TEXT DEFAULT '/quiz',
   image_url TEXT,
   audience TEXT NOT NULL DEFAULT 'kids_zone',
+  target_user_id TEXT,
   frequency TEXT NOT NULL CHECK (frequency IN ('daily', 'weekly')),
   time_of_day TEXT NOT NULL DEFAULT '16:00',
   day_of_week INTEGER CHECK (day_of_week IS NULL OR (day_of_week >= 0 AND day_of_week <= 6)),
@@ -27,3 +28,4 @@ CREATE INDEX IF NOT EXISTS idx_push_schedules_created
 ALTER TABLE push_schedules ENABLE ROW LEVEL SECURITY;
 
 ALTER TABLE push_schedules ADD COLUMN IF NOT EXISTS image_url TEXT;
+ALTER TABLE push_schedules ADD COLUMN IF NOT EXISTS target_user_id TEXT;

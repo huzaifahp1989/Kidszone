@@ -64,7 +64,7 @@ export default function QuranPage() {
                 </div>
                 <h2 className="text-xl font-bold sm:text-2xl">Quran Listening</h2>
                 <p className="mt-2 text-xs text-amber-100 sm:text-sm">
-                  Listen with top reciters. Choose short surahs or longer ones like Ya-Sin and Al-Mulk, then claim daily listening points.
+                  Listen to all 114 surahs with 200+ reciters, then claim daily listening points and track your rewards.
                 </p>
                 <p className="mt-4 text-sm font-bold text-white/90 group-hover:underline">Start listening →</p>
               </div>

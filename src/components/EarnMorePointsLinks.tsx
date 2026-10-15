@@ -20,15 +20,6 @@ const RECORDING_EARN_LINK: WhatsNewItem = {
   pointsHint: `+${RECORDING_APPROVED_POINTS}`,
 };
 
-const AUG_MANUAL_QUIZ_LINK: WhatsNewItem = {
-  href: '/quiz-challenge/aug-2026-mixed',
-  emoji: '🎯',
-  title: 'August Manual Quiz',
-  blurb: '40 questions · 8 Islamic themes',
-  badge: 'AUG',
-  pointsHint: '+up to 200',
-};
-
 /**
  * Compact strip of new / related activities — used on Quiz, Games, Pledge.
  */
@@ -41,9 +32,9 @@ export function EarnMorePointsLinks({ title = 'Earn more points' }: EarnMorePoin
     if (pathname.startsWith('/games') && item.href === '/games') return false;
     if (pathname.startsWith('/quiz') && item.href === '/quiz') return false;
     return true;
-  }).slice(0, 4);
+  }).slice(0, 5);
 
-  const links = [RECORDING_EARN_LINK, AUG_MANUAL_QUIZ_LINK, ...otherLinks];
+  const links = [RECORDING_EARN_LINK, ...otherLinks];
 
   return (
     <section

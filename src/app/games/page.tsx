@@ -1,7 +1,6 @@
 'use client';
 import { useRouter } from 'next/navigation';
 import React, { useEffect, useRef, useState } from 'react';
-import { BiWeeklyResetPopup } from '@/components';
 import { usePointsProgress } from '@/lib/points-progress-context';
 import { useAuth } from '@/lib/auth-context';
 import { useCompleteGameSession } from '@/lib/use-complete-game-session';
@@ -35,10 +34,10 @@ interface GameSession { id: GameId; title: string; icon: string; tasks: Task[]; 
 
 const gameCatalog: { id: GameId; title: string; description: string; icon: string; color: string }[] = [
   { id: 'hangman',        title: 'Islamic Hangman',   description: 'Guess Islamic words letter by letter',        icon: '🏗️', color: 'from-[#ec4899] to-[#db2777]' },
-  { id: 'crossword',      title: 'Islamic Crossword', description: 'Fill in the Islamic crossword puzzle',        icon: '🔤', color: 'from-[#7c3aed] to-[#6d28d9]' },
-  { id: 'scramble',       title: 'Word Scramble',     description: 'Unscramble mixed-up Islamic words',           icon: '🔀', color: 'from-[#8b5cf6] to-[#6366f1]' },
+  { id: 'crossword',      title: 'Islamic Crossword', description: 'Fill in the Islamic crossword puzzle',        icon: '🔤', color: 'from-teal-600 to-teal-700' },
+  { id: 'scramble',       title: 'Word Scramble',     description: 'Unscramble mixed-up Islamic words',           icon: '🔀', color: 'from-teal-400 to-teal-500' },
   { id: 'true-or-false',  title: 'True or False',     description: 'Test your Islamic knowledge with T/F',       icon: '✅', color: 'from-[#f59e0b] to-[#d97706]' },
-  { id: 'names-of-allah', title: '99 Names of Allah', description: "Match Allah's beautiful names to meanings",  icon: '☪️', color: 'from-[#3b82f6] to-[#2563eb]' },
+  { id: 'names-of-allah', title: '99 Names of Allah', description: "Match Allah's beautiful names to meanings",  icon: '☪️', color: 'from-teal-500 to-teal-600' },
 ];
 
 const shuffle = <T,>(arr: T[]) => {
@@ -325,7 +324,7 @@ export default function GamesPage() {
     return (
       <div className="page-canvas py-8 px-4">
         <div className="max-w-3xl mx-auto">
-          <button onClick={quitGame} className="flex items-center gap-2 text-[#1e1b4b] hover:text-[#7c3aed] font-semibold mb-6">
+          <button onClick={quitGame} className="flex items-center gap-2 text-teal-900 hover:text-teal-600 font-semibold mb-6">
             <ArrowLeft size={20} /> Back to Games
           </button>
           <div className="hero-panel p-6">
@@ -333,12 +332,12 @@ export default function GamesPage() {
               <div className="flex items-center gap-3">
                 <span className="text-3xl">{session.icon}</span>
                 <div>
-                  <h2 className="text-xl font-bold text-[#1e1b4b]">{session.title}</h2>
-                  {session.tasks.length > 1 && <p className="text-sm text-[#475569]">Question {taskIndex + 1} of {session.tasks.length}</p>}
+                  <h2 className="text-xl font-bold text-teal-900">{session.title}</h2>
+                  {session.tasks.length > 1 && <p className="text-sm text-sand-700">Question {taskIndex + 1} of {session.tasks.length}</p>}
                 </div>
               </div>
-              <div className="bg-[#f5f3ff] px-4 py-2 rounded-xl">
-                <p className="text-sm font-bold text-[#7c3aed]">⭐ {points} pts</p>
+              <div className="bg-teal-50 px-4 py-2 rounded-xl">
+                <p className="text-sm font-bold text-teal-600">⭐ {points} pts</p>
               </div>
             </div>
 
@@ -358,10 +357,10 @@ export default function GamesPage() {
                     {hangmanWrongCount >= 6 && <line x1="80" y1="85" x2="100" y2="110" />}
                   </svg>
                 </div>
-                <p className="text-center text-[#475569] font-medium">Hint: {currentTask.prompt}</p>
+                <p className="text-center text-sand-700 font-medium">Hint: {currentTask.prompt}</p>
                 <div className="flex gap-2 justify-center flex-wrap">
                   {(currentTask.meta?.word as string)?.split('').map((char, idx) => (
-                    <div key={idx} className="w-10 h-12 border-b-4 border-[#1e1b4b] flex items-center justify-center text-2xl font-bold text-[#1e1b4b]">
+                    <div key={idx} className="w-10 h-12 border-b-4 border-teal-900 flex items-center justify-center text-2xl font-bold text-teal-900">
                       {hangmanGuesses.has(char.toUpperCase()) ? char.toUpperCase() : ''}
                     </div>
                   ))}
@@ -370,12 +369,12 @@ export default function GamesPage() {
                   {'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').map(char => (
                     <button key={char} onClick={() => handleHangmanGuess(char)}
                       disabled={hangmanGuesses.has(char) || hangmanWrongCount >= 6}
-                      className={`p-2 rounded-lg font-bold text-sm transition ${hangmanGuesses.has(char) ? ((currentTask.meta?.word as string)?.toUpperCase().includes(char) ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-400') : 'bg-[#ede9fe] text-[#1e1b4b] hover:bg-[#7c3aed] hover:text-white'}`}>
+                      className={`p-2 rounded-lg font-bold text-sm transition ${hangmanGuesses.has(char) ? ((currentTask.meta?.word as string)?.toUpperCase().includes(char) ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-400') : 'bg-teal-100 text-teal-900 hover:bg-teal-600 hover:text-white'}`}>
                       {char}
                     </button>
                   ))}
                 </div>
-                <p className="text-center text-sm text-[#475569]">Wrong guesses: {hangmanWrongCount}/6</p>
+                <p className="text-center text-sm text-sand-700">Wrong guesses: {hangmanWrongCount}/6</p>
               </div>
             )}
 
@@ -383,7 +382,7 @@ export default function GamesPage() {
               const solvedGrid = buildCrosswordGrid(crosswordPuzzleState);
               return (
                 <div className="space-y-6">
-                  <p className="text-lg font-semibold text-[#1e1b4b] text-center">{crosswordPuzzleState.title}</p>
+                  <p className="text-lg font-semibold text-teal-900 text-center">{crosswordPuzzleState.title}</p>
                   <div className="overflow-x-auto">
                     <div className="inline-grid gap-0.5 mx-auto" style={{ gridTemplateColumns: `repeat(${crosswordPuzzleState.cols}, 2.5rem)` }}>
                       {Array.from({ length: crosswordPuzzleState.rows }, (_, r) =>
@@ -393,12 +392,12 @@ export default function GamesPage() {
                           const val = crosswordInputs[key] || '';
                           const hasError = crosswordChecked && crosswordErrors[key];
                           const isCorrectCell = crosswordChecked && !crosswordErrors[key] && inGrid && !!val;
-                          if (!inGrid) return <div key={key} className="w-10 h-10 bg-[#1e1b4b]" />;
+                          if (!inGrid) return <div key={key} className="w-10 h-10 bg-teal-900" />;
                           return (
                             <div key={key} className="relative w-10 h-10">
-                              {clueNumber && <span className="absolute top-0.5 left-0.5 text-[9px] font-bold text-[#1e1b4b] z-10 leading-none">{clueNumber}</span>}
+                              {clueNumber && <span className="absolute top-0.5 left-0.5 text-[9px] font-bold text-teal-900 z-10 leading-none">{clueNumber}</span>}
                               <input type="text" maxLength={1} value={val} onChange={e => handleCrosswordInput(r, c, e.target.value)} disabled={crosswordSolved}
-                                className={`w-10 h-10 border-2 text-center font-bold uppercase text-[#1e1b4b] text-base focus:outline-none focus:border-[#7c3aed] transition ${hasError ? 'border-red-400 bg-red-50' : isCorrectCell ? 'border-emerald-400 bg-emerald-50' : 'border-[#c4b5fd] bg-[#fffdf9]'}`} />
+                                className={`w-10 h-10 border-2 text-center font-bold uppercase text-teal-900 text-base focus:outline-none focus:border-teal-600 transition ${hasError ? 'border-red-400 bg-red-50' : isCorrectCell ? 'border-emerald-400 bg-emerald-50' : 'border-teal-300 bg-sand-50'}`} />
                             </div>
                           );
                         })
@@ -407,20 +406,20 @@ export default function GamesPage() {
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                      <p className="font-bold text-[#1e1b4b] mb-2">Across</p>
+                      <p className="font-bold text-teal-900 mb-2">Across</p>
                       {crosswordPuzzleState.words.filter(w => w.direction === 'across').map(w => (
-                        <p key={w.id} className="text-sm text-[#475569]"><span className="font-semibold text-[#1e1b4b]">{w.number}.</span> {w.clue}</p>
+                        <p key={w.id} className="text-sm text-sand-700"><span className="font-semibold text-teal-900">{w.number}.</span> {w.clue}</p>
                       ))}
                     </div>
                     <div>
-                      <p className="font-bold text-[#1e1b4b] mb-2">Down</p>
+                      <p className="font-bold text-teal-900 mb-2">Down</p>
                       {crosswordPuzzleState.words.filter(w => w.direction === 'down').map(w => (
-                        <p key={w.id} className="text-sm text-[#475569]"><span className="font-semibold text-[#1e1b4b]">{w.number}.</span> {w.clue}</p>
+                        <p key={w.id} className="text-sm text-sand-700"><span className="font-semibold text-teal-900">{w.number}.</span> {w.clue}</p>
                       ))}
                     </div>
                   </div>
                   {!crosswordSolved && (
-                    <button onClick={checkCrossword} disabled={loading} className="w-full py-3 bg-gradient-to-r from-[#7c3aed] to-[#6d28d9] text-white font-bold rounded-xl hover:opacity-90 transition disabled:opacity-60">
+                    <button onClick={checkCrossword} disabled={loading} className="w-full py-3 bg-gradient-to-r from-teal-600 to-teal-700 text-white font-bold rounded-xl hover:opacity-90 transition disabled:opacity-60">
                       Check Answers
                     </button>
                   )}
@@ -431,8 +430,8 @@ export default function GamesPage() {
             {currentTask?.kind === 'scramble' && (
               <div className="space-y-6">
                 <div className="text-center space-y-2">
-                  <p className="text-sm text-[#475569]">Word {taskIndex + 1} of {session.tasks.length}</p>
-                  <p className="text-[#1e1b4b] font-medium">Hint: <span className="font-semibold">{currentTask.prompt}</span></p>
+                  <p className="text-sm text-sand-700">Word {taskIndex + 1} of {session.tasks.length}</p>
+                  <p className="text-teal-900 font-medium">Hint: <span className="font-semibold">{currentTask.prompt}</span></p>
                   <div className="flex gap-2 justify-center flex-wrap mt-4">
                     {(currentTask.meta?.scrambled as string)?.split('').map((ch, idx) => (
                       <div key={idx} className="w-10 h-10 bg-[#fbbf24] rounded-lg flex items-center justify-center text-xl font-bold text-white shadow">{ch}</div>
@@ -443,20 +442,20 @@ export default function GamesPage() {
                   <input type="text" value={scrambleInput} onChange={e => setScrambleInput(e.target.value.toUpperCase().replace(/[^A-Z]/g, ''))}
                     onKeyDown={e => e.key === 'Enter' && handleScrambleSubmit()} placeholder="Type your answer…"
                     disabled={scrambleCorrect}
-                    className="flex-1 border-2 border-[#c4b5fd] rounded-xl px-4 py-3 text-[#1e1b4b] font-bold uppercase text-center focus:outline-none focus:border-[#7c3aed]" />
+                    className="flex-1 border-2 border-teal-300 rounded-xl px-4 py-3 text-teal-900 font-bold uppercase text-center focus:outline-none focus:border-teal-600" />
                   <button onClick={handleScrambleSubmit} disabled={!scrambleInput || loading}
-                    className="px-4 py-3 bg-[#7c3aed] text-white font-bold rounded-xl hover:bg-[#6d28d9] transition disabled:opacity-50">Go!</button>
+                    className="px-4 py-3 bg-teal-600 text-white font-bold rounded-xl hover:bg-teal-700 transition disabled:opacity-50">Go!</button>
                 </div>
                 <div className="flex justify-center">
-                  <button onClick={revealScramble} disabled={scrambleRevealed} className="text-sm text-[#475569] hover:text-[#1e1b4b] underline disabled:opacity-40">Reveal answer (skip)</button>
+                  <button onClick={revealScramble} disabled={scrambleRevealed} className="text-sm text-sand-700 hover:text-teal-900 underline disabled:opacity-40">Reveal answer (skip)</button>
                 </div>
               </div>
             )}
 
             {currentTask?.kind === 'mcq' && (
               <div className="space-y-4">
-                <p className="text-sm text-[#475569]">Question {taskIndex + 1} of {session.tasks.length}</p>
-                <p className="text-lg font-semibold text-[#1e1b4b]">{currentTask.prompt}</p>
+                <p className="text-sm text-sand-700">Question {taskIndex + 1} of {session.tasks.length}</p>
+                <p className="text-lg font-semibold text-teal-900">{currentTask.prompt}</p>
                 <div className="space-y-3">
                   {currentTask.options.map(opt => {
                     const isSelected = selectedOption === opt.id;
@@ -465,7 +464,7 @@ export default function GamesPage() {
                     if (selectedOption && isSelected && isCorrect) cls += ' border-emerald-500 bg-emerald-50 text-emerald-700';
                     else if (selectedOption && isSelected && !isCorrect) cls += ' border-red-400 bg-red-50 text-red-700';
                     else if (selectedOption && isCorrect) cls += ' border-emerald-300 bg-emerald-50 text-emerald-700';
-                    else cls += ' border-[#c4b5fd]/50 bg-white text-[#1e1b4b] hover:border-[#7c3aed] hover:bg-[#f5f3ff]';
+                    else cls += ' border-teal-300/50 bg-white text-teal-900 hover:border-teal-600 hover:bg-teal-50';
                     return <button key={opt.id} disabled={!!selectedOption || loading} onClick={() => handleMcqAnswer(opt.id)} className={cls}>{opt.text}</button>;
                   })}
                 </div>
@@ -473,7 +472,7 @@ export default function GamesPage() {
                   <button
                     onClick={handleMcqNext}
                     disabled={loading}
-                    className="w-full py-3 bg-gradient-to-r from-[#7c3aed] to-[#6d28d9] text-white font-bold rounded-xl hover:opacity-90 transition disabled:opacity-60"
+                    className="w-full py-3 bg-gradient-to-r from-teal-600 to-teal-700 text-white font-bold rounded-xl hover:opacity-90 transition disabled:opacity-60"
                   >
                     {taskIndex < (session?.tasks.length ?? 0) - 1 ? 'Next Question →' : 'See Results 🏆'}
                   </button>
@@ -484,14 +483,13 @@ export default function GamesPage() {
             {feedback && <div className="mt-4 p-4 bg-[#fffbeb] rounded-xl text-[#b45309] font-semibold text-center">{feedback}</div>}
           </div>
         </div>
-        {toast && <div className="fixed bottom-4 left-1/2 -translate-x-1/2 bg-[#1e1b4b] text-white px-6 py-3 rounded-xl shadow-lg z-50">{toast}</div>}
+        {toast && <div className="fixed bottom-4 left-1/2 -translate-x-1/2 bg-teal-900 text-white px-6 py-3 rounded-xl shadow-lg z-50">{toast}</div>}
       </div>
     );
   }
 
   return (
     <>
-      <BiWeeklyResetPopup pageKey="games" />
       <div className="page-canvas pattern-islamic">
         <div className="page-wrap max-w-5xl space-y-8">
           <RecordAndEarnBanner />
@@ -502,31 +500,31 @@ export default function GamesPage() {
               <Sparkles size={16} className="text-[#f59e0b]" />
               <span className="text-sm font-semibold text-[#b45309]">Learn Through Play</span>
             </div>
-            <h1 className="text-4xl md:text-5xl font-bold text-[#1e1b4b]">Islamic Games</h1>
-            <p className="text-[#475569] text-lg max-w-2xl mx-auto">
+            <h1 className="text-4xl md:text-5xl font-bold text-teal-900">Islamic Games</h1>
+            <p className="text-sand-700 text-lg max-w-2xl mx-auto">
               Finish up to {MAX_DAILY_GAME_COMPLETIONS} full games per day — +{ACTIVITY_BONUS_POINTS} points each ({gamesUsedToday}/{MAX_DAILY_GAME_COMPLETIONS} used today).
             </p>
           </div>
-          <div className="feature-tile bg-gradient-to-r from-[#ecfeff] to-[#f5f3ff] border-[#7c3aed]/30 p-5 text-center">
-            <p className="text-[#5b21b6] font-bold text-base md:text-lg">
+          <div className="feature-tile bg-gradient-to-r from-teal-50 to-teal-50 border-teal-600/30 p-5 text-center">
+            <p className="text-teal-800 font-bold text-base md:text-lg">
               Weekly competition updates are posted in Rewards and Leaderboard.
             </p>
-            <p className="text-[#5b21b6] mt-2 text-sm md:text-base">
-              Please continue taking part most days to win prizes. New games are added to help you gain more points.
+            <p className="text-teal-800 mt-2 text-sm md:text-base">
+              To keep your prize chances alive, stay active regularly. Play quiz games, complete activities, and say durood or dhikr daily or a few times each week.
             </p>
-            <p className="text-[#5b21b6] mt-2 text-sm md:text-base font-semibold">
+            <p className="text-teal-800 mt-2 text-sm md:text-base font-semibold">
               Earn above 150 points during the week to enter the random winners draw. Leaderboard rank is for fun — winners are not chosen by who is #1.
             </p>
-            <p className="text-[#5b21b6] mt-2 text-sm md:text-base font-semibold">
+            <p className="text-teal-800 mt-2 text-sm md:text-base font-semibold">
               Check the Rewards page for important announcements and your weekly and monthly achievements.
             </p>
           </div>
           <div className="grid grid-cols-3 gap-4 max-w-md mx-auto stagger-in">
-            {[{ icon: Star, label: 'Your Points', value: profile?.points || 0, color: 'text-[#f59e0b]' }, { icon: Trophy, label: 'Badges', value: profile?.badges || 0, color: 'text-[#7c3aed]' }, { icon: Target, label: 'Games Played', value: profile?.gamesPlayed || 0, color: 'text-[#8b5cf6]' }].map((stat, idx) => (
+            {[{ icon: Star, label: 'Your Points', value: profile?.points || 0, color: 'text-[#f59e0b]' }, { icon: Trophy, label: 'Badges', value: profile?.badges || 0, color: 'text-teal-600' }, { icon: Target, label: 'Games Played', value: profile?.gamesPlayed || 0, color: 'text-teal-400' }].map((stat, idx) => (
               <div key={idx} className="stat-pill rounded-xl p-4 text-center">
                 <stat.icon size={24} className={`mx-auto mb-2 ${stat.color}`} />
-                <p className="text-2xl font-bold text-[#1e1b4b]">{stat.value}</p>
-                <p className="text-xs text-[#475569]">{stat.label}</p>
+                <p className="text-2xl font-bold text-teal-900">{stat.value}</p>
+                <p className="text-xs text-sand-700">{stat.label}</p>
               </div>
             ))}
           </div>
@@ -646,7 +644,7 @@ export default function GamesPage() {
 
           {/* ── Hajj Learning Games featured banner ── */}
           <div
-            className="rounded-2xl overflow-hidden border border-[#3b82f6]/30 shadow-sm cursor-pointer hover:shadow-lg hover:-translate-y-1 transition-all"
+            className="rounded-2xl overflow-hidden border border-teal-500/30 shadow-sm cursor-pointer hover:shadow-lg hover:-translate-y-1 transition-all"
             onClick={() => router.push('/games/hajj')}
             role="link"
           >
@@ -671,8 +669,8 @@ export default function GamesPage() {
               <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 shadow-md transition-transform group-hover:scale-110">
                 <span className="text-3xl">🃏</span>
               </div>
-              <h3 className="mb-1 text-lg font-bold text-[#1e1b4b]">Islamic Memory Match</h3>
-              <p className="mb-3 text-sm text-[#475569]">
+              <h3 className="mb-1 text-lg font-bold text-teal-900">Islamic Memory Match</h3>
+              <p className="mb-3 text-sm text-sand-700">
                 {isYounger
                   ? 'Big picture cards — find the matching pairs!'
                   : 'Match Arabic terms with English meanings. Optional timer.'}
@@ -681,31 +679,46 @@ export default function GamesPage() {
                 🌟 Earn +{ACTIVITY_BONUS_POINTS} pts
               </span>
             </Link>
+            <Link
+              href="/games/arabic-letter-match"
+              className="feature-tile group rounded-2xl border-2 border-teal-200 bg-gradient-to-br from-teal-50 to-white p-6 text-left"
+            >
+              <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-xl bg-gradient-to-br from-teal-500 to-teal-700 shadow-md transition-transform group-hover:scale-110">
+                <span className="text-3xl" dir="rtl">ا</span>
+              </div>
+              <h3 className="mb-1 text-lg font-bold text-teal-900">Arabic Letter Match</h3>
+              <p className="mb-3 text-sm text-sand-700">
+                Match each Arabic letter to its name and sound. Perfect for beginners!
+              </p>
+              <span className="inline-block rounded-full border border-teal-300 bg-white px-3 py-1 text-xs font-semibold text-teal-800">
+                🌟 Earn +{ACTIVITY_BONUS_POINTS} pts
+              </span>
+            </Link>
             {gameCatalog.map(game => (
               <button key={game.id} onClick={() => startGame(game.id)} className="feature-tile group rounded-2xl p-6 text-left">
                 <div className={`w-14 h-14 rounded-xl bg-gradient-to-br ${game.color} flex items-center justify-center shadow-md group-hover:scale-110 transition-transform mb-4`}>
                   <span className="text-3xl">{game.icon}</span>
                 </div>
-                <h3 className="font-bold text-[#1e1b4b] text-lg mb-1">{game.title}</h3>
-                <p className="text-sm text-[#475569] mb-3">{game.description}</p>
-                <span className="inline-block text-xs font-semibold text-[#6d28d9] bg-[#f5f3ff] px-3 py-1 rounded-full border border-[#7c3aed]/30">🌟 Earn points</span>
+                <h3 className="font-bold text-teal-900 text-lg mb-1">{game.title}</h3>
+                <p className="text-sm text-sand-700 mb-3">{game.description}</p>
+                <span className="inline-block text-xs font-semibold text-teal-700 bg-teal-50 px-3 py-1 rounded-full border border-teal-600/30">🌟 Earn points</span>
               </button>
             ))}
           </div>
-          <div className="feature-tile bg-[#f5f3ff] rounded-2xl p-6 border-[#7c3aed]/20">
+          <div className="feature-tile bg-teal-50 rounded-2xl p-6 border-teal-600/20">
             <div className="flex items-start gap-4">
-              <div className="w-12 h-12 rounded-xl bg-[#7c3aed] flex items-center justify-center flex-shrink-0">
+              <div className="w-12 h-12 rounded-xl bg-teal-600 flex items-center justify-center flex-shrink-0">
                 <Puzzle size={24} className="text-white" />
               </div>
               <div>
-                <h4 className="font-bold text-[#6d28d9] mb-1">Pro Tip</h4>
-                <p className="text-[#5b21b6]">Try all 5 games to learn different aspects of Islam — hangman improves vocabulary, the crossword tests spelling, word scramble sharpens recognition, and the quizzes deepen your knowledge of Allah's names and Islamic facts!</p>
+                <h4 className="font-bold text-teal-700 mb-1">Pro Tip</h4>
+                <p className="text-teal-800">Try all 5 games to learn different aspects of Islam — hangman improves vocabulary, the crossword tests spelling, word scramble sharpens recognition, and the quizzes deepen your knowledge of Allah's names and Islamic facts!</p>
               </div>
             </div>
           </div>
         </div>
       </div>
-      {toast && <div className="fixed bottom-4 left-1/2 -translate-x-1/2 bg-[#1e1b4b] text-white px-6 py-3 rounded-xl shadow-lg z-50">{toast}</div>}
+      {toast && <div className="fixed bottom-4 left-1/2 -translate-x-1/2 bg-teal-900 text-white px-6 py-3 rounded-xl shadow-lg z-50">{toast}</div>}
     </>
   );
 }

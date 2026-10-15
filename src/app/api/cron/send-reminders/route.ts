@@ -169,6 +169,7 @@ export async function GET(request: Request) {
   }
 
   try {
+    const appUrl = (process.env.NEXT_PUBLIC_APP_URL || new URL(request.url).origin).replace(/\/+$/, '');
     const inactivityCutoff = new Date();
     inactivityCutoff.setDate(inactivityCutoff.getDate() - 2);
     const cutoffDate = inactivityCutoff.toISOString().slice(0, 10);
@@ -203,7 +204,6 @@ export async function GET(request: Request) {
 
       const childName = (user.name || 'your child').trim();
       const token = createReminderToken(user.uid);
-      const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
       const unsubscribeUrl = `${appUrl}/api/reminders/unsubscribe?token=${encodeURIComponent(token)}`;
       const resumeUrl = `${appUrl}/quiz?reminder=1`;
 

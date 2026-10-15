@@ -7,6 +7,7 @@ import { Button } from '@/components';
 import { useAuth } from '@/lib/auth-context';
 import { useAudioRecorder } from '@/lib/use-audio-recorder';
 import { trackQuranRecordingSubmitted } from '@/lib/analytics';
+import { getAuthFetchHeaders } from '@/lib/auth-headers';
 
 type SavedRecording = {
   id: string;
@@ -15,16 +16,32 @@ type SavedRecording = {
   status: string;
   audio_url?: string;
   created_at?: string;
+  admin_notes?: string | null;
+  admin_feedback?: string | null;
+  reviewed_at?: string | null;
+  description?: string | null;
 };
+
+type RecordingPart = 'full-surah' | 'juz' | 'ayah-range' | 'other';
+
+function getRecordingPartLabel(description?: string | null): string | null {
+  try {
+    const metadata = JSON.parse(description || '{}');
+    return typeof metadata.partLabel === 'string' ? metadata.partLabel : null;
+  } catch {
+    return null;
+  }
+}
 
 type Props = {
   surahNumber: number;
   surahName: string;
   arabicName: string;
   ayahCount: number;
+  source?: 'juz-amma-learn' | 'hifz';
 };
 
-export function SurahRecorder({ surahNumber, surahName, arabicName, ayahCount }: Props) {
+export function SurahRecorder({ surahNumber, surahName, arabicName, ayahCount, source = 'juz-amma-learn' }: Props) {
   const { user, profile } = useAuth();
   const maxSeconds = Math.min(600, Math.max(120, ayahCount * 25));
 
@@ -46,12 +63,15 @@ export function SurahRecorder({ surahNumber, surahName, arabicName, ayahCount }:
   const [submitSuccess, setSubmitSuccess] = useState<string | null>(null);
   const [pastRecordings, setPastRecordings] = useState<SavedRecording[]>([]);
   const [loadingPast, setLoadingPast] = useState(false);
+  const [recordingPart, setRecordingPart] = useState<RecordingPart>('full-surah');
+  const [partDetail, setPartDetail] = useState('');
 
   const loadPast = useCallback(async () => {
     if (!user?.id) return;
     setLoadingPast(true);
     try {
-      const res = await fetch(`/api/quran/recordings?surahNumber=${surahNumber}&userId=${user.id}`);
+      const headers = await getAuthFetchHeaders();
+      const res = await fetch(`/api/quran/recordings?surahNumber=${surahNumber}&source=${source}`, { headers });
       const json = await res.json();
       if (res.ok) setPastRecordings(json.recordings || []);
     } catch {
@@ -59,7 +79,7 @@ export function SurahRecorder({ surahNumber, surahName, arabicName, ayahCount }:
     } finally {
       setLoadingPast(false);
     }
-  }, [surahNumber, user?.id]);
+  }, [source, surahNumber, user?.id]);
 
   useEffect(() => {
     loadPast();
@@ -67,6 +87,10 @@ export function SurahRecorder({ surahNumber, surahName, arabicName, ayahCount }:
 
   const handleSubmit = async () => {
     if (!blob) return;
+    if (source === 'hifz' && recordingPart !== 'full-surah' && !partDetail.trim()) {
+      setSubmitError('Please add the Juz number, ayah range, or part being recited.');
+      return;
+    }
     setSubmitting(true);
     setSubmitError(null);
     setSubmitSuccess(null);
@@ -80,15 +104,18 @@ export function SurahRecorder({ surahNumber, surahName, arabicName, ayahCount }:
       formData.append('surahName', surahName);
       formData.append('duration', String(seconds));
       formData.append('childName', profile?.name || '');
-      if (user?.id) formData.append('userId', user.id);
+      formData.append('source', source);
+      formData.append('recordingPart', recordingPart);
+      formData.append('partDetail', partDetail.trim());
 
-      const res = await fetch('/api/quran/recordings', { method: 'POST', body: formData });
+      const headers = await getAuthFetchHeaders();
+      const res = await fetch('/api/quran/recordings', { method: 'POST', headers, body: formData });
       const json = await res.json();
       if (!res.ok || !json.success) {
         throw new Error(json.error || 'Failed to submit');
       }
 
-      setSubmitSuccess('Recording saved! Your teacher can listen to it.');
+      setSubmitSuccess('Recording sent for review. Feedback will appear here and in My Recordings.');
       trackQuranRecordingSubmitted({ surahNumber });
       reset();
       loadPast();
@@ -119,6 +146,41 @@ export function SurahRecorder({ surahNumber, surahName, arabicName, ayahCount }:
       )}
       {submitSuccess && (
         <p className="mb-3 rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-800">{submitSuccess}</p>
+      )}
+
+      {source === 'hifz' && (
+        <div className="mb-4 grid gap-3 rounded-xl border border-sand-200 bg-white p-4 sm:grid-cols-2">
+          <label className="text-sm font-bold text-sand-800">
+            What part are you recording?
+            <select
+              value={recordingPart}
+              onChange={(event) => {
+                setRecordingPart(event.target.value as RecordingPart);
+                setPartDetail('');
+              }}
+              className="mt-1 min-h-11 w-full rounded-lg border border-sand-300 bg-white px-3 text-sm font-normal"
+            >
+              <option value="full-surah">Full surah</option>
+              <option value="juz">Juz</option>
+              <option value="ayah-range">Ayah range</option>
+              <option value="other">Other section</option>
+            </select>
+          </label>
+          {recordingPart !== 'full-surah' && (
+            <label className="text-sm font-bold text-sand-800">
+              {recordingPart === 'juz' ? 'Juz number' : recordingPart === 'ayah-range' ? 'Ayahs' : 'Part details'}
+              <input
+                type={recordingPart === 'juz' ? 'number' : 'text'}
+                min={recordingPart === 'juz' ? 1 : undefined}
+                max={recordingPart === 'juz' ? 30 : undefined}
+                value={partDetail}
+                onChange={(event) => setPartDetail(event.target.value)}
+                placeholder={recordingPart === 'juz' ? '1-30' : recordingPart === 'ayah-range' ? 'e.g. Ayahs 1-5' : 'Describe the section'}
+                className="mt-1 min-h-11 w-full rounded-lg border border-sand-300 px-3 text-sm font-normal"
+              />
+            </label>
+          )}
+        </div>
       )}
 
       <div className="flex flex-col items-center rounded-2xl bg-white/80 px-4 py-6 ring-1 ring-rose-100">
@@ -210,13 +272,17 @@ export function SurahRecorder({ surahNumber, surahName, arabicName, ayahCount }:
             <p className="mt-2 text-sm text-sand-500">No saved recordings yet for this surah.</p>
           ) : (
             <ul className="mt-2 space-y-2">
-              {pastRecordings.map((rec) => (
+              {pastRecordings.map((rec) => {
+                const feedback = rec.admin_notes?.trim() || rec.admin_feedback?.trim();
+                const partLabel = getRecordingPartLabel(rec.description);
+                return (
                 <li
                   key={rec.id}
                   className="flex flex-col gap-2 rounded-xl border border-sand-200 bg-white p-3 sm:flex-row sm:items-center sm:justify-between"
                 >
                   <div className="min-w-0">
                     <p className="text-xs font-bold capitalize text-violet-700">{rec.status}</p>
+                    {partLabel && <p className="text-sm font-bold text-sand-800">{partLabel}</p>}
                     <p className="text-sm text-sand-700">
                       {rec.duration ? `${rec.duration}s` : '—'}
                       {rec.created_at && (
@@ -230,8 +296,14 @@ export function SurahRecorder({ surahNumber, surahName, arabicName, ayahCount }:
                   {rec.audio_url && (
                     <audio controls preload="none" src={rec.audio_url} className="h-9 w-full sm:max-w-xs" />
                   )}
+                  {feedback && (
+                    <p className="w-full rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-900 sm:basis-full">
+                      <strong>Teacher feedback:</strong> {feedback}
+                    </p>
+                  )}
                 </li>
-              ))}
+                );
+              })}
             </ul>
           )}
         </div>

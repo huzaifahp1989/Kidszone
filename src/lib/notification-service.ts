@@ -67,73 +67,22 @@ export const NotificationService = {
   },
 
   /**
-   * Check if it's Friday and trigger winner generation if needed
+   * Previously: Check Friday and trigger a random weekly winner.
+   * Weekly random draw is now disabled. Winners are managed manually in Admin.
    */
   async checkAndGenerateWeeklyWinner() {
-    const today = new Date();
-    const dayOfWeek = today.getDay(); // 0 = Sunday, 1 = Monday, ..., 5 = Friday
-    
-    // Logic: If it's Friday (5) or later (weekend), ensure a winner exists for this week.
-    // We'll be lenient and allow it to run any day for testing if forced, 
-    // but automatically only on Fri/Sat/Sun.
-    const isWeekend = dayOfWeek >= 5 || dayOfWeek === 0;
-    
-    if (!isWeekend) {
-      console.log('📅 Not Friday yet, skipping auto-generation.');
-      return null;
-    }
-
-    try {
-      // Call the idempotent function
-      const { data, error } = await supabase.rpc('generate_weekly_winner');
-      
-      if (error) {
-        console.error('❌ Error generating winner:', error);
-        return null;
-      }
-
-      if (data.success && data.is_new) {
-        // New winner generated! Notify.
-        // Fetch full details first
-        const { data: winnerDetails } = await supabase.rpc('get_current_weekly_winner');
-        
-        if (winnerDetails) {
-          await this.notifyWinner(winnerDetails);
-        }
-        return data;
-      } else {
-        // Winner already exists
-        return data;
-      }
-    } catch (err) {
-      console.error('❌ Exception in checkAndGenerateWeeklyWinner:', err);
-      return null;
-    }
+    console.log('📅 Weekly random winner auto-draw is disabled. Choose winners manually in Admin -> Weekly winners.');
+    return { success: true, is_new: false, message: 'Automatic weekly random draw is disabled.' };
   },
 
   /**
-   * Force generate a winner (for testing button)
+   * Previously: Force a random weekly winner (for testing buttons).
+   * Weekly random draw is now disabled. This now returns a clear error.
    */
   async forceGenerateWinner() {
-    try {
-      const { data, error } = await supabase.rpc('generate_weekly_winner');
-      if (error) throw error;
-      
-      if (data.success) {
-        const { data: winnerDetails } = await supabase.rpc('get_current_weekly_winner');
-        if (winnerDetails) {
-          await this.notifyWinner(winnerDetails);
-        }
-      }
-      return data;
-    } catch (err) {
-      console.error('❌ Force generation failed:', err);
-      // Log full details if available
-      if (typeof err === 'object' && err !== null) {
-         console.error('Error details:', JSON.stringify(err, null, 2));
-      }
-      throw err;
-    }
+    const err = new Error('Automatic weekly winner draw is disabled. Use Admin -> Weekly winners to pick winners manually.');
+    console.error('❌ Force generation disabled:', err.message);
+    throw err;
   },
 
   /**

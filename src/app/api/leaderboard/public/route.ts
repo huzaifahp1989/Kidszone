@@ -55,17 +55,23 @@ export async function GET(req: Request) {
     const url = new URL(req.url);
     const tab = (url.searchParams.get('tab') || 'weekly').toLowerCase();
     const isMonthly = tab === 'monthly';
-    const orderField = isMonthly ? 'monthly_points' : 'weekly_points';
+    const isLifetime = tab === 'lifetime';
+    const orderField = isMonthly
+      ? 'monthly_points'
+      : isLifetime
+        ? 'total_points'
+        : 'weekly_points';
+    const resultLimit = isLifetime ? 10 : 100;
     const { weekStartIso, weekEndIso, weekStartDate } = getScoreWeekRangeUtc();
 
-    const activeUserIds = isMonthly ? [] : await getAllScoreWeekActiveUserIds(weekStartIso, weekEndIso);
+    const activeUserIds = isMonthly || isLifetime ? [] : await getAllScoreWeekActiveUserIds(weekStartIso, weekEndIso);
 
     const { data: scoredRows, error: scoredError } = await supabaseAdmin
       .from('users_points')
       .select('user_id,total_points,weekly_points,monthly_points,today_points,badges,level,last_earned_date,users(name,email,points,weeklypoints,monthlypoints)')
       .gt(orderField, 0)
       .order(orderField, { ascending: false, nullsFirst: false })
-      .limit(100);
+      .limit(resultLimit);
 
     if (scoredError) {
       console.error('Leaderboard API error:', scoredError);
@@ -160,6 +166,31 @@ export async function GET(req: Request) {
       }
     }
 
+    const certCountByUser = new Map<string, number>();
+    const latestCertByUser = new Map<string, { tier: string; weekStart: string }>();
+    if (userIds.length > 0) {
+      const { data: certRows, error: certErr } = await supabaseAdmin
+        .from('weekly_certificates')
+        .select('user_id, tier, week_start_date')
+        .in('user_id', userIds);
+
+      if (certErr && String(certErr.code) !== '42P01') {
+        console.warn('Leaderboard certificates lookup error:', certErr.message);
+      } else {
+        for (const row of (certRows || []) as any[]) {
+          const uid = String(row.user_id || '');
+          if (!uid) continue;
+          certCountByUser.set(uid, (certCountByUser.get(uid) || 0) + 1);
+          const tier = String(row.tier || 'participation');
+          const weekStart = String(row.week_start_date || '');
+          const prev = latestCertByUser.get(uid);
+          if (!prev || weekStart > prev.weekStart) {
+            latestCertByUser.set(uid, { tier, weekStart });
+          }
+        }
+      }
+    }
+
     const entriesBase = filteredRows.map((row: any) => {
       const displayName = sanitizeName(row.users?.name, row.user_id);
       const userProfile = profilesByUid.get(String(row.user_id)) || {};
@@ -235,6 +266,9 @@ export async function GET(req: Request) {
         weeklyQuizAttempts: activity.quizCount,
         weeklyChallengeDone: isEligibleForWeeklyDraw(weeklyPoints),
         drawEligible: isEligibleForWeeklyDraw(weeklyPoints),
+        certificateCount: certCountByUser.get(String(row.user_id)) || 0,
+        latestCertificateTier: latestCertByUser.get(String(row.user_id))?.tier || null,
+        latestCertificateWeekStart: latestCertByUser.get(String(row.user_id))?.weekStart || null,
       };
     });
 
@@ -244,6 +278,18 @@ export async function GET(req: Request) {
     }));
 
     entriesWithFlags.sort((a: any, b: any) => {
+      if (isLifetime) {
+        const aTotal = Number(a.points || 0);
+        const bTotal = Number(b.points || 0);
+        if (aTotal !== bTotal) return bTotal - aTotal;
+
+        const aDate = parseDateOnlyUtc(a.lastPlayedDate);
+        const bDate = parseDateOnlyUtc(b.lastPlayedDate);
+        if (aDate !== null && bDate !== null && aDate !== bDate) return bDate - aDate;
+
+        return String(a.name || '').localeCompare(String(b.name || ''));
+      }
+
       if (isMonthly) {
         const aMonthly = Number(a.monthlyPoints || 0);
         const bMonthly = Number(b.monthlyPoints || 0);
@@ -281,11 +327,13 @@ export async function GET(req: Request) {
 
     const entries = entriesWithFlags
       .filter((entry: any) =>
-        isMonthly
-          ? Number(entry.monthlyPoints || 0) > 0
-          : Number(entry.weeklyScore || 0) > 0 || Number(entry.weeklyPoints || 0) > 0
+        isLifetime
+          ? Number(entry.points || 0) > 0
+          : isMonthly
+            ? Number(entry.monthlyPoints || 0) > 0
+            : Number(entry.weeklyScore || 0) > 0 || Number(entry.weeklyPoints || 0) > 0
       )
-      .slice(0, 100);
+      .slice(0, resultLimit);
 
     const { data: winnerData } = await supabaseAdmin
       .from('weekly_winners')

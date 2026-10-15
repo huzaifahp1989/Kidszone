@@ -3,7 +3,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { BiWeeklyResetPopup } from '@/components';
 import { DailyPointsBar } from '@/components/DailyPointsBar';
 import { usePointsProgress } from '@/lib/points-progress-context';
 import { MAX_DAILY_QUIZ_ATTEMPTS, QUIZ_POINTS_PER_COMPLETION, POINTS_DAILY_CAP, MAX_DAILY_QUIZ_POINTS } from '@/lib/points-policy';
@@ -14,11 +13,13 @@ import { getQuizQuestionPool } from '@/lib/quiz-question-pool';
 import { QUIZ_TOPICS, QUIZ_TOPIC_GROUPS, getTopicById, getTopicQuestionCount, getDailyTopicSeed, type QuizTopicId } from '@/lib/quiz-topics';
 import { ReadAloudButton } from '@/components/ReadAloudButton';
 import { EarnMorePointsLinks } from '@/components/EarnMorePointsLinks';
+import { RecordAndEarnBanner } from '@/components/RecordAndEarnBanner';
 import { DailyTasksBanner } from '@/components/DailyTasksBanner';
 import { authJsonFetch, getAuthFetchHeaders } from '@/lib/auth-headers';
 import { trackQuizCompleted } from '@/lib/analytics';
 import { getClientApiBaseUrl } from '@/lib/app-url';
 import { mergePointsAfterAward } from '@/lib/profile-points-merge';
+import { ReviewPromptCard } from '@/components/ReviewPromptCard';
 
 const quizPool = getQuizQuestionPool();
 
@@ -476,9 +477,8 @@ export default function QuizPage() {
   if (!mounted) {
     return (
       <>
-        <BiWeeklyResetPopup pageKey="quiz" />
-        <div className="min-h-[70vh] flex items-center justify-center bg-[#f5f3ff]">
-          <div className="text-[#475569]">Loading...</div>
+        <div className="min-h-[70vh] flex items-center justify-center bg-teal-50">
+          <div className="text-sand-700">Loading...</div>
         </div>
       </>
     );
@@ -487,19 +487,65 @@ export default function QuizPage() {
   if (!mode) {
     return (
       <>
-      <BiWeeklyResetPopup pageKey="quiz" />
-      <div className="min-h-screen bg-[#f5f3ff] pattern-islamic">
+      <div className="min-h-screen bg-teal-50 pattern-islamic">
         <div className="max-w-4xl mx-auto px-4 py-8 space-y-8">
-          {/* Islamic Quiz Challenge — shown at the very top so it is easy to find */}
+          <a
+            href="#daily-quiz"
+            className="group block rounded-2xl border-2 border-emerald-300 bg-gradient-to-r from-emerald-700 via-teal-700 to-cyan-700 p-4 text-white shadow-xl transition hover:-translate-y-0.5 hover:shadow-2xl sm:p-6"
+          >
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex items-center gap-3 sm:gap-4">
+                <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-white/15 text-3xl shadow-inner" aria-hidden>
+                  🧠
+                </span>
+                <div>
+                  <span className="inline-flex rounded-full bg-amber-300 px-2.5 py-0.5 text-[10px] font-black uppercase text-emerald-950 sm:text-xs">
+                    Daily Quiz
+                  </span>
+                  <h1 className="mt-1 text-xl font-black leading-tight sm:text-2xl">Take Today&apos;s Quiz</h1>
+                  <p className="mt-1 text-xs text-emerald-50 sm:text-sm">
+                    {dailyStatus === 'completed'
+                      ? 'Both quizzes completed today — check your result and next quiz time.'
+                      : `${Math.max(0, MAX_DAILY_QUIZ_ATTEMPTS - quizAttemptsToday)} quiz chances left · 5 questions · +${QUIZ_POINTS_PER_COMPLETION} points each`}
+                  </p>
+                </div>
+              </div>
+              <span className="hidden shrink-0 rounded-xl bg-white px-4 py-2.5 text-sm font-black text-emerald-800 shadow transition group-hover:bg-amber-50 sm:inline-flex">
+                Take the quiz ↓
+              </span>
+            </div>
+          </a>
+
           <Link
-            href="/quiz-challenge"
-            className="block rounded-2xl border border-amber-300/50 bg-gradient-to-r from-[#4c1d95] via-[#6d28d9] to-[#7c3aed] p-4 text-white shadow-lg transition hover:-translate-y-0.5 hover:shadow-xl sm:p-5"
+            href="/competitions/rabi-ul-awwal"
+            className="block rounded-2xl border border-emerald-300/70 bg-gradient-to-r from-emerald-800 via-emerald-700 to-amber-600 p-4 text-white shadow-lg transition hover:-translate-y-0.5 hover:shadow-xl sm:p-5"
           >
             <div className="flex items-center justify-between gap-3">
               <div className="flex items-center gap-3">
                 <span className="text-3xl" aria-hidden>🌙</span>
                 <div>
-                  <p className="text-lg font-black leading-tight sm:text-xl">Safar Islamic Quiz Challenge</p>
+                  <p className="text-lg font-black leading-tight sm:text-xl">Rabi ul Awwal Seerah Quiz</p>
+                  <p className="text-xs text-emerald-50/90 sm:text-sm">
+                    Write your own answers. Ends 30 September 2026. Admin marks them.
+                  </p>
+                </div>
+              </div>
+              <span className="hidden shrink-0 items-center gap-1 rounded-full bg-white/15 px-3 py-1.5 text-sm font-bold text-amber-100 sm:inline-flex">
+                Enter →
+              </span>
+            </div>
+          </Link>
+
+          {/* Islamic Quiz Challenge — shown at the very top so it is easy to find */}
+          <Link
+            href="/quiz-challenge"
+            className="block rounded-2xl border border-amber-300/50 bg-gradient-to-r from-teal-900 via-teal-700 to-teal-600 p-4 text-white shadow-lg transition hover:-translate-y-0.5 hover:shadow-xl sm:p-5"
+          >
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <span className="text-3xl" aria-hidden>🌙</span>
+                <div>
+                  <p className="text-lg font-black leading-tight sm:text-xl">Islamic Quiz Challenge</p>
                   <p className="text-xs text-violet-100/90 sm:text-sm">
                     Quran Stories &amp; Fiqh quizzes — type your answers, one attempt each!
                   </p>
@@ -511,53 +557,35 @@ export default function QuizPage() {
             </div>
           </Link>
 
-          {/* August 2026 Manual Review Quiz — big card */}
-          <Link
-            href="/quiz-challenge/aug-2026-mixed"
-            className="block rounded-2xl border-2 border-amber-400 bg-gradient-to-r from-amber-50 via-white to-orange-50 p-4 shadow-lg transition hover:-translate-y-0.5 hover:shadow-2xl sm:p-6"
-          >
-            <div className="flex items-center justify-between gap-4">
-              <div className="flex items-center gap-3 sm:gap-4">
-                <span className="text-3xl sm:text-4xl" aria-hidden>🎯</span>
-                <div>
-                  <div className="mb-1 inline-flex items-center gap-1.5 rounded-full bg-amber-500 px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider text-white sm:text-xs">
-                    ✨ August 2026 Special
-                  </div>
-                  <p className="text-lg font-black leading-tight text-amber-950 sm:text-2xl">
-                    Manual Review Islamic Quiz
-                  </p>
-                  <p className="mt-1 text-xs font-semibold text-amber-900/80 sm:text-sm">
-                    40 questions · Seerah, Hadith, Quran, Sahabah, Prophets, Akhlaq, Fiqh — admins read every answer!
-                  </p>
-                </div>
-              </div>
-              <span className="hidden shrink-0 items-center gap-1 rounded-full bg-gradient-to-r from-amber-500 to-orange-500 px-4 py-2 text-sm font-bold text-white shadow sm:inline-flex">
-                Start Quiz →
-              </span>
-            </div>
-          </Link>
+          <div className="rounded-2xl border border-amber-300 bg-gradient-to-r from-amber-50 via-yellow-50 to-orange-50 p-4 shadow-sm">
+            <p className="text-xs font-black uppercase tracking-[0.18em] text-amber-700">Prize reminder</p>
+            <p className="mt-2 text-sm text-amber-900 md:text-base">
+              To stay in the running for prizes, keep showing up regularly. Kids who play quiz games, do their daily activities, and say durood or dhikr daily or a few times each week have the best chance to win.
+            </p>
+          </div>
 
+          <RecordAndEarnBanner />
           <EarnMorePointsLinks title="Earn more points today" />
 
           <DailyTasksBanner />
 
           {/* Header */}
           <div className="text-center space-y-4">
-            <div className="inline-flex items-center gap-2 px-4 py-2 bg-[#f5f3ff] rounded-full border border-[#7c3aed]/20">
-              <Sparkles size={16} className="text-[#7c3aed]" />
-              <span className="text-sm font-semibold text-[#6d28d9]">Daily Challenge</span>
+            <div className="inline-flex items-center gap-2 px-4 py-2 bg-teal-50 rounded-full border border-teal-600/20">
+              <Sparkles size={16} className="text-teal-600" />
+              <span className="text-sm font-semibold text-teal-700">Daily Challenge</span>
             </div>
-            <h1 className="text-4xl md:text-5xl font-bold text-[#1e1b4b]">
+            <h1 className="text-4xl md:text-5xl font-bold text-teal-900">
               Today's Quiz
             </h1>
-            <p className="text-[#475569] text-lg">
+            <p className="text-sand-700 text-lg">
               Test your Islamic knowledge and earn points!
             </p>
           </div>
 
           {/* Daily Quiz Card */}
-          <div className="bg-white rounded-2xl shadow-lg border border-[#c4b5fd]/30 overflow-hidden">
-            <div className="bg-gradient-to-r from-[#7c3aed] to-[#6d28d9] p-6 text-white">
+          <div id="daily-quiz" className="scroll-mt-6 bg-white rounded-2xl shadow-lg border border-teal-300/30 overflow-hidden">
+            <div className="bg-gradient-to-r from-teal-600 to-teal-700 p-6 text-white">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
                   <div className="w-14 h-14 rounded-xl bg-white/20 flex items-center justify-center">
@@ -586,9 +614,9 @@ export default function QuizPage() {
                     Both quizzes done for today — Score: {dailyResult?.score ?? 0}
                   </div>
                   {countdown && (
-                    <div className="flex items-center gap-2 text-[#475569] text-sm font-semibold">
+                    <div className="flex items-center gap-2 text-sand-700 text-sm font-semibold">
                       <Clock size={15} className="text-[#cd9456]" />
-                      Next quiz available in <span className="text-[#1e1b4b] font-bold ml-1">{countdown}</span>
+                      Next quiz available in <span className="text-teal-900 font-bold ml-1">{countdown}</span>
                     </div>
                   )}
                   <div className="bg-[#fffbeb] rounded-xl p-4 border border-[#fbbf24]/30 text-left">
@@ -600,17 +628,18 @@ export default function QuizPage() {
                       <Link href="/studio" className="inline-flex items-center gap-2 bg-teal-600 text-white px-4 py-2 rounded-lg font-bold text-sm hover:bg-teal-700 transition-all">
                         🎙️ Record &amp; Earn
                       </Link>
-                      <Link href="/games" className="inline-flex items-center gap-2 bg-[#7c3aed] text-white px-4 py-2 rounded-lg font-bold text-sm hover:bg-[#6d28d9] transition-all">
+                      <Link href="/games" className="inline-flex items-center gap-2 bg-teal-600 text-white px-4 py-2 rounded-lg font-bold text-sm hover:bg-teal-700 transition-all">
                         🎮 Play Games
                       </Link>
                       <Link href="/pledge" className="inline-flex items-center gap-2 bg-[#fbbf24] text-[#92400e] px-4 py-2 rounded-lg font-bold text-sm hover:bg-[#f59e0b] transition-all">
                         📿 Durood &amp; Zikr
                       </Link>
-                      <Link href="/guide" className="inline-flex items-center gap-2 bg-white text-[#6d28d9] px-4 py-2 rounded-lg font-bold text-sm ring-1 ring-violet-200 hover:bg-violet-50 transition-all">
+                      <Link href="/guide" className="inline-flex items-center gap-2 bg-white text-teal-700 px-4 py-2 rounded-lg font-bold text-sm ring-1 ring-violet-200 hover:bg-violet-50 transition-all">
                         ⭐ Points guide
                       </Link>
                     </div>
                   </div>
+                  <ReviewPromptCard compact />
                 </div>
               )}
 
@@ -627,7 +656,7 @@ export default function QuizPage() {
               )}
 
               {isLoadingTopicQuiz && (
-                <div className="rounded-xl border border-[#c4b5fd]/40 bg-[#f5f3ff] px-4 py-3 text-sm font-semibold text-[#6d28d9]">
+                <div className="rounded-xl border border-teal-300/40 bg-teal-50 px-4 py-3 text-sm font-semibold text-teal-700">
                   Loading your quiz questions...
                 </div>
               )}
@@ -639,13 +668,13 @@ export default function QuizPage() {
               )}
 
               {/* Description */}
-              <div className="space-y-3 text-[#1e1b4b]">
+              <div className="space-y-3 text-teal-900">
                 <p className="text-lg">
                   Choose up to two topics each day and complete them to earn {QUIZ_POINTS_PER_COMPLETION} points each ({MAX_DAILY_QUIZ_POINTS} quiz points daily).
                 </p>
-                <ul className="space-y-2 text-[#475569]">
+                <ul className="space-y-2 text-sand-700">
                   <li className="flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-[#7c3aed]"></span>
+                    <span className="w-2 h-2 rounded-full bg-teal-600"></span>
                     5 educational questions in each topic
                   </li>
                   <li className="flex items-center gap-2">
@@ -657,19 +686,19 @@ export default function QuizPage() {
                     Compete with other learners
                   </li>
                   <li className="flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-[#8b5cf6]"></span>
+                    <span className="w-2 h-2 rounded-full bg-teal-400"></span>
                     Topics: Quran, Salah, Hadith, Seerah, Sahabah, Akhlaq + Quranic prophet stories
                   </li>
                   <li className="flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-[#0ea5e9]"></span>
+                    <span className="w-2 h-2 rounded-full bg-teal-500"></span>
                     Questions refresh every day at midnight UTC
                   </li>
                   <li className="flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-[#14b8a6]"></span>
+                    <span className="w-2 h-2 rounded-full bg-teal-500"></span>
                     Each daily quiz uses new random questions — no repeats the same day
                   </li>
                   <li className="flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-[#7c3aed]"></span>
+                    <span className="w-2 h-2 rounded-full bg-teal-600"></span>
                     Complete any 5 activities every week to qualify for the winner draw
                   </li>
                 </ul>
@@ -683,7 +712,7 @@ export default function QuizPage() {
 
                   return (
                     <div key={group.id}>
-                      <h3 className="mb-3 text-sm font-bold uppercase tracking-wide text-[#6d28d9]">
+                      <h3 className="mb-3 text-sm font-bold uppercase tracking-wide text-teal-700">
                         {group.title}
                       </h3>
                       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
@@ -698,18 +727,18 @@ export default function QuizPage() {
                               disabled={!isReady || isLoadingTopicQuiz}
                               className={`rounded-xl border p-4 text-left transition-all ${
                                 isReady
-                                  ? 'bg-white border-[#7c3aed]/30 hover:border-[#7c3aed] hover:shadow-md'
+                                  ? 'bg-white border-teal-600/30 hover:border-teal-600 hover:shadow-md'
                                   : 'bg-gray-100 border-gray-200 text-gray-400 cursor-not-allowed'
                               }`}
                             >
                               <div className="flex items-center justify-between mb-2">
                                 <span className="text-2xl">{topic.emoji}</span>
-                                <span className="text-xs font-bold px-2 py-1 rounded-full bg-[#f5f3ff] text-[#6d28d9]">
+                                <span className="text-xs font-bold px-2 py-1 rounded-full bg-teal-50 text-teal-700">
                                   +{QUIZ_POINTS_PER_COMPLETION} pts
                                 </span>
                               </div>
-                              <p className="font-bold text-[#1e1b4b]">{topic.label}</p>
-                              <p className="text-sm text-[#475569]">
+                              <p className="font-bold text-teal-900">{topic.label}</p>
+                              <p className="text-sm text-sand-700">
                                 {topic.description ||
                                   (topic.id === 'quran'
                                     ? 'Story-based Quran learning — new questions daily'
@@ -727,14 +756,14 @@ export default function QuizPage() {
               {!user?.id && dailyStatus === 'ready' && (
                 <Link
                   href="/signin?next=%2Fquiz"
-                  className="block py-4 px-6 rounded-xl font-bold text-lg bg-white text-[#7c3aed] border-2 border-[#7c3aed] hover:bg-[#f5f3ff] transition-all text-center"
+                  className="block py-4 px-6 rounded-xl font-bold text-lg bg-white text-teal-600 border-2 border-teal-600 hover:bg-teal-50 transition-all text-center"
                 >
                   Sign In to Start Topic Quiz
                 </Link>
               )}
 
               {!user?.id && dailyStatus === 'ready' && (
-                <p className="text-sm text-[#475569] text-center">
+                <p className="text-sm text-sand-700 text-center">
                   Sign in is required to take a topic quiz and earn points.
                 </p>
               )}
@@ -748,10 +777,10 @@ export default function QuizPage() {
               { label: 'Topic', value: selectedTopicInfo?.label || '-', icon: '📚' },
               { label: 'Topic Reward', value: `+${QUIZ_POINTS_PER_COMPLETION}`, icon: '⭐' },
             ].map((stat, idx) => (
-              <div key={idx} className="bg-white rounded-xl p-4 text-center border border-[#c4b5fd]/20 shadow-sm">
+              <div key={idx} className="bg-white rounded-xl p-4 text-center border border-teal-300/20 shadow-sm">
                 <span className="text-2xl">{stat.icon}</span>
-                <p className="text-2xl font-bold text-[#1e1b4b] mt-1">{stat.value}</p>
-                <p className="text-sm text-[#475569]">{stat.label}</p>
+                <p className="text-2xl font-bold text-teal-900 mt-1">{stat.value}</p>
+                <p className="text-sm text-sand-700">{stat.label}</p>
               </div>
             ))}
           </div>
@@ -778,40 +807,39 @@ export default function QuizPage() {
   // Quiz Interface
   return (
     <>
-    <BiWeeklyResetPopup pageKey="quiz" />
-    <div className="min-h-screen bg-[#f5f3ff] py-8 px-4">
+    <div className="min-h-screen bg-teal-50 py-8 px-4">
       <div className="max-w-2xl mx-auto">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <button
             onClick={resetPage}
-            className="flex items-center gap-2 text-[#1e1b4b] hover:text-[#7c3aed] font-semibold transition"
+            className="flex items-center gap-2 text-teal-900 hover:text-teal-600 font-semibold transition"
           >
             <ArrowLeft size={20} />
             Exit
           </button>
-          <div className="text-sm font-semibold text-[#475569]">
+          <div className="text-sm font-semibold text-sand-700">
             Question {currentQuestionIndex + 1} of {currentQuestions.length}
           </div>
         </div>
 
         {!quizComplete ? (
-          <div className="bg-white rounded-2xl shadow-lg border border-[#c4b5fd]/30 p-6 sm:p-8">
+          <div className="bg-white rounded-2xl shadow-lg border border-teal-300/30 p-6 sm:p-8">
             {/* Progress Bar */}
-            <div className="w-full bg-[#ede9fe] h-3 rounded-full mb-8 overflow-hidden">
+            <div className="w-full bg-teal-100 h-3 rounded-full mb-8 overflow-hidden">
               <div
-                className="bg-gradient-to-r from-[#7c3aed] to-[#fbbf24] h-full rounded-full transition-all duration-500"
+                className="bg-gradient-to-r from-teal-600 to-[#fbbf24] h-full rounded-full transition-all duration-500"
                 style={{ width: `${((currentQuestionIndex + 1) / currentQuestions.length) * 100}%` }}
               />
             </div>
 
             {/* Question meta */}
             <div className="mb-4 flex flex-wrap items-center gap-2">
-              <span className="inline-flex items-center rounded-full bg-[#f5f3ff] text-[#6d28d9] border border-[#7c3aed]/30 px-3 py-1 text-xs font-bold uppercase tracking-wide">
+              <span className="inline-flex items-center rounded-full bg-teal-50 text-teal-700 border border-teal-600/30 px-3 py-1 text-xs font-bold uppercase tracking-wide">
                 Topic: {selectedTopicInfo?.label || currentQuestion?.category || 'Islamic Knowledge'}
               </span>
               {currentQuestion?.quranCategory || currentQuestion?.category ? (
-                <span className="inline-flex items-center rounded-full bg-[#ecfeff] text-[#0e7490] border border-[#06b6d4]/30 px-3 py-1 text-xs font-semibold">
+                <span className="inline-flex items-center rounded-full bg-teal-50 text-teal-700 border border-teal-400/30 px-3 py-1 text-xs font-semibold">
                   {currentQuestion.quranCategory || currentQuestion.category}
                 </span>
               ) : null}
@@ -823,14 +851,14 @@ export default function QuizPage() {
             </div>
 
             {currentQuestion?.story ? (
-              <div className="mb-6 rounded-xl border border-[#c4b5fd]/40 bg-[#faf5ff] p-4">
-                <p className="text-xs font-bold uppercase tracking-wide text-[#7c3aed] mb-2">Story</p>
-                <p className="text-[#312e81] leading-relaxed">{currentQuestion.story}</p>
+              <div className="mb-6 rounded-xl border border-teal-300/40 bg-teal-50 p-4">
+                <p className="text-xs font-bold uppercase tracking-wide text-teal-600 mb-2">Story</p>
+                <p className="text-teal-900 leading-relaxed">{currentQuestion.story}</p>
               </div>
             ) : null}
 
             <div className="mb-6 flex items-start justify-between gap-3">
-              <h2 className="text-xl sm:text-2xl font-bold text-[#1e1b4b] leading-relaxed">
+              <h2 className="text-xl sm:text-2xl font-bold text-teal-900 leading-relaxed">
                 {currentQuestion?.question_text || currentQuestion?.question}
               </h2>
               <ReadAloudButton
@@ -866,16 +894,16 @@ export default function QuizPage() {
                         : isWrong
                           ? 'border-rose-400 bg-rose-50 text-rose-900'
                           : isSelected
-                            ? 'border-[#7c3aed] bg-[#f5f3ff] text-[#6d28d9]'
-                            : 'border-[#c4b5fd]/50 bg-white text-[#1e1b4b] hover:border-[#7c3aed]/50 hover:bg-[#ede9fe]'
+                            ? 'border-teal-600 bg-teal-50 text-teal-700'
+                            : 'border-teal-300/50 bg-white text-teal-900 hover:border-teal-600/50 hover:bg-teal-100'
                     } ${showFeedback ? 'cursor-default' : ''}`}
                   >
                     <div className="flex items-start gap-4">
                       <div
                         className={`w-10 h-10 rounded-xl border-2 flex items-center justify-center text-sm font-bold shrink-0 ${
                           isSelected
-                            ? 'border-[#7c3aed] bg-[#7c3aed] text-white'
-                            : 'border-[#c4b5fd] text-[#475569]'
+                            ? 'border-teal-600 bg-teal-600 text-white'
+                            : 'border-teal-300 text-sand-700'
                         }`}
                       >
                         {String.fromCharCode(65 + idx)}
@@ -888,15 +916,15 @@ export default function QuizPage() {
             </div>
 
             {showFeedback ? (
-              <div className="mt-6 rounded-xl border border-[#7c3aed]/20 bg-[#faf5ff] p-5 space-y-3 text-left">
+              <div className="mt-6 rounded-xl border border-teal-600/20 bg-teal-50 p-5 space-y-3 text-left">
                 <p className={`font-bold ${selectedAnswer === currentQuestion?.correctAnswer ? 'text-emerald-700' : 'text-rose-700'}`}>
                   {selectedAnswer === currentQuestion?.correctAnswer ? 'Correct! MashaAllah 🌟' : 'Not quite — keep learning!'}
                 </p>
                 {currentQuestion?.explanation ? (
-                  <p className="text-[#312e81] leading-relaxed">{currentQuestion.explanation}</p>
+                  <p className="text-teal-900 leading-relaxed">{currentQuestion.explanation}</p>
                 ) : null}
                 {currentQuestion?.reference || currentQuestion?.surah ? (
-                  <p className="text-sm font-semibold text-[#6d28d9]">
+                  <p className="text-sm font-semibold text-teal-700">
                     {[currentQuestion?.surah, currentQuestion?.reference ? `(${currentQuestion.reference})` : null].filter(Boolean).join(' ')}
                   </p>
                 ) : null}
@@ -910,13 +938,13 @@ export default function QuizPage() {
             ) : null}
 
             {/* Next Button */}
-            <div className="mt-8 pt-6 border-t border-[#c4b5fd]/30">
+            <div className="mt-8 pt-6 border-t border-teal-300/30">
               <button
                 onClick={handleNext}
                 disabled={selectedAnswer === null}
                 className={`w-full py-4 rounded-xl font-bold text-lg transition-all ${
                   selectedAnswer !== null
-                    ? 'bg-gradient-to-r from-[#7c3aed] to-[#6d28d9] text-white shadow-lg hover:shadow-xl'
+                    ? 'bg-gradient-to-r from-teal-600 to-teal-700 text-white shadow-lg hover:shadow-xl'
                     : 'bg-gray-100 text-gray-400 cursor-not-allowed'
                 }`}
               >
@@ -930,24 +958,24 @@ export default function QuizPage() {
           </div>
         ) : (
           // Quiz Complete View
-          <div className="bg-white rounded-2xl shadow-lg border border-[#c4b5fd]/30 p-8 text-center">
+          <div className="bg-white rounded-2xl shadow-lg border border-teal-300/30 p-8 text-center">
             <>
               <div className="w-24 h-24 bg-gradient-to-br from-[#fbbf24] to-[#f59e0b] rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg">
                 <Trophy size={48} className="text-white" />
               </div>
-              <h2 className="text-3xl font-bold text-[#1e1b4b] mb-2">Quiz Completed!</h2>
-              <p className="text-[#475569] mb-6">MashaAllah! You finished the daily quiz.</p>
+              <h2 className="text-3xl font-bold text-teal-900 mb-2">Quiz Completed!</h2>
+              <p className="text-sand-700 mb-6">MashaAllah! You finished the daily quiz.</p>
               {dailyResult?.syncing ? (
-                <p className="mb-4 text-sm font-semibold text-[#6d28d9]">Saving your score and points…</p>
+                <p className="mb-4 text-sm font-semibold text-teal-700">Saving your score and points…</p>
               ) : null}
 
               <div className="space-y-4 mb-8">
-                  <div className="bg-[#f5f3ff] rounded-xl p-4">
-                    <p className="text-sm text-[#6d28d9] font-semibold uppercase tracking-wide">Your Score</p>
-                    <p className="text-4xl font-bold text-[#7c3aed]">
+                  <div className="bg-teal-50 rounded-xl p-4">
+                    <p className="text-sm text-teal-700 font-semibold uppercase tracking-wide">Your Score</p>
+                    <p className="text-4xl font-bold text-teal-600">
                       {Math.round(Number(dailyResult?.score ?? 0) / 10)} / {currentQuestions.length}
                     </p>
-                    <p className="mt-1 text-sm font-semibold text-[#6d28d9]">
+                    <p className="mt-1 text-sm font-semibold text-teal-700">
                       {dailyResult?.score ?? 0} points
                     </p>
                   </div>
@@ -959,17 +987,17 @@ export default function QuizPage() {
                   )}
 
                   {dailyResult?.awardedPoints > 0 ? (
-                    <p className="text-[#7c3aed] font-bold text-lg">+{dailyResult.awardedPoints} Points Added to Leaderboard! ⭐</p>
+                    <p className="text-teal-600 font-bold text-lg">+{dailyResult.awardedPoints} Points Added to Leaderboard! ⭐</p>
                   ) : (
-                    <p className="text-[#475569]">{dailyResult?.message || 'No points awarded for this attempt.'}</p>
+                    <p className="text-sand-700">{dailyResult?.message || 'No points awarded for this attempt.'}</p>
                   )}
 
-                  <div className="bg-[#f5f3ff] rounded-xl p-4 border border-[#7c3aed]/20 text-left">
-                    <p className="font-bold text-[#6d28d9] mb-1">New games added! 🎮</p>
-                    <p className="text-[#5b21b6] text-sm mb-3">
+                  <div className="bg-teal-50 rounded-xl p-4 border border-teal-600/20 text-left">
+                    <p className="font-bold text-teal-700 mb-1">New games added! 🎮</p>
+                    <p className="text-teal-800 text-sm mb-3">
                       Want to gain more points? Check out the Games page and try the newest games.
                     </p>
-                    <Link href="/games" className="inline-flex items-center gap-2 bg-[#7c3aed] text-white px-4 py-2 rounded-lg font-bold text-sm hover:opacity-95 transition-all">
+                    <Link href="/games" className="inline-flex items-center gap-2 bg-teal-600 text-white px-4 py-2 rounded-lg font-bold text-sm hover:opacity-95 transition-all">
                       Play Games →
                     </Link>
                   </div>
@@ -981,8 +1009,8 @@ export default function QuizPage() {
                       You can pledge Durood &amp; Zikr to earn extra bonus points after your quizzes. Come back tomorrow for two brand new quiz chances!
                     </p>
                     {countdown && (
-                      <p className="flex items-center gap-1.5 text-xs text-[#475569] font-semibold mb-3">
-                        <Clock size={13} /> Next quiz in <span className="text-[#1e1b4b] font-bold ml-1">{countdown}</span>
+                      <p className="flex items-center gap-1.5 text-xs text-sand-700 font-semibold mb-3">
+                        <Clock size={13} /> Next quiz in <span className="text-teal-900 font-bold ml-1">{countdown}</span>
                       </p>
                     )}
                     <Link href="/pledge" className="inline-flex items-center gap-2 bg-[#fbbf24] text-[#92400e] px-4 py-2 rounded-lg font-bold text-sm hover:bg-[#f59e0b] transition-all">
@@ -999,7 +1027,7 @@ export default function QuizPage() {
 
                 <button
                   onClick={resetPage}
-                  className="w-full py-4 bg-gradient-to-r from-[#7c3aed] to-[#6d28d9] text-white font-bold rounded-xl shadow-lg hover:shadow-xl transition-all"
+                  className="w-full py-4 bg-gradient-to-r from-teal-600 to-teal-700 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transition-all"
                 >
                   Return to Quiz Menu
                 </button>

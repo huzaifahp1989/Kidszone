@@ -19,21 +19,21 @@ export default function IslamicCalendarPage() {
   const selectedMonth = ISLAMIC_MONTHS.find((m) => m.number === selected) ?? ISLAMIC_MONTHS[0];
 
   return (
-    <div className="min-h-screen bg-[#f5f3ff] pattern-islamic">
+    <div className="min-h-screen bg-teal-50 pattern-islamic">
       <div className="mx-auto max-w-5xl space-y-6 px-4 py-8 md:space-y-8">
         <div className="space-y-3 text-center">
-          <div className="inline-flex items-center gap-2 rounded-full border border-[#7c3aed]/30 bg-white px-4 py-2">
-            <CalendarDays size={16} className="text-[#7c3aed]" />
-            <span className="text-sm font-semibold text-[#6d28d9]">Islamic Calendar</span>
+          <div className="inline-flex items-center gap-2 rounded-full border border-teal-600/30 bg-white px-4 py-2">
+            <CalendarDays size={16} className="text-teal-600" />
+            <span className="text-sm font-semibold text-teal-700">Islamic Calendar</span>
           </div>
-          <h1 className="text-4xl font-bold text-[#1e1b4b] md:text-5xl">The Islamic Calendar</h1>
-          <p className="text-lg text-[#475569]">
+          <h1 className="text-4xl font-bold text-teal-900 md:text-5xl">The Islamic Calendar</h1>
+          <p className="text-lg text-sand-700">
             Discover today&apos;s Islamic date and learn about all twelve beautiful months.
           </p>
         </div>
 
         {/* Today's date — big and visible at the top */}
-        <div className="overflow-hidden rounded-3xl border border-[#7c3aed]/30 bg-gradient-to-br from-[#4c1d95] via-[#6d28d9] to-[#7c3aed] p-6 text-white shadow-lg md:p-8">
+        <div className="overflow-hidden rounded-3xl border border-teal-600/30 bg-gradient-to-br from-teal-900 via-teal-700 to-teal-600 p-6 text-white shadow-lg md:p-8">
           <div className="flex flex-col items-center gap-4 text-center md:flex-row md:justify-between md:text-left">
             <div>
               <p className="inline-flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-amber-200">
@@ -63,8 +63,8 @@ export default function IslamicCalendarPage() {
 
         {/* Month picker */}
         <div>
-          <h2 className="mb-3 flex items-center gap-2 text-xl font-bold text-[#1e1b4b]">
-            <Sparkles size={20} className="text-[#7c3aed]" /> Explore the 12 months
+          <h2 className="mb-3 flex items-center gap-2 text-xl font-bold text-teal-900">
+            <Sparkles size={20} className="text-teal-600" /> Explore the 12 months
           </h2>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
             {ISLAMIC_MONTHS.map((month) => {
@@ -77,18 +77,18 @@ export default function IslamicCalendarPage() {
                   onClick={() => setSelected(month.number)}
                   className={`relative flex flex-col items-start gap-1 rounded-2xl border p-3 text-left transition ${
                     isSelected
-                      ? 'border-[#7c3aed] bg-white shadow-md ring-2 ring-[#7c3aed]/30'
-                      : 'border-[#c4b5fd]/40 bg-white/70 hover:border-[#7c3aed]/50 hover:bg-white'
+                      ? 'border-teal-600 bg-white shadow-md ring-2 ring-teal-600/30'
+                      : 'border-teal-300/40 bg-white/70 hover:border-teal-600/50 hover:bg-white'
                   }`}
                 >
                   <span className="flex w-full items-center justify-between">
                     <span className="text-2xl" aria-hidden>
                       {month.emoji}
                     </span>
-                    <span className="text-xs font-bold text-[#94a3b8]">#{month.number}</span>
+                    <span className="text-xs font-bold text-sand-400">#{month.number}</span>
                   </span>
-                  <span className="text-sm font-bold text-[#1e1b4b]">{month.name}</span>
-                  <span className="font-arabic text-base text-[#6d28d9]">{month.arabic}</span>
+                  <span className="text-sm font-bold text-teal-900">{month.name}</span>
+                  <span className="font-arabic text-base text-teal-700">{month.arabic}</span>
                   {isToday ? (
                     <span className="mt-1 inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-700">
                       <Star size={10} className="fill-amber-500 text-amber-500" /> This month
@@ -101,14 +101,14 @@ export default function IslamicCalendarPage() {
         </div>
 
         {/* Selected month details */}
-        <div className="rounded-3xl border border-[#c4b5fd]/40 bg-white p-6 shadow-lg md:p-8">
+        <div className="rounded-3xl border border-teal-300/40 bg-white p-6 shadow-lg md:p-8">
           <div className="flex items-start gap-4">
-            <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-[#f5f3ff] text-4xl">
+            <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-teal-50 text-4xl">
               {selectedMonth.emoji}
             </div>
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-2">
-                <h3 className="text-2xl font-black text-[#1e1b4b]">
+                <h3 className="text-2xl font-black text-teal-900">
                   {selectedMonth.number}. {selectedMonth.name}
                 </h3>
                 {selectedMonth.sacred ? (
@@ -117,21 +117,21 @@ export default function IslamicCalendarPage() {
                   </span>
                 ) : null}
               </div>
-              <p className="font-arabic text-2xl text-[#6d28d9]">{selectedMonth.arabic}</p>
-              <p className="mt-1 text-sm font-semibold text-[#7c3aed]">Meaning: {selectedMonth.meaning}</p>
+              <p className="font-arabic text-2xl text-teal-700">{selectedMonth.arabic}</p>
+              <p className="mt-1 text-sm font-semibold text-teal-600">Meaning: {selectedMonth.meaning}</p>
             </div>
           </div>
 
-          <p className="mt-4 text-base leading-7 text-[#475569]">{selectedMonth.summary}</p>
+          <p className="mt-4 text-base leading-7 text-sand-700">{selectedMonth.summary}</p>
 
           <div className="mt-5">
-            <h4 className="mb-2 flex items-center gap-2 font-bold text-[#6d28d9]">
+            <h4 className="mb-2 flex items-center gap-2 font-bold text-teal-700">
               <Sparkles size={18} /> Fun things to know
             </h4>
             <ul className="space-y-2">
               {selectedMonth.facts.map((fact, i) => (
-                <li key={i} className="flex items-start gap-2 text-[#5b21b6]">
-                  <span className="mt-0.5 text-[#7c3aed]">✓</span>
+                <li key={i} className="flex items-start gap-2 text-teal-800">
+                  <span className="mt-0.5 text-teal-600">✓</span>
                   <span>{fact}</span>
                 </li>
               ))}
@@ -139,14 +139,14 @@ export default function IslamicCalendarPage() {
           </div>
         </div>
 
-        <div className="rounded-2xl border border-[#7c3aed]/20 bg-[#f5f3ff] p-6 text-center">
-          <p className="text-sm text-[#5b21b6]">
+        <div className="rounded-2xl border border-teal-600/20 bg-teal-50 p-6 text-center">
+          <p className="text-sm text-teal-800">
             Keep learning every day! Try the{' '}
-            <Link href="/quiz" className="font-bold text-[#6d28d9] underline-offset-2 hover:underline">
+            <Link href="/quiz" className="font-bold text-teal-700 underline-offset-2 hover:underline">
               Daily Quiz
             </Link>{' '}
             or read{' '}
-            <Link href="/hadith" className="font-bold text-[#6d28d9] underline-offset-2 hover:underline">
+            <Link href="/hadith" className="font-bold text-teal-700 underline-offset-2 hover:underline">
               today&apos;s Hadith
             </Link>
             .

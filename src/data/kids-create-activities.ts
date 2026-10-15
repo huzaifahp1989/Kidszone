@@ -15,23 +15,22 @@ export const CREATE_HUB_ACTIVITIES: CreateActivityCard[] = [
     title: 'Islamic Colouring',
     blurb: 'Colour a masjid, lantern, crescent and more',
     pointsNote: 'For fun · no points claim',
-    badge: 'NEW',
   },
   {
     href: '/create/draw',
     emoji: '✏️',
     title: 'Draw & Share',
-    blurb: 'Draw a kind Islamic scene',
+    blurb: 'Draw a kind Islamic scene — download your PNG',
     pointsNote: 'For fun · no points claim',
-    badge: 'NEW',
+    badge: 'UPDATED',
   },
   {
     href: '/create/dot-to-dot',
     emoji: '🔢',
     title: 'Dot-to-Dot',
-    blurb: 'Connect the dots to reveal an Islamic picture',
+    blurb: 'Connect the dots — crescent, lantern & star shapes',
     pointsNote: 'For fun · no points claim',
-    badge: 'NEW',
+    badge: 'UPDATED',
   },
   {
     href: '/create/trace',
@@ -39,7 +38,6 @@ export const CREATE_HUB_ACTIVITIES: CreateActivityCard[] = [
     title: 'Trace Arabic',
     blurb: 'Trace beautiful words like Bismillah',
     pointsNote: 'For fun · no points claim',
-    badge: 'NEW',
   },
   {
     href: '/create/ayah-colour',
@@ -47,15 +45,14 @@ export const CREATE_HUB_ACTIVITIES: CreateActivityCard[] = [
     title: 'Ayah Colour-by-Number',
     blurb: 'Colour sections as you learn a short ayah',
     pointsNote: 'For fun · no points claim',
-    badge: 'NEW',
   },
   {
     href: '/create/story',
     emoji: '📖',
     title: 'Story Adventure',
-    blurb: 'Choose what happens next in a manners story',
+    blurb: 'Three manners stories — choose what happens next',
     pointsNote: 'For fun · no points claim',
-    badge: 'NEW',
+    badge: 'UPDATED',
   },
   {
     href: '/create/dua',
@@ -63,7 +60,6 @@ export const CREATE_HUB_ACTIVITIES: CreateActivityCard[] = [
     title: 'Dua of the Day',
     blurb: "Learn today's dua and say it",
     pointsNote: 'For fun · no points claim',
-    badge: 'NEW',
   },
   {
     href: '/create/kindness',
@@ -71,7 +67,6 @@ export const CREATE_HUB_ACTIVITIES: CreateActivityCard[] = [
     title: 'Kindness Hunt',
     blurb: 'Complete 5 kind deeds at home today',
     pointsNote: 'For fun · no points claim',
-    badge: 'NEW',
   },
   {
     href: '/create/manners',
@@ -79,20 +74,19 @@ export const CREATE_HUB_ACTIVITIES: CreateActivityCard[] = [
     title: 'Good Manners',
     blurb: 'Practise salam, Bismillah, listening and kind words',
     pointsNote: 'For fun · no points claim',
-    badge: 'NEW',
   },
 ];
 
 export const COLOURING_PALETTE = [
-  '#7c3aed',
-  '#0d9488',
+  '#2563eb',
+  '#3b82f6',
   '#f59e0b',
   '#ef4444',
-  '#3b82f6',
+  '#60a5fa',
   '#10b981',
-  '#ec4899',
-  '#f8fafc',
-  '#1e1b4b',
+  '#ff6b6b',
+  '#faf7f2',
+  '#1e3a8a',
   '#f97316',
 ];
 
@@ -104,66 +98,263 @@ export const TRACE_WORDS = [
 ];
 
 export const AYAH_COLOUR_NUMBERS = [
-  { num: 1, color: '#7c3aed', label: 'Violet' },
-  { num: 2, color: '#0d9488', label: 'Teal' },
+  { num: 1, color: '#2563eb', label: 'Blue' },
+  { num: 2, color: '#3b82f6', label: 'Sky' },
   { num: 3, color: '#f59e0b', label: 'Gold' },
-  { num: 4, color: '#3b82f6', label: 'Blue' },
+  { num: 4, color: '#ff6b6b', label: 'Coral' },
 ];
 
-export const STORY_ADVENTURE = {
-  title: 'The Shared Apple',
-  startId: 'start',
-  nodes: {
-    start: {
-      text: 'You have one apple and your friend looks hungry. What do you do?',
-      choices: [
-        { label: 'Eat it all myself', next: 'selfish' },
-        { label: 'Share half', next: 'share' },
-        { label: 'Give them the whole apple', next: 'give' },
-      ],
-    },
-    selfish: {
-      text: 'Your friend looks sad. The Prophet ﷺ taught us to love for others what we love for ourselves. What next?',
-      choices: [
-        { label: 'Say sorry and share next time', next: 'end_kind' },
-        { label: 'Ignore them', next: 'end_learn' },
-      ],
-    },
-    share: {
-      text: 'Your friend smiles! Sharing is a beautiful sunnah. How do you feel?',
-      choices: [
-        { label: 'Happy and grateful', next: 'end_kind' },
-        { label: 'Make dua together', next: 'end_best' },
-      ],
-    },
-    give: {
-      text: 'You gave your apple away for Allah. That is great generosity! Your friend thanks you.',
-      choices: [{ label: 'Alhamdulillah — end story', next: 'end_best' }],
-    },
-    end_kind: {
-      text: 'MashaAllah! Kindness and sharing make hearts soft. You finished the adventure.',
-      choices: [],
-      ending: true,
-    },
-    end_learn: {
-      text: 'Today is a chance to try again tomorrow with more kindness. You finished the adventure.',
-      choices: [],
-      ending: true,
-    },
-    end_best: {
-      text: 'Beautiful manners! The Prophet ﷺ loved generosity. You finished the adventure.',
-      choices: [],
-      ending: true,
-    },
-  } as Record<
+export type StoryAdventureDef = {
+  id: string;
+  title: string;
+  startId: string;
+  nodes: Record<
     string,
     {
       text: string;
       choices: Array<{ label: string; next: string }>;
       ending?: boolean;
     }
-  >,
+  >;
 };
+
+export const STORY_ADVENTURES: StoryAdventureDef[] = [
+  {
+    id: 'shared-apple',
+    title: 'The Shared Apple',
+    startId: 'start',
+    nodes: {
+      start: {
+        text: 'You have one apple and your friend looks hungry. What do you do?',
+        choices: [
+          { label: 'Eat it all myself', next: 'selfish' },
+          { label: 'Share half', next: 'share' },
+          { label: 'Give them the whole apple', next: 'give' },
+        ],
+      },
+      selfish: {
+        text: 'Your friend looks sad. The Prophet ﷺ taught us to love for others what we love for ourselves. What next?',
+        choices: [
+          { label: 'Say sorry and share next time', next: 'end_kind' },
+          { label: 'Ignore them', next: 'end_learn' },
+        ],
+      },
+      share: {
+        text: 'Your friend smiles! Sharing is a beautiful sunnah. How do you feel?',
+        choices: [
+          { label: 'Happy and grateful', next: 'end_kind' },
+          { label: 'Make dua together', next: 'end_best' },
+        ],
+      },
+      give: {
+        text: 'You gave your apple away for Allah. That is great generosity! Your friend thanks you.',
+        choices: [{ label: 'Alhamdulillah — end story', next: 'end_best' }],
+      },
+      end_kind: {
+        text: 'MashaAllah! Kindness and sharing make hearts soft. You finished the adventure.',
+        choices: [],
+        ending: true,
+      },
+      end_learn: {
+        text: 'Today is a chance to try again tomorrow with more kindness. You finished the adventure.',
+        choices: [],
+        ending: true,
+      },
+      end_best: {
+        text: 'Beautiful manners! The Prophet ﷺ loved generosity. You finished the adventure.',
+        choices: [],
+        ending: true,
+      },
+    },
+  },
+  {
+    id: 'lost-toy',
+    title: 'The Lost Toy',
+    startId: 'start',
+    nodes: {
+      start: {
+        text: 'You find a toy on the playground that is not yours. What do you do?',
+        choices: [
+          { label: 'Keep it quietly', next: 'keep' },
+          { label: 'Ask around whose it is', next: 'ask' },
+          { label: 'Give it to a teacher', next: 'teacher' },
+        ],
+      },
+      keep: {
+        text: 'Your heart feels uneasy. Returning trusts (amanah) is part of faith. What next?',
+        choices: [
+          { label: 'Take it to a teacher', next: 'end_good' },
+          { label: 'Leave it where you found it', next: 'end_ok' },
+        ],
+      },
+      ask: {
+        text: 'A younger child smiles — it was theirs! They thank you.',
+        choices: [{ label: 'Alhamdulillah', next: 'end_best' }],
+      },
+      teacher: {
+        text: 'The teacher returns it to its owner. Honesty shines.',
+        choices: [{ label: 'Finish', next: 'end_best' }],
+      },
+      end_good: {
+        text: 'Well done — you protected someone else’s belonging.',
+        choices: [],
+        ending: true,
+      },
+      end_ok: {
+        text: 'Next time, telling a grown-up is even safer. You finished the adventure.',
+        choices: [],
+        ending: true,
+      },
+      end_best: {
+        text: 'MashaAllah! Honesty and kindness make you a light for others.',
+        choices: [],
+        ending: true,
+      },
+    },
+  },
+  {
+    id: 'salam-first',
+    title: 'Who Greets First?',
+    startId: 'start',
+    nodes: {
+      start: {
+        text: 'You see a new classmate sitting alone. What do you do?',
+        choices: [
+          { label: 'Walk past quietly', next: 'pass' },
+          { label: 'Say Assalamu Alaikum', next: 'salam' },
+          { label: 'Invite them to play', next: 'invite' },
+        ],
+      },
+      pass: {
+        text: 'They look lonely. Spreading salam spreads peace. Try again?',
+        choices: [
+          { label: 'Go back and greet them', next: 'salam' },
+          { label: 'End for now', next: 'end_learn' },
+        ],
+      },
+      salam: {
+        text: 'They smile and reply Wa alaikum assalam! Friendship begins.',
+        choices: [
+          { label: 'Ask their name', next: 'end_best' },
+          { label: 'Invite them to play', next: 'invite' },
+        ],
+      },
+      invite: {
+        text: 'You both play and laugh. Including others is beautiful Akhlaq.',
+        choices: [{ label: 'Finish', next: 'end_best' }],
+      },
+      end_learn: {
+        text: 'Tomorrow you can be the one who greets first. Adventure complete.',
+        choices: [],
+        ending: true,
+      },
+      end_best: {
+        text: 'Beautiful! Starting with salam is a sunnah that opens hearts.',
+        choices: [],
+        ending: true,
+      },
+    },
+  },
+];
+
+/** @deprecated use STORY_ADVENTURES[0] */
+export const STORY_ADVENTURE = STORY_ADVENTURES[0];
+
+export type DotShape = {
+  id: string;
+  label: string;
+  points: Array<{ n: number; x: number; y: number }>;
+};
+
+export const DOT_SHAPES: DotShape[] = [
+  {
+    id: 'crescent',
+    label: 'Crescent',
+    points: [
+      { n: 1, x: 80, y: 40 },
+      { n: 2, x: 140, y: 30 },
+      { n: 3, x: 190, y: 55 },
+      { n: 4, x: 210, y: 110 },
+      { n: 5, x: 190, y: 165 },
+      { n: 6, x: 140, y: 190 },
+      { n: 7, x: 80, y: 175 },
+      { n: 8, x: 55, y: 120 },
+      { n: 9, x: 70, y: 70 },
+      { n: 10, x: 100, y: 55 },
+      { n: 11, x: 130, y: 70 },
+      { n: 12, x: 145, y: 110 },
+      { n: 13, x: 130, y: 150 },
+      { n: 14, x: 95, y: 155 },
+      { n: 15, x: 75, y: 120 },
+    ],
+  },
+  {
+    id: 'star',
+    label: 'Star',
+    points: [
+      { n: 1, x: 130, y: 25 },
+      { n: 2, x: 150, y: 80 },
+      { n: 3, x: 210, y: 80 },
+      { n: 4, x: 165, y: 115 },
+      { n: 5, x: 185, y: 175 },
+      { n: 6, x: 130, y: 140 },
+      { n: 7, x: 75, y: 175 },
+      { n: 8, x: 95, y: 115 },
+      { n: 9, x: 50, y: 80 },
+      { n: 10, x: 110, y: 80 },
+      { n: 11, x: 130, y: 25 },
+    ],
+  },
+  {
+    id: 'lantern',
+    label: 'Lantern',
+    points: [
+      { n: 1, x: 130, y: 20 },
+      { n: 2, x: 150, y: 45 },
+      { n: 3, x: 175, y: 70 },
+      { n: 4, x: 175, y: 140 },
+      { n: 5, x: 150, y: 175 },
+      { n: 6, x: 130, y: 195 },
+      { n: 7, x: 110, y: 175 },
+      { n: 8, x: 85, y: 140 },
+      { n: 9, x: 85, y: 70 },
+      { n: 10, x: 110, y: 45 },
+      { n: 11, x: 130, y: 20 },
+    ],
+  },
+];
+
+/** Dot path roughly shapes a crescent */
+export const DOT_TO_DOT_POINTS = DOT_SHAPES[0].points;
+
+const FINISHED_KEY = 'kids-create-finished';
+
+export function markCreateFinishedToday(activityId: string) {
+  if (typeof window === 'undefined') return;
+  try {
+    const day = new Date().toISOString().slice(0, 10);
+    const raw = window.localStorage.getItem(FINISHED_KEY);
+    const parsed = raw ? (JSON.parse(raw) as Record<string, string[]>) : {};
+    const list = new Set(parsed[day] || []);
+    list.add(activityId);
+    parsed[day] = Array.from(list);
+    window.localStorage.setItem(FINISHED_KEY, JSON.stringify(parsed));
+  } catch {
+    /* ignore */
+  }
+}
+
+export function getCreateFinishedToday(): string[] {
+  if (typeof window === 'undefined') return [];
+  try {
+    const day = new Date().toISOString().slice(0, 10);
+    const raw = window.localStorage.getItem(FINISHED_KEY);
+    const parsed = raw ? (JSON.parse(raw) as Record<string, string[]>) : {};
+    return parsed[day] || [];
+  } catch {
+    return [];
+  }
+}
 
 export const DAILY_DUAS = [
   {
@@ -228,23 +419,4 @@ export const KINDNESS_TASKS = [
   { id: 'thank', label: 'Say jazakAllahu khairan to someone', emoji: '🤝' },
   { id: 'dua-parent', label: 'Make dua for your parents', emoji: '🤲' },
   { id: 'share', label: 'Share food, a toy, or kind words', emoji: '🍎' },
-];
-
-/** Dot path roughly shapes a crescent */
-export const DOT_TO_DOT_POINTS: Array<{ n: number; x: number; y: number }> = [
-  { n: 1, x: 80, y: 40 },
-  { n: 2, x: 140, y: 30 },
-  { n: 3, x: 190, y: 55 },
-  { n: 4, x: 210, y: 110 },
-  { n: 5, x: 190, y: 165 },
-  { n: 6, x: 140, y: 190 },
-  { n: 7, x: 80, y: 175 },
-  { n: 8, x: 55, y: 120 },
-  { n: 9, x: 70, y: 70 },
-  { n: 10, x: 100, y: 55 },
-  { n: 11, x: 130, y: 70 },
-  { n: 12, x: 145, y: 110 },
-  { n: 13, x: 130, y: 150 },
-  { n: 14, x: 95, y: 155 },
-  { n: 15, x: 75, y: 120 },
 ];

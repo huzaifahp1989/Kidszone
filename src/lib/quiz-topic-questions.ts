@@ -1,6 +1,7 @@
 import { difficultyModeFromAge } from '@/lib/quiz-difficulty'
 import { getQuizQuestionPool } from '@/lib/quiz-question-pool'
 import { getAgeSpecificQuizPool, getAllAgeSpecificQuizPools } from '@/lib/age-quiz-pool'
+import { buildOptionRotationSeed, rotateQuestionOptions } from '@/lib/quiz-option-rotation'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import {
   buildTopicQuizId,
@@ -14,6 +15,16 @@ import { getTopicQuestionExclusions } from '@/lib/quiz-user-history'
 const QUESTIONS_PER_TOPIC_QUIZ = 5
 
 type QuizQuestion = ReturnType<typeof getQuizQuestionPool>[number]
+
+export function rotateTopicQuizOptions<T extends QuizQuestion>(
+  questions: T[],
+  daySeed: string,
+  userId: string,
+  topicId: string
+): T[] {
+  const optionSeed = buildOptionRotationSeed({ daySeed, userId, topicId })
+  return questions.map((question) => rotateQuestionOptions<T>(question, optionSeed))
+}
 
 function normalizeQuestion(question: QuizQuestion) {
   const extended = question as QuizQuestion & {
@@ -108,12 +119,14 @@ export async function resolveTopicQuizQuestions(
     }
   }
 
+  const rotatedQuestions = rotateTopicQuizOptions(selected, daySeed, userId, topicId)
+
   return {
     daySeed,
     weekSeed: daySeed,
     quizId: buildTopicQuizId(topicId, daySeed, userId),
-    questions: selected.map(normalizeQuestion),
-    questionIds: selected.map((question) => String(question.id)),
+    questions: rotatedQuestions.map(normalizeQuestion),
+    questionIds: rotatedQuestions.map((question) => String(question.id)),
   }
 }
 

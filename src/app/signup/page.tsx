@@ -283,9 +283,9 @@ export default function SignupPage() {
   };
 
   return (
-    <div className="min-h-[80vh] flex items-center justify-center px-4 sm:px-6 py-10 bg-[#f5f3ff] pattern-islamic">
+    <div className="min-h-[80vh] flex items-center justify-center px-4 sm:px-6 py-10 bg-teal-50 pattern-islamic">
       <div className="w-full max-w-5xl grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-10 items-stretch">
-        <div className="hidden md:flex flex-col justify-between rounded-2xl p-8 bg-gradient-to-br from-[#7c3aed] to-[#6d28d9] text-white shadow-xl">
+        <div className="hidden md:flex flex-col justify-between rounded-2xl p-8 bg-gradient-to-br from-teal-600 to-teal-700 text-white shadow-xl">
           <div>
             <div className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-xs font-semibold">
               <Shield size={14} /> Safe & Secure
@@ -320,17 +320,17 @@ export default function SignupPage() {
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.26, ease: [0.22, 1, 0.36, 1] }}
-          className="w-full rounded-2xl bg-white shadow-xl border border-[#c4b5fd]/30 p-6 sm:p-8"
+          className="w-full rounded-2xl bg-white shadow-xl border border-teal-300/30 p-6 sm:p-8"
         >
           <div className="md:hidden mb-6">
-            <h1 className="text-2xl font-extrabold text-[#1e1b4b]">Create Your Account</h1>
-            <p className="mt-1 text-sm text-[#475569]">Start earning points for learning.</p>
+            <h1 className="text-2xl font-extrabold text-teal-900">Create Your Account</h1>
+            <p className="mt-1 text-sm text-sand-700">Start earning points for learning.</p>
           </div>
 
-          <div className="mb-4 rounded-xl border border-[#c4b5fd]/30 bg-[#ede9fe] px-4 py-3 text-sm text-[#1e1b4b]">
+          <div className="mb-4 rounded-xl border border-teal-300/30 bg-teal-100 px-4 py-3 text-sm text-teal-900">
             Having issues? WhatsApp{' '}
             <a
-              className="font-bold text-[#7c3aed] hover:underline"
+              className="font-bold text-teal-600 hover:underline"
               href="https://wa.me/447404644610"
               target="_blank"
               rel="noopener noreferrer"
@@ -360,13 +360,13 @@ export default function SignupPage() {
           )}
 
           {success && !needsEmailConfirmation && (
-            <div className="mb-4 rounded-xl bg-[#f5f3ff] text-[#6d28d9] px-4 py-3 text-sm font-semibold text-center">
+            <div className="mb-4 rounded-xl bg-teal-50 text-teal-700 px-4 py-3 text-sm font-semibold text-center">
               Successfully signed up! Redirecting…
             </div>
           )}
 
           {success && needsEmailConfirmation && (
-            <div className="mb-4 rounded-xl bg-[#f5f3ff] text-[#6d28d9] px-4 py-3 text-sm">
+            <div className="mb-4 rounded-xl bg-teal-50 text-teal-700 px-4 py-3 text-sm">
               <p className="font-bold mb-1">Check your email!</p>
               <p>
                 We sent a confirmation link to your email. Please click it, then{' '}
@@ -381,10 +381,10 @@ export default function SignupPage() {
           {!success && (
             <form onSubmit={onSubmit} className="space-y-4">
               <div>
-                <label className="block text-sm font-semibold text-[#1e1b4b] mb-1">Full name</label>
+                <label className="block text-sm font-semibold text-teal-900 mb-1">Full name</label>
                 <input
                   type="text"
-                  className="w-full rounded-xl border-2 border-[#c4b5fd]/40 px-4 py-3 interactive-focus touch-target transition"
+                  className="w-full rounded-xl border-2 border-teal-300/40 px-4 py-3 interactive-focus touch-target transition"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder="e.g., Aisha Khan"
@@ -392,10 +392,10 @@ export default function SignupPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-[#1e1b4b] mb-1">Username</label>
+                <label className="block text-sm font-semibold text-teal-900 mb-1">Username</label>
                 <input
                   type="text"
-                  className="w-full rounded-xl border-2 border-[#c4b5fd]/40 px-4 py-3 interactive-focus touch-target transition"
+                  className="w-full rounded-xl border-2 border-teal-300/40 px-4 py-3 interactive-focus touch-target transition"
                   value={username}
                   onChange={(e) => setUsername(normalizeUsername(e.target.value))}
                   placeholder="e.g., aisha_k"
@@ -403,7 +403,7 @@ export default function SignupPage() {
                   minLength={3}
                   maxLength={20}
                 />
-                <p className="mt-1 text-xs text-[#475569]">
+                <p className="mt-1 text-xs text-sand-700">
                   3–20 letters, numbers, or underscores. Brothers and sisters each need their own username.
                 </p>
                 {usernameHint && (
@@ -418,11 +418,11 @@ export default function SignupPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-[#1e1b4b] mb-1">Age</label>
+                <label className="block text-sm font-semibold text-teal-900 mb-1">Age</label>
                 <input
                   type="number"
                   inputMode="numeric"
-                  className="w-full rounded-xl border-2 border-[#c4b5fd]/40 px-4 py-3 interactive-focus touch-target transition"
+                  className="w-full rounded-xl border-2 border-teal-300/40 px-4 py-3 interactive-focus touch-target transition"
                   value={age}
                   onChange={(e) => setAge(e.target.value)}
                   placeholder="e.g., 10"
@@ -432,10 +432,10 @@ export default function SignupPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-[#1e1b4b] mb-1">Madrasah name <span className="font-normal text-[#64748b]">(optional)</span></label>
+                <label className="block text-sm font-semibold text-teal-900 mb-1">Madrasah name <span className="font-normal text-sand-600">(optional)</span></label>
                 <input
                   type="text"
-                  className="w-full rounded-xl border-2 border-[#c4b5fd]/40 px-4 py-3 interactive-focus touch-target transition"
+                  className="w-full rounded-xl border-2 border-teal-300/40 px-4 py-3 interactive-focus touch-target transition"
                   value={madrasahName}
                   onChange={(e) => setMadrasahName(e.target.value)}
                   placeholder="e.g., Al Qasswa Madrasah"
@@ -443,10 +443,10 @@ export default function SignupPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-[#1e1b4b] mb-1">City / Town</label>
+                <label className="block text-sm font-semibold text-teal-900 mb-1">City / Town</label>
                 <input
                   type="text"
-                  className="w-full rounded-xl border-2 border-[#c4b5fd]/40 px-4 py-3 interactive-focus touch-target transition"
+                  className="w-full rounded-xl border-2 border-teal-300/40 px-4 py-3 interactive-focus touch-target transition"
                   value={city}
                   onChange={(e) => setCity(e.target.value)}
                   placeholder="e.g., Birmingham"
@@ -457,15 +457,15 @@ export default function SignupPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-[#1e1b4b] mb-1">
-                  Contact number <span className="font-semibold text-[#7c3aed]">* Required</span>
+                <label className="block text-sm font-semibold text-teal-900 mb-1">
+                  Contact number <span className="font-semibold text-teal-600">* Required</span>
                 </label>
-                <p className="text-[11px] text-[#64748b] mb-1">
+                <p className="text-[11px] text-sand-600 mb-1">
                   WhatsApp or mobile number, with country code (e.g. +44 7404 644610 or 07404 644610).
                 </p>
                 <input
                   type="tel"
-                  className="w-full rounded-xl border-2 border-[#c4b5fd]/40 px-4 py-3 interactive-focus touch-target transition"
+                  className="w-full rounded-xl border-2 border-teal-300/40 px-4 py-3 interactive-focus touch-target transition"
                   value={contactNumber}
                   onChange={(e) => setContactNumber(e.target.value)}
                   placeholder="e.g., +44 7404 644610"
@@ -475,26 +475,26 @@ export default function SignupPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-[#1e1b4b] mb-1">Family email</label>
+                <label className="block text-sm font-semibold text-teal-900 mb-1">Family email</label>
                 <input
                   type="email"
-                  className="w-full rounded-xl border-2 border-[#c4b5fd]/40 px-4 py-3 interactive-focus touch-target transition"
+                  className="w-full rounded-xl border-2 border-teal-300/40 px-4 py-3 interactive-focus touch-target transition"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="parent@example.com"
                   autoComplete="email"
                 />
-                <p className="mt-1 text-xs text-[#475569]">
-                  One email for the family. Or use <Link href="/signup/family" className="text-[#7c3aed] font-semibold hover:underline">family signup</Link> to add all children at once.
+                <p className="mt-1 text-xs text-sand-700">
+                  One email for the family. Or use <Link href="/signup/family" className="text-teal-600 font-semibold hover:underline">family signup</Link> to add all children at once.
                 </p>
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-[#1e1b4b] mb-1">Password</label>
+                <label className="block text-sm font-semibold text-teal-900 mb-1">Password</label>
                 <div className="relative">
                   <input
                     type={showPassword ? 'text' : 'password'}
-                    className="w-full rounded-xl border-2 border-[#c4b5fd]/40 px-4 py-3 pr-14 interactive-focus touch-target transition"
+                    className="w-full rounded-xl border-2 border-teal-300/40 px-4 py-3 pr-14 interactive-focus touch-target transition"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="At least 6 characters"
@@ -503,7 +503,7 @@ export default function SignupPage() {
                   <button
                     type="button"
                     onClick={() => setShowPassword((prev) => !prev)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-[#475569] hover:text-[#7c3aed] interactive-focus"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-sand-700 hover:text-teal-600 interactive-focus"
                     aria-label={showPassword ? 'Hide password' : 'Show password'}
                   >
                     {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
@@ -512,11 +512,11 @@ export default function SignupPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-[#1e1b4b] mb-1">Confirm Password</label>
+                <label className="block text-sm font-semibold text-teal-900 mb-1">Confirm Password</label>
                 <div className="relative">
                   <input
                     type={showConfirmPassword ? 'text' : 'password'}
-                    className="w-full rounded-xl border-2 border-[#c4b5fd]/40 px-4 py-3 pr-14 interactive-focus touch-target transition"
+                    className="w-full rounded-xl border-2 border-teal-300/40 px-4 py-3 pr-14 interactive-focus touch-target transition"
                     value={confirm}
                     onChange={(e) => setConfirm(e.target.value)}
                     placeholder="Re-enter password"
@@ -525,7 +525,7 @@ export default function SignupPage() {
                   <button
                     type="button"
                     onClick={() => setShowConfirmPassword((prev) => !prev)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-[#475569] hover:text-[#7c3aed] interactive-focus"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-sand-700 hover:text-teal-600 interactive-focus"
                     aria-label={showConfirmPassword ? 'Hide confirm password' : 'Show confirm password'}
                   >
                     {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
@@ -537,26 +537,26 @@ export default function SignupPage() {
                 <button
                   type="submit"
                   disabled={!supabaseConfigured || loading}
-                  className="w-full py-3 rounded-xl font-bold text-white bg-gradient-to-r from-[#7c3aed] to-[#6d28d9] shadow-lg hover:shadow-xl transition-all transition-bouncy interactive-focus touch-target disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full py-3 rounded-xl font-bold text-white bg-gradient-to-r from-teal-600 to-teal-700 shadow-lg hover:shadow-xl transition-all transition-bouncy interactive-focus touch-target disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {loading ? 'Creating account…' : 'Sign Up'}
                 </button>
               </div>
 
-              <p className="text-xs text-[#475569] text-center">
+              <p className="text-xs text-sand-700 text-center">
                 By signing up, you confirm you have parent/guardian permission.
               </p>
 
-              <p className="text-sm text-center text-[#1e1b4b]">
+              <p className="text-sm text-center text-teal-900">
                 Already have an account?{' '}
-                <Link href="/signin" className="text-[#7c3aed] font-semibold hover:underline">
+                <Link href="/signin" className="text-teal-600 font-semibold hover:underline">
                   Sign in
                 </Link>
               </p>
 
-              <p className="text-sm text-center text-[#475569]">
+              <p className="text-sm text-center text-sand-700">
                 Have multiple children?{' '}
-                <Link href="/signup/family" className="text-[#7c3aed] font-semibold hover:underline">
+                <Link href="/signup/family" className="text-teal-600 font-semibold hover:underline">
                   Create family accounts
                 </Link>
               </p>
@@ -567,7 +567,7 @@ export default function SignupPage() {
             <div className="mt-4 text-center">
               <Link
                 href="/signin"
-                className="inline-block px-6 py-3 bg-gradient-to-r from-[#7c3aed] to-[#6d28d9] text-white font-bold rounded-xl shadow-lg hover:shadow-xl transition-all transition-bouncy interactive-focus touch-target"
+                className="inline-block px-6 py-3 bg-gradient-to-r from-teal-600 to-teal-700 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transition-all transition-bouncy interactive-focus touch-target"
               >
                 Go to Sign In
               </Link>

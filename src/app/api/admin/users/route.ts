@@ -147,7 +147,105 @@ export async function GET(request: Request) {
         throw error;
     }
     
-    const list = users ?? [];
+    let list = users ?? [];
+    const existingUids = new Set(list.map((u: any) => String(u?.uid || '')).filter(Boolean));
+
+    try {
+      const { data: pushRows } = await supabaseAdmin
+        .from('push_notification_tokens')
+        .select('user_id')
+        .limit(5000);
+      const pushUids = Array.from(
+        new Set((pushRows || []).map((r: any) => String(r.user_id || '')).filter(Boolean))
+      );
+      const missingFromPush = pushUids.filter((uid) => !existingUids.has(uid));
+
+      let authUsersById = new Map<string, any>();
+      if (missingFromPush.length > 0) {
+        const { data: authUsers } = await supabaseAdmin.auth.admin.listUsers({
+          page: 1,
+          perPage: 1000,
+        });
+        authUsersById = new Map((authUsers?.users || []).map((au: any) => [au.id, au]));
+
+        const stubsToInsert: any[] = [];
+        for (const uid of missingFromPush.slice(0, 200)) {
+          const authUser = authUsersById.get(uid);
+          const meta = (authUser?.user_metadata as Record<string, unknown>) || {};
+          const metaName =
+            (meta.name as string) ||
+            (meta.full_name as string) ||
+            (meta.fullName as string) ||
+            '';
+          const stubName =
+            metaName ||
+            (authUser?.email ? authUser.email.split('@')[0] : `Learner-${uid.slice(0, 8)}`);
+          const stubEmail = authUser?.email || `user-${uid.slice(0, 8)}@local`;
+          const stubAge = normalizeAge(
+            meta.age,
+            meta.childAge,
+            meta.child_age
+          ) ?? 10;
+          const stubCity = firstString(
+            meta.city,
+            meta.town,
+            meta.location,
+            meta.cityName,
+            meta.addressCity,
+            meta.address_city
+          );
+          const stubContact = firstString(
+            meta.contactNumber,
+            meta.contact_number,
+            meta.contactnumber
+          );
+          stubsToInsert.push({
+            uid,
+            email: stubEmail,
+            name: stubName,
+            age: stubAge,
+            role: 'kid',
+            points: 0,
+            weeklypoints: 0,
+            monthlypoints: 0,
+            level: 'Beginner',
+            city: stubCity || undefined,
+            contact_number: stubContact || undefined,
+            contactnumber: stubContact || undefined,
+            contactNumber: stubContact || undefined,
+            created_at: authUser?.created_at || new Date().toISOString(),
+            updated_at: authUser?.last_sign_in_at || authUser?.created_at || new Date().toISOString(),
+          });
+        }
+
+        if (stubsToInsert.length > 0) {
+          try {
+            const { data: inserted, error: insertErr } = await supabaseAdmin
+              .from('users')
+              .insert(stubsToInsert, { defaultToNull: false })
+              .select('*');
+            if (!insertErr && inserted && inserted.length > 0) {
+              list = [...list, ...inserted];
+              for (const row of inserted) existingUids.add(String((row as any).uid));
+            }
+          } catch (insertErr: any) {
+            if (insertErr?.code !== '23505') {
+              console.warn('[admin/users] Failed to insert missing stub users:', insertErr?.message || insertErr);
+            } else {
+              try {
+                const { data: reloaded } = await supabaseAdmin.from('users').select('*');
+                if (reloaded) list = reloaded as any[];
+              } catch {
+                /* ignore */
+              }
+            }
+          }
+        }
+      }
+    } catch (syncErr: any) {
+      console.warn('[admin/users] Push-token user sync skipped:', syncErr?.message || syncErr);
+    }
+
     const candidates = list.filter((u: any) => u?.uid && isPlaceholderName(u?.name));
     if (candidates.length) {
       const updated = await Promise.all(

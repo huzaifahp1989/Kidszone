@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { resolveSubmittedTopicQuestions } from '@/lib/quiz-topic-questions'
+import { resolveSubmittedTopicQuestions, rotateTopicQuizOptions } from '@/lib/quiz-topic-questions'
 import { getTopicQuizQuestions } from '@/lib/quiz-topics'
 import { getQuizQuestionPool } from '@/lib/quiz-question-pool'
 
@@ -25,5 +25,16 @@ describe('resolveSubmittedTopicQuestions', () => {
       excludeRecentIds: dayA.map((q) => q.id),
     })
     expect(dayB.map((q) => q.id).join(',')).not.toBe(dayA.map((q) => q.id).join(','))
+  })
+
+  it('reproduces the same option layout for delivery and scoring', () => {
+    const selected = getTopicQuizQuestions(quizPool, 'hadith', '2026-08-01', 5, { userId: 'learner-3' })
+    const delivered = rotateTopicQuizOptions(selected, '2026-08-01', 'learner-3', 'hadith')
+    const submitted = resolveSubmittedTopicQuestions('hadith', delivered.map((q) => String(q.id)))
+    const scored = rotateTopicQuizOptions(submitted, '2026-08-01', 'learner-3', 'hadith')
+
+    expect(scored.map((q) => ({ options: q.options, correctAnswer: q.correctAnswer }))).toEqual(
+      delivered.map((q) => ({ options: q.options, correctAnswer: q.correctAnswer }))
+    )
   })
 })

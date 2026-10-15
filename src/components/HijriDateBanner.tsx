@@ -22,7 +22,7 @@ export function HijriDateBanner() {
   }, []);
 
   return (
-    <div className="w-full border-b border-amber-300/40 bg-gradient-to-r from-[#4c1d95] via-[#6d28d9] to-[#7c3aed] text-white">
+    <div className="w-full border-b border-amber-300/40 bg-gradient-to-r from-teal-900 via-teal-700 to-teal-600 text-white">
       <Link
         href="/calendar"
         aria-label="Open the Islamic calendar to learn about each month"

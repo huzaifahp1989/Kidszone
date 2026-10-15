@@ -247,24 +247,24 @@ export default function TasksPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#f5f3ff] pattern-islamic">
+    <div className="min-h-screen bg-teal-50 pattern-islamic">
       <div className="max-w-5xl mx-auto px-4 py-8 space-y-8">
         <div className="text-center space-y-4">
-          <div className="inline-flex items-center gap-2 px-4 py-2 bg-[#eef2ff] rounded-full border border-[#6366f1]/20">
-            <ClipboardList size={16} className="text-[#4f46e5]" />
-            <span className="text-sm font-semibold text-[#4338ca]">Tasks & Referrals</span>
+          <div className="inline-flex items-center gap-2 px-4 py-2 bg-teal-50 rounded-full border border-teal-500/20">
+            <ClipboardList size={16} className="text-teal-600" />
+            <span className="text-sm font-semibold text-teal-700">Tasks & Referrals</span>
           </div>
-          <h1 className="text-4xl md:text-5xl font-bold text-[#1e1b4b]">Invite a Friend Task</h1>
-          <p className="text-[#475569] text-lg max-w-2xl mx-auto">
+          <h1 className="text-4xl md:text-5xl font-bold text-teal-900">Invite a Friend Task</h1>
+          <p className="text-sand-700 text-lg max-w-2xl mx-auto">
             Add a friend name or email, share your Kids Zone signup link, and earn points when they join.
           </p>
         </div>
 
-        <div className="bg-gradient-to-r from-[#eff6ff] to-[#f0f9ff] border border-[#60a5fa]/30 rounded-2xl p-5 text-center">
-          <p className="text-[#1d4ed8] font-bold text-base md:text-lg">
+        <div className="bg-gradient-to-r from-teal-50 to-teal-50 border border-teal-400/30 rounded-2xl p-5 text-center">
+          <p className="text-teal-700 font-bold text-base md:text-lg">
             Share Kids Zone from Islam Media Central with family and friends.
           </p>
-          <p className="text-[#1e40af] mt-2 text-sm md:text-base">
+          <p className="text-teal-800 mt-2 text-sm md:text-base">
             Your friend must sign up to Kids Zone using your referral link. After they join, your {payload?.joinReward?.points ?? 50} referral points are added automatically.
           </p>
         </div>
@@ -279,8 +279,8 @@ export default function TasksPage() {
               <div className="inline-flex rounded-full bg-purple-100 px-3 py-1 text-xs font-bold uppercase tracking-wide text-purple-800">
                 Record &amp; Earn Points
               </div>
-              <h2 className="mt-3 text-2xl font-bold text-[#1e1b4b]">Record Quran, Nasheeds, Stories &amp; Hadith</h2>
-              <div className="mt-3 space-y-2 text-sm leading-6 text-[#475569] md:text-base">
+              <h2 className="mt-3 text-2xl font-bold text-teal-900">Record Quran, Nasheeds, Stories &amp; Hadith</h2>
+              <div className="mt-3 space-y-2 text-sm leading-6 text-sand-700 md:text-base">
                 <p>Use this recorder to record Quran recitation, nasheeds, Islamic stories, Hadith and more.</p>
                 <p className="font-semibold text-purple-700">We will check your recordings and give more points!</p>
               </div>
@@ -301,35 +301,35 @@ export default function TasksPage() {
 
         {/* Activity shortcuts */}
         <section className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <Link href="/studio" className="group flex flex-col items-center gap-3 bg-white rounded-2xl border border-[#c4b5fd]/20 shadow-lg p-6 text-center hover:border-[#7c3aed]/40 hover:shadow-xl transition">
+          <Link href="/studio" className="group flex flex-col items-center gap-3 bg-white rounded-2xl border border-teal-300/20 shadow-lg p-6 text-center hover:border-teal-600/40 hover:shadow-xl transition">
             <div className="text-4xl">🎙️</div>
             <div>
-              <p className="font-black text-[#1e1b4b] text-lg">Record a Story</p>
-              <p className="text-sm text-[#475569] mt-1">Record an Islamic story and earn points</p>
+              <p className="font-black text-teal-900 text-lg">Record a Story</p>
+              <p className="text-sm text-sand-700 mt-1">Record an Islamic story and earn points</p>
             </div>
           </Link>
-          <Link href="/pledge" className="group flex flex-col items-center gap-3 bg-white rounded-2xl border border-[#c4b5fd]/20 shadow-lg p-6 text-center hover:border-[#7c3aed]/40 hover:shadow-xl transition">
+          <Link href="/pledge" className="group flex flex-col items-center gap-3 bg-white rounded-2xl border border-teal-300/20 shadow-lg p-6 text-center hover:border-teal-600/40 hover:shadow-xl transition">
             <div className="text-4xl">📿</div>
             <div>
-              <p className="font-black text-[#1e1b4b] text-lg">Durood &amp; Zikr Pledge</p>
-              <p className="text-sm text-[#475569] mt-1">Complete pledges to gain points</p>
+              <p className="font-black text-teal-900 text-lg">Durood &amp; Zikr Pledge</p>
+              <p className="text-sm text-sand-700 mt-1">Complete pledges to gain points</p>
             </div>
           </Link>
-          <Link href="/games" className="group flex flex-col items-center gap-3 bg-white rounded-2xl border border-[#c4b5fd]/20 shadow-lg p-6 text-center hover:border-[#7c3aed]/40 hover:shadow-xl transition">
+          <Link href="/games" className="group flex flex-col items-center gap-3 bg-white rounded-2xl border border-teal-300/20 shadow-lg p-6 text-center hover:border-teal-600/40 hover:shadow-xl transition">
             <div className="text-4xl">🎮</div>
             <div>
-              <p className="font-black text-[#1e1b4b] text-lg">Play Games</p>
-              <p className="text-sm text-[#475569] mt-1">Play Islamic games to earn points</p>
+              <p className="font-black text-teal-900 text-lg">Play Games</p>
+              <p className="text-sm text-sand-700 mt-1">Play Islamic games to earn points</p>
             </div>
           </Link>
         </section>
 
-        <section className="bg-white rounded-2xl border border-[#c4b5fd]/20 shadow-lg p-6 space-y-4">
+        <section className="bg-white rounded-2xl border border-teal-300/20 shadow-lg p-6 space-y-4">
           <div className="flex items-center gap-2">
             <Star size={18} className="text-[#f59e0b]" />
-            <h2 className="text-2xl font-bold text-[#1e1b4b]">Leave a Review</h2>
+            <h2 className="text-2xl font-bold text-teal-900">Leave a Review</h2>
           </div>
-          <p className="text-sm text-[#475569]">
+          <p className="text-sm text-sand-700">
             Open the review popup to leave a review on Apple App Store or Google Play.
           </p>
           <button
@@ -341,78 +341,78 @@ export default function TasksPage() {
         </section>
 
         {!user ? (
-          <div className="bg-white rounded-2xl border border-[#c4b5fd]/20 shadow-lg p-8 text-center space-y-4">
-            <Users size={42} className="mx-auto text-[#6366f1]" />
-            <h2 className="text-2xl font-bold text-[#1e1b4b]">Sign in to use referral tasks</h2>
-            <p className="text-[#475569]">You need an account to get your invite link and track your referral tasks.</p>
+          <div className="bg-white rounded-2xl border border-teal-300/20 shadow-lg p-8 text-center space-y-4">
+            <Users size={42} className="mx-auto text-teal-500" />
+            <h2 className="text-2xl font-bold text-teal-900">Sign in to use referral tasks</h2>
+            <p className="text-sand-700">You need an account to get your invite link and track your referral tasks.</p>
             <div className="flex justify-center gap-3">
-              <Link href="/signin?next=%2Ftasks" className="px-5 py-3 rounded-xl bg-gradient-to-r from-[#7c3aed] to-[#6d28d9] text-white font-bold">
+              <Link href="/signin?next=%2Ftasks" className="px-5 py-3 rounded-xl bg-gradient-to-r from-teal-600 to-teal-700 text-white font-bold">
                 Sign In
               </Link>
-              <Link href="/signup" className="px-5 py-3 rounded-xl border border-[#c4b5fd]/40 text-[#1e1b4b] font-bold bg-white">
+              <Link href="/signup" className="px-5 py-3 rounded-xl border border-teal-300/40 text-teal-900 font-bold bg-white">
                 Join Kids Zone
               </Link>
             </div>
           </div>
         ) : loading ? (
-          <div className="bg-white rounded-2xl border border-[#c4b5fd]/20 shadow-lg p-8 text-[#475569]">Loading referral task tools...</div>
+          <div className="bg-white rounded-2xl border border-teal-300/20 shadow-lg p-8 text-sand-700">Loading referral task tools...</div>
         ) : !payload ? (
-          <div className="bg-white rounded-2xl border border-[#c4b5fd]/20 shadow-lg p-8 text-center space-y-3">
-            <p className="text-[#1e1b4b] font-bold">Referral tools are unavailable right now.</p>
-            <p className="text-[#475569]">{loadError || 'Please try again later.'}</p>
+          <div className="bg-white rounded-2xl border border-teal-300/20 shadow-lg p-8 text-center space-y-3">
+            <p className="text-teal-900 font-bold">Referral tools are unavailable right now.</p>
+            <p className="text-sand-700">{loadError || 'Please try again later.'}</p>
           </div>
         ) : (
           <>
             <section className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="bg-white rounded-2xl border border-[#c4b5fd]/20 shadow-lg p-5">
-                <p className="text-xs uppercase tracking-[0.12em] text-[#6366f1]">Referral Code</p>
-                <p className="text-3xl font-black text-[#312e81] mt-2">{payload.referralCode}</p>
+              <div className="bg-white rounded-2xl border border-teal-300/20 shadow-lg p-5">
+                <p className="text-xs uppercase tracking-[0.12em] text-teal-500">Referral Code</p>
+                <p className="text-3xl font-black text-teal-900 mt-2">{payload.referralCode}</p>
               </div>
-              <div className="bg-white rounded-2xl border border-[#c4b5fd]/20 shadow-lg p-5">
-                <p className="text-xs uppercase tracking-[0.12em] text-[#5b21b6]">Successful Joins</p>
-                <p className="text-3xl font-black text-[#5b21b6] mt-2">{payload.successfulJoins}</p>
+              <div className="bg-white rounded-2xl border border-teal-300/20 shadow-lg p-5">
+                <p className="text-xs uppercase tracking-[0.12em] text-teal-800">Successful Joins</p>
+                <p className="text-3xl font-black text-teal-800 mt-2">{payload.successfulJoins}</p>
               </div>
-              <div className="bg-white rounded-2xl border border-[#c4b5fd]/20 shadow-lg p-5">
+              <div className="bg-white rounded-2xl border border-teal-300/20 shadow-lg p-5">
                 <p className="text-xs uppercase tracking-[0.12em] text-[#b45309]">Pending Referral Tasks</p>
                 <p className="text-3xl font-black text-[#92400e] mt-2">{pendingCount}</p>
               </div>
             </section>
 
-            <section className="bg-white rounded-2xl border border-[#c4b5fd]/20 shadow-lg p-6 space-y-4">
+            <section className="bg-white rounded-2xl border border-teal-300/20 shadow-lg p-6 space-y-4">
               <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
                 <div>
-                  <h2 className="text-2xl font-bold text-[#1e1b4b]">Create Referral Task</h2>
-                  <p className="text-[#475569] text-sm mt-1">Add your friend&apos;s name or email, then send them your Kids Zone signup link.</p>
+                  <h2 className="text-2xl font-bold text-teal-900">Create Referral Task</h2>
+                  <p className="text-sand-700 text-sm mt-1">Add your friend&apos;s name or email, then send them your Kids Zone signup link.</p>
                 </div>
-                <p className="text-sm font-semibold text-[#5b21b6]">{referralRewardText}</p>
+                <p className="text-sm font-semibold text-teal-800">{referralRewardText}</p>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-bold text-[#1e1b4b] mb-2">Friend Name</label>
+                  <label className="block text-sm font-bold text-teal-900 mb-2">Friend Name</label>
                   <input
                     value={friendName}
                     onChange={(event) => setFriendName(event.target.value)}
                     placeholder="Enter friend name"
-                    className="w-full rounded-xl border border-[#c4b5fd]/40 px-4 py-3 text-[#1e1b4b] bg-[#fffdf9]"
+                    className="w-full rounded-xl border border-teal-300/40 px-4 py-3 text-teal-900 bg-sand-50"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-bold text-[#1e1b4b] mb-2">Friend Email</label>
+                  <label className="block text-sm font-bold text-teal-900 mb-2">Friend Email</label>
                   <input
                     value={friendEmail}
                     onChange={(event) => setFriendEmail(event.target.value)}
                     placeholder="Enter friend email"
-                    className="w-full rounded-xl border border-[#c4b5fd]/40 px-4 py-3 text-[#1e1b4b] bg-[#fffdf9]"
+                    className="w-full rounded-xl border border-teal-300/40 px-4 py-3 text-teal-900 bg-sand-50"
                   />
                 </div>
               </div>
 
-              <div className="rounded-2xl border border-[#cbd5e1] bg-[#f8fafc] p-4 space-y-3">
-                <p className="text-sm font-semibold text-[#334155]">Referral signup link</p>
+              <div className="rounded-2xl border border-sand-200 bg-sand-50 p-4 space-y-3">
+                <p className="text-sm font-semibold text-sand-800">Referral signup link</p>
                 <div className="flex flex-col sm:flex-row gap-2">
-                  <input readOnly value={payload.inviteLink} className="w-full rounded-xl border border-[#cbd5e1] px-3 py-2 text-sm text-[#1e293b] bg-white" />
-                  <button onClick={copyInviteLink} className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-white border border-[#cbd5e1] text-[#334155] font-semibold hover:bg-[#f1f5f9]">
+                  <input readOnly value={payload.inviteLink} className="w-full rounded-xl border border-sand-200 px-3 py-2 text-sm text-sand-900 bg-white" />
+                  <button onClick={copyInviteLink} className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-white border border-sand-200 text-sand-800 font-semibold hover:bg-sand-100">
                     <Copy size={16} />
                     Copy Link
                   </button>
@@ -420,25 +420,25 @@ export default function TasksPage() {
               </div>
 
               <div className="flex flex-wrap gap-3">
-                <button onClick={addTask} className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-gradient-to-r from-[#6366f1] to-[#4f46e5] text-white font-bold shadow-md">
+                <button onClick={addTask} className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-gradient-to-r from-teal-500 to-teal-600 text-white font-bold shadow-md">
                   <UserPlus size={18} />
                   Add Referral Task
                 </button>
-                <a href={APP_STORE_LINKS.android} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 px-5 py-3 rounded-xl border border-[#16a34a]/30 bg-[#f0fdf4] text-[#166534] font-bold">
+                <a href={APP_STORE_LINKS.android} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 px-5 py-3 rounded-xl border border-[#2563eb]/30 bg-[#eff6ff] text-[#1e40af] font-bold">
                   <Send size={18} />
                   Open Android App Link
                 </a>
               </div>
 
-              {message ? <p className="text-sm font-semibold text-[#5b21b6]">{message}</p> : null}
+              {message ? <p className="text-sm font-semibold text-teal-800">{message}</p> : null}
             </section>
 
-            <section className="bg-white rounded-2xl border border-[#c4b5fd]/20 shadow-lg p-6 space-y-5">
+            <section className="bg-white rounded-2xl border border-teal-300/20 shadow-lg p-6 space-y-5">
               <div className="flex items-center gap-2">
                 <Star size={18} className="text-[#f59e0b]" />
-                <h2 className="text-2xl font-bold text-[#1e1b4b]">Leave a Review — Earn 30 Points</h2>
+                <h2 className="text-2xl font-bold text-teal-900">Leave a Review — Earn 30 Points</h2>
               </div>
-              <p className="text-sm text-[#475569]">
+              <p className="text-sm text-sand-700">
                 Leave a review for Kids Zone on the Apple App Store or Google Play and earn +30 bonus points. Click &ldquo;Submit for Review&rdquo; after leaving your review — the admin will approve and add your points.
               </p>
               <button
@@ -449,39 +449,39 @@ export default function TasksPage() {
               </button>
               {feedbackMessage ? (
                 <p className={`text-sm font-semibold ${
-                  iosFeedback === 'error' || androidFeedback === 'error' ? 'text-[#be123c]' : 'text-[#5b21b6]'
+                  iosFeedback === 'error' || androidFeedback === 'error' ? 'text-[#be123c]' : 'text-teal-800'
                 }`}>{feedbackMessage}</p>
               ) : null}
             </section>
 
-            <section className="bg-white rounded-2xl border border-[#c4b5fd]/20 shadow-lg p-6 space-y-4">
+            <section className="bg-white rounded-2xl border border-teal-300/20 shadow-lg p-6 space-y-4">
               <div className="flex items-center gap-2">
-                <CheckCircle2 size={18} className="text-[#7c3aed]" />
-                <h2 className="text-2xl font-bold text-[#1e1b4b]">Your Referral Tasks</h2>
+                <CheckCircle2 size={18} className="text-teal-600" />
+                <h2 className="text-2xl font-bold text-teal-900">Your Referral Tasks</h2>
               </div>
-              <p className="text-sm text-[#475569]">After you refer someone, add their name or email here and click <strong>Claim +30 Points</strong>. The admin will approve it and add your points.</p>
+              <p className="text-sm text-sand-700">After you refer someone, add their name or email here and click <strong>Claim +30 Points</strong>. The admin will approve it and add your points.</p>
 
               {tasks.length === 0 ? (
-                <div className="rounded-2xl bg-[#fffdf9] border border-dashed border-[#c4b5fd]/40 p-6 text-center text-[#475569]">
+                <div className="rounded-2xl bg-sand-50 border border-dashed border-teal-300/40 p-6 text-center text-sand-700">
                   No referral tasks added yet. Add a friend name or email to start inviting.
                 </div>
               ) : (
                 <div className="space-y-3">
                   {tasks.map((task) => (
-                    <div key={task.id} className="rounded-2xl border border-[#c4b5fd]/20 bg-[#fffdf9] p-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                    <div key={task.id} className="rounded-2xl border border-teal-300/20 bg-sand-50 p-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
                       <div>
-                        <p className="font-bold text-[#1e1b4b]">{task.name}</p>
-                        <p className="text-sm text-[#475569]">{task.email || 'No email saved'}</p>
-                        <p className="text-xs text-[#94a3b8] mt-1">Added {new Date(task.createdAt).toLocaleDateString()}</p>
+                        <p className="font-bold text-teal-900">{task.name}</p>
+                        <p className="text-sm text-sand-700">{task.email || 'No email saved'}</p>
+                        <p className="text-xs text-sand-400 mt-1">Added {new Date(task.createdAt).toLocaleDateString()}</p>
                       </div>
                       <div className="flex flex-wrap gap-2">
                         {task.email ? (
-                          <button onClick={() => openEmailInvite(task)} className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#eff6ff] text-[#1d4ed8] font-semibold border border-[#bfdbfe]">
+                          <button onClick={() => openEmailInvite(task)} className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-teal-50 text-teal-700 font-semibold border border-teal-200">
                             <Mail size={16} />
                             Email Invite
                           </button>
                         ) : null}
-                        <button onClick={copyInviteLink} className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white text-[#334155] font-semibold border border-[#cbd5e1]">
+                        <button onClick={copyInviteLink} className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white text-sand-800 font-semibold border border-sand-200">
                           <Copy size={16} />
                           Copy Link
                         </button>
@@ -494,10 +494,10 @@ export default function TasksPage() {
                               onClick={() => claimReferralReward(task)}
                               className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl font-semibold border text-sm transition ${
                                 submitted
-                                  ? 'bg-[#dcfce7] text-[#166534] border-[#86efac]'
+                                  ? 'bg-[#dbeafe] text-[#1e40af] border-[#93c5fd]'
                                   : cs === 'error'
                                   ? 'bg-[#fff1f2] text-[#be123c] border-[#fecdd3]'
-                                  : 'bg-gradient-to-r from-[#6366f1] to-[#4f46e5] text-white border-transparent shadow-md'
+                                  : 'bg-gradient-to-r from-teal-500 to-teal-600 text-white border-transparent shadow-md'
                               } disabled:opacity-60`}
                             >
                               {submitted ? '✓ Reward Submitted' : cs === 'loading' ? 'Submitting…' : 'Claim +30 Points'}
@@ -505,7 +505,7 @@ export default function TasksPage() {
                           );
                         })()}
                         {referralClaimMessages[task.id] ? (
-                          <p className="text-xs font-semibold text-[#5b21b6] w-full">{referralClaimMessages[task.id]}</p>
+                          <p className="text-xs font-semibold text-teal-800 w-full">{referralClaimMessages[task.id]}</p>
                         ) : null}
                         <button onClick={() => removeTask(task.id)} className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#fff1f2] text-[#be123c] font-semibold border border-[#fecdd3]">
                           Remove
@@ -521,27 +521,27 @@ export default function TasksPage() {
 
         <Modal isOpen={isReviewPopupOpen} onClose={() => setIsReviewPopupOpen(false)} title="Leave a Review" size="lg">
           <div className="space-y-4">
-            <p className="text-sm text-[#475569]">
+            <p className="text-sm text-sand-700">
               Choose your platform, leave a review, then click submit so admin can approve +30 points.
             </p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="rounded-2xl border border-[#c4b5fd]/30 bg-[#f8fafc] p-5 flex flex-col gap-3">
+              <div className="rounded-2xl border border-teal-300/30 bg-sand-50 p-5 flex flex-col gap-3">
                 <div className="flex items-center gap-2">
-                  <Smartphone size={20} className="text-[#1d4ed8]" />
-                  <p className="font-bold text-[#1e293b]">Apple App Store</p>
+                  <Smartphone size={20} className="text-teal-700" />
+                  <p className="font-bold text-sand-900">Apple App Store</p>
                 </div>
-                <p className="text-xs text-[#64748b]">Open the App Store, leave a rating and short review.</p>
+                <p className="text-xs text-sand-600">Open the App Store, leave a rating and short review.</p>
                 <div className="flex flex-wrap gap-2">
                   <button
                     onClick={() => handleOpenStore('ios')}
-                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl border border-[#bfdbfe] bg-[#eff6ff] text-[#1d4ed8] font-semibold text-sm"
+                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl border border-teal-200 bg-teal-50 text-teal-700 font-semibold text-sm"
                   >
                     Open App Store
                   </button>
                   <button
                     onClick={() => void handleOpenReview('ios')}
                     disabled={reviewPrompting === 'ios'}
-                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl border border-[#bfdbfe] bg-white text-[#1d4ed8] font-semibold text-sm disabled:opacity-60"
+                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl border border-teal-200 bg-white text-teal-700 font-semibold text-sm disabled:opacity-60"
                   >
                     {reviewPrompting === 'ios' ? 'Opening…' : 'In-App Review'}
                   </button>
@@ -550,7 +550,7 @@ export default function TasksPage() {
                     onClick={() => claimFeedbackReward('ios')}
                     className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-xl font-semibold text-sm transition ${
                       iosFeedback === 'submitted' || iosFeedback === 'already_submitted'
-                        ? 'bg-[#dcfce7] text-[#166534] border border-[#86efac]'
+                        ? 'bg-[#dbeafe] text-[#1e40af] border border-[#93c5fd]'
                         : iosFeedback === 'error'
                         ? 'bg-[#fff1f2] text-[#be123c] border border-[#fecdd3]'
                         : 'bg-gradient-to-r from-[#f59e0b] to-[#d97706] text-white shadow-md'
@@ -560,23 +560,23 @@ export default function TasksPage() {
                   </button>
                 </div>
               </div>
-              <div className="rounded-2xl border border-[#c4b5fd]/30 bg-[#f8fafc] p-5 flex flex-col gap-3">
+              <div className="rounded-2xl border border-teal-300/30 bg-sand-50 p-5 flex flex-col gap-3">
                 <div className="flex items-center gap-2">
-                  <Smartphone size={20} className="text-[#15803d]" />
-                  <p className="font-bold text-[#1e293b]">Google Play</p>
+                  <Smartphone size={20} className="text-[#1d4ed8]" />
+                  <p className="font-bold text-sand-900">Google Play</p>
                 </div>
-                <p className="text-xs text-[#64748b]">Open Google Play, leave a rating and short review.</p>
+                <p className="text-xs text-sand-600">Open Google Play, leave a rating and short review.</p>
                 <div className="flex flex-wrap gap-2">
                   <button
                     onClick={() => handleOpenStore('android')}
-                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl border border-[#bbf7d0] bg-[#f0fdf4] text-[#15803d] font-semibold text-sm"
+                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl border border-[#bfdbfe] bg-[#eff6ff] text-[#1d4ed8] font-semibold text-sm"
                   >
                     Open Google Play
                   </button>
                   <button
                     onClick={() => void handleOpenReview('android')}
                     disabled={reviewPrompting === 'android'}
-                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl border border-[#bbf7d0] bg-white text-[#15803d] font-semibold text-sm disabled:opacity-60"
+                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl border border-[#bfdbfe] bg-white text-[#1d4ed8] font-semibold text-sm disabled:opacity-60"
                   >
                     {reviewPrompting === 'android' ? 'Opening…' : 'In-App Review'}
                   </button>
@@ -585,7 +585,7 @@ export default function TasksPage() {
                     onClick={() => claimFeedbackReward('android')}
                     className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-xl font-semibold text-sm transition ${
                       androidFeedback === 'submitted' || androidFeedback === 'already_submitted'
-                        ? 'bg-[#dcfce7] text-[#166534] border border-[#86efac]'
+                        ? 'bg-[#dbeafe] text-[#1e40af] border border-[#93c5fd]'
                         : androidFeedback === 'error'
                         ? 'bg-[#fff1f2] text-[#be123c] border border-[#fecdd3]'
                         : 'bg-gradient-to-r from-[#f59e0b] to-[#d97706] text-white shadow-md'

@@ -17,6 +17,7 @@ import {
 } from '@/lib/push-campaigns';
 import { PUSH_REMINDER_PRESET_MAP } from '@/lib/push-reminder-presets';
 import { supabaseAdmin } from '@/lib/supabase-admin';
+import { buildUserMessageRows, dedupeUserIds } from '@/lib/user-messages';
 
 export const dynamic = 'force-dynamic';
 
@@ -112,6 +113,45 @@ function chunkArray<T>(items: T[], size: number): T[][] {
   const out: T[][] = [];
   for (let i = 0; i < items.length; i += size) out.push(items.slice(i, i + size));
   return out;
+}
+
+async function persistBroadcastUserMessages(
+  audience: string,
+  userId: string,
+  title: string,
+  body: string,
+  url: string,
+  campaignId: string | null
+) {
+  try {
+    const ids =
+      audience === 'user'
+        ? [userId]
+        : dedupeUserIds(
+            (await loadTokens())
+              .map((row) => row.user_id)
+              .filter(Boolean)
+          );
+
+    if (!ids.length) return;
+
+    const rows = buildUserMessageRows({
+      userIds: ids,
+      title,
+      body,
+      url,
+      source: 'admin_push',
+      sentBy: 'admin',
+      campaignId,
+    });
+
+    const { error } = await supabaseAdmin.from('user_messages').insert(rows);
+    if (error && !String(error.message || '').includes('does not exist')) {
+      console.warn('[admin/push/send] Failed to store user_messages:', error.message || error);
+    }
+  } catch (error: unknown) {
+    console.warn('[admin/push/send] Failed to persist user messages:', error);
+  }
 }
 
 export async function POST(request: Request) {
@@ -336,6 +376,10 @@ export async function POST(request: Request) {
       await finalizePushCampaign(campaignId, result);
     }
 
+    if (result.ok) {
+      await persistBroadcastUserMessages(audience, userId, title, message, trackedUrl, campaignId ?? null);
+    }
+
     if (!result.ok) {
       return NextResponse.json(
         {
@@ -407,13 +451,64 @@ export async function GET(request: Request) {
           { name: (u.name as string | null) || null, email: (u.email as string | null) || null },
         ])
       );
+
+      const missingIds = userIds.filter((uid) => !usersById.has(uid));
+      if (missingIds.length > 0) {
+        try {
+          const { data: authUsers } = await supabaseAdmin.auth.admin.listUsers({
+            page: 1,
+            perPage: 1000,
+          });
+          const authMap = new Map(
+            (authUsers?.users || []).map((au) => [au.id, au])
+          );
+
+          const stubProfiles: Array<{ uid: string; email: string; name: string; role: string; points: number; weeklypoints: number; monthlypoints: number }> = [];
+          for (const uid of missingIds.slice(0, 100)) {
+            const authUser = authMap.get(uid);
+            const meta = (authUser?.user_metadata as Record<string, unknown> | undefined) || {};
+            const metaName =
+              (meta.name as string) ||
+              (meta.full_name as string) ||
+              (meta.fullName as string) ||
+              '';
+            const fallbackName =
+              metaName ||
+              (authUser?.email ? authUser.email.split('@')[0] : `Learner-${uid.slice(0, 8)}`);
+            const fallbackEmail = authUser?.email || `user-${uid.slice(0, 8)}@local`;
+
+            usersById.set(uid, { name: fallbackName || null, email: fallbackEmail || null });
+            stubProfiles.push({
+              uid,
+              email: fallbackEmail,
+              name: fallbackName,
+              role: 'kid',
+              points: 0,
+              weeklypoints: 0,
+              monthlypoints: 0,
+            });
+          }
+
+          if (stubProfiles.length > 0) {
+            try {
+              await supabaseAdmin.from('users').insert(stubProfiles, { defaultToNull: false });
+            } catch (insertErr: any) {
+              if (insertErr?.code !== '23505') {
+                console.warn('[admin/push/send] Failed to stub missing users rows:', insertErr?.message || insertErr);
+              }
+            }
+          }
+        } catch (authErr: any) {
+          console.warn('[admin/push/send] Auth metadata fallback failed:', authErr?.message || authErr);
+        }
+      }
     }
 
     const devices = tokens.map((t) => {
       const user = usersById.get(t.user_id);
       return {
         userId: t.user_id,
-        name: user?.name || 'Unknown',
+        name: user?.name || `User ${t.user_id.slice(0, 8)}`,
         email: user?.email || '',
         platform: t.platform || 'web',
         tokenPreview: `${t.token.slice(0, 8)}…`,

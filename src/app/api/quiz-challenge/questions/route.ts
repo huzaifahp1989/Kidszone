@@ -27,7 +27,6 @@ export async function GET(request: Request) {
       description: config.description,
       passScore: config.passScore,
       awardsBadge: config.awardsBadge,
-      manualReview: Boolean(config.manualReview),
       timerSeconds: CHALLENGE_TIMER_SECONDS,
       mainCount: main.length,
       bonusCount: bonus.length,

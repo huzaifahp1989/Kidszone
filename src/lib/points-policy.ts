@@ -1,5 +1,19 @@
 export const POINTS_DAILY_CAP = 200;
 
+export const POINTS_PER_BADGE = 100;
+
+export function getBadgePointProgress(totalPoints: number) {
+  const safeTotal = Number.isFinite(totalPoints) ? Math.max(0, Math.floor(totalPoints)) : 0;
+  const progressPoints = safeTotal % POINTS_PER_BADGE;
+  const pointsToNextBadge = POINTS_PER_BADGE - progressPoints;
+
+  return {
+    pointsToNextBadge,
+    progressPercent: (progressPoints / POINTS_PER_BADGE) * 100,
+    nextBadgePoints: safeTotal + pointsToNextBadge,
+  };
+}
+
 export const QUIZ_POINTS_PER_COMPLETION = 25;
 
 export const ACTIVITY_BONUS_POINTS = 25;

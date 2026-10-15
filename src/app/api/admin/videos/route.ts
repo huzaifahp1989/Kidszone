@@ -1,51 +1,31 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { isAdminRequest } from '@/lib/admin-auth';
+import { normalizeVideoCategory, youtubeThumbnailUrl } from '@/lib/video-categories';
+import {
+  fetchYouTubeOEmbed,
+  parseYouTubeVideoId,
+  splitYouTubeUrlLines,
+  youtubeWatchUrl,
+} from '@/lib/youtube';
 
 export const dynamic = 'force-dynamic';
 
 type VideoSourceType = 'youtube' | 'upload' | 'external';
 
-function parseYouTubeVideoId(input: string): string | null {
-  const value = String(input || '').trim();
-  if (!value) return null;
-
-  if (/^[a-zA-Z0-9_-]{11}$/.test(value)) return value;
-
-  try {
-    const url = new URL(value);
-    if (url.hostname.includes('youtu.be')) {
-      const id = url.pathname.split('/').filter(Boolean)[0] || '';
-      return /^[a-zA-Z0-9_-]{11}$/.test(id) ? id : null;
-    }
-
-    if (url.hostname.includes('youtube.com')) {
-      const fromQuery = url.searchParams.get('v') || '';
-      if (/^[a-zA-Z0-9_-]{11}$/.test(fromQuery)) return fromQuery;
-
-      const segments = url.pathname.split('/').filter(Boolean);
-      const embedIdx = segments.findIndex((seg) => seg === 'embed' || seg === 'shorts');
-      if (embedIdx >= 0) {
-        const id = segments[embedIdx + 1] || '';
-        return /^[a-zA-Z0-9_-]{11}$/.test(id) ? id : null;
-      }
-    }
-  } catch {
-    return null;
-  }
-
-  return null;
-}
-
 function toSafeVideo(row: Record<string, unknown>) {
+  const youtube_video_id = row.youtube_video_id ? String(row.youtube_video_id) : null;
   return {
     id: String(row.id),
     title: String(row.title || ''),
     description: String(row.description || ''),
+    category: normalizeVideoCategory(row.category),
     source_type: String(row.source_type || 'youtube') as VideoSourceType,
     video_url: String(row.video_url || ''),
-    youtube_video_id: row.youtube_video_id ? String(row.youtube_video_id) : null,
-    thumbnail_url: row.thumbnail_url ? String(row.thumbnail_url) : null,
+    youtube_video_id,
+    thumbnail_url: row.thumbnail_url
+      ? String(row.thumbnail_url)
+      : youtubeThumbnailUrl(youtube_video_id),
     duration_seconds: row.duration_seconds == null ? null : Number(row.duration_seconds),
     points_reward: Number(row.points_reward ?? 25),
     is_active: Boolean(row.is_active ?? true),
@@ -57,12 +37,14 @@ function toSafeVideo(row: Record<string, unknown>) {
 function buildNormalizedBody(body: Record<string, unknown>) {
   const title = String(body.title || '').trim();
   const description = String(body.description || '').trim();
+  const category = normalizeVideoCategory(body.category);
   const source_type = String(body.source_type || '').trim() as VideoSourceType;
   const rawUrl = String(body.video_url || '').trim();
-  const thumbnail_url = String(body.thumbnail_url || '').trim() || null;
-  const duration_seconds = body.duration_seconds == null || body.duration_seconds === ''
-    ? null
-    : Math.max(0, Math.floor(Number(body.duration_seconds)));
+  let thumbnail_url = String(body.thumbnail_url || '').trim() || null;
+  const duration_seconds =
+    body.duration_seconds == null || body.duration_seconds === ''
+      ? null
+      : Math.max(0, Math.floor(Number(body.duration_seconds)));
   const points_reward = Math.max(0, Math.min(200, Math.floor(Number(body.points_reward ?? 25))));
   const is_active = body.is_active !== false;
 
@@ -80,12 +62,14 @@ function buildNormalizedBody(body: Record<string, unknown>) {
     if (!youtube_video_id) {
       throw new Error('Invalid YouTube URL or video id.');
     }
-    video_url = `https://www.youtube.com/watch?v=${youtube_video_id}`;
+    video_url = youtubeWatchUrl(youtube_video_id);
+    if (!thumbnail_url) thumbnail_url = youtubeThumbnailUrl(youtube_video_id);
   }
 
   return {
     title,
     description,
+    category,
     source_type,
     video_url,
     youtube_video_id,
@@ -94,6 +78,85 @@ function buildNormalizedBody(body: Record<string, unknown>) {
     points_reward,
     is_active,
     updated_at: new Date().toISOString(),
+  };
+}
+
+function missingCategoryMessage(message: string) {
+  const m = message.toLowerCase();
+  return m.includes('category') && (m.includes('column') || m.includes('schema cache'));
+}
+
+async function bulkInsertYouTube(body: Record<string, unknown>) {
+  const category = normalizeVideoCategory(body.category);
+  const points_reward = Math.max(0, Math.min(200, Math.floor(Number(body.points_reward ?? 25))));
+  const is_active = body.is_active !== false;
+  const description = String(body.description || '').trim();
+
+  const fromArray = Array.isArray(body.urls)
+    ? body.urls.map((u) => String(u || '').trim()).filter(Boolean)
+    : [];
+  const fromText = splitYouTubeUrlLines(String(body.urls_text || body.video_urls || ''));
+  const lines = [...fromArray, ...fromText];
+
+  if (!lines.length) {
+    throw new Error('Paste at least one YouTube URL (one per line).');
+  }
+
+  const seen = new Set<string>();
+  const payloads: Array<Record<string, unknown>> = [];
+  const failed: Array<{ url: string; error: string }> = [];
+
+  for (const line of lines) {
+    const youtube_video_id = parseYouTubeVideoId(line);
+    if (!youtube_video_id) {
+      failed.push({ url: line, error: 'Invalid YouTube URL or id' });
+      continue;
+    }
+    if (seen.has(youtube_video_id)) continue;
+    seen.add(youtube_video_id);
+
+    const meta = await fetchYouTubeOEmbed(youtube_video_id);
+    payloads.push({
+      title: meta?.title || `YouTube video ${youtube_video_id}`,
+      description: description || (meta?.author_name ? `By ${meta.author_name}` : ''),
+      category,
+      source_type: 'youtube',
+      video_url: youtubeWatchUrl(youtube_video_id),
+      youtube_video_id,
+      thumbnail_url: youtubeThumbnailUrl(youtube_video_id),
+      duration_seconds: null,
+      points_reward,
+      is_active,
+      updated_at: new Date().toISOString(),
+    });
+  }
+
+  if (!payloads.length) {
+    return { added: [], failed, skippedDuplicates: 0 };
+  }
+
+  // Skip ones already in DB
+  const ids = payloads.map((p) => String(p.youtube_video_id));
+  const { data: existing } = await supabaseAdmin
+    .from('learning_videos')
+    .select('youtube_video_id')
+    .in('youtube_video_id', ids);
+
+  const existingIds = new Set((existing || []).map((r) => String((r as { youtube_video_id: string }).youtube_video_id)));
+  const toInsert = payloads.filter((p) => !existingIds.has(String(p.youtube_video_id)));
+  const skippedDuplicates = payloads.length - toInsert.length;
+
+  if (!toInsert.length) {
+    return { added: [], failed, skippedDuplicates };
+  }
+
+  const { data, error } = await supabaseAdmin.from('learning_videos').insert(toInsert).select('*');
+  if (error) throw error;
+
+  return {
+    added: (data || []).map((row) => toSafeVideo(row as Record<string, unknown>)),
+    failed,
+    skippedDuplicates,
   };
 }
 
@@ -112,6 +175,15 @@ export async function GET(request: Request) {
     return NextResponse.json({ videos: (data || []).map((row) => toSafeVideo(row as Record<string, unknown>)) });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Unexpected error';
+    if (missingCategoryMessage(message)) {
+      return NextResponse.json(
+        {
+          error:
+            'Missing category column. Run SETUP_KIDS_CHANNEL_VIDEOS.sql in Supabase, then try again.',
+        },
+        { status: 500 }
+      );
+    }
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }
@@ -122,8 +194,20 @@ export async function POST(request: Request) {
   }
 
   try {
-    const body = await request.json();
-    const payload = buildNormalizedBody(body as Record<string, unknown>);
+    const body = (await request.json()) as Record<string, unknown>;
+
+    if (body.bulk === true || Array.isArray(body.urls) || body.urls_text || body.video_urls) {
+      const result = await bulkInsertYouTube(body);
+      return NextResponse.json({
+        ok: true,
+        ...result,
+        message: `Added ${result.added.length} video(s)${
+          result.skippedDuplicates ? `, skipped ${result.skippedDuplicates} already saved` : ''
+        }${result.failed.length ? `, ${result.failed.length} failed` : ''}.`,
+      });
+    }
+
+    const payload = buildNormalizedBody(body);
 
     const { data, error } = await supabaseAdmin
       .from('learning_videos')
@@ -135,6 +219,15 @@ export async function POST(request: Request) {
     return NextResponse.json({ video: toSafeVideo(data as Record<string, unknown>) });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Unexpected error';
+    if (missingCategoryMessage(message)) {
+      return NextResponse.json(
+        {
+          error:
+            'Missing category column. Run SETUP_KIDS_CHANNEL_VIDEOS.sql in Supabase, then try again.',
+        },
+        { status: 400 }
+      );
+    }
     return NextResponse.json({ error: message }, { status: 400 });
   }
 }
@@ -164,6 +257,15 @@ export async function PUT(request: Request) {
     return NextResponse.json({ video: toSafeVideo(data as Record<string, unknown>) });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Unexpected error';
+    if (missingCategoryMessage(message)) {
+      return NextResponse.json(
+        {
+          error:
+            'Missing category column. Run SETUP_KIDS_CHANNEL_VIDEOS.sql in Supabase, then try again.',
+        },
+        { status: 400 }
+      );
+    }
     return NextResponse.json({ error: message }, { status: 400 });
   }
 }
@@ -180,10 +282,7 @@ export async function DELETE(request: Request) {
       return NextResponse.json({ error: 'id is required' }, { status: 400 });
     }
 
-    const { error } = await supabaseAdmin
-      .from('learning_videos')
-      .delete()
-      .eq('id', id);
+    const { error } = await supabaseAdmin.from('learning_videos').delete().eq('id', id);
 
     if (error) throw error;
     return NextResponse.json({ success: true });

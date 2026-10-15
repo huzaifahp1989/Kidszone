@@ -8,8 +8,7 @@ import { Modal, Button } from '@/components';
 import { useAuth } from '@/lib/auth-context';
 import { usePointsProgress } from '@/lib/points-progress-context';
 
-const POINTS_PER_BADGE = 100;
-import { POINTS_DAILY_CAP } from '@/lib/points-policy';
+import { getBadgePointProgress, POINTS_DAILY_CAP, POINTS_PER_BADGE } from '@/lib/points-policy';
 import { getAuthFetchHeaders } from '@/lib/auth-headers';
 
 type WeeklyActivities = {
@@ -88,8 +87,7 @@ export function PointsProgressPopup() {
   const totalPoints = Number(profile?.points ?? 0);
   const badgeCount = Number(profile?.badges ?? 0);
   const todayPoints = Number(profile?.todayPoints ?? 0);
-  const pointsToNextBadge = Math.max(0, (badgeCount + 1) * POINTS_PER_BADGE - totalPoints);
-  const badgeProgress = Math.min(100, ((POINTS_PER_BADGE - pointsToNextBadge) / POINTS_PER_BADGE) * 100);
+  const badgeProgress = getBadgePointProgress(totalPoints);
   const dailyLeft = Math.max(0, POINTS_DAILY_CAP - todayPoints);
 
   const nextSuggestion = useMemo(() => {
@@ -126,16 +124,16 @@ export function PointsProgressPopup() {
             <span className="flex items-center gap-1.5">
               <Trophy size={16} /> Next badge
             </span>
-            <span>{pointsToNextBadge} pts left</span>
+            <span>{badgeProgress.pointsToNextBadge} pts left</span>
           </div>
           <div className="h-3 overflow-hidden rounded-full bg-amber-100">
             <div
               className="h-full rounded-full bg-gradient-to-r from-amber-400 to-amber-600 transition-all"
-              style={{ width: `${badgeProgress}%` }}
+              style={{ width: `${badgeProgress.progressPercent}%` }}
             />
           </div>
           <p className="mt-2 text-xs text-amber-800">
-            Earn 1 badge every {POINTS_PER_BADGE} points — keep taking part every day!
+            Reach the next {POINTS_PER_BADGE}-point milestone to earn another points badge.
           </p>
         </div>
 

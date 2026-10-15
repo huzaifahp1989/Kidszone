@@ -50,6 +50,7 @@ export default function AdminAnnouncements() {
   const [targetPaths, setTargetPaths] = React.useState<string[]>(['*']);
   const [popupDelaySeconds, setPopupDelaySeconds] = React.useState(0);
   const [popupRepeatMinutes, setPopupRepeatMinutes] = React.useState(1440);
+  const [showOnAppOpenDaily, setShowOnAppOpenDaily] = React.useState(false);
   const [startAt, setStartAt] = React.useState('');
   const [endAt, setEndAt] = React.useState('');
   const [repeatUnit, setRepeatUnit] = React.useState<'always' | 'hours' | 'daily' | 'weekly' | 'monthly'>('always');
@@ -77,6 +78,7 @@ export default function AdminAnnouncements() {
     setTargetPaths(['*']);
     setPopupDelaySeconds(0);
     setPopupRepeatMinutes(1440);
+    setShowOnAppOpenDaily(false);
     setStartAt('');
     setEndAt('');
     setRepeatUnit('always');
@@ -173,7 +175,7 @@ export default function AdminAnnouncements() {
           display_mode: displayMode,
           target_paths: targetPaths,
           popup_delay_seconds: popupDelaySeconds,
-          popup_repeat_minutes: popupRepeatMinutes,
+          popup_repeat_minutes: showOnAppOpenDaily ? -1 : popupRepeatMinutes,
           start_at: startAt ? new Date(startAt).toISOString() : null,
           end_at: endAt ? new Date(endAt).toISOString() : null,
           repeat_unit: repeatUnit,
@@ -203,7 +205,9 @@ export default function AdminAnnouncements() {
     setDisplayMode(announcement.display_mode || 'inline');
     setTargetPaths(Array.isArray(announcement.target_paths) && announcement.target_paths.length > 0 ? announcement.target_paths : ['*']);
     setPopupDelaySeconds(Number(announcement.popup_delay_seconds || 0));
-    setPopupRepeatMinutes(Number(announcement.popup_repeat_minutes || 1440));
+    const repeatMinutes = Number(announcement.popup_repeat_minutes ?? 1440);
+    setPopupRepeatMinutes(repeatMinutes > 0 ? repeatMinutes : 1440);
+    setShowOnAppOpenDaily(repeatMinutes === -1);
     setStartAt(toDatetimeLocal(announcement.start_at));
     setEndAt(toDatetimeLocal(announcement.end_at));
     setRepeatUnit(announcement.repeat_unit || 'always');
@@ -238,7 +242,7 @@ export default function AdminAnnouncements() {
           display_mode: displayMode,
           target_paths: targetPaths,
           popup_delay_seconds: popupDelaySeconds,
-          popup_repeat_minutes: popupRepeatMinutes,
+          popup_repeat_minutes: showOnAppOpenDaily ? -1 : popupRepeatMinutes,
           start_at: startAt ? new Date(startAt).toISOString() : null,
           end_at: endAt ? new Date(endAt).toISOString() : null,
           repeat_unit: repeatUnit,
@@ -474,6 +478,18 @@ export default function AdminAnnouncements() {
 
           {displayMode === 'popup' && (
             <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <label className="sm:col-span-2 flex items-start gap-3 rounded-lg border border-indigo-200 bg-indigo-50 p-3 text-sm text-slate-700">
+                <input
+                  type="checkbox"
+                  checked={showOnAppOpenDaily}
+                  onChange={(e) => setShowOnAppOpenDaily(e.target.checked)}
+                  className="mt-0.5 rounded border-slate-300"
+                />
+                <span>
+                  <strong className="block text-slate-900">Show once daily when the app opens</strong>
+                  Shows on the first eligible app page opened each calendar day, then stays dismissed until tomorrow.
+                </span>
+              </label>
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">Popup delay (seconds)</label>
                 <input
@@ -491,10 +507,13 @@ export default function AdminAnnouncements() {
                   type="number"
                   min={1}
                   value={popupRepeatMinutes}
+                  disabled={showOnAppOpenDaily}
                   onChange={(e) => setPopupRepeatMinutes(Math.max(1, Number(e.target.value) || 1))}
-                  className="w-full rounded-lg border border-slate-300 p-2.5 focus:ring-2 focus:ring-indigo-500 outline-none"
+                  className="w-full rounded-lg border border-slate-300 p-2.5 focus:ring-2 focus:ring-indigo-500 outline-none disabled:bg-slate-100"
                 />
-                <p className="mt-1 text-xs text-slate-500">Prevents popup from appearing too frequently.</p>
+                <p className="mt-1 text-xs text-slate-500">
+                  {showOnAppOpenDaily ? 'Daily app-open mode controls repeat timing.' : 'Prevents popup from appearing too frequently.'}
+                </p>
               </div>
               <div className="sm:col-span-2">
                 <label className="block text-sm font-medium text-slate-700 mb-1">Slide change speed (seconds)</label>

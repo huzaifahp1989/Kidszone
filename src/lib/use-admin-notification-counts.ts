@@ -7,7 +7,7 @@ export type AdminNotificationCounts = {
   recordings: number;
   competition: number;
   seerah: number;
-  manualQuiz: number;
+  writtenCompetition: number;
 };
 
 const EMPTY_COUNTS: AdminNotificationCounts = {
@@ -15,7 +15,7 @@ const EMPTY_COUNTS: AdminNotificationCounts = {
   recordings: 0,
   competition: 0,
   seerah: 0,
-  manualQuiz: 0,
+  writtenCompetition: 0,
 };
 
 export function useAdminNotificationCounts(pollMs = 30000) {

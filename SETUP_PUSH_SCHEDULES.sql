@@ -8,6 +8,7 @@ CREATE TABLE IF NOT EXISTS push_schedules (
   url TEXT DEFAULT '/quiz',
   image_url TEXT,
   audience TEXT NOT NULL DEFAULT 'kids_zone',
+  target_user_id TEXT,
   frequency TEXT NOT NULL CHECK (frequency IN ('daily', 'weekly')),
   time_of_day TEXT NOT NULL DEFAULT '16:00', -- HH:MM in timezone
   day_of_week INTEGER CHECK (day_of_week IS NULL OR (day_of_week >= 0 AND day_of_week <= 6)), -- 0=Sun … 6=Sat
@@ -36,3 +37,4 @@ ALTER TABLE push_schedules ADD COLUMN IF NOT EXISTS image_url TEXT;
 
 -- Multi-day weekly: 0=Sun … 6=Sat (see also ADD_PUSH_SCHEDULE_DAYS_OF_WEEK.sql)
 ALTER TABLE push_schedules ADD COLUMN IF NOT EXISTS days_of_week INTEGER[] DEFAULT NULL;
+ALTER TABLE push_schedules ADD COLUMN IF NOT EXISTS target_user_id TEXT;

@@ -18,7 +18,7 @@ export default function CreateHubPage() {
         </div>
 
         <header className="page-header">
-          <p className="inline-flex items-center gap-2 rounded-full border border-pink-200 bg-pink-50 px-3 py-1 text-xs font-bold uppercase tracking-[0.14em] text-pink-800">
+          <p className="inline-flex items-center gap-2 rounded-full border border-teal-200 bg-teal-50 px-3 py-1 text-xs font-bold uppercase tracking-[0.14em] text-teal-800">
             <Palette size={14} /> Create & Play
           </p>
           <h1 className="mt-3 font-heading text-3xl font-extrabold text-sand-900 md:text-4xl">
@@ -39,7 +39,7 @@ export default function CreateHubPage() {
               className="feature-tile relative flex flex-col rounded-2xl p-4 transition hover:-translate-y-0.5"
             >
               {item.badge && (
-                <span className="absolute right-3 top-3 inline-flex items-center gap-1 rounded-full bg-amber-400 px-2 py-0.5 text-[10px] font-black text-amber-950">
+                <span className="absolute right-3 top-3 inline-flex items-center gap-1 rounded-full bg-gold-400 px-2 py-0.5 text-[10px] font-black text-sand-900">
                   <Sparkles size={10} /> {item.badge}
                 </span>
               )}

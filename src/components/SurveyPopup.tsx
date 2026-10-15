@@ -1,120 +1,106 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
-import { createPortal } from 'react-dom';
+import React, { useEffect, useMemo, useState } from 'react';
+import { usePathname } from 'next/navigation';
+import { ClipboardList } from 'lucide-react';
+import { Modal, Button } from '@/components';
 import { canShowSessionPopup, markSessionPopupShown } from '@/lib/popup-session-cap';
 
+/** Public fill URL (not the /edit owner link). */
 const SURVEY_URL =
-  'https://docs.google.com/forms/d/1Cl6yO9GA8UgvUfoSiFuSEyA3Q9O0WMSMLxtNo75DPG4/viewform';
-const STORAGE_KEY = 'survey_popup_dismissed_date';
+  'https://docs.google.com/forms/d/1BUqre1m5LhF9ImlIgJ-C3s_r-2xV66M1y1WUWXmIfoY/viewform';
 
+/** Bump to re-show after campaign/copy changes. */
+const CAMPAIGN_VERSION = 'user-feedback-v2';
+const STORAGE_KEY = `kids-zone-survey-popup:${CAMPAIGN_VERSION}`;
+const SESSION_ID = `kids-zone-survey:${CAMPAIGN_VERSION}`;
+
+function todayKey() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+/**
+ * Kids Zone feedback survey popup — asks users to spend ~1 minute on the Google Form.
+ */
 export function SurveyPopup() {
-  const [visible, setVisible] = useState(false);
+  const pathname = usePathname() || '';
+  const [open, setOpen] = useState(false);
+
+  const isExcluded = useMemo(() => {
+    if (!pathname) return true;
+    if (pathname.startsWith('/admin')) return true;
+    if (pathname.startsWith('/signin') || pathname.startsWith('/signup')) return true;
+    if (pathname.startsWith('/reset-password')) return true;
+    if (pathname.startsWith('/onboarding-form')) return true;
+    return false;
+  }, [pathname]);
 
   useEffect(() => {
-    const timer = setTimeout(() => {
+    if (isExcluded) {
+      setOpen(false);
+      return;
+    }
+
+    const timer = window.setTimeout(() => {
       try {
-        const dismissed = localStorage.getItem(STORAGE_KEY);
-        const today = new Date().toISOString().slice(0, 10);
-        if (dismissed !== today) {
-          if (!canShowSessionPopup('survey')) return;
-          setVisible(true);
-          markSessionPopupShown('survey');
-        }
+        if (window.localStorage.getItem(STORAGE_KEY) === todayKey()) return;
+        if (!canShowSessionPopup(SESSION_ID)) return;
+        markSessionPopupShown(SESSION_ID);
+        setOpen(true);
       } catch {
-        setVisible(true);
+        setOpen(true);
       }
-    }, 4000);
-    return () => clearTimeout(timer);
-  }, []);
+    }, 1500);
+
+    return () => window.clearTimeout(timer);
+  }, [isExcluded, pathname]);
 
   const dismiss = () => {
     try {
-      const today = new Date().toISOString().slice(0, 10);
-      localStorage.setItem(STORAGE_KEY, today);
-    } catch {}
-    setVisible(false);
+      window.localStorage.setItem(STORAGE_KEY, todayKey());
+    } catch {
+      /* ignore */
+    }
+    setOpen(false);
   };
 
-  if (typeof document === 'undefined') return null;
-  if (!visible) return null;
+  if (isExcluded) return null;
 
-  return createPortal(
-    <div
-      style={{
-        position: 'fixed',
-        inset: 0,
-        zIndex: 9999,
-        display: 'flex',
-        alignItems: 'flex-end',
-        justifyContent: 'center',
-        padding: '16px',
-        pointerEvents: 'none',
-      }}
-    >
-      <div
-        style={{
-          pointerEvents: 'auto',
-          width: '100%',
-          maxWidth: '448px',
-          backgroundColor: '#fff',
-          borderRadius: '16px',
-          boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)',
-          border: '1px solid rgba(20,184,166,0.2)',
-          overflow: 'hidden',
-          animation: 'surveySlideUp 0.35s cubic-bezier(0.34,1.56,0.64,1)',
-        }}
-      >
-        {/* Header */}
-        <div style={{ background: 'linear-gradient(to right, #7c3aed, #6d28d9)', padding: '16px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span style={{ fontSize: '24px' }}>📋</span>
-            <span style={{ color: '#fff', fontWeight: 700, fontSize: '16px' }}>Quick Survey</span>
-          </div>
-          <button
-            onClick={dismiss}
-            aria-label="Close"
-            style={{ color: 'rgba(255,255,255,0.8)', background: 'none', border: 'none', cursor: 'pointer', fontSize: '20px', lineHeight: 1, padding: '4px' }}
-          >
-            ✕
-          </button>
+  return (
+    <Modal isOpen={open} onClose={dismiss} title="Kids Zone Survey" size="md">
+      <div className="space-y-4">
+        <div className="overflow-hidden rounded-2xl border border-teal-200 bg-gradient-to-br from-teal-700 via-teal-600 to-sky-600 p-5 text-white">
+          <p className="inline-flex items-center gap-2 rounded-full bg-white/15 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.14em]">
+            <ClipboardList size={14} /> Quick feedback
+          </p>
+          <h3 className="mt-3 font-heading text-2xl font-extrabold leading-tight">
+            Please take 1 minute to fill in our survey
+          </h3>
+          <p className="mt-2 text-sm text-white/90">
+            It is very important for us — your answers help us improve Kids Zone for every family.
+          </p>
         </div>
 
-        {/* Body */}
-        <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-          <p style={{ color: '#1e1b4b', fontSize: '14px', fontWeight: 500, margin: 0 }}>
-            Assalamu Alaikum! 🌙
-          </p>
-          <p style={{ color: '#374151', fontSize: '14px', lineHeight: 1.6, margin: 0 }}>
-            Please fill this short survey on how you are finding this app. Complete it to earn 50 points and help us improve the experience for all kids! 🌟
-          </p>
-          <div style={{ display: 'flex', gap: '12px', paddingTop: '4px' }}>
-            <a
-              href={SURVEY_URL}
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={dismiss}
-              style={{ flex: 1, textAlign: 'center', padding: '10px 16px', background: 'linear-gradient(to right, #7c3aed, #6d28d9)', color: '#fff', fontWeight: 700, fontSize: '14px', borderRadius: '12px', textDecoration: 'none' }}
-            >
-              Fill Survey ✍️
-            </a>
-            <button
-              onClick={dismiss}
-              style={{ padding: '10px 16px', backgroundColor: '#f1f5f9', color: '#475569', fontWeight: 600, fontSize: '14px', borderRadius: '12px', border: 'none', cursor: 'pointer' }}
-            >
-              Maybe later
-            </button>
-          </div>
+        <p className="text-sm text-sand-800">
+          Assalamu Alaikum. A short form about how you use the app, what helps you, and how we can
+          reach you with updates.
+        </p>
+
+        <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
+          <Button variant="outline" onClick={dismiss}>
+            Maybe later
+          </Button>
+          <a
+            href={SURVEY_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={dismiss}
+            className="inline-flex items-center justify-center rounded-xl bg-teal-700 px-4 py-2.5 text-sm font-bold text-white hover:bg-teal-600"
+          >
+            Fill survey (1 min) →
+          </a>
         </div>
       </div>
-
-      <style>{`
-        @keyframes surveySlideUp {
-          from { opacity: 0; transform: translateY(24px) scale(0.97); }
-          to   { opacity: 1; transform: translateY(0) scale(1); }
-        }
-      `}</style>
-    </div>,
-    document.body
+    </Modal>
   );
 }

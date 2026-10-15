@@ -2,7 +2,6 @@ import { NextResponse } from 'next/server';
 import { requireMatchingUser } from '@/lib/request-auth';
 import { awardPointsWithDailyCapByUserId } from '@/lib/server-points';
 import { supabaseAdmin } from '@/lib/supabase-admin';
-import { isCuratedQuranListenSurah } from '@/data/quran-listen-surahs';
 
 export const dynamic = 'force-dynamic';
 
@@ -24,10 +23,6 @@ export async function POST(req: Request) {
 
     if (!Number.isInteger(surahNumber) || surahNumber < 1 || surahNumber > 114) {
       return NextResponse.json({ error: 'Please pick a valid surah.' }, { status: 400 });
-    }
-
-    if (!isCuratedQuranListenSurah(surahNumber)) {
-      return NextResponse.json({ error: 'Please choose a surah from the Quran listen list.' }, { status: 400 });
     }
 
     if (!Number.isFinite(listenedSeconds) || listenedSeconds < MIN_LISTEN_SECONDS) {

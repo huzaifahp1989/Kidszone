@@ -7,6 +7,7 @@ export type QuizTopicId =
   | 'seerah'
   | 'sahabah'
   | 'akhlaq'
+  | 'duas'
   | 'story-khidr-musa'
   | 'story-sulaiman'
   | 'story-yusuf'
@@ -32,6 +33,7 @@ export const QUIZ_TOPICS: QuizTopic[] = [
   { id: 'seerah', label: 'Seerah', emoji: '🌙', categories: ['seerah'], group: 'general' },
   { id: 'sahabah', label: 'Sahabah', emoji: '⭐', categories: ['sahabah'], group: 'general' },
   { id: 'akhlaq', label: 'Akhlaq', emoji: '🤝', categories: ['akhlaq'], group: 'general' },
+  { id: 'duas', label: 'Daily Duas', emoji: '🤲', categories: ['duas'], group: 'general' },
   {
     id: 'story-khidr-musa',
     label: 'Khidr & Musa (AS)',

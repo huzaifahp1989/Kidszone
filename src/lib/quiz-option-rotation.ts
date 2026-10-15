@@ -37,7 +37,6 @@ export type QuestionWithOptions = {
   id: string
   options: string[]
   correctAnswer: number
-  [key: string]: unknown
 }
 
 /**

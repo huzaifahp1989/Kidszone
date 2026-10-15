@@ -60,7 +60,7 @@ export function BiWeeklyResetPopup({ pageKey }: BiWeeklyResetPopupProps) {
           </button>
         </div>
         <div className="px-5 py-5 sm:px-6 sm:py-6 space-y-4 text-center">
-          <p className="text-sm font-bold uppercase tracking-wide text-[#5b21b6]">
+          <p className="text-sm font-bold uppercase tracking-wide text-teal-800">
             Weekly 5 Activities Challenge
           </p>
           <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-left">
@@ -69,7 +69,7 @@ export function BiWeeklyResetPopup({ pageKey }: BiWeeklyResetPopupProps) {
               Winners are picked at random from everyone who qualifies — not by who is #1 on the leaderboard.
             </p>
           </div>
-          <p className="text-sm text-[#5b21b6] font-semibold">
+          <p className="text-sm text-teal-800 font-semibold">
             Contact number (WhatsApp):
             {' '}
             <a
@@ -81,26 +81,26 @@ export function BiWeeklyResetPopup({ pageKey }: BiWeeklyResetPopupProps) {
               07404644610
             </a>
           </p>
-          <p className="text-[#1e1b4b] font-semibold">
+          <p className="text-teal-900 font-semibold">
             Please note: weekly points are reset manually by admin.
           </p>
-          <p className="text-sm text-[#475569]">
+          <p className="text-sm text-sand-700">
             Winners are chosen according to 5 completed activities on Kids Zone.
           </p>
-          <p className="text-sm text-[#5b21b6] font-semibold">
+          <p className="text-sm text-teal-800 font-semibold">
             Complete any 5 activities every week. It is not fixed to specific activity types.
           </p>
           <div className="flex justify-center gap-3">
             <button
               onClick={closePopup}
-              className="px-4 py-2 rounded-lg border border-[#c4b5fd]/40 text-[#1e1b4b] font-semibold hover:bg-[#ede9fe]"
+              className="px-4 py-2 rounded-lg border border-teal-300/40 text-teal-900 font-semibold hover:bg-teal-100"
             >
               Close
             </button>
             <Link
               href="/leaderboard"
               onClick={closePopup}
-              className="px-4 py-2 rounded-lg bg-gradient-to-r from-[#7c3aed] to-[#6d28d9] text-white font-bold"
+              className="px-4 py-2 rounded-lg bg-gradient-to-r from-teal-600 to-teal-700 text-white font-bold"
             >
               View Leaderboard
             </Link>

@@ -8,8 +8,6 @@ import { AgeModeProvider } from '@/lib/age-mode';
 import { AppShell } from '@/components/AppShell';
 import { FirebaseAnalyticsInit } from '@/components/FirebaseAnalyticsInit';
 import { GoogleAnalyticsInit } from '@/components/GoogleAnalyticsInit';
-import { DailyTasksPopup } from '@/components/DailyTasksPopup';
-import { FeedbackSurveyBanner } from '@/components/FeedbackSurveyBanner';
 import { Nunito, Amiri } from 'next/font/google';
 import { LIVE_APP_URL } from '@/lib/app-url';
 import { QUIZ_STUCK_RECOVERY_SCRIPT } from '@/lib/quiz-stuck-recovery-script';
@@ -43,7 +41,7 @@ const amiri = Amiri({
 });
 
 export const metadata: Metadata = {
-  title: 'Kids Zone - Islamic Learning Platform',
+  title: 'Islam Media Central Kids Zone',
   description: 'A warm, engaging Islamic learning platform for children aged 5-14',
 };
 
@@ -79,8 +77,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <Suspense fallback={null}>
                 <FirebaseAnalyticsInit />
                 <GoogleAnalyticsInit />
-                <DailyTasksPopup />
-                <FeedbackSurveyBanner />
               </Suspense>
               <AppShell>{children}</AppShell>
             </AgeModeProvider>

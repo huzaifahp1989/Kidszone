@@ -34,6 +34,15 @@ export function allowProductionSupabaseFallback(): boolean {
   return !envUrl && !envKey;
 }
 
+/** True when this process is talking to the bundled production Supabase project. */
+export function usesProductionSupabaseProject(): boolean {
+  if (allowProductionSupabaseFallback()) return true;
+  const envUrl = String(process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL || '')
+    .trim()
+    .replace(/\/$/, '');
+  return envUrl === PRODUCTION_SUPABASE_URL;
+}
+
 export function resolvePublicSupabaseUrl(): string {
   const envUrl =
     String(process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL || '').trim();

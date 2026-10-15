@@ -111,8 +111,8 @@ export default function AudioQuizPlayerPage() {
   if (loading || authLoading) {
     return (
       <Center>
-        <Loader2 className="mx-auto animate-spin text-[#7c3aed]" size={32} />
-        <p className="mt-3 font-semibold text-[#475569]">Loading…</p>
+        <Loader2 className="mx-auto animate-spin text-teal-600" size={32} />
+        <p className="mt-3 font-semibold text-sand-700">Loading…</p>
       </Center>
     );
   }
@@ -121,7 +121,7 @@ export default function AudioQuizPlayerPage() {
     return (
       <Center>
         <p className="font-semibold text-rose-600">{error || 'Quiz not found.'}</p>
-        <Link href="/audio-quiz" className="mt-3 inline-block font-bold text-[#6d28d9] hover:underline">
+        <Link href="/audio-quiz" className="mt-3 inline-block font-bold text-teal-700 hover:underline">
           ← Back to Audio Competition
         </Link>
       </Center>
@@ -131,29 +131,29 @@ export default function AudioQuizPlayerPage() {
   const showRecorders = user && open && !hasSubmitted && !done && questions.length > 0;
 
   return (
-    <div className="min-h-screen bg-[#f5f3ff] pattern-islamic">
+    <div className="min-h-screen bg-teal-50 pattern-islamic">
       <div className="mx-auto max-w-2xl space-y-5 px-4 py-6 md:py-8">
-        <Link href="/audio-quiz" className="inline-flex items-center gap-1.5 text-sm font-bold text-[#6d28d9] hover:underline">
+        <Link href="/audio-quiz" className="inline-flex items-center gap-1.5 text-sm font-bold text-teal-700 hover:underline">
           <ArrowLeft size={15} /> All audio competitions
         </Link>
 
-        <div className="overflow-hidden rounded-3xl border border-[#c4b5fd]/40 bg-white shadow-lg">
+        <div className="overflow-hidden rounded-3xl border border-teal-300/40 bg-white shadow-lg">
           {quiz.bannerUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={quiz.bannerUrl} alt="" className="h-40 w-full object-cover" />
           ) : (
-            <div className="flex h-40 w-full items-center justify-center bg-gradient-to-br from-[#4c1d95] via-[#6d28d9] to-[#7c3aed] text-6xl">🎙️</div>
+            <div className="flex h-40 w-full items-center justify-center bg-gradient-to-br from-teal-900 via-teal-700 to-teal-600 text-6xl">🎙️</div>
           )}
           <div className="p-6">
             <div className="flex flex-wrap items-center gap-2">
-              <span className="rounded-full bg-[#f5f3ff] px-2.5 py-0.5 text-xs font-bold text-[#6d28d9]">{quiz.category}</span>
+              <span className="rounded-full bg-teal-50 px-2.5 py-0.5 text-xs font-bold text-teal-700">{quiz.category}</span>
               <span className="rounded-full bg-amber-50 px-2.5 py-0.5 text-xs font-bold text-amber-700">Ages {quiz.ageGroup}</span>
               {questions.length > 0 ? (
                 <span className="rounded-full bg-violet-100 px-2.5 py-0.5 text-xs font-bold text-violet-700">{questions.length} question{questions.length > 1 ? 's' : ''}</span>
               ) : null}
             </div>
-            <h1 className="mt-2 text-2xl font-black text-[#1e1b4b]">{quiz.title}</h1>
-            {quiz.description ? <p className="mt-1 text-[#475569]">{quiz.description}</p> : null}
+            <h1 className="mt-2 text-2xl font-black text-teal-900">{quiz.title}</h1>
+            {quiz.description ? <p className="mt-1 text-sand-700">{quiz.description}</p> : null}
             {quiz.prizeDetails ? (
               <p className="mt-3 inline-flex items-center gap-1.5 rounded-xl bg-amber-50 px-3 py-2 text-sm font-bold text-amber-700">
                 <Trophy size={15} /> Prize: {quiz.prizeDetails}
@@ -166,30 +166,30 @@ export default function AudioQuizPlayerPage() {
           <div className="rounded-3xl border-2 border-emerald-300 bg-gradient-to-br from-emerald-50 to-white p-6 text-center shadow">
             <PartyPopper className="mx-auto text-emerald-500" size={36} />
             <p className="mt-2 text-xl font-black text-emerald-800">Answers submitted!</p>
-            <p className="mt-1 text-[#475569]">MashaAllah! Our judges will listen — when approved you earn points, and winners get prizes!</p>
-            <Link href="/audio-quiz" className="mt-4 inline-block font-bold text-[#6d28d9] hover:underline">Back to Audio Competition</Link>
+            <p className="mt-1 text-sand-700">MashaAllah! Our judges will listen — when approved you earn points, and winners get prizes!</p>
+            <Link href="/audio-quiz" className="mt-4 inline-block font-bold text-teal-700 hover:underline">Back to Audio Competition</Link>
           </div>
         ) : hasSubmitted ? (
           <div className="rounded-3xl border border-emerald-200 bg-emerald-50 p-6 text-center">
             <CheckCircle2 className="mx-auto text-emerald-500" size={32} />
             <p className="mt-2 font-black text-emerald-800">You&apos;ve already entered this quiz</p>
-            <p className="mt-1 text-sm text-[#475569]">Status: <span className="font-bold capitalize">{submitStatus || 'pending'}</span>. Only one entry per child.</p>
-            <Link href={`/audio-quiz/${quizId}/results`} className="mt-3 inline-block font-bold text-[#6d28d9] hover:underline">See results & winners →</Link>
+            <p className="mt-1 text-sm text-sand-700">Status: <span className="font-bold capitalize">{submitStatus || 'pending'}</span>. Only one entry per child.</p>
+            <Link href={`/audio-quiz/${quizId}/results`} className="mt-3 inline-block font-bold text-teal-700 hover:underline">See results & winners →</Link>
           </div>
         ) : ended ? (
           <div className="rounded-3xl border border-slate-200 bg-white p-6 text-center shadow">
-            <p className="font-black text-[#1e1b4b]">This quiz has ended</p>
-            <Link href={`/audio-quiz/${quizId}/results`} className="mt-2 inline-block font-bold text-[#6d28d9] hover:underline">See the winners →</Link>
+            <p className="font-black text-teal-900">This quiz has ended</p>
+            <Link href={`/audio-quiz/${quizId}/results`} className="mt-2 inline-block font-bold text-teal-700 hover:underline">See the winners →</Link>
           </div>
         ) : !user ? (
           <div className="rounded-3xl border border-amber-300 bg-amber-50 p-6 text-center">
             <p className="font-bold text-amber-800">Sign in to record and submit your answers</p>
-            <Link href={`/signin?next=/audio-quiz/${quizId}`} className="mt-3 inline-flex items-center gap-2 rounded-xl bg-[#7c3aed] px-5 py-2.5 font-bold text-white shadow hover:bg-[#6d28d9]">Sign in</Link>
+            <Link href={`/signin?next=/audio-quiz/${quizId}`} className="mt-3 inline-flex items-center gap-2 rounded-xl bg-teal-600 px-5 py-2.5 font-bold text-white shadow hover:bg-teal-700">Sign in</Link>
           </div>
         ) : questions.length === 0 ? (
           <div className="rounded-3xl border border-slate-200 bg-white p-6 text-center shadow">
-            <p className="font-black text-[#1e1b4b]">This quiz has no questions yet</p>
-            <p className="mt-1 text-sm text-[#475569]">Please check back soon!</p>
+            <p className="font-black text-teal-900">This quiz has no questions yet</p>
+            <p className="mt-1 text-sm text-sand-700">Please check back soon!</p>
           </div>
         ) : null}
 
@@ -204,26 +204,26 @@ export default function AudioQuizPlayerPage() {
               />
             ))}
 
-            <div className="rounded-3xl border border-[#c4b5fd]/40 bg-white p-5 text-center shadow">
-              <p className="text-sm font-semibold text-[#475569]">
+            <div className="rounded-3xl border border-teal-300/40 bg-white p-5 text-center shadow">
+              <p className="text-sm font-semibold text-sand-700">
                 {questions.filter((q) => answers[q.id]?.blob).length} of {questions.length} answers recorded
               </p>
               <button
                 type="button"
                 onClick={submit}
                 disabled={!allAnswered || submitting}
-                className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#7c3aed] to-[#6d28d9] px-6 py-3.5 text-lg font-bold text-white shadow-lg transition hover:-translate-y-0.5 disabled:opacity-50"
+                className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-teal-600 to-teal-700 px-6 py-3.5 text-lg font-bold text-white shadow-lg transition hover:-translate-y-0.5 disabled:opacity-50"
               >
                 {submitting ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}
                 {submitting ? 'Uploading…' : 'Submit all answers'}
               </button>
-              {!allAnswered ? <p className="mt-2 text-xs text-[#94a3b8]">Record an answer for every question to submit.</p> : null}
+              {!allAnswered ? <p className="mt-2 text-xs text-sand-400">Record an answer for every question to submit.</p> : null}
               {submitError ? <p className="mt-2 text-sm font-semibold text-rose-600">{submitError}</p> : null}
             </div>
           </>
         ) : null}
 
-        <p className="text-center text-xs text-[#94a3b8]">{participantCount} children have entered so far.</p>
+        <p className="text-center text-xs text-sand-400">{participantCount} children have entered so far.</p>
       </div>
     </div>
   );
@@ -253,23 +253,23 @@ function QuestionRecorder({
   }, [recorder.state, recorder.blob, recorder.seconds, question.id, onRecorded]);
 
   return (
-    <div className="rounded-3xl border border-[#c4b5fd]/40 bg-white p-6 shadow">
+    <div className="rounded-3xl border border-teal-300/40 bg-white p-6 shadow">
       <div className="flex items-center gap-2">
-        <span className="flex h-7 w-7 items-center justify-center rounded-full bg-[#7c3aed] text-sm font-black text-white">{question.index}</span>
-        <h2 className="font-black text-[#1e1b4b]">{question.prompt || `Question ${question.index}`}</h2>
+        <span className="flex h-7 w-7 items-center justify-center rounded-full bg-teal-600 text-sm font-black text-white">{question.index}</span>
+        <h2 className="font-black text-teal-900">{question.prompt || `Question ${question.index}`}</h2>
       </div>
 
-      <p className="mt-3 text-xs font-bold uppercase tracking-wide text-[#6d28d9]">🔊 Listen</p>
+      <p className="mt-3 text-xs font-bold uppercase tracking-wide text-teal-700">🔊 Listen</p>
       {question.audioUrl ? (
         <audio controls src={question.audioUrl} className="mt-1 w-full" />
       ) : (
-        <p className="text-sm text-[#64748b]">No audio for this question.</p>
+        <p className="text-sm text-sand-600">No audio for this question.</p>
       )}
 
-      <p className="mt-4 text-xs font-bold uppercase tracking-wide text-[#6d28d9]">🎤 Your answer</p>
+      <p className="mt-4 text-xs font-bold uppercase tracking-wide text-teal-700">🎤 Your answer</p>
       <div className="mt-1 flex flex-col items-center gap-3">
-        <div className="text-2xl font-black tabular-nums text-[#6d28d9]">
-          {recorder.formatTime(recorder.seconds)} <span className="text-sm text-[#94a3b8]">/ {recorder.formatTime(maxSeconds)}</span>
+        <div className="text-2xl font-black tabular-nums text-teal-700">
+          {recorder.formatTime(recorder.seconds)} <span className="text-sm text-sand-400">/ {recorder.formatTime(maxSeconds)}</span>
         </div>
         {recorder.isRecording ? (
           <button type="button" onClick={recorder.stopRecording} className="inline-flex items-center gap-2 rounded-2xl bg-rose-600 px-6 py-3 font-black text-white shadow-lg hover:bg-rose-700">
@@ -278,12 +278,12 @@ function QuestionRecorder({
         ) : recorder.state === 'finished' && recorder.audioUrl ? (
           <div className="w-full space-y-2">
             <audio controls src={recorder.audioUrl} className="w-full" />
-            <button type="button" onClick={recorder.reset} className="inline-flex items-center gap-1.5 rounded-xl border border-[#c4b5fd]/60 bg-white px-4 py-2 text-sm font-bold text-[#6d28d9] hover:bg-[#f5f3ff]">
+            <button type="button" onClick={recorder.reset} className="inline-flex items-center gap-1.5 rounded-xl border border-teal-300/60 bg-white px-4 py-2 text-sm font-bold text-teal-700 hover:bg-teal-50">
               <RotateCcw size={15} /> Re-record
             </button>
           </div>
         ) : (
-          <button type="button" onClick={recorder.startRecording} className="inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-[#7c3aed] to-[#6d28d9] px-7 py-3 font-black text-white shadow-lg hover:-translate-y-0.5">
+          <button type="button" onClick={recorder.startRecording} className="inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-teal-600 to-teal-700 px-7 py-3 font-black text-white shadow-lg hover:-translate-y-0.5">
             <Mic size={20} /> Record answer
           </button>
         )}
@@ -295,9 +295,9 @@ function QuestionRecorder({
 
 function Center({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-screen bg-[#f5f3ff] pattern-islamic">
+    <div className="min-h-screen bg-teal-50 pattern-islamic">
       <div className="mx-auto max-w-md px-4 py-12">
-        <div className="rounded-3xl border border-[#c4b5fd]/40 bg-white p-8 text-center shadow-lg">{children}</div>
+        <div className="rounded-3xl border border-teal-300/40 bg-white p-8 text-center shadow-lg">{children}</div>
       </div>
     </div>
   );

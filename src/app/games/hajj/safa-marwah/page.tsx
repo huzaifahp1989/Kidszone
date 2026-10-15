@@ -226,8 +226,8 @@ export default function SafaMarwahGame() {
               <rect x="0" y={FLOOR_Y} width={GW} height={GH - FLOOR_Y} fill="url(#ground)" />
 
               {/* Green zone on ground */}
-              <rect x={GREEN_L} y={FLOOR_Y} width={GREEN_R - GREEN_L} height={GH - FLOOR_Y} fill="#86efac" opacity="0.5" />
-              <text x={(GREEN_L + GREEN_R) / 2} y={FLOOR_Y + 18} textAnchor="middle" fill="#15803d" fontSize="10" fontWeight="bold">
+              <rect x={GREEN_L} y={FLOOR_Y} width={GREEN_R - GREEN_L} height={GH - FLOOR_Y} fill="#93c5fd" opacity="0.5" />
+              <text x={(GREEN_L + GREEN_R) / 2} y={FLOOR_Y + 18} textAnchor="middle" fill="#1d4ed8" fontSize="10" fontWeight="bold">
                 ⚡ Green Zone
               </text>
 
@@ -252,8 +252,8 @@ export default function SafaMarwahGame() {
               </text>
 
               {/* Player */}
-              <ellipse cx={px} cy={PLAYER_Y + 3} rx={8} ry={10} fill="#059669" />
-              <circle cx={px} cy={PLAYER_Y - 9} r={6} fill="#059669" />
+              <ellipse cx={px} cy={PLAYER_Y + 3} rx={8} ry={10} fill="#2563eb" />
+              <circle cx={px} cy={PLAYER_Y - 9} r={6} fill="#2563eb" />
               <circle cx={px - 2} cy={PLAYER_Y - 11} r={2} fill="white" opacity="0.6" />
             </svg>
           </div>

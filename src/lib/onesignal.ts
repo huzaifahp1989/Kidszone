@@ -1,10 +1,14 @@
 'use client';
 
 import { Capacitor } from '@capacitor/core';
-import { ONESIGNAL_APP_ID, ONESIGNAL_WEB_APP_ID } from '@/lib/onesignal-app-id';
+import {
+  ONESIGNAL_APP_ID,
+  ONESIGNAL_IOS_APP_ID,
+  ONESIGNAL_WEB_APP_ID,
+} from '@/lib/onesignal-app-id';
 import { getPushViewerId, reportPushOpen } from '@/lib/push-open-client';
 
-export { ONESIGNAL_APP_ID, ONESIGNAL_WEB_APP_ID };
+export { ONESIGNAL_APP_ID, ONESIGNAL_IOS_APP_ID, ONESIGNAL_WEB_APP_ID };
 
 let nativeInitialized = false;
 let webInitialized = false;
@@ -72,11 +76,18 @@ async function reportPushOpenFromEvent(event: any) {
   }
 }
 
+/** OneSignal app ID for the current native platform (iOS has its own app). */
+export function getNativeOneSignalAppId(): string {
+  return Capacitor.getPlatform() === 'ios' && ONESIGNAL_IOS_APP_ID
+    ? ONESIGNAL_IOS_APP_ID
+    : ONESIGNAL_APP_ID;
+}
+
 export async function initOneSignalNative(userId?: string): Promise<void> {
   if (!isNativeApp() || nativeInitialized) return;
 
   const OneSignal = await getNativeOneSignal();
-  await OneSignal.initialize(ONESIGNAL_APP_ID);
+  await OneSignal.initialize(getNativeOneSignalAppId());
 
   if (userId) {
     await OneSignal.login(userId);
@@ -102,10 +113,8 @@ export function initOneSignalWeb(onReady?: (userId?: string) => void, userId?: s
     return;
   }
 
-  window.OneSignalDeferred = window.OneSignalDeferred || [];
-  window.OneSignalDeferred.push(async (OneSignal) => {
+  const runInit = async (OneSignal: any) => {
     try {
-      // Must use the web-capable OneSignal app (not the WTN mobile-only app).
       await OneSignal.init({
         appId: ONESIGNAL_WEB_APP_ID,
         allowLocalhostAsSecureOrigin: process.env.NODE_ENV === 'development',
@@ -131,7 +140,15 @@ export function initOneSignalWeb(onReady?: (userId?: string) => void, userId?: s
     } catch (err) {
       console.warn('[OneSignal] web init failed:', err);
     }
-  });
+  };
+
+  if (window.OneSignal && typeof window.OneSignal.init === 'function') {
+    void runInit(window.OneSignal);
+    return;
+  }
+
+  window.OneSignalDeferred = window.OneSignalDeferred || [];
+  window.OneSignalDeferred.push(runInit);
 }
 
 export async function oneSignalLogin(userId: string): Promise<void> {
@@ -172,18 +189,18 @@ export async function requestOneSignalPermission(): Promise<boolean> {
     return OneSignal.Notifications.requestPermission(true);
   }
 
-  if (window.OneSignal?.Notifications?.requestPermission) {
-    return window.OneSignal.Notifications.requestPermission();
+  if (typeof window === 'undefined') return false;
+
+  for (let attempt = 0; attempt < 50; attempt += 1) {
+    const notifications = window.OneSignal?.Notifications;
+    const requestPermission = notifications?.requestPermission;
+    if (requestPermission && notifications) {
+      return requestPermission.call(notifications);
+    }
+    await new Promise((resolve) => setTimeout(resolve, 100));
   }
 
-  if (typeof window !== 'undefined' && 'Notification' in window) {
-    if (Notification.permission === 'granted') return true;
-    if (Notification.permission === 'denied') return false;
-    const result = await Notification.requestPermission();
-    return result === 'granted';
-  }
-
-  return false;
+  throw new Error('OneSignal web push is unavailable. Check the website App ID and Web Push setup.');
 }
 
 export async function getOneSignalPermissionStatus(): Promise<

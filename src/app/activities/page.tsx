@@ -31,7 +31,7 @@ const palette = [
   '#ef4444',
   '#f97316',
   '#facc15',
-  '#22c55e',
+  '#3b82f6',
   '#06b6d4',
   '#3b82f6',
   '#6366f1',
@@ -50,18 +50,18 @@ const EXTRA_POINT_ACTIVITIES: Array<{
   external?: boolean;
 }> = [
   {
-    title: 'August 2026 Manual Quiz',
-    href: '/quiz-challenge/aug-2026-mixed',
-    pointsLabel: 'Up to +200 points',
-    limitLabel: 'One submission',
-    note: '40 questions — Seerah, Hadith, Quran, Sahabah, Prophets, Akhlaq, Fiqh. Admins read each answer and award points.',
-  },
-  {
     title: 'Quran Listening Club',
     href: '/quran/listen',
     pointsLabel: `+${ACTIVITY_BONUS_POINTS} points`,
     limitLabel: '1 time/day',
     note: 'Listen for at least 3 minutes before claiming daily points.',
+  },
+  {
+    title: 'Rabi ul Awwal Seerah Quiz',
+    href: '/competitions/rabi-ul-awwal',
+    pointsLabel: 'Prize draw',
+    limitLabel: 'One written entry',
+    note: 'Type your own Seerah answers. Admin marks every question by hand.',
   },
   {
     title: 'Audio Quiz',
@@ -108,7 +108,7 @@ export default function ActivitiesPage() {
   const initialFills = useMemo(() => {
     const base: Record<TemplateId, Record<string, string>> = {
       makkah: { sky: '#e0f2fe', ground: '#fef3c7', kaaba: '#111827', band: '#facc15', door: '#b45309', tower: '#e5e7eb', arches: '#f3f4f6' },
-      madinah: { sky: '#e0f2fe', ground: '#fef3c7', dome: '#16a34a', minaret: '#e5e7eb', walls: '#f3f4f6', arches: '#d1d5db' },
+      madinah: { sky: '#e0f2fe', ground: '#fef3c7', dome: '#2563eb', minaret: '#e5e7eb', walls: '#f3f4f6', arches: '#d1d5db' },
       aqsa: { sky: '#e0f2fe', ground: '#fef3c7', dome: '#f59e0b', walls: '#f3f4f6', columns: '#e5e7eb', arches: '#d1d5db' },
     };
     return base;

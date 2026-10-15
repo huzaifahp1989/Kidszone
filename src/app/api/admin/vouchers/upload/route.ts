@@ -50,7 +50,9 @@ export async function POST(request: Request) {
     });
 
     return NextResponse.json({
-      url: uploaded.url,
+      url: folder === 'announcements'
+        ? `/api/announcement-image?path=${encodeURIComponent(uploaded.path)}`
+        : uploaded.url,
       path: uploaded.path,
       provider: uploaded.provider,
       r2Enabled: isR2Enabled(),

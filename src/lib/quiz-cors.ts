@@ -2,7 +2,6 @@ import { LIVE_APP_URL } from '@/lib/app-url';
 
 const EXTRA_ALLOWED = new Set([
   'https://islamic-kids-platform.vercel.app',
-  'https://huzaifahp1989-audio.vercel.app',
   'http://localhost:3000',
   'http://localhost:3001',
   'capacitor://localhost',

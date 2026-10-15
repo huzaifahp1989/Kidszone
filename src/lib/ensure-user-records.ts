@@ -52,10 +52,23 @@ export async function ensureUserRecords(userId: string): Promise<EnsureUserRecor
   // Fast path for quiz submit and other hot paths: skip auth.admin lookup when rows exist.
   {
     const [userProbe, pointsProbe] = await Promise.all([
-      supabaseAdmin.from('users').select('uid').eq('uid', uid).maybeSingle(),
+      supabaseAdmin
+        .from('users')
+        .select('*')
+        .eq('uid', uid)
+        .maybeSingle(),
       supabaseAdmin.from('users_points').select('user_id').eq('user_id', uid).maybeSingle(),
     ]);
-    if (!userProbe.error && !pointsProbe.error && userProbe.data?.uid && pointsProbe.data?.user_id) {
+    const hasContactNumber = Boolean(
+      userProbe.data?.contact_number || userProbe.data?.contactnumber || userProbe.data?.contactNumber
+    );
+    if (
+      !userProbe.error &&
+      !pointsProbe.error &&
+      userProbe.data?.uid &&
+      pointsProbe.data?.user_id &&
+      hasContactNumber
+    ) {
       return { ok: true, userId: uid, createdUser: false, createdPoints: false };
     }
   }
@@ -95,7 +108,7 @@ export async function ensureUserRecords(userId: string): Promise<EnsureUserRecor
   {
     const full = await supabaseAdmin
       .from('users')
-      .select('uid, name, email, age, username, family_email, points, weeklypoints, monthlypoints')
+      .select('*')
       .eq('uid', uid)
       .maybeSingle();
 
@@ -144,6 +157,12 @@ export async function ensureUserRecords(userId: string): Promise<EnsureUserRecor
     if (insertUserErr?.code === '42703') {
       const { username: _u, family_email: _f, city: _c, contact_number: _cn, contactnumber: _cn2, contactNumber: _cn3, ...legacyPayload } = insertPayload;
       insertUserErr = (await supabaseAdmin.from('users').upsert(legacyPayload, { onConflict: 'uid' })).error;
+      if (!insertUserErr && metaContactNumber) {
+        for (const column of ['contact_number', 'contactnumber', 'contactNumber'] as const) {
+          const contactErr = (await supabaseAdmin.from('users').update({ [column]: metaContactNumber }).eq('uid', uid)).error;
+          if (!contactErr || contactErr.code !== '42703') break;
+        }
+      }
       if (!insertUserErr && metaCity) {
         for (const col of ['city', 'town', 'location'] as const) {
           const cityErr = (await supabaseAdmin.from('users').update({ [col]: metaCity }).eq('uid', uid)).error;
@@ -202,6 +221,12 @@ export async function ensureUserRecords(userId: string): Promise<EnsureUserRecor
         const { username: _u, family_email: _f, contact_number: _cn, contactnumber: _cn2, contactNumber: _cn3, ...legacyPatch } = patch;
         if (Object.keys(legacyPatch).length > 0) {
           await supabaseAdmin.from('users').update(legacyPatch).eq('uid', uid);
+        }
+        if (metaContactNumber) {
+          for (const column of ['contact_number', 'contactnumber', 'contactNumber'] as const) {
+            const contactErr = (await supabaseAdmin.from('users').update({ [column]: metaContactNumber }).eq('uid', uid)).error;
+            if (!contactErr || contactErr.code !== '42703') break;
+          }
         }
       }
     }

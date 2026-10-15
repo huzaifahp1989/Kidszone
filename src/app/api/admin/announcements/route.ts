@@ -77,7 +77,9 @@ export async function POST(request: Request) {
       ? Math.max(0, Math.floor(Number(popup_delay_seconds)))
       : 0;
     const popupRepeatMinutes = Number.isFinite(Number(popup_repeat_minutes))
-      ? Math.max(1, Math.floor(Number(popup_repeat_minutes)))
+      ? Number(popup_repeat_minutes) === -1
+        ? -1
+        : Math.max(1, Math.floor(Number(popup_repeat_minutes)))
       : 1440;
     const repeatUnit = ['always', 'hours', 'daily', 'weekly', 'monthly'].includes(String(repeat_unit))
       ? String(repeat_unit)
@@ -181,7 +183,9 @@ export async function PUT(request: Request) {
       updatePayload.popup_delay_seconds = Math.max(0, Math.floor(Number(popup_delay_seconds) || 0));
     }
     if (popup_repeat_minutes !== undefined) {
-      updatePayload.popup_repeat_minutes = Math.max(1, Math.floor(Number(popup_repeat_minutes) || 1));
+      updatePayload.popup_repeat_minutes = Number(popup_repeat_minutes) === -1
+        ? -1
+        : Math.max(1, Math.floor(Number(popup_repeat_minutes) || 1));
     }
     if (start_at !== undefined) {
       updatePayload.start_at = start_at ? new Date(start_at).toISOString() : null;

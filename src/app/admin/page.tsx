@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Button, Modal, VoucherAdminPanel } from '@/components';
-import { TrashIcon, PlusIcon, TrophyIcon, Users, Edit, Search, Loader2, ClipboardCheck, Mail } from 'lucide-react';
+import { TrashIcon, PlusIcon, TrophyIcon, Users, Edit, Search, Loader2, ClipboardCheck, Mail, Activity } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
 import { AdminNotificationBadge } from '@/components/AdminNotificationBadge';
@@ -106,10 +106,8 @@ interface User {
 
 export default function AdminPanel() {
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<'users' | 'winner-contacts' | 'competitions' | 'questions' | 'surahs' | 'hadiths' | 'system' | 'rewards' | 'claims' | 'feedback'>('users');
+  const [activeTab, setActiveTab] = useState<'users' | 'winner-contacts' | 'competitions' | 'questions' | 'surahs' | 'hadiths' | 'system' | 'rewards' | 'claims' | 'feedback' | 'live-session-signups'>('users');
   const [showAddModal, setShowAddModal] = useState(false);
-  const [winner, setWinner] = useState<any>(null);
-  const [pickingWinner, setPickingWinner] = useState(false);
   const [spinWheelData, setSpinWheelData] = useState<any>(null);
   const [loadingSpinWheel, setLoadingSpinWheel] = useState(false);
 
@@ -120,6 +118,9 @@ export default function AdminPanel() {
   const [feedbackLoading, setFeedbackLoading] = useState(false);
   const [feedbackActing, setFeedbackActing] = useState<string | null>(null);
   const [feedbackMessage, setFeedbackMessage] = useState('');
+  const [liveSessionSignups, setLiveSessionSignups] = useState<any[]>([]);
+  const [liveSessionTotal, setLiveSessionTotal] = useState(0);
+  const [liveSessionLoading, setLiveSessionLoading] = useState(false);
 
   const fetchFeedback = async (filter = feedbackFilter) => {
     setFeedbackLoading(true);
@@ -148,6 +149,24 @@ export default function AdminPanel() {
         setFeedbackMessage(data?.error || 'Failed');
       }
     } catch { setFeedbackMessage('Network error'); } finally { setFeedbackActing(null); }
+  };
+
+  const fetchLiveSessionSignups = async () => {
+    setLiveSessionLoading(true);
+    try {
+      const res = await fetch('/api/live-session-signups', {
+        headers: { 'x-admin-auth': 'true' },
+        cache: 'no-store',
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to load live session signups');
+      setLiveSessionSignups(Array.isArray(data.signups) ? data.signups : []);
+      setLiveSessionTotal(Number(data.total || 0));
+    } catch (error: any) {
+      alert(error?.message || 'Could not load live session signups');
+    } finally {
+      setLiveSessionLoading(false);
+    }
   };
   // User Management State
   const [users, setUsers] = useState<User[]>([]);
@@ -276,8 +295,9 @@ export default function AdminPanel() {
   useEffect(() => {
     if (activeTab === 'feedback') {
       fetchFeedback();
+    } else if (activeTab === 'live-session-signups') {
+      fetchLiveSessionSignups();
     } else if (activeTab === 'rewards') {
-      fetchCurrentWinner();
       fetchSpinWheelResults();
     } else if (activeTab === 'users' || activeTab === 'winner-contacts') {
       fetchUsers(searchTerm);
@@ -679,43 +699,6 @@ export default function AdminPanel() {
     }
   };
 
-  const fetchCurrentWinner = async () => {
-    try {
-      const { data: winnerData } = await supabase
-        .from('weekly_winners')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
-
-      if (winnerData) {
-         const [{ data: userPoints }, { data: winnerUser }] = await Promise.all([
-           supabase
-             .from('users_points')
-             .select('badges, level')
-             .eq('user_id', winnerData.winner_user_id)
-             .maybeSingle(),
-           supabase
-             .from('users')
-             .select('name')
-             .eq('uid', winnerData.winner_user_id)
-             .maybeSingle(),
-         ]);
-            
-         setWinner({
-             winner_id: winnerData.winner_user_id,
-             winner_name: winnerUser?.name || 'Unknown',
-             weekly_points: winnerData.winning_score,
-             badges: userPoints?.badges || 0,
-             level: userPoints?.level || 1,
-             created_at: winnerData.created_at
-         });
-      }
-    } catch (e) {
-      console.error('Error fetching winner:', e);
-    }
-  };
-
   const fetchSpinWheelResults = async () => {
     setLoadingSpinWheel(true);
     try {
@@ -759,34 +742,6 @@ export default function AdminPanel() {
 
   const handleDeleteHadith = (id: string) => {
     setHadiths(hadiths.filter(h => h.id !== id));
-  };
-
-  const handlePickWinner = async () => {
-    setPickingWinner(true);
-    try {
-      const res = await fetch('/api/admin/weekly-winners/pick', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-admin-auth': 'true',
-        },
-        body: JSON.stringify({ force: true }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data?.error || 'Failed to pick winners');
-
-      const names = Array.isArray(data.winners)
-        ? data.winners.map((w: { name?: string }) => w.name).filter(Boolean).join(', ')
-        : '';
-      setWinner(data.winners?.[0] ? { winner_name: data.winners[0].name, ...data.winners[0] } : data);
-      fetchCurrentWinner();
-      alert(data.message || (names ? `Picked: ${names}` : 'Winners picked'));
-    } catch (err) {
-      console.error(err);
-      alert('Failed to pick winner: ' + (err instanceof Error ? err.message : 'Unknown error'));
-    } finally {
-      setPickingWinner(false);
-    }
   };
 
   const handleSeedStories = async () => {
@@ -904,7 +859,14 @@ export default function AdminPanel() {
           <Button 
             variant="outline" 
             className="bg-white/10 text-white border-white/20 hover:bg-white/20"
-            onClick={() => {
+            onClick={async () => {
+              try {
+                const response = await fetch('/api/admin/session', { method: 'DELETE' });
+                if (!response.ok) throw new Error('Could not end the secure admin session.');
+              } catch (logoutError) {
+                window.alert(logoutError instanceof Error ? logoutError.message : 'Could not end the secure admin session.');
+                return;
+              }
               localStorage.removeItem('admin_auth');
               router.push('/admin/login');
             }}
@@ -912,6 +874,37 @@ export default function AdminPanel() {
             Logout
           </Button>
         </div>
+
+        <button
+          type="button"
+          onClick={() => router.push('/admin/written-competitions')}
+          className="mb-6 flex w-full flex-col gap-2 rounded-2xl border-2 border-emerald-300 bg-gradient-to-r from-emerald-50 to-amber-50 p-5 text-left shadow-sm transition hover:border-emerald-400 hover:shadow-md sm:flex-row sm:items-center sm:justify-between"
+        >
+          <div>
+            <p className="text-xs font-bold uppercase tracking-[0.16em] text-emerald-800">Rabi ul Awwal · Written competition</p>
+            <p className="mt-1 text-lg font-black text-emerald-950">Seerah Quiz · add questions · mark answers · pick winners</p>
+            <p className="mt-1 text-sm text-emerald-900/80">Kids type their own answers. You mark every submission by hand. No automatic scoring.</p>
+          </div>
+          <span className="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-5 py-3 text-sm font-bold text-white shadow hover:bg-emerald-700">
+            Open Seerah Quiz
+            <AdminNotificationBadge count={adminNotifyCounts.writtenCompetition} />
+          </span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => router.push('/admin/hadith-october-quiz')}
+          className="mb-6 flex w-full flex-col gap-2 rounded-2xl border-2 border-teal-300 bg-gradient-to-r from-teal-50 to-emerald-50 p-5 text-left shadow-sm transition hover:border-teal-400 hover:shadow-md sm:flex-row sm:items-center sm:justify-between"
+        >
+          <div>
+            <p className="text-xs font-bold uppercase tracking-[0.16em] text-teal-800">October 2026 · Hadith Quiz</p>
+            <p className="mt-1 text-lg font-black text-teal-950">Review written answers · award marks · record Pass or Failed</p>
+            <p className="mt-1 text-sm text-teal-900/80">See each learner&apos;s name, age, madrasah, city, and all 10 answers.</p>
+          </div>
+          <span className="inline-flex items-center justify-center rounded-xl bg-teal-700 px-5 py-3 text-sm font-bold text-white shadow hover:bg-teal-800">
+            Open Hadith reviews
+          </span>
+        </button>
 
         <button
           type="button"
@@ -928,30 +921,20 @@ export default function AdminPanel() {
           </span>
         </button>
 
-        <div className="mb-6 flex w-full flex-col gap-4 rounded-2xl border-2 border-violet-300 bg-gradient-to-r from-violet-50 via-fuchsia-50 to-pink-50 p-5 shadow-sm transition hover:border-violet-400 hover:shadow-md sm:flex-row sm:items-center sm:justify-between">
+        <button
+          type="button"
+          onClick={() => router.push('/admin/monthly-winners')}
+          className="mb-6 flex w-full flex-col gap-2 rounded-2xl border-2 border-amber-300 bg-gradient-to-r from-amber-50 to-yellow-50 p-5 text-left shadow-sm transition hover:border-amber-400 hover:shadow-md sm:flex-row sm:items-center sm:justify-between"
+        >
           <div>
-            <p className="text-xs font-bold uppercase tracking-[0.16em] text-violet-800">August 2026 Manual Quiz</p>
-            <p className="mt-1 text-lg font-black text-violet-950">🎯 Review submissions · grade 40 answers · award points per question</p>
-            <p className="mt-1 text-sm text-violet-900/80">8 Islamic themes (Seerah, Hadith, Quran, Sahabah, Prophets, Akhlaq, Fiqh, General). Kids type answers — you read, comment, and score each one.</p>
+            <p className="text-xs font-bold uppercase tracking-[0.16em] text-amber-800">Monthly competition archive</p>
+            <p className="mt-1 text-lg font-black text-amber-950">Add and publish monthly winners</p>
+            <p className="mt-1 text-sm text-amber-900/80">Publish only after the competition ends and parent/guardian approval is confirmed.</p>
           </div>
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-            <button
-              type="button"
-              onClick={() => router.push('/admin/manual-quiz')}
-              className="inline-flex items-center justify-center gap-2 rounded-xl bg-violet-600 px-5 py-3 text-sm font-bold text-white shadow hover:bg-violet-700"
-            >
-              <AdminNotificationBadge count={adminNotifyCounts.manualQuiz} />
-              Review Submissions
-            </button>
-            <button
-              type="button"
-              onClick={() => router.push('/admin/quiz-challenge')}
-              className="inline-flex items-center justify-center gap-2 rounded-xl bg-white border-2 border-violet-200 px-5 py-3 text-sm font-bold text-violet-800 hover:bg-violet-100"
-            >
-              ✏️ Edit 40 Questions
-            </button>
-          </div>
-        </div>
+          <span className="inline-flex items-center justify-center rounded-xl bg-amber-600 px-5 py-3 text-sm font-bold text-white shadow hover:bg-amber-700">
+            Manage monthly winners
+          </span>
+        </button>
 
         {/* Tabs */}
         <div className="flex gap-2 mb-8 flex-wrap overflow-x-auto pb-2">
@@ -966,6 +949,12 @@ export default function AdminPanel() {
             className="px-5 py-2.5 rounded-lg font-bold transition bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 hover:border-emerald-300 flex items-center gap-2 whitespace-nowrap"
           >
             Content CMS
+          </button>
+          <button
+            onClick={() => router.push('/admin/videos')}
+            className="px-5 py-2.5 rounded-lg font-bold transition bg-sky-600 text-white shadow-md hover:bg-sky-700 flex items-center gap-2 whitespace-nowrap"
+          >
+            📺 Kids Channel
           </button>
           <button
             onClick={() => router.push('/admin/chat')}
@@ -1006,6 +995,12 @@ export default function AdminPanel() {
             Announcements
           </button>
           <button
+            onClick={() => router.push('/admin/notices')}
+            className="px-5 py-2.5 rounded-lg font-bold transition bg-gradient-to-r from-teal-500 to-emerald-600 text-white shadow hover:shadow-lg hover:from-teal-600 hover:to-emerald-700 flex items-center gap-2 whitespace-nowrap"
+          >
+            🔔 Site Notices (bell)
+          </button>
+          <button
             onClick={() => router.push('/admin/family-members')}
             className="px-5 py-2.5 rounded-lg font-bold transition bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 hover:border-blue-300 flex items-center gap-2 whitespace-nowrap"
           >
@@ -1018,11 +1013,30 @@ export default function AdminPanel() {
             Push
           </button>
           <button
+            onClick={() => router.push('/admin/reminders')}
+            className="px-5 py-2.5 rounded-lg font-bold transition bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 hover:border-amber-300 flex items-center gap-2 whitespace-nowrap"
+          >
+            Reminders
+          </button>
+          <button
             onClick={() => router.push('/admin/seerah')}
             className="px-5 py-2.5 rounded-lg font-bold transition bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 hover:border-teal-300 flex items-center gap-2 whitespace-nowrap"
           >
             Seerah Review
             <AdminNotificationBadge count={adminNotifyCounts.seerah} />
+          </button>
+          <button
+            onClick={() => router.push('/admin/written-competitions')}
+            className="px-5 py-2.5 rounded-lg font-bold transition bg-emerald-600 text-white shadow-md hover:bg-emerald-700 flex items-center gap-2 whitespace-nowrap"
+          >
+            ✍️ Seerah Quiz
+            <AdminNotificationBadge count={adminNotifyCounts.writtenCompetition} />
+          </button>
+          <button
+            onClick={() => router.push('/admin/story-writing')}
+            className="px-5 py-2.5 rounded-lg font-bold transition bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 hover:border-emerald-300 flex items-center gap-2 whitespace-nowrap"
+          >
+            ✍️ Story Submissions
           </button>
           <button
             onClick={() => router.push('/admin/competitions/masjid-al-aqsa')}
@@ -1036,13 +1050,6 @@ export default function AdminPanel() {
             className="px-5 py-2.5 rounded-lg font-bold transition bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 hover:border-violet-300 flex items-center gap-2 whitespace-nowrap"
           >
             🌙 Quiz Challenge
-          </button>
-          <button
-            onClick={() => router.push('/admin/manual-quiz')}
-            className="px-5 py-2.5 rounded-lg font-bold transition bg-gradient-to-r from-amber-400 to-orange-400 text-white shadow-md hover:from-amber-500 hover:to-orange-500 flex items-center gap-2 whitespace-nowrap"
-          >
-            🎯 Manual Quiz
-            <AdminNotificationBadge count={adminNotifyCounts.manualQuiz} />
           </button>
           <button
             onClick={() => router.push('/admin/fitness')}
@@ -1075,6 +1082,17 @@ export default function AdminPanel() {
           </button>
 
           <button
+            onClick={() => setActiveTab('live-session-signups')}
+            className={`px-5 py-2.5 rounded-lg font-bold transition flex items-center gap-2 whitespace-nowrap ${
+              activeTab === 'live-session-signups'
+                ? 'bg-teal-600 text-white shadow-md'
+                : 'bg-white text-slate-600 hover:bg-slate-50'
+            }`}
+          >
+            📻 Live Session Leads
+          </button>
+
+          <button
             onClick={() => setActiveTab('competitions')}
             className={`px-5 py-2.5 rounded-lg font-bold transition flex items-center gap-2 whitespace-nowrap ${
               activeTab === 'competitions'
@@ -1094,6 +1112,38 @@ export default function AdminPanel() {
             }`}
           >
             <Users size={18} /> Users
+          </button>
+
+          <button
+            onClick={() => router.push('/admin/activity')}
+            className="px-5 py-2.5 rounded-lg font-bold transition flex items-center gap-2 whitespace-nowrap bg-white text-slate-600 hover:bg-slate-50"
+          >
+            <Activity size={18} /> User Activity
+          </button>
+
+          <button
+            onClick={() => router.push('/admin/points-config')}
+            className="px-5 py-2.5 rounded-lg font-bold transition flex items-center gap-2 whitespace-nowrap bg-white text-slate-600 hover:bg-slate-50 border border-emerald-200"
+          >
+            💰 Points Config
+          </button>
+          <button
+            onClick={() => router.push('/admin/badges')}
+            className="px-5 py-2.5 rounded-lg font-bold transition flex items-center gap-2 whitespace-nowrap bg-white text-slate-600 hover:bg-slate-50"
+          >
+            🏅 Badges
+          </button>
+          <button
+            onClick={() => router.push('/admin/daily-challenges')}
+            className="px-5 py-2.5 rounded-lg font-bold transition flex items-center gap-2 whitespace-nowrap bg-white text-slate-600 hover:bg-slate-50"
+          >
+            📅 Daily Challenges
+          </button>
+          <button
+            onClick={() => router.push('/admin/weekly-activities')}
+            className="px-5 py-2.5 rounded-lg font-bold transition flex items-center gap-2 whitespace-nowrap bg-white text-slate-600 hover:bg-slate-50"
+          >
+            🎯 Weekly Activities
           </button>
 
           <button
@@ -1931,6 +1981,63 @@ export default function AdminPanel() {
           </div>
         )}
 
+        {activeTab === 'live-session-signups' && (
+          <div className="space-y-4">
+            <div className="flex flex-col gap-3 rounded-xl border border-slate-100 bg-white p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <h2 className="text-2xl font-bold text-slate-800">Live Session Leads</h2>
+                <p className="mt-1 text-sm text-slate-500">
+                  Children and contact numbers submitted for Islam Media Radio and social media broadcasts.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={fetchLiveSessionSignups}
+                className="rounded-lg bg-slate-100 px-3 py-1.5 text-sm font-bold text-slate-700 hover:bg-slate-200"
+              >
+                ↻ Refresh
+              </button>
+            </div>
+
+            {liveSessionLoading ? (
+              <div className="rounded-xl bg-white p-8 text-center text-slate-500">Loading live session leads…</div>
+            ) : liveSessionSignups.length === 0 ? (
+              <div className="rounded-xl border border-slate-100 bg-white p-8 text-center text-slate-400">
+                No live session signups yet.
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <p className="pl-1 text-xs text-slate-500">{liveSessionTotal} total · showing {liveSessionSignups.length}</p>
+                {liveSessionSignups.map((signup: any) => {
+                  const whatsappNumber = String(signup.phone_number || '').replace(/\D/g, '');
+                  return (
+                    <div key={signup.id} className="flex flex-col gap-3 rounded-2xl border border-teal-100 bg-white p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+                      <div>
+                        <p className="text-base font-black text-slate-900">{signup.child_name}</p>
+                        <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-sm text-slate-600">
+                          <span>Age: {signup.child_age}</span>
+                          <span>📞 {signup.phone_number}</span>
+                          <span>{new Date(signup.created_at).toLocaleString('en-GB')}</span>
+                        </div>
+                      </div>
+                      {whatsappNumber && (
+                        <a
+                          href={`https://wa.me/${whatsappNumber}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center justify-center rounded-xl bg-green-600 px-4 py-2 text-sm font-black text-white hover:bg-green-700"
+                        >
+                          Message on WhatsApp
+                        </a>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Competitions Tab */}
         {activeTab === 'competitions' && (
           <div className="space-y-6">
@@ -2270,36 +2377,6 @@ export default function AdminPanel() {
               Open the <strong>Create voucher</strong> card below and click <strong>New voucher</strong> to add offers that appear on the Rewards page.
             </div>
             
-            <div className="bg-white rounded-2xl shadow-lg p-8 text-center">
-               <h3 className="text-xl font-bold mb-4">Pick Weekly Winners</h3>
-               <p className="mb-6 text-gray-600">
-                 Randomly pick up to 5 winners from everyone who earned above 150 weekly points — not by leaderboard rank.
-               </p>
-               
-               <Button 
-                  onClick={handlePickWinner} 
-                  variant="warning" 
-                  size="lg"
-                  disabled={pickingWinner}
-               >
-                 <TrophyIcon className="inline mr-2" />
-                 {pickingWinner ? 'Picking...' : 'Pick Winner Now'}
-               </Button>
-               
-               {winner && (
-                 <div className="mt-8 p-6 bg-yellow-50 border-2 border-yellow-400 rounded-xl">
-                    <h4 className="text-2xl font-bold text-yellow-800 mb-2">Winner Selected!</h4>
-                    <div className="text-lg space-y-2">
-                      <p><strong>Name:</strong> {winner.winner_name || '-'}</p>
-                       <p><strong>User ID:</strong> {winner.winner_id}</p>
-                       <p><strong>Weekly Points:</strong> {winner.weekly_points}</p>
-                       <p><strong>Badges:</strong> {winner.badges}</p>
-                       <p><strong>Level:</strong> {winner.level}</p>
-                    </div>
-                 </div>
-               )}
-            </div>
-
             <SpinWheelWinnerPicker />
 
             <div className="bg-white rounded-2xl shadow-lg p-6">

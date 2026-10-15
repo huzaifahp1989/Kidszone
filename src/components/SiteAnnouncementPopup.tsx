@@ -19,6 +19,10 @@ type Announcement = {
   popup_repeat_minutes?: number;
 };
 
+function localDayKey(date = new Date()): string {
+  return [date.getFullYear(), date.getMonth() + 1, date.getDate()].join('-');
+}
+
 export function SiteAnnouncementPopup() {
   const pathname = usePathname();
   const [announcements, setAnnouncements] = React.useState<Announcement[]>([]);
@@ -62,6 +66,10 @@ export function SiteAnnouncementPopup() {
 
         const now = Date.now();
         const eligible = rows.filter((item) => {
+          if (Number(item.popup_repeat_minutes) === -1) {
+            const dailyKey = `site-announcement-popup-day:${item.id}`;
+            return window.localStorage.getItem(dailyKey) !== localDayKey();
+          }
           const lastShownKey = `site-announcement-popup-last:${item.id}:${path}`;
           const lastShownRaw = typeof window !== 'undefined' ? window.localStorage.getItem(lastShownKey) : null;
           const lastShown = Number(lastShownRaw || 0);
@@ -91,7 +99,11 @@ export function SiteAnnouncementPopup() {
     const announcement = announcements[currentIndex];
     if (announcement?.id && typeof window !== 'undefined') {
       const path = pathname || '/';
-      window.localStorage.setItem(`site-announcement-popup-last:${announcement.id}:${path}`, String(Date.now()));
+      if (Number(announcement.popup_repeat_minutes) === -1) {
+        window.localStorage.setItem(`site-announcement-popup-day:${announcement.id}`, localDayKey());
+      } else {
+        window.localStorage.setItem(`site-announcement-popup-last:${announcement.id}:${path}`, String(Date.now()));
+      }
     }
 
     const nextIndex = currentIndex + 1;

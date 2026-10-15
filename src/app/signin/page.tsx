@@ -720,26 +720,10 @@ export default function SignInPage() {
       }
     };
 
-    const serverResult = await requestServerSignIn();
-    if (serverResult.kind === 'ok') {
-      const persistedUid =
-        (await saveServerSession(serverResult.accessToken, serverResult.refreshToken)) || null;
-      if (!persistedUid) return;
-      await finishSuccess(serverResult.uid || persistedUid);
-      return;
-    }
-
-    if (serverResult.kind === 'rate_limit') {
-      applyRetryWait(serverResult.wait);
-      return;
-    }
-
-    if (!serverResult.canFallback) {
-      recordFailedAttempt();
-      setError(serverResult.message);
-      return;
-    }
-
+    // Use the SDK's password flow first. It writes the session through the
+    // same client that the rest of the app reads, avoiding a second
+    // setSession handoff that can remain locked while another tab restores
+    // auth state.
     setProgress('Signing in…');
     let directData: Awaited<ReturnType<typeof supabase.auth.signInWithPassword>>['data'] | null = null;
     let directErr: (Awaited<ReturnType<typeof supabase.auth.signInWithPassword>>['error'] & { status?: number }) | null = null;
@@ -762,7 +746,7 @@ export default function SignInPage() {
       return;
     }
 
-    const directMsg = directErr?.message || serverResult.message || '';
+    const directMsg = directErr?.message || '';
     const directWait =
       parseRetrySeconds(directMsg) ?? ((directErr as { status?: number } | null)?.status === 429 ? 60 : null);
     if (directWait && directWait > 0) {
@@ -770,8 +754,37 @@ export default function SignInPage() {
       return;
     }
 
+    const directStatus = (directErr as { status?: number } | null)?.status;
+    const directMessage = directMsg.toLowerCase();
+    const shouldUseServerFallback =
+      !directErr ||
+      directStatus === undefined ||
+      directStatus >= 500 ||
+      /failed to fetch|network|timeout|timed out|connection|load failed/i.test(directMessage);
+    if (!shouldUseServerFallback) {
+      recordFailedAttempt();
+      setError(directMsg || 'Sign-in failed. Please check your details and password.');
+      return;
+    }
+
+    // Keep the server proxy as a network fallback for WebViews or browsers
+    // that cannot reach the Supabase Auth endpoint directly.
+    const serverResult = await requestServerSignIn();
+    if (serverResult.kind === 'rate_limit') {
+      applyRetryWait(serverResult.wait);
+      return;
+    }
+    if (serverResult.kind === 'ok') {
+      const persistedUid = await saveServerSession(serverResult.accessToken, serverResult.refreshToken);
+      if (persistedUid) {
+        await finishSuccess(serverResult.uid || persistedUid);
+        return;
+      }
+      return;
+    }
+
     recordFailedAttempt();
-    setError(directMsg || 'Sign-in failed. Please check your details and password.');
+    setError(directMsg || serverResult.message || 'Sign-in failed. Please check your details and password.');
   };
 
   const onSubmit = async (e: React.FormEvent) => {

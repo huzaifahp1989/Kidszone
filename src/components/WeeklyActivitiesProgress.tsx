@@ -3,7 +3,8 @@
 import Link from 'next/link';
 import React, { useEffect, useMemo, useState } from 'react';
 import { useAuth } from '@/lib/auth-context';
-import { BookOpen, Gamepad2, Mic, Sparkles, Star } from 'lucide-react';
+import { authJsonFetch } from '@/lib/auth-headers';
+import { BookOpen, Gamepad2, Mic, Sparkles, Star, Gift, CheckCircle2 } from 'lucide-react';
 import { WeeklyActivityPopup } from './WeeklyActivityPopup';
 
 type WeeklyActivities = {
@@ -13,19 +14,33 @@ type WeeklyActivities = {
   recording: number;
 };
 
+type MilestoneInfo = {
+  threshold: number;
+  bonusPoints: number;
+  completed: number;
+  reached: boolean;
+  claimable: boolean;
+  claimed: boolean;
+  claimedPoints: number;
+  message: string;
+};
+
 type WeeklyChallengeResponse = {
   completed: number;
   total: number;
   remaining: number;
   qualifiedForDraw: boolean;
   activities: WeeklyActivities;
+  milestone?: MilestoneInfo;
 };
 
 export function WeeklyActivitiesProgress() {
-  const { user, profile } = useAuth() as any;
+  const { user, profile, refreshProfile, updateLocalProfile } = useAuth() as any;
   const userId = (user?.id || profile?.uid || '').trim();
   const [data, setData] = useState<WeeklyChallengeResponse | null>(null);
   const [loading, setLoading] = useState(true);
+  const [claiming, setClaiming] = useState(false);
+  const [claimMessage, setClaimMessage] = useState<string | null>(null);
 
   const fetchData = React.useCallback(async () => {
     if (!userId) {
@@ -60,6 +75,40 @@ export function WeeklyActivitiesProgress() {
     return () => document.removeEventListener('visibilitychange', onVisible);
   }, [fetchData]);
 
+  const claimMilestone = async () => {
+    if (!userId || claiming) return;
+    setClaiming(true);
+    setClaimMessage(null);
+    try {
+      const res = await authJsonFetch('/api/rewards/weekly-activities/claim', {
+        method: 'POST',
+        body: JSON.stringify({ userId }),
+      });
+      const json = await res.json();
+      if (res.ok && json.success) {
+        setClaimMessage(json.message);
+        if (json.totals) {
+          updateLocalProfile?.({
+            points: json.totals.totalPoints,
+            weeklyPoints: json.totals.weeklyPoints,
+            monthlyPoints: json.totals.monthlyPoints,
+            todayPoints: json.totals.todayPoints,
+            badges: json.totals.badges,
+            level: json.totals.level ? `Level ${json.totals.level}` : undefined,
+          });
+        }
+        await refreshProfile?.();
+        await fetchData();
+      } else {
+        setClaimMessage(json.error || json.message || 'Could not claim bonus right now.');
+      }
+    } catch {
+      setClaimMessage('Could not claim bonus right now. Please try again.');
+    } finally {
+      setClaiming(false);
+    }
+  };
+
   const items = useMemo(() => {
     const activities = data?.activities;
     return [
@@ -81,14 +130,14 @@ export function WeeklyActivitiesProgress() {
   return (
     <>
       <WeeklyActivityPopup userId={userId} />
-      <section className="mb-8 rounded-3xl border border-[#7c3aed]/25 bg-gradient-to-br from-[#ecfdf5] via-white to-[#f5f3ff] p-6 shadow-sm">
+      <section className="mb-8 rounded-3xl border border-teal-600/25 bg-gradient-to-br from-[#eff6ff] via-white to-teal-50 p-6 shadow-sm">
         <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
           <div>
-            <div className="inline-flex rounded-full bg-[#ccfbf1] px-3 py-1 text-xs font-bold uppercase tracking-wide text-[#5b21b6]">
+            <div className="inline-flex rounded-full bg-teal-100 px-3 py-1 text-xs font-bold uppercase tracking-wide text-teal-800">
               Weekly 5 Activities Challenge
             </div>
-            <h2 className="mt-3 text-2xl font-bold text-[#4c1d95]">Finish any 5 activities this week</h2>
-            <p className="mt-2 text-sm text-[#5b21b6] md:text-base">
+            <h2 className="mt-3 text-2xl font-bold text-teal-900">Finish any 5 activities this week</h2>
+            <p className="mt-2 text-sm text-teal-800 md:text-base">
               {loading
                 ? 'Checking your weekly challenge progress...'
                 : data?.qualifiedForDraw
@@ -100,21 +149,21 @@ export function WeeklyActivitiesProgress() {
             <button
               onClick={() => fetchData()}
               disabled={loading}
-              className="inline-flex items-center justify-center rounded-xl border border-[#7c3aed] px-3 py-3 text-sm font-bold text-[#7c3aed] transition hover:bg-[#ecfdf5] disabled:opacity-50"
+              className="inline-flex items-center justify-center rounded-xl border border-teal-600 px-3 py-3 text-sm font-bold text-teal-600 transition hover:bg-[#eff6ff] disabled:opacity-50"
               title="Refresh progress"
             >
               {loading ? '...' : '↻'}
             </button>
             <Link
               href="/leaderboard"
-              className="inline-flex items-center justify-center rounded-xl bg-[#7c3aed] px-4 py-3 text-sm font-bold text-white transition hover:bg-[#6d28d9]"
+              className="inline-flex items-center justify-center rounded-xl bg-teal-600 px-4 py-3 text-sm font-bold text-white transition hover:bg-teal-700"
             >
               View Leaderboard
             </Link>
           </div>
         </div>
 
-        <div className="mt-5 rounded-2xl border border-[#99f6e4] bg-white p-4">
+        <div className="mt-5 rounded-2xl border border-teal-200 bg-white p-4">
           <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-4">
               <p className="text-xs font-bold uppercase tracking-wide text-emerald-700">Completed This Week</p>
@@ -128,14 +177,14 @@ export function WeeklyActivitiesProgress() {
             </div>
           </div>
 
-          <div className="mb-3 flex items-center justify-between text-sm font-semibold text-[#5b21b6]">
+          <div className="mb-3 flex items-center justify-between text-sm font-semibold text-teal-800">
             <span>{loading ? 'Loading progress...' : `${data?.completed ?? 0}/${data?.total ?? 5} activities done`}</span>
             <span>{progressPercent}%</span>
           </div>
-          <div className="h-4 w-full overflow-hidden rounded-full bg-[#ccfbf1]">
-            <div className="h-full bg-gradient-to-r from-[#7c3aed] to-[#6d28d9] transition-all duration-500" style={{ width: `${progressPercent}%` }} />
+          <div className="h-4 w-full overflow-hidden rounded-full bg-teal-100">
+            <div className="h-full bg-gradient-to-r from-teal-600 to-teal-700 transition-all duration-500" style={{ width: `${progressPercent}%` }} />
           </div>
-          <p className="mt-3 text-xs font-semibold text-[#5b21b6]">
+          <p className="mt-3 text-xs font-semibold text-teal-800">
             Any activities completed during the week count. You can use any mix (for example 5 quizzes, or 3 games + 2 quizzes).
           </p>
         </div>
@@ -147,14 +196,14 @@ export function WeeklyActivitiesProgress() {
             const isTotalCard = item.key === 'total';
             const reachedTarget = Boolean(data?.qualifiedForDraw);
             const inner = (
-              <div className={`rounded-2xl border px-4 py-4 transition ${isTotalCard ? (reachedTarget ? 'border-emerald-200 bg-emerald-50' : 'border-[#7c3aed]/30 bg-[#ecfdf5]') : 'border-[#c4b5fd]/30 bg-white hover:border-[#7c3aed]/40'}`}>
+              <div className={`rounded-2xl border px-4 py-4 transition ${isTotalCard ? (reachedTarget ? 'border-emerald-200 bg-emerald-50' : 'border-teal-600/30 bg-[#eff6ff]') : 'border-teal-300/30 bg-white hover:border-teal-600/40'}`}>
                 <div className="flex items-center gap-3">
-                  <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${isTotalCard ? (reachedTarget ? 'bg-emerald-600 text-white' : 'bg-[#7c3aed] text-white') : 'bg-[#ede9fe] text-[#1e1b4b]'}`}>
+                  <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${isTotalCard ? (reachedTarget ? 'bg-emerald-600 text-white' : 'bg-teal-600 text-white') : 'bg-teal-100 text-teal-900'}`}>
                     <Icon size={18} />
                   </div>
                   <div className="flex-1">
-                    <p className="font-bold text-[#1e1b4b]">{item.label}</p>
-                    <p className={`text-xs font-semibold ${isTotalCard ? (reachedTarget ? 'text-emerald-700' : 'text-[#5b21b6]') : 'text-[#475569]'}`}>
+                    <p className="font-bold text-teal-900">{item.label}</p>
+                    <p className={`text-xs font-semibold ${isTotalCard ? (reachedTarget ? 'text-emerald-700' : 'text-teal-800') : 'text-sand-700'}`}>
                       {item.key === 'total' ? `${Math.min(5, count)}/5 counted this week` : `${count} completed this week`}
                     </p>
                   </div>
@@ -173,6 +222,63 @@ export function WeeklyActivitiesProgress() {
             );
           })}
         </div>
+
+        {data?.milestone && (
+          <div
+            className={`mt-5 rounded-2xl border p-5 ${
+              data.milestone.claimed
+                ? 'border-emerald-200 bg-emerald-50'
+                : data.milestone.reached
+                  ? 'border-gold-300 bg-gradient-to-r from-gold-50 to-white'
+                  : 'border-teal-200 bg-white'
+            }`}
+          >
+            <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+              <div className="flex items-start gap-3">
+                <div
+                  className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${
+                    data.milestone.claimed
+                      ? 'bg-emerald-100 text-emerald-700'
+                      : data.milestone.reached
+                        ? 'bg-gold-100 text-gold-700'
+                        : 'bg-teal-100 text-teal-700'
+                  }`}
+                >
+                  {data.milestone.claimed ? <CheckCircle2 size={22} /> : <Gift size={22} />}
+                </div>
+                <div>
+                  <h3 className="font-bold text-teal-900">
+                    Weekly {data.milestone.threshold}-Activity Milestone Bonus
+                  </h3>
+                  <p className="mt-1 text-sm text-sand-700">{data.milestone.message}</p>
+                  {claimMessage && (
+                    <p className="mt-2 text-sm font-semibold text-teal-800">{claimMessage}</p>
+                  )}
+                </div>
+              </div>
+              <div className="flex shrink-0 flex-col items-end gap-2">
+                <span className="rounded-full bg-gold-100 px-3 py-1 text-sm font-bold text-gold-800">
+                  +{data.milestone.bonusPoints} pts
+                </span>
+                {data.milestone.claimed ? (
+                  <span className="text-sm font-semibold text-emerald-700">Bonus claimed</span>
+                ) : data.milestone.reached ? (
+                  <button
+                    onClick={claimMilestone}
+                    disabled={claiming}
+                    className="inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-gold-500 to-gold-600 px-5 py-2.5 text-sm font-bold text-white shadow-md hover:from-gold-400 hover:to-gold-500 disabled:opacity-60"
+                  >
+                    {claiming ? 'Claiming…' : `Claim +${data.milestone.bonusPoints}`}
+                  </button>
+                ) : (
+                  <span className="text-xs font-semibold text-sand-600">
+                    {data.milestone.completed}/{data.milestone.threshold} done
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
       </section>
     </>
   );

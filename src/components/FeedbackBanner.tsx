@@ -36,7 +36,7 @@ export function FeedbackBanner() {
   };
 
   const copyFeedback = () => {
-    const text = `Feedback - Islamic Kids Learning Platform\n\n${feedbackText}`;
+    const text = `Feedback - Islam Media Central Kids Zone\n\n${feedbackText}`;
     navigator.clipboard.writeText(text);
   };
 

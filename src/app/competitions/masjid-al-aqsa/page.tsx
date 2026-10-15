@@ -191,7 +191,7 @@ export default function MasjidAlAqsaCompetitionPage() {
 
   if (!mounted || loading) {
     return (
-      <div className="min-h-screen bg-[#f8fafc] flex items-center justify-center">
+      <div className="min-h-screen bg-sand-50 flex items-center justify-center">
         <div className="flex items-center gap-3 rounded-2xl border border-teal-200 bg-white px-5 py-4 text-teal-700 shadow-sm">
           <Loader2 className="animate-spin" size={20} />
           Loading competition...

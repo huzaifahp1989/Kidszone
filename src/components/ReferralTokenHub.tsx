@@ -174,18 +174,18 @@ export default function ReferralTokenHub() {
 
   if (!user) {
     return (
-      <section className="bg-white rounded-2xl p-6 shadow-lg border border-[#c4b5fd]/20 space-y-4">
-        <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-[#eef2ff] rounded-full border border-[#6366f1]/20 text-sm font-semibold text-[#4338ca]">
+      <section className="bg-white rounded-2xl p-6 shadow-lg border border-teal-300/20 space-y-4">
+        <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-teal-50 rounded-full border border-teal-500/20 text-sm font-semibold text-teal-700">
           <Users size={16} />
           Referral Tokens
         </div>
-        <h3 className="text-2xl font-bold text-[#1e1b4b]">Invite Friends, Earn Tokens</h3>
-        <p className="text-[#475569] text-sm">
+        <h3 className="text-2xl font-bold text-teal-900">Invite Friends, Earn Tokens</h3>
+        <p className="text-sand-700 text-sm">
           Sign in to get your personal invite link, share Kids Zone with friends, and collect referral tokens when they join.
         </p>
         <a
           href="/signin?next=%2F"
-          className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-[#0ea5e9] to-[#0284c7] text-white font-semibold hover:shadow-md"
+          className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-teal-500 to-teal-600 text-white font-semibold hover:shadow-md"
         >
           <Share2 size={16} />
           Sign In to Activate Referral Tokens
@@ -196,10 +196,10 @@ export default function ReferralTokenHub() {
 
   if (loading) {
     return (
-      <section className="bg-white rounded-2xl p-6 shadow-lg border border-[#c4b5fd]/20">
+      <section className="bg-white rounded-2xl p-6 shadow-lg border border-teal-300/20">
         <div className="animate-pulse space-y-3">
-          <div className="h-6 w-52 rounded bg-[#f3e7d8]" />
-          <div className="h-28 rounded-2xl bg-[#ede9fe]" />
+          <div className="h-6 w-52 rounded bg-sand-100" />
+          <div className="h-28 rounded-2xl bg-teal-100" />
         </div>
       </section>
     );
@@ -207,19 +207,19 @@ export default function ReferralTokenHub() {
 
   if (!payload) {
     return (
-      <section className="bg-white rounded-2xl p-6 shadow-lg border border-[#c4b5fd]/20 space-y-4">
-        <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-[#eef2ff] rounded-full border border-[#6366f1]/20 text-sm font-semibold text-[#4338ca]">
+      <section className="bg-white rounded-2xl p-6 shadow-lg border border-teal-300/20 space-y-4">
+        <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-teal-50 rounded-full border border-teal-500/20 text-sm font-semibold text-teal-700">
           <Users size={16} />
           Referral Tokens
         </div>
-        <h3 className="text-xl font-bold text-[#1e1b4b]">Referral Tokens Temporarily Unavailable</h3>
-        <p className="text-[#475569] text-sm">
+        <h3 className="text-xl font-bold text-teal-900">Referral Tokens Temporarily Unavailable</h3>
+        <p className="text-sand-700 text-sm">
           {loadError || 'Could not load referral data right now. Please try again.'}
         </p>
         <button
           type="button"
           onClick={() => user?.id && fetchPayload(user.id, true)}
-          className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-white border border-[#cbd5e1] text-[#334155] font-semibold hover:bg-[#f1f5f9]"
+          className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-white border border-sand-200 text-sand-800 font-semibold hover:bg-sand-100"
         >
           Retry
         </button>
@@ -228,22 +228,22 @@ export default function ReferralTokenHub() {
   }
 
   return (
-    <section className="bg-white rounded-2xl p-6 shadow-lg border border-[#c4b5fd]/20 space-y-5">
+    <section className="bg-white rounded-2xl p-6 shadow-lg border border-teal-300/20 space-y-5">
       <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
         <div>
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-[#eef2ff] rounded-full border border-[#6366f1]/20 text-sm font-semibold text-[#4338ca]">
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-teal-50 rounded-full border border-teal-500/20 text-sm font-semibold text-teal-700">
             <Users size={16} />
             Referral Tokens
           </div>
-          <h3 className="mt-3 text-2xl font-bold text-[#1e1b4b]">Invite Friends, Earn Tokens</h3>
-          <p className="text-[#475569] text-sm mt-1 max-w-2xl">
+          <h3 className="mt-3 text-2xl font-bold text-teal-900">Invite Friends, Earn Tokens</h3>
+          <p className="text-sand-700 text-sm mt-1 max-w-2xl">
             Share your Kids Zone invite link. You earn tokens for sharing and even more tokens when friends join through your link.
           </p>
         </div>
 
-        <div className="rounded-2xl bg-[#f8fafc] border border-[#cbd5e1] px-4 py-3 min-w-[220px]">
-          <p className="text-xs uppercase tracking-[0.2em] text-[#475569]">Your Referral Code</p>
-          <p className="text-2xl font-black text-[#1e293b] mt-1 tracking-wider">{payload.referralCode}</p>
+        <div className="rounded-2xl bg-sand-50 border border-sand-200 px-4 py-3 min-w-[220px]">
+          <p className="text-xs uppercase tracking-[0.2em] text-sand-700">Your Referral Code</p>
+          <p className="text-2xl font-black text-sand-900 mt-1 tracking-wider">{payload.referralCode}</p>
         </div>
       </div>
 
@@ -252,32 +252,32 @@ export default function ReferralTokenHub() {
           <p className="text-xs uppercase text-[#a16207] tracking-[0.12em]">Tokens</p>
           <p className="text-2xl font-bold text-[#854d0e]">{payload.tokensEarned}</p>
         </div>
-        <div className="rounded-2xl bg-[#ecfeff] border border-[#06b6d4]/20 p-4">
-          <p className="text-xs uppercase text-[#0e7490] tracking-[0.12em]">Referral Points</p>
-          <p className="text-2xl font-bold text-[#155e75]">{payload.pointsEarned}</p>
+        <div className="rounded-2xl bg-teal-50 border border-teal-400/20 p-4">
+          <p className="text-xs uppercase text-teal-700 tracking-[0.12em]">Referral Points</p>
+          <p className="text-2xl font-bold text-teal-800">{payload.pointsEarned}</p>
         </div>
-        <div className="rounded-2xl bg-[#f5f3ff] border border-[#8b5cf6]/20 p-4">
-          <p className="text-xs uppercase text-[#6d28d9] tracking-[0.12em]">Joins</p>
-          <p className="text-2xl font-bold text-[#5b21b6]">{payload.successfulJoins}</p>
+        <div className="rounded-2xl bg-teal-50 border border-teal-400/20 p-4">
+          <p className="text-xs uppercase text-teal-700 tracking-[0.12em]">Joins</p>
+          <p className="text-2xl font-bold text-teal-800">{payload.successfulJoins}</p>
         </div>
-        <div className="rounded-2xl bg-[#f5f3ff] border border-[#7c3aed]/20 p-4">
-          <p className="text-xs uppercase text-[#5b21b6] tracking-[0.12em]">Shares</p>
-          <p className="text-2xl font-bold text-[#5b21b6]">{payload.sharesCount}</p>
+        <div className="rounded-2xl bg-teal-50 border border-teal-600/20 p-4">
+          <p className="text-xs uppercase text-teal-800 tracking-[0.12em]">Shares</p>
+          <p className="text-2xl font-bold text-teal-800">{payload.sharesCount}</p>
         </div>
       </div>
 
-      <div className="rounded-2xl border border-[#e2e8f0] bg-[#f8fafc] p-4">
-        <p className="text-sm font-semibold text-[#334155] mb-2">Your invite link</p>
+      <div className="rounded-2xl border border-sand-200 bg-sand-50 p-4">
+        <p className="text-sm font-semibold text-sand-800 mb-2">Your invite link</p>
         <div className="flex flex-col sm:flex-row gap-2">
           <input
             readOnly
             value={payload.inviteLink}
-            className="w-full rounded-xl border border-[#cbd5e1] px-3 py-2 text-sm text-[#1e293b] bg-white"
+            className="w-full rounded-xl border border-sand-200 px-3 py-2 text-sm text-sand-900 bg-white"
           />
           <button
             type="button"
             onClick={copyInviteLink}
-            className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-white border border-[#cbd5e1] text-[#334155] font-semibold hover:bg-[#f1f5f9]"
+            className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-white border border-sand-200 text-sand-800 font-semibold hover:bg-sand-100"
           >
             <Copy size={16} />
             Copy
@@ -285,7 +285,7 @@ export default function ReferralTokenHub() {
           <button
             type="button"
             onClick={nativeShare}
-            className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-[#0ea5e9] to-[#0284c7] text-white font-semibold hover:shadow-md"
+            className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-teal-500 to-teal-600 text-white font-semibold hover:shadow-md"
           >
             <Share2 size={16} />
             Share
@@ -293,11 +293,11 @@ export default function ReferralTokenHub() {
         </div>
       </div>
 
-      <div className="rounded-2xl border border-[#bfdbfe] bg-gradient-to-r from-[#eff6ff] to-[#f0f9ff] px-5 py-4">
+      <div className="rounded-2xl border border-teal-200 bg-gradient-to-r from-teal-50 to-teal-50 px-5 py-4">
         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <div>
-            <p className="text-sm font-bold text-[#1d4ed8]">Download Kids Zone App</p>
-            <p className="text-xs text-[#1e3a8a] mt-1">
+            <p className="text-sm font-bold text-teal-700">Download Kids Zone App</p>
+            <p className="text-xs text-teal-900 mt-1">
               Share these official store links so families can install the app quickly on iPhone and Android.
             </p>
           </div>
@@ -314,7 +314,7 @@ export default function ReferralTokenHub() {
               href={APP_STORE_LINKS.android}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center justify-center px-4 py-2 rounded-xl bg-[#16a34a] text-white text-sm font-semibold hover:opacity-90"
+              className="inline-flex items-center justify-center px-4 py-2 rounded-xl bg-[#2563eb] text-white text-sm font-semibold hover:opacity-90"
             >
               Get it on Google Play
             </a>
@@ -337,7 +337,7 @@ export default function ReferralTokenHub() {
               Each successful join gives you <strong>+{payload.joinReward.tokens} tokens</strong>{' '}
               {payload.joinReward.points > 0 ? `and +${payload.joinReward.points} points` : ''}.
             </p>
-            {message ? <p className="text-xs text-[#1e1b4b] pt-1">{message}</p> : null}
+            {message ? <p className="text-xs text-teal-900 pt-1">{message}</p> : null}
           </div>
 
           <button
@@ -347,7 +347,7 @@ export default function ReferralTokenHub() {
             className={`px-5 py-3 rounded-xl font-bold transition-all ${
               payload.shareReward.availableToday && !claiming
                 ? 'bg-gradient-to-r from-[#f59e0b] to-[#d97706] text-white shadow-lg hover:shadow-xl hover:-translate-y-0.5'
-                : 'bg-white text-[#475569] border border-[#c4b5fd]/40 cursor-not-allowed'
+                : 'bg-white text-sand-700 border border-teal-300/40 cursor-not-allowed'
             }`}
           >
             {claiming
@@ -359,7 +359,7 @@ export default function ReferralTokenHub() {
         </div>
       </div>
 
-      <div className="rounded-2xl bg-[#f0f9ff] border border-[#7dd3fc]/30 p-4 text-[#0c4a6e] text-sm">
+      <div className="rounded-2xl bg-teal-50 border border-teal-300/30 p-4 text-teal-900 text-sm">
         <div className="inline-flex items-center gap-2 font-bold">
           <Trophy size={16} />
           How it works

@@ -2,7 +2,7 @@
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { Bell, ChevronLeft, Clock, Save } from 'lucide-react';
+import { Bell, ChevronLeft, Clock, Mail, Save } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
 import { authJsonFetch } from '@/lib/auth-headers';
 import { supabase } from '@/lib/supabase';
@@ -19,15 +19,18 @@ import {
   type ReminderKey,
   type UserReminderSettings,
 } from '@/lib/reminder-types';
-import { registerOneSignalPlayerId, scheduleReminderNotifications } from '@/lib/push-notifications';
+import { isNativeApp, registerOneSignalPlayerId } from '@/lib/push-notifications';
 
 export default function RemindersPage() {
-  const { user, loading: authLoading } = useAuth();
+  const { user, profile, loading: authLoading } = useAuth();
   const [settings, setSettings] = useState<UserReminderSettings>(buildDefaultReminderSettings());
   const [dataLoading, setDataLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [pushStatus, setPushStatus] = useState<string | null>(null);
+  const [webPushConfigured, setWebPushConfigured] = useState<boolean | null>(null);
+  const [nativePushConfigured, setNativePushConfigured] = useState<boolean | null>(null);
+  const [timeZone, setTimeZone] = useState('Europe/London');
   const [confirmingSession, setConfirmingSession] = useState(false);
 
   const load = useCallback(async () => {
@@ -39,11 +42,15 @@ export default function RemindersPage() {
     try {
       const res = await authJsonFetch('/api/reminders');
       const data = await res.json();
-      if (res.ok && data.settings) {
-        setSettings(data.settings);
+      if (!res.ok) {
+        throw new Error(data.hint || data.error || 'Could not load your reminder settings.');
       }
+      if (data.settings) setSettings(data.settings);
+      setWebPushConfigured(Boolean(data.webPushConfigured));
+      setNativePushConfigured(Boolean(data.nativePushConfigured));
     } catch (err) {
       console.error('[reminders] load error:', err);
+      setMessage(err instanceof Error ? err.message : 'Could not load your reminder settings.');
     } finally {
       setDataLoading(false);
     }
@@ -81,9 +88,17 @@ export default function RemindersPage() {
   }, [user]);
 
   useEffect(() => {
+    try {
+      setTimeZone(Intl.DateTimeFormat().resolvedOptions().timeZone || 'Europe/London');
+    } catch {
+      setTimeZone('Europe/London');
+    }
+  }, []);
+
+  useEffect(() => {
     if (!user?.id) return;
-    registerOneSignalPlayerId({ attempts: 6, delayMs: 800, promptWtn: true, requestPermission: false }).then((id) => {
-      setPushStatus(id ? 'Push device registered.' : 'Tap Save to register this device for reminders.');
+    registerOneSignalPlayerId({ attempts: 4, delayMs: 500, promptWtn: false, requestPermission: false }).then((id) => {
+      setPushStatus(id ? 'This device is registered for push.' : 'Allow push when you save reminders to register this device.');
     });
   }, [user?.id]);
 
@@ -110,9 +125,20 @@ export default function RemindersPage() {
         };
       }
 
+      const anyEnabled = ALL_REMINDER_KEYS.some((key) => clean[key]?.enabled);
+      let playerId: string | null = null;
+      if (anyEnabled) {
+        playerId = await registerOneSignalPlayerId({
+          attempts: 5,
+          delayMs: 600,
+          promptWtn: true,
+          requestPermission: true,
+        });
+      }
+
       const res = await authJsonFetch('/api/reminders', {
         method: 'POST',
-        body: JSON.stringify({ settings: clean }),
+        body: JSON.stringify({ settings: clean, timezone: timeZone }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -121,11 +147,23 @@ export default function RemindersPage() {
         throw new Error(`${data.error || 'Save failed'}${detailText}${hintText}`);
       }
 
-      // Schedule native/local alarms so the device fires the notification
-      // at the exact local time, even without internet or OneSignal.
-      scheduleReminderNotifications(clean).catch(() => {});
-
-      setMessage('Reminders saved! They will work even when the app is closed.');
+      setWebPushConfigured(Boolean(data.webPushConfigured));
+      setNativePushConfigured(Boolean(data.nativePushConfigured));
+      const pushReady = isNativeApp() ? Boolean(data.nativePushConfigured) : Boolean(data.webPushConfigured);
+      if (!anyEnabled) {
+        setMessage('Reminders saved and switched off.');
+      } else if (!pushReady) {
+        setMessage('Reminders saved, but background push is not configured on the server yet.');
+      } else if (!playerId) {
+        setMessage(
+          isNativeApp()
+            ? 'Reminders saved, but this device is not subscribed to OneSignal. Allow notifications in app settings and try again.'
+            : 'Reminders saved, but this browser is not subscribed to OneSignal. Check Web Push setup and allow notifications.'
+        );
+      } else {
+        setPushStatus('This device is registered for push.');
+        setMessage('Reminders saved. OneSignal will send them at your local time, even when the app is closed.');
+      }
     } catch (error) {
       setMessage(error instanceof Error ? error.message : 'Could not save reminders.');
     } finally {
@@ -181,9 +219,40 @@ export default function RemindersPage() {
             </div>
           </div>
 
-          <p className="mt-2 text-xs font-medium text-violet-700 bg-violet-50 rounded-lg px-3 py-2">
-            {pushStatus || 'Push registration check in progress…'}
-          </p>
+          <div className="mt-2 space-y-2">
+            <p className="rounded-lg bg-violet-50 px-3 py-2 text-xs font-medium text-violet-700">
+              {pushStatus || 'Push registration check in progress…'}
+            </p>
+            <p className="rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-700">
+              Reminder times use this device&apos;s timezone ({timeZone}).
+              {((isNativeApp() && nativePushConfigured === false) ||
+                (!isNativeApp() && webPushConfigured === false)) &&
+                ' Background delivery needs the matching OneSignal App ID and REST API key configured on the server.'}
+              {(isNativeApp() ? nativePushConfigured : webPushConfigured) === null &&
+                ' Push delivery setup has not been checked yet.'}
+            </p>
+          </div>
+
+          <section className="mt-4 rounded-xl border border-teal-200 bg-teal-50/70 p-4" aria-labelledby="email-reminders-title">
+            <div className="flex items-start gap-3">
+              <Mail className="mt-0.5 shrink-0 text-teal-700" size={19} aria-hidden="true" />
+              <div className="min-w-0 flex-1">
+                <h2 id="email-reminders-title" className="text-sm font-bold text-teal-950">Parent email reminders</h2>
+                <p className="mt-1 text-xs leading-relaxed text-teal-900">
+                  {profile?.reminderOptIn
+                    ? `On${profile.reminderFrequency ? ` · ${profile.reminderFrequency.replace('_', ' ')}` : ''}. A parent can receive a reminder after 2 days without activity.`
+                    : 'Off. Add a parent email and turn reminders on in Profile to help your child remember to take part.'}
+                  {' '}Email delivery depends on the site email service being configured.
+                </p>
+                <Link
+                  href="/profile#parent-reminder-settings"
+                  className="mt-2 inline-flex items-center rounded-lg bg-white px-3 py-2 text-xs font-bold text-teal-800 ring-1 ring-teal-200 hover:bg-teal-100"
+                >
+                  Manage email reminders
+                </Link>
+              </div>
+            </div>
+          </section>
 
           {dataLoading ? (
             <div className="py-12 text-center">
@@ -246,7 +315,13 @@ export default function RemindersPage() {
               </button>
 
               {message && (
-                <p className={`mt-3 text-center text-sm font-bold ${message.includes('saved') ? 'text-emerald-700' : 'text-red-600'}`}>
+                <p className={`mt-3 text-center text-sm font-bold ${
+                  message.startsWith('Reminders saved, but')
+                    ? 'text-amber-700'
+                    : message.includes('saved')
+                      ? 'text-emerald-700'
+                      : 'text-red-600'
+                }`}>
                   {message}
                 </p>
               )}

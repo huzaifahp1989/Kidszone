@@ -3,9 +3,11 @@ import {
   ACTIVITY_BONUS_POINTS,
   AUDIO_COMPETITION_APPROVED_POINTS,
   DAILY_PLAN_TOTAL_POINTS,
+  POINTS_PER_BADGE,
   POINTS_DAILY_CAP,
   QUIZ_POINTS_PER_COMPLETION,
   getAudioCompetitionAwardPoints,
+  getBadgePointProgress,
   resolveBasePoints,
   resolvePointsToAward,
 } from '@/lib/points-policy';
@@ -28,6 +30,22 @@ describe('resolvePointsToAward', () => {
 
   it('skips daily cap when countTowardDailyLimit is false', () => {
     expect(resolvePointsToAward(30, 200, false)).toBe(30);
+  });
+});
+
+describe('getBadgePointProgress', () => {
+  it('tracks progress to the next lifetime 100-point milestone', () => {
+    expect(POINTS_PER_BADGE).toBe(100);
+    expect(getBadgePointProgress(75)).toEqual({
+      pointsToNextBadge: 25,
+      progressPercent: 75,
+      nextBadgePoints: 100,
+    });
+    expect(getBadgePointProgress(100)).toEqual({
+      pointsToNextBadge: 100,
+      progressPercent: 0,
+      nextBadgePoints: 200,
+    });
   });
 });
 

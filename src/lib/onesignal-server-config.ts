@@ -49,7 +49,26 @@ function getLegacyRestApiKey(): string | null {
 }
 
 export function getLegacyOneSignalAppId(): string {
-  return clean(process.env.ONESIGNAL_LEGACY_APP_ID) || LEGACY_ONESIGNAL_APP_ID_DEFAULT;
+  return (
+    clean(process.env.ONESIGNAL_LEGACY_APP_ID) ||
+    clean(process.env.NEXT_PUBLIC_ONESIGNAL_WEB_APP_ID) ||
+    LEGACY_ONESIGNAL_APP_ID_DEFAULT
+  );
+}
+
+export function isOneSignalWebServerConfigured(): boolean {
+  const webAppId = getLegacyOneSignalAppId();
+  if (!webAppId) return false;
+  // Web can init on the primary app when the web app ID points at it (unified setup).
+  if (webAppId === getServerOneSignalAppId() && getPrimaryRestApiKey()) return true;
+
+  const webRestKey = restKeyOrNull(process.env.ONESIGNAL_LEGACY_REST_API_KEY)
+    || restKeyOrNull(process.env.ONESIGNAL_WEB_REST_API_KEY);
+  return Boolean(webRestKey);
+}
+
+export function isOneSignalPrimaryServerConfigured(): boolean {
+  return Boolean(getPrimaryRestApiKey() && getServerOneSignalAppId());
 }
 
 /** Separate iOS OneSignal app (Apple push is often its own app with its own REST key). */
@@ -58,15 +77,13 @@ function getIosRestApiKey(): string | null {
 }
 
 export function getIosOneSignalAppId(): string {
-  return clean(process.env.ONESIGNAL_IOS_APP_ID);
+  return clean(process.env.ONESIGNAL_IOS_APP_ID) || clean(process.env.NEXT_PUBLIC_ONESIGNAL_IOS_APP_ID);
 }
 
 /**
  * Apps we can send to from admin.
  * - Always includes primary when REST key exists.
- * - Includes legacy website app when ONESIGNAL_LEGACY_REST_API_KEY is set
- *   (or when primary key is reused only if explicitly allowed — we never reuse
- *   mismatched keys; legacy needs its own key).
+ * - Includes the legacy website app only when its matching REST API key is set.
  */
 export function getOneSignalAppTargets(overrideAppId?: string | null): OneSignalAppTarget[] {
   const primaryKey = getPrimaryRestApiKey();
@@ -99,12 +116,14 @@ export function getOneSignalAppTargets(overrideAppId?: string | null): OneSignal
 
   const legacyKey = getLegacyRestApiKey();
   const legacyAppId = getLegacyOneSignalAppId();
-  if (legacyKey && legacyAppId && !targets.some((t) => t.appId === legacyAppId)) {
-    targets.push({
-      label: 'legacy',
-      appId: legacyAppId,
-      restApiKey: legacyKey,
-    });
+  if (legacyAppId && !targets.some((t) => t.appId === legacyAppId)) {
+    if (legacyKey) {
+      targets.push({
+        label: 'legacy',
+        appId: legacyAppId,
+        restApiKey: legacyKey,
+      });
+    }
   }
 
   return targets;
