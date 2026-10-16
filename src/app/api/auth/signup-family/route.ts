@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { hasSupabaseServiceRole, supabaseAdmin } from '@/lib/supabase-admin';
+import { emailWelcomeSignup } from '@/lib/chat-email';
 
 interface SignupLearner {
   name: string;
@@ -87,26 +88,45 @@ export async function POST(request: NextRequest) {
         const uid = authData.user.id;
 
         // Create profile
-        const { error: profileErr } = await supabaseAdmin
-          .from('users')
-          .upsert(
-            {
-              uid,
-              role: 'kid',
-              name: learner.name,
-              username: learner.username.toLowerCase(),
-              family_email: familyEmail.toLowerCase(),
-              age: learner.age,
-              city: learner.city,
-              madrasahname: learner.madrasahName || null,
-              email: `${learner.username}@${familyEmail.split('@')[1]}`,
-              points: 0,
-              weeklypoints: 0,
-              monthlypoints: 0,
-              level: 'Beginner',
-            },
-            { onConflict: 'uid', ignoreDuplicates: false }
-          );
+        const profilePayload = {
+          uid,
+          role: 'kid',
+          name: learner.name,
+          username: learner.username.toLowerCase(),
+          family_email: familyEmail.toLowerCase(),
+          parent_email: familyEmail.toLowerCase(),
+          reminder_opt_in: true,
+          reminder_frequency: '3x_week',
+          age: learner.age,
+          city: learner.city,
+          madrasahname: learner.madrasahName || null,
+          email: `${learner.username}@${familyEmail.split('@')[1]}`,
+          points: 0,
+          weeklypoints: 0,
+          monthlypoints: 0,
+          level: 'Beginner',
+        };
+
+        let profileErr = (
+          await supabaseAdmin
+            .from('users')
+            .upsert(profilePayload, { onConflict: 'uid', ignoreDuplicates: false })
+        ).error;
+
+        // Older schemas may not have the reminder columns yet — retry without them.
+        if (profileErr?.code === '42703') {
+          const {
+            parent_email: _parentEmail,
+            reminder_opt_in: _reminderOptIn,
+            reminder_frequency: _reminderFrequency,
+            ...legacyPayload
+          } = profilePayload;
+          profileErr = (
+            await supabaseAdmin
+              .from('users')
+              .upsert(legacyPayload, { onConflict: 'uid', ignoreDuplicates: false })
+          ).error;
+        }
 
         if (profileErr && profileErr.code !== '42703') {
           console.error(`Profile creation error for ${learner.username}:`, profileErr);
@@ -146,6 +166,18 @@ export async function POST(request: NextRequest) {
           { status: 500 }
         );
       }
+    }
+
+    const requestOrigin =
+      request.headers.get('origin') || request.nextUrl?.origin || undefined;
+    const welcome = await emailWelcomeSignup({
+      to: familyEmail,
+      learnerNames: createdUsers.map((u) => u.name),
+      appUrl: requestOrigin,
+    });
+    if (!welcome.ok) {
+      // Signup itself succeeded — never fail the request because an email could not be sent.
+      console.warn('Family welcome email failed:', welcome.error);
     }
 
     return NextResponse.json({

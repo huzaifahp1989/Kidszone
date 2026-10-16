@@ -198,3 +198,52 @@ export async function emailUserChatReply(input: {
     html,
   });
 }
+
+export async function emailWelcomeSignup(input: {
+  to: string;
+  learnerNames?: string[];
+  appUrl?: string;
+}): Promise<{ ok: boolean; error?: string }> {
+  const to = input.to.trim().toLowerCase();
+  if (!to.includes('@')) {
+    return { ok: false, error: 'Invalid email' };
+  }
+
+  const appUrl = (input.appUrl || getAppUrl()).replace(/\/+$/, '');
+  const names = (input.learnerNames || []).map((n) => n.trim()).filter(Boolean);
+  const namesLine = names.length
+    ? `<p style="color: #374151; line-height: 1.6;">Account${
+        names.length > 1 ? 's' : ''
+      } created for <strong>${names.map(escapeHtml).join(', ')}</strong>.</p>`
+    : '';
+
+  const html = `
+    <div style="font-family: Arial, sans-serif; max-width: 640px; margin: 0 auto;">
+      <h2 style="color: #0369a1;">Welcome to Kids Zone</h2>
+      <p style="color: #374151; line-height: 1.6;">Assalamu Alaikum, and thank you for signing up.</p>
+      ${namesLine}
+      <p style="color: #374151; line-height: 1.6;">The quickest way to get started:</p>
+      <ol style="color: #374151; line-height: 1.8;">
+        <li>Open Kids Zone and take today's daily quiz.</li>
+        <li>Play a game or listen to a surah to earn more points.</li>
+        <li>Visit the Reminders page to choose when we should nudge you.</li>
+      </ol>
+      <p style="color: #374151; line-height: 1.6;">
+        Learners can earn up to 200 points a day, and every point helps them climb the leaderboard.
+      </p>
+      <p style="margin: 24px 0;">
+        <a href="${appUrl}" style="background: #0369a1; color: #ffffff; padding: 12px 20px; border-radius: 8px; text-decoration: none; display: inline-block; font-weight: 600;">Open Kids Zone</a>
+      </p>
+      <p style="color: #6b7280; font-size: 13px; line-height: 1.5;">
+        We also send a friendly reminder email when a learner has been quiet for a couple of days.
+        You can change how often, or stop them completely, on the Reminders page.
+      </p>
+    </div>
+  `;
+
+  return sendViaResend({
+    to: [to],
+    subject: 'Welcome to Kids Zone',
+    html,
+  });
+}

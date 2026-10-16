@@ -12,6 +12,19 @@ import { motion } from 'framer-motion';
 
 const ONBOARDING_FORM_PATH = '/onboarding-form';
 
+/** Best-effort: enable reminder defaults and send the welcome email. Never blocks signup. */
+async function requestWelcomeEmail(userId: string): Promise<void> {
+  try {
+    await fetch('/api/auth/signup-welcome', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId }),
+    });
+  } catch {
+    /* ignore — welcome email is optional */
+  }
+}
+
 export default function SignupPage() {
   const [name, setName] = useState('');
   const [username, setUsername] = useState('');
@@ -160,6 +173,7 @@ export default function SignupPage() {
           setError('Account could not be created. Please try again.');
           return;
         }
+        await requestWelcomeEmail(userFromResponse.id);
         setNeedsEmailConfirmation(true);
         setSuccess(true);
         return;
@@ -248,6 +262,8 @@ export default function SignupPage() {
       if (!ensured && profileRes.error) {
         console.warn('ensureUserProfile also failed after signup');
       }
+
+      await requestWelcomeEmail(uid);
 
       setSuccess(true);
       window.location.href = '/?welcome=1';

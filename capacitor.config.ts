@@ -1,7 +1,7 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
 /** GitHub auto-deploys here — keep in sync with src/lib/app-url.ts */
-const LIVE_APP_URL = 'https://huzaifahp1989-audio.vercel.app';
+const LIVE_APP_URL = 'https://islamic-kids-platform.vercel.app';
 
 const serverUrl = process.env.CAPACITOR_SERVER_URL || LIVE_APP_URL;
 
