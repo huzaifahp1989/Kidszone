@@ -147,7 +147,7 @@ export function buildDefaultReminderSettings(): UserReminderSettings {
   const settings: UserReminderSettings = {};
   for (const key of ALL_REMINDER_KEYS) {
     settings[key] = {
-      enabled: ['dailyQuiz', 'salahTracker'].includes(key),
+      enabled: ['dailyQuiz', 'salahTracker', 'dailyActivities'].includes(key),
       time: DEFAULT_REMINDER_TIME[key],
     };
   }

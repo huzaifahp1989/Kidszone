@@ -7,8 +7,11 @@ import {
   OCTOBER_HADITH_QUESTIONS,
   type OctoberHadithQuestionId,
 } from '@/lib/october-hadith-quiz';
+import { useAuth } from '@/lib/auth-context';
+import { getAuthFetchHeaders } from '@/lib/auth-headers';
 
 export default function OctoberHadithQuizPage() {
+  const { user, profile } = useAuth();
   const [started, setStarted] = React.useState(false);
   const [submitting, setSubmitting] = React.useState(false);
   const [submitted, setSubmitted] = React.useState(false);
@@ -20,6 +23,15 @@ export default function OctoberHadithQuizPage() {
   const [answers, setAnswers] = React.useState<Partial<Record<OctoberHadithQuestionId, string>>>({});
   const quizOpen = isOctoberHadithQuizOpen();
   const allAnswered = OCTOBER_HADITH_QUESTIONS.every(({ id }) => Boolean(answers[id]?.trim()));
+
+  // Prefill the learner's details so a signed-in submission is quick to send.
+  React.useEffect(() => {
+    if (!profile) return;
+    setFullName((current) => current || profile.name || '');
+    setAge((current) => current || (profile.age ? String(profile.age) : ''));
+    setMadrasah((current) => current || profile.madrasahName || '');
+    setCity((current) => current || profile.city || '');
+  }, [profile]);
 
   const startQuiz = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -38,7 +50,7 @@ export default function OctoberHadithQuizPage() {
     try {
       const response = await fetch('/api/hadith-october-quiz/submissions', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: await getAuthFetchHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify({
           fullName,
           age: Number(age),
@@ -89,6 +101,11 @@ export default function OctoberHadithQuizPage() {
             <div>
               <h2 className="text-2xl font-extrabold text-slate-900">Before you start</h2>
               <p className="mt-1 text-sm text-slate-600">Please enter your details so the admin can identify your submission.</p>
+              {user ? (
+                <p className="mt-3 rounded-xl bg-teal-50 px-3 py-2 text-sm font-semibold text-teal-800">
+                  Signed in — your result will be sent to your account, so if you do not pass you can try again.
+                </p>
+              ) : null}
             </div>
             <div className="grid gap-4 sm:grid-cols-2">
               <label className="text-sm font-bold text-slate-700">

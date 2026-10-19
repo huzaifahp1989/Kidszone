@@ -6,6 +6,7 @@ import {
   OCTOBER_HADITH_QUIZ_TABLE,
 } from '@/lib/october-hadith-quiz';
 import { hasSupabaseServiceRole, supabaseAdmin } from '@/lib/supabase-admin';
+import { sendUserPush } from '@/lib/user-push';
 
 export const dynamic = 'force-dynamic';
 
@@ -71,5 +72,35 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
   }
   if (!data) return NextResponse.json({ error: 'Submission not found.' }, { status: 404 });
 
+  // Tell a signed-in learner they did not pass and can try again. Only ever sent
+  // once per submission, and only when the entry is linked to an account.
+  if (result === 'failed') {
+    await notifyFailedSubmission(id);
+  }
+
   return NextResponse.json({ submission: data });
+}
+
+async function notifyFailedSubmission(submissionId: string) {
+  // uid/retry_notified_at arrive with the retry migration — skip quietly if absent.
+  const { data: row, error } = await supabaseAdmin
+    .from(OCTOBER_HADITH_QUIZ_TABLE)
+    .select('uid, retry_notified_at')
+    .eq('id', submissionId)
+    .maybeSingle();
+
+  if (error || !row?.uid || row.retry_notified_at) return;
+
+  await sendUserPush({
+    userId: String(row.uid),
+    title: 'Your Hadith Quiz result is ready',
+    body: 'You did not pass this time. Open the app to see your marks and try again — you have another chance.',
+    url: '/hadith/quiz/october-2026',
+    data: { type: 'hadith_quiz_retry', submissionId: String(submissionId) },
+  }).catch(() => {});
+
+  await supabaseAdmin
+    .from(OCTOBER_HADITH_QUIZ_TABLE)
+    .update({ retry_notified_at: new Date().toISOString() })
+    .eq('id', submissionId);
 }

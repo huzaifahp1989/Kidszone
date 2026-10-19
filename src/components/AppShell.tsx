@@ -16,6 +16,8 @@ import { PageTransition } from '@/components/PageTransition';
 import { PointsProgressProvider } from '@/lib/points-progress-context';
 import { DailyPointsBar } from '@/components/DailyPointsBar';
 import { PointsProgressPopup } from '@/components/PointsProgressPopup';
+import { HadithQuizRetryPopup } from '@/components/HadithQuizRetryPopup';
+import { EnablePushPrompt } from '@/components/EnablePushPrompt';
 import { FeatureSpotlightCarousel } from '@/components/FeatureSpotlightCarousel';
 import { LIVE_APP_URL } from '@/lib/app-url';
 
@@ -274,6 +276,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <PushOpenTracker />
       </Suspense>
       <PointsProgressPopup />
+      {user && !pathname.startsWith('/admin') && <HadithQuizRetryPopup userId={user.id} />}
+      {user && !pathname.startsWith('/admin') && <EnablePushPrompt />}
       <main className="app-shell-main min-h-screen pb-24 sm:pb-20 pattern-islamic">
         <div className="app-shell-backdrop" aria-hidden="true" />
         <div className="app-shell-grid" aria-hidden="true" />

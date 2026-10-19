@@ -5,6 +5,7 @@ import {
   validateOctoberHadithSubmission,
 } from '@/lib/october-hadith-quiz';
 import { hasSupabaseServiceRole, supabaseAdmin } from '@/lib/supabase-admin';
+import { getAuthenticatedRequestUser } from '@/lib/request-auth';
 
 export const dynamic = 'force-dynamic';
 
@@ -29,17 +30,35 @@ export async function POST(request: Request) {
   }
 
   const { submission } = validated;
-  const { data, error } = await supabaseAdmin
+
+  // Submitting while signed in links the entry to the learner, so a Failed
+  // result can be sent back to them. Anonymous entries are still accepted.
+  const learner = await getAuthenticatedRequestUser(request);
+
+  const payload: Record<string, unknown> = {
+    full_name: submission.fullName,
+    age: submission.age,
+    madrasah: submission.madrasah,
+    city: submission.city,
+    answers: submission.answers,
+  };
+  if (learner) payload.uid = learner.id;
+
+  let { data, error } = await supabaseAdmin
     .from(OCTOBER_HADITH_QUIZ_TABLE)
-    .insert({
-      full_name: submission.fullName,
-      age: submission.age,
-      madrasah: submission.madrasah,
-      city: submission.city,
-      answers: submission.answers,
-    })
+    .insert(payload)
     .select('id')
     .single();
+
+  // Older schemas may not have the uid column yet — retry without it.
+  if (error?.code === '42703' && learner) {
+    delete payload.uid;
+    ({ data, error } = await supabaseAdmin
+      .from(OCTOBER_HADITH_QUIZ_TABLE)
+      .insert(payload)
+      .select('id')
+      .single());
+  }
 
   if (error) {
     if (error.code === '42P01') {
@@ -51,10 +70,14 @@ export async function POST(request: Request) {
     console.error('[hadith-october-quiz] Submission failed:', error.message);
     return NextResponse.json({ error: 'Your answers could not be submitted. Please try again.' }, { status: 500 });
   }
+  if (!data) {
+    return NextResponse.json({ error: 'Your answers could not be submitted. Please try again.' }, { status: 500 });
+  }
 
   return NextResponse.json({
     success: true,
     submissionId: data.id,
+    linkedToAccount: Boolean(learner),
     message: 'Your answers have been submitted for admin review.',
   }, { status: 201 });
 }
