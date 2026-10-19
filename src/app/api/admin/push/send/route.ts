@@ -6,6 +6,7 @@ import {
   getServerOneSignalAppId,
 } from '@/lib/onesignal-server-config';
 import {
+  ONESIGNAL_PUSH_SEGMENTS,
   isOneSignalServerConfigured,
   sendOneSignalPushMultiApp,
   type OneSignalMultiAppResult,
@@ -225,7 +226,7 @@ export async function POST(request: Request) {
         body: message,
         url: trackedUrl,
         imageUrl,
-        includedSegments: ['Subscribed Users'],
+        includedSegments: ONESIGNAL_PUSH_SEGMENTS,
         appId: appIdOverride,
         data,
       });
@@ -347,7 +348,7 @@ export async function POST(request: Request) {
       result = mergeMultiResults(parts);
 
       // Saved device tokens are often stale/unsubscribed. For a broadcast to
-      // Kids Zone sign-ups, fall back to the "Subscribed Users" segment so the
+      // Kids Zone sign-ups, fall back to the OneSignal subscribed list so the
       // push still reaches everyone actually subscribed on OneSignal. (Never do
       // this for a single-user send — that must stay targeted.)
       if (
@@ -359,7 +360,7 @@ export async function POST(request: Request) {
           body: message,
           url: trackedUrl,
           imageUrl,
-          includedSegments: ['Subscribed Users'],
+          includedSegments: ONESIGNAL_PUSH_SEGMENTS,
           appId: appIdOverride,
           data,
         });
@@ -414,11 +415,11 @@ export async function POST(request: Request) {
       appsTargeted: targets.map((t) => ({ label: t.label, appId: t.appId })),
       note:
         audience === 'onesignal' || audience === 'subscribed'
-          ? 'Sent to the full OneSignal Subscribed Users list.'
+          ? 'Sent to the full OneSignal subscription list.'
           : audience === 'kids_zone' || audience === 'tokens'
             ? 'Sent only to Kids Zone users who enabled push (saved tokens).'
             : audience === 'all'
-              ? 'Sent to OneSignal Subscribed Users plus Kids Zone push tokens.'
+              ? 'Sent to the OneSignal subscription list plus Kids Zone push tokens.'
               : 'Closed-app delivery requires the WTN native app with OneSignal enabled (not only the browser tab).',
     });
   } catch (error: unknown) {

@@ -21,7 +21,6 @@ type UserReminderLastSentWithComeback = UserReminderLastSent & { comeBack?: stri
 
 type UserRow = {
   uid: string;
-  role?: string | null;
   reminder_settings?: UserReminderSettings | null;
   reminder_timezone?: string | null;
   reminder_last_sent_at?: UserReminderLastSentWithComeback | null;
@@ -43,7 +42,7 @@ async function loadReminderUsers(): Promise<{ users: UserRow[]; error?: string }
   for (let offset = 0; ; offset += pageSize) {
     const { data, error } = await supabaseAdmin
       .from('users')
-      .select('uid, role, reminder_settings, reminder_timezone, reminder_last_sent_at')
+      .select('uid, reminder_settings, reminder_timezone, reminder_last_sent_at')
       .order('uid')
       .range(offset, offset + pageSize - 1);
     if (error) return { users: [], error: error.message };
@@ -52,8 +51,8 @@ async function loadReminderUsers(): Promise<{ users: UserRow[]; error?: string }
     if (page.length < pageSize) break;
   }
 
-  // Reminders target learners only (guardians/admins are excluded).
-  return { users: users.filter((row) => (row.role ?? 'kid') === 'kid') };
+  // Reminders go to every user who has a device linked, so nobody is missed.
+  return { users };
 }
 
 export async function GET(request: Request) {

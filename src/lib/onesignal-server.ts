@@ -12,8 +12,17 @@ import {
 } from '@/lib/onesignal-server-config';
 
 const ONESIGNAL_API = 'https://api.onesignal.com/notifications';
+const ONESIGNAL_NOTIFICATIONS_API = 'https://onesignal.com/api/v1/notifications';
 const ONESIGNAL_PLAYERS_API = 'https://onesignal.com/api/v1/players';
 const ONESIGNAL_APPS_API = 'https://onesignal.com/api/v1/apps';
+
+/**
+ * OneSignal renamed its default push segment when it moved to the subscriptions
+ * model — "Subscribed Users" is now "Total Subscriptions". Sending to a name an app
+ * does not have returns an empty id with "All included players are not subscribed",
+ * so the current name is tried first and the legacy name stays as a fallback.
+ */
+export const ONESIGNAL_PUSH_SEGMENTS = ['Total Subscriptions', 'Subscribed Users'];
 
 
 export type OneSignalPushPayload = {
@@ -26,7 +35,7 @@ export type OneSignalPushPayload = {
   playerIds?: string[];
   /** Supabase user IDs linked via OneSignal.login(external_id) */
   externalUserIds?: string[];
-  /** Broadcast to OneSignal segments (e.g. ["Subscribed Users"]) — ignores saved DB tokens */
+  /** Broadcast to OneSignal segments (see ONESIGNAL_PUSH_SEGMENTS) — ignores saved DB tokens */
   includedSegments?: string[];
   /** When true, also try external_id if device IDs get 0 recipients */
   preferBothTargets?: boolean;
@@ -79,6 +88,38 @@ function looksLikeOneSignalId(id: string): boolean {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
     id
   );
+}
+
+/**
+ * Delivery count for an accepted notification. The v2 send response only carries an
+ * id, so ask the status endpoint how many devices actually received it. Returns null
+ * when the count cannot be read, so callers can fall back to "assume delivered".
+ */
+async function fetchNotificationRecipients(
+  notificationId: string,
+  appId: string,
+  apiKey: string
+): Promise<number | null> {
+  const url = `${ONESIGNAL_NOTIFICATIONS_API}/${encodeURIComponent(notificationId)}?app_id=${encodeURIComponent(appId)}`;
+
+  for (const mode of ['key', 'basic'] as const) {
+    try {
+      const response = await fetch(url, { headers: authHeaders(apiKey, mode) });
+      if (!response.ok) continue;
+      const raw = await response.json().catch(() => null);
+      if (!raw || typeof raw !== 'object') return null;
+      const row = raw as Record<string, unknown>;
+      const successful = Number(row.successful);
+      if (!Number.isFinite(successful)) return null;
+      const remaining = Number(row.remaining);
+      // Anything still queued will be delivered — count it so a large segment send
+      // is not misread as "nobody" before delivery finishes.
+      return successful + (Number.isFinite(remaining) && remaining > 0 ? remaining : 0);
+    } catch {
+      /* try next auth */
+    }
+  }
+  return null;
 }
 
 function baseNotification(
@@ -186,13 +227,15 @@ export async function sendOneSignalPush(
   const imageUrl = String(payload.imageUrl || '').trim() || undefined;
   const notify = () => baseNotification(title, body, payload.url, appIdOverride, data, imageUrl);
 
-  // Segment broadcast (proves devices exist on this OneSignal app without DB tokens)
-  if (includedSegments.length) {
+  // Segment broadcast (proves devices exist on this OneSignal app without DB tokens).
+  // One attempt per segment name so an app that only knows a different naming scheme
+  // still delivers — the loop stops at the first attempt that reaches anybody.
+  for (const segment of includedSegments) {
     attempts.push({
-      strategy: 'included_segments',
+      strategy: `included_segments:${segment}`,
       body: {
         ...notify(),
-        included_segments: includedSegments,
+        included_segments: [segment],
       },
     });
   }
@@ -238,6 +281,8 @@ export async function sendOneSignalPush(
     });
   }
 
+  const targetAppId = getServerOneSignalAppId(appIdOverride);
+
   try {
     let best: OneSignalSendResult | null = null;
     const errors: string[] = [];
@@ -276,8 +321,9 @@ export async function sendOneSignalPush(
         continue;
       }
 
-      // OneSignal often returns HTTP 200 with empty id / 0 recipients when nobody is subscribed
-      if (!id || recipients <= 0) {
+      // An empty id means OneSignal rejected the target (e.g. an unknown segment
+      // reports "All included players are not subscribed").
+      if (!id) {
         const osErrors =
           raw && typeof raw === 'object' && 'errors' in raw
             ? JSON.stringify((raw as { errors: unknown }).errors)
@@ -298,17 +344,36 @@ export async function sendOneSignalPush(
         continue;
       }
 
+      // Accepted. The v2 send API returns only an id, so resolve the real delivery
+      // count from the status endpoint before deciding whether anybody received it.
+      const looked = recipients > 0 ? recipients : await fetchNotificationRecipients(id, targetAppId, restKey);
+      const delivered = looked === null ? 1 : looked;
+
+      if (delivered <= 0) {
+        errors.push(`${attempt.strategy}: accepted but delivered to nobody`);
+        if (!best) {
+          best = {
+            ok: false,
+            id,
+            recipients: 0,
+            error: 'Accepted but delivered to nobody',
+            raw,
+            strategy: attempt.strategy,
+          };
+        }
+        continue;
+      }
+
       return {
         ok: true,
         id,
-        recipients,
+        recipients: delivered,
         raw,
         strategy: attempt.strategy,
       };
     }
 
     if (best && best.recipients === 0) {
-      const appId = getServerOneSignalAppId(payload.appId);
       const detail = errors.filter(Boolean).slice(0, 2).join(' · ');
       return {
         ok: false,
@@ -317,9 +382,9 @@ export async function sendOneSignalPush(
         strategy: best.strategy,
         raw: best.raw,
         error:
-          `0 push recipients on OneSignal app ${appId}` +
+          `0 push recipients on OneSignal app ${targetAppId}` +
           (detail ? ` — ${detail}` : '') +
-          `. Player records may exist but are unsubscribed. On each phone: open the WTN app → Allow notifications → Diagnose again.`,
+          `. Check the OneSignal segment names for this app and that devices are subscribed.`,
       };
     }
 

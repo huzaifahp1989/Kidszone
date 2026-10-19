@@ -445,7 +445,7 @@ export default function AdminPushPage() {
       if (!data.recipients) {
         setError(
           data?.hint ||
-            'API returned success but 0 devices received it. Check OneSignal has Subscribed Users, or set ONESIGNAL_LEGACY_REST_API_KEY for the old website app.'
+            'API returned success but 0 devices received it. Check the OneSignal app has subscribed devices, or set ONESIGNAL_LEGACY_REST_API_KEY for the old website app.'
         );
       }
     } catch {
@@ -756,7 +756,7 @@ export default function AdminPushPage() {
             <p className="font-semibold">All users = OneSignal subscribers + saved Kids Zone tokens</p>
             <p className="mt-1">
               Audience <strong>All OneSignal subscribers</strong> sends to OneSignal’s{' '}
-              <strong>Subscribed Users</strong> and also to every saved device token / signed-in user ID in
+              <strong>Total Subscriptions</strong> segment and also to every saved device token / signed-in user ID in
               Kids Zone. Opens are tracked when someone taps the notification or lands with{' '}
               <code className="rounded bg-white px-1">?pushCampaign=</code>.
               {!info?.legacyConfigured && (

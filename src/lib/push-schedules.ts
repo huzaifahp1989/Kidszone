@@ -1,5 +1,6 @@
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import {
+  ONESIGNAL_PUSH_SEGMENTS,
   isOneSignalServerConfigured,
   sendOneSignalPushMultiApp,
   type OneSignalMultiAppResult,
@@ -571,11 +572,14 @@ function looksLikeOneSignalPlayerId(id: string): boolean {
   );
 }
 
-async function loadOnesignalTokens() {
-  const { data, error } = await supabaseAdmin
+async function loadOnesignalTokens(userId?: string) {
+  let query = supabaseAdmin
     .from('push_notification_tokens')
     .select('user_id, token, provider')
     .limit(5000);
+  const target = String(userId || '').trim();
+  if (target) query = query.eq('user_id', target);
+  const { data, error } = await query;
   if (error) throw error;
   return (data || [])
     .map((row) => ({
@@ -595,8 +599,10 @@ async function pushSavedTokens(input: {
   url: string;
   imageUrl?: string;
   data?: Record<string, string>;
+  /** Restrict to one learner's saved devices (targeted schedule). */
+  userId?: string;
 }): Promise<OneSignalMultiAppResult[]> {
-  const tokens = await loadOnesignalTokens();
+  const tokens = await loadOnesignalTokens(input.userId);
   const playerIds = Array.from(new Set(tokens.map((t) => t.token)));
   const externalUserIds = Array.from(new Set(tokens.map((t) => t.user_id)));
   const parts: OneSignalMultiAppResult[] = [];
@@ -680,7 +686,7 @@ export async function broadcastScheduledPush(input: {
       body: input.body,
       url: trackedUrl,
       imageUrl,
-      includedSegments: ['Subscribed Users'],
+      includedSegments: ONESIGNAL_PUSH_SEGMENTS,
       data,
     });
 
@@ -692,37 +698,43 @@ export async function broadcastScheduledPush(input: {
     data,
   };
 
-  // Prefer saved player IDs first (exact devices). Fall back to OneSignal
-  // "Subscribed Users" only when tokens deliver nobody — avoids empty segment
-  // notifications stacking on top of token sends.
+  // Broadcast audiences go to the OneSignal subscription list, which already contains
+  // every saved device token — sending to the tokens as well would double-notify.
   if (requested === 'user') {
-    parts.push(
-      await sendOneSignalPushMultiApp({
-        title: input.title,
-        body: input.body,
-        url: trackedUrl,
-        imageUrl,
-        externalUserIds: [targetUserId],
-        preferBothTargets: true,
-        data,
-      })
-    );
-  } else if (requested === 'onesignal' || requested === 'subscribed') {
-    const tokenParts = await pushSavedTokens(tokenOpts);
+    // Prefer the learner's saved device tokens. The external_id alias is only a
+    // fallback: devices only match it after the app calls OneSignal.login().
+    const tokenParts = await pushSavedTokens({ ...tokenOpts, userId: targetUserId });
     parts.push(...tokenParts);
-    const tokenOk = tokenParts.some((p) => p.ok && (p.recipients ?? 0) > 0);
-    if (tokenOk) {
-      usedAudience = 'tokens';
-    } else {
-      parts.push(await pushSegment());
+    const tokenRecipients = tokenParts.reduce((sum, p) => sum + (p.recipients || 0), 0);
+    if (tokenRecipients <= 0) {
+      parts.push(
+        await sendOneSignalPushMultiApp({
+          title: input.title,
+          body: input.body,
+          url: trackedUrl,
+          imageUrl,
+          externalUserIds: [targetUserId],
+          preferBothTargets: true,
+          data,
+        })
+      );
+    }
+  } else if (requested === 'onesignal' || requested === 'subscribed') {
+    const segmentPart = await pushSegment();
+    parts.push(segmentPart);
+    if (segmentPart.ok && (segmentPart.recipients ?? 0) > 0) {
       usedAudience = 'onesignal';
+    } else {
+      // Segment reached nobody (e.g. a legacy app without subscribers) — try saved tokens.
+      parts.push(...(await pushSavedTokens(tokenOpts)));
+      usedAudience = 'tokens';
     }
   } else if (requested === 'all') {
-    // One segment send + one token send max (not both when segment already covered everyone)
-    const segmentResult = await pushSegment();
-    parts.push(segmentResult);
-    const tokenParts = await pushSavedTokens(tokenOpts);
-    parts.push(...tokenParts);
+    const segmentPart = await pushSegment();
+    parts.push(segmentPart);
+    if (!segmentPart.ok || (segmentPart.recipients ?? 0) <= 0) {
+      parts.push(...(await pushSavedTokens(tokenOpts)));
+    }
     usedAudience = 'all';
   } else if (requested === 'tokens' || requested === 'kids_zone') {
     const tokenParts = await pushSavedTokens(tokenOpts);
