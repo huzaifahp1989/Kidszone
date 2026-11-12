@@ -6,7 +6,6 @@ import {
   buildCompetitionPayload,
   isMissingTableError,
   mapCompetition,
-  seedRabiUlAwwalCompetition,
   WRITTEN_COMPETITIONS_TABLE,
 } from '@/lib/written-competition-server';
 
@@ -35,14 +34,6 @@ export async function POST(request: Request) {
   if (!isAdminRequest(request)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   try {
     const body = (await request.json().catch(() => ({}))) as Record<string, unknown>;
-    if (body.seedRabiUlAwwal) {
-      const seeded = await seedRabiUlAwwalCompetition();
-      if (seeded.tableMissing) {
-        return NextResponse.json({ error: 'Tables are not set up yet.' }, { status: 503 });
-      }
-      return NextResponse.json({ created: seeded.created, competitionId: seeded.competitionId });
-    }
-
     const payload = buildCompetitionPayload(body);
     if (!payload.name) return NextResponse.json({ error: 'Competition name is required.' }, { status: 400 });
     if (!payload.slug) payload.slug = slugifyCompetitionName(String(payload.name));

@@ -85,7 +85,7 @@ export default function AdminWeeklyCertificatesPage() {
   }, []);
 
   React.useEffect(() => {
-    const auth = sessionStorage.getItem('adminAuth');
+    const auth = sessionStorage.getItem('adminAuth') || localStorage.getItem('admin_auth');
     if (auth !== 'true') {
       router.push('/admin/login');
       return;

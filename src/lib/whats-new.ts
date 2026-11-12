@@ -125,12 +125,6 @@ export const EARN_MORE_LINKS: WhatsNewItem[] = [
     badge: 'FEATURED',
   },
   {
-    href: '/competitions/rabi-ul-awwal',
-    emoji: '🌙',
-    title: 'Seerah Quiz',
-    blurb: 'Write answers for Rabi ul Awwal',
-  },
-  {
     href: '/quran/listen',
     emoji: '🎧',
     title: 'Quran Listen',

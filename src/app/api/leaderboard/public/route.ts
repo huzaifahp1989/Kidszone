@@ -68,7 +68,7 @@ export async function GET(req: Request) {
 
     const { data: scoredRows, error: scoredError } = await supabaseAdmin
       .from('users_points')
-      .select('user_id,total_points,weekly_points,monthly_points,today_points,badges,level,last_earned_date,users(name,email,points,weeklypoints,monthlypoints)')
+      .select('user_id,total_points,weekly_points,monthly_points,today_points,badges,level,last_earned_date,updated_at,users(name,email,points,weeklypoints,monthlypoints,updatedat)')
       .gt(orderField, 0)
       .order(orderField, { ascending: false, nullsFirst: false })
       .limit(resultLimit);
@@ -91,7 +91,7 @@ export async function GET(req: Request) {
     if (missingUserIds.length > 0) {
       const { data: extraData, error: extraError } = await supabaseAdmin
         .from('users_points')
-        .select('user_id,total_points,weekly_points,monthly_points,today_points,badges,level,last_earned_date,users(name,email,points,weeklypoints,monthlypoints)')
+        .select('user_id,total_points,weekly_points,monthly_points,today_points,badges,level,last_earned_date,updated_at,users(name,email,points,weeklypoints,monthlypoints,updatedat)')
         .in('user_id', missingUserIds);
 
       if (extraError) {
@@ -160,6 +160,26 @@ export async function GET(req: Request) {
         }
       } else {
         for (const row of winnerRows || []) {
+          const uid = String((row as any).user_id || '');
+          if (uid) winnerTickByUser.add(uid);
+        }
+      }
+
+      // Published monthly winners linked to a learner also get the winner tick.
+      const { data: monthlyWinnerRows, error: monthlyWinnerErr } = await supabaseAdmin
+        .from('monthly_public_winners')
+        .select('user_id')
+        .eq('is_published', true)
+        .eq('parent_guardian_consent', true)
+        .not('user_id', 'is', null)
+        .in('user_id', userIds);
+
+      if (monthlyWinnerErr) {
+        if (!['42P01', '42703'].includes(String(monthlyWinnerErr.code))) {
+          console.warn('Leaderboard monthly winners lookup error:', monthlyWinnerErr.message);
+        }
+      } else {
+        for (const row of monthlyWinnerRows || []) {
           const uid = String((row as any).user_id || '');
           if (uid) winnerTickByUser.add(uid);
         }
@@ -246,6 +266,11 @@ export async function GET(req: Request) {
         totalCount: 0,
       };
 
+      const lastPlayedRaw =
+        row.last_earned_date ??
+        (row.updated_at ? String(row.updated_at).slice(0, 10) : null) ??
+        (row.users?.updatedat ? String(row.users.updatedat).slice(0, 10) : null);
+
       return {
         uid: row.user_id,
         name: displayName,
@@ -261,7 +286,7 @@ export async function GET(req: Request) {
         weeklyStars,
         maxWeeklyScore: MAX_WEEKLY_SCORE,
         badges: row.badges ?? 0,
-        lastPlayedDate: row.last_earned_date ?? null,
+        lastPlayedDate: lastPlayedRaw ?? null,
         weeklyActivityCount: activity.totalCount,
         weeklyQuizAttempts: activity.quizCount,
         weeklyChallengeDone: isEligibleForWeeklyDraw(weeklyPoints),

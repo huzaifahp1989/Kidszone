@@ -47,7 +47,6 @@ const YOUNGER_EMOJI: Record<string, string> = {
   '/guide': '⭐',
   '/chat': '💬',
   '/competitions/written': '✍️',
-  '/competitions/rabi-ul-awwal': '🌙',
 };
 
 const YOUNGER_COLOR_ROTATION: Array<'blue' | 'green' | 'yellow' | 'pink' | 'purple' | 'orange'> = [

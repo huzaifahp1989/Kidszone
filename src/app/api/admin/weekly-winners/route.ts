@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { isAdminRequest } from '@/lib/admin-auth';
+import { validateMonthlyWinnerInput, type MonthlyWinnerAgeBracket } from '@/lib/monthly-winners';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 
 export const dynamic = 'force-dynamic';
@@ -7,6 +8,16 @@ export const dynamic = 'force-dynamic';
 function isMissingTableError(error: { code?: string; message?: string } | null): boolean {
   if (!error) return false;
   return error.code === '42P01' || /weekly_winner_announcements/i.test(String(error.message || ''));
+}
+
+function isMissingMonthlyTableError(error: unknown): boolean {
+  const e = error as { code?: string; message?: string } | null;
+  if (!e) return false;
+  return (
+    e.code === '42P01' ||
+    e.code === '42703' ||
+    /monthly_public_winners/i.test(String(e.message || ''))
+  );
 }
 
 function normalizeWeekDate(value: unknown): string | null {
@@ -89,7 +100,68 @@ export async function POST(request: Request) {
       throw error;
     }
 
-    return NextResponse.json({ winner: data });
+    // Optionally mirror the winner onto the Monthly winners page. A published
+    // monthly winner linked to a learner also gets the tick on the leaderboard.
+    let monthlyWinner: Record<string, unknown> | null = null;
+    let monthlyError: string | null = null;
+
+    if (body?.syncMonthly === true) {
+      const userId = String(body?.userId || '').trim();
+      const monthKey = weekStartDate.slice(0, 7);
+      const validation = validateMonthlyWinnerInput({
+        monthKey,
+        firstName: String(body?.firstName || winnerName.split(/\s+/)[0] || '').trim(),
+        ageBracket: body?.ageBracket as MonthlyWinnerAgeBracket,
+        city: String(body?.city || '').trim(),
+        parentGuardianConsent: true,
+        isPublished: true,
+        userId,
+      });
+
+      if (!validation.ok) {
+        monthlyError = validation.error;
+      } else {
+        const monthly = validation.winner;
+        try {
+          const { data: existing } = await supabaseAdmin
+            .from('monthly_public_winners')
+            .select('id')
+            .eq('user_id', userId)
+            .eq('month_key', monthKey)
+            .maybeSingle();
+
+          if (existing?.id) {
+            monthlyError = 'This learner is already a monthly winner for that month.';
+          } else {
+            const { data: created, error: monthlyInsertError } = await supabaseAdmin
+              .from('monthly_public_winners')
+              .insert({
+                month_key: monthly.monthKey,
+                first_name: monthly.firstName,
+                age_bracket: monthly.ageBracket,
+                city: monthly.city,
+                user_id: monthly.userId ?? null,
+                parent_guardian_consent: true,
+                is_published: true,
+              })
+              .select('id, month_key, first_name, age_bracket, city, user_id, is_published')
+              .single();
+
+            if (monthlyInsertError) throw monthlyInsertError;
+            monthlyWinner = created as Record<string, unknown>;
+          }
+        } catch (monthlyErr) {
+          if (isMissingMonthlyTableError(monthlyErr)) {
+            monthlyError =
+              'Run the monthly winners migration (user_id column) before publishing to the Monthly winners page.';
+          } else {
+            monthlyError = monthlyErr instanceof Error ? monthlyErr.message : 'Could not add to Monthly winners.';
+          }
+        }
+      }
+    }
+
+    return NextResponse.json({ winner: data, monthlyWinner, monthlyError });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Unexpected error';
     return NextResponse.json({ error: message }, { status: 500 });

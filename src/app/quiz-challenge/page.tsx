@@ -74,20 +74,6 @@ export default function QuizChallengePage() {
           </div>
         ) : null}
 
-        <Link
-          href="/competitions/rabi-ul-awwal"
-          className="block rounded-3xl border border-emerald-200 bg-gradient-to-r from-emerald-50 to-amber-50 p-6 shadow-lg"
-        >
-          <p className="text-xs font-black uppercase tracking-[0.16em] text-emerald-800">Rabi ul Awwal</p>
-          <h2 className="mt-1 text-2xl font-black text-emerald-950">Written Seerah Quiz</h2>
-          <p className="mt-2 text-sm text-emerald-900/80">
-            Not multiple choice. Type your own answers about the life of Prophet Muhammad ﷺ. Admin marks every entry.
-          </p>
-          <span className="mt-4 inline-flex items-center gap-2 text-sm font-bold text-emerald-800">
-            Enter the competition <ArrowRight size={16} />
-          </span>
-        </Link>
-
         <div className="grid gap-5 sm:grid-cols-2">
           {CHALLENGE_QUIZ_KEYS.map((key) => {
             const quiz = CHALLENGE_QUIZZES[key];

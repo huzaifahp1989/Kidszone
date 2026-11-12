@@ -489,6 +489,34 @@ export default function QuizPage() {
       <>
       <div className="min-h-screen bg-teal-50 pattern-islamic">
         <div className="max-w-4xl mx-auto px-4 py-8 space-y-8">
+          {/* Learn Surah with translation — shown at the very top so it is easy to find */}
+          <Link
+            href="/quran/learn-surah"
+            className="group block rounded-2xl border-2 border-sky-300 bg-gradient-to-r from-sky-600 to-blue-700 p-4 text-white shadow-xl transition hover:-translate-y-0.5 hover:shadow-2xl sm:p-6"
+          >
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex items-center gap-3 sm:gap-4">
+                <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-white/15 text-3xl shadow-inner" aria-hidden>
+                  📖
+                </span>
+                <div>
+                  <span className="inline-flex rounded-full bg-amber-300 px-2.5 py-0.5 text-[10px] font-black uppercase text-sky-950 sm:text-xs">
+                    New
+                  </span>
+                  <h1 className="mt-1 text-xl font-black leading-tight sm:text-2xl">
+                    Learn Surah with translation
+                  </h1>
+                  <p className="mt-1 text-xs text-sky-50 sm:text-sm">
+                    Read Yaseen, Al-Mulk, Al-Kahf &amp; more with English translation, then take a quiz and earn points.
+                  </p>
+                </div>
+              </div>
+              <span className="hidden shrink-0 rounded-xl bg-white px-4 py-2.5 text-sm font-black text-sky-800 shadow transition group-hover:bg-amber-50 sm:inline-flex">
+                Start reading →
+              </span>
+            </div>
+          </Link>
+
           <a
             href="#daily-quiz"
             className="group block rounded-2xl border-2 border-emerald-300 bg-gradient-to-r from-emerald-700 via-teal-700 to-cyan-700 p-4 text-white shadow-xl transition hover:-translate-y-0.5 hover:shadow-2xl sm:p-6"
@@ -515,26 +543,6 @@ export default function QuizPage() {
               </span>
             </div>
           </a>
-
-          <Link
-            href="/competitions/rabi-ul-awwal"
-            className="block rounded-2xl border border-emerald-300/70 bg-gradient-to-r from-emerald-800 via-emerald-700 to-amber-600 p-4 text-white shadow-lg transition hover:-translate-y-0.5 hover:shadow-xl sm:p-5"
-          >
-            <div className="flex items-center justify-between gap-3">
-              <div className="flex items-center gap-3">
-                <span className="text-3xl" aria-hidden>🌙</span>
-                <div>
-                  <p className="text-lg font-black leading-tight sm:text-xl">Rabi ul Awwal Seerah Quiz</p>
-                  <p className="text-xs text-emerald-50/90 sm:text-sm">
-                    Write your own answers. Ends 30 September 2026. Admin marks them.
-                  </p>
-                </div>
-              </div>
-              <span className="hidden shrink-0 items-center gap-1 rounded-full bg-white/15 px-3 py-1.5 text-sm font-bold text-amber-100 sm:inline-flex">
-                Enter →
-              </span>
-            </div>
-          </Link>
 
           {/* Islamic Quiz Challenge — shown at the very top so it is easy to find */}
           <Link

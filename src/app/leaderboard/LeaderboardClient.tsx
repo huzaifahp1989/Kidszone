@@ -16,6 +16,12 @@ import { POINTS_DAILY_CAP } from '@/lib/points-policy';
 import { MAX_WEEKLY_SCORE } from '@/lib/weekly-score-core';
 import { getKidLevelTitle } from '@/lib/level-names';
 import { RecordAndEarnBanner } from '@/components/RecordAndEarnBanner';
+import { Modal } from '@/components';
+import {
+  formatWeekLabel,
+  groupWinnersByWeek,
+  type WeeklyWinnerAnnouncement,
+} from '@/lib/weekly-winner-display';
 
 type LeaderboardTab = 'weekly' | 'monthly' | 'lifetime';
 
@@ -78,6 +84,39 @@ export default function LeaderboardClient() {
   const [loading, setLoading] = useState(true);
   const { profile } = useAuth();
   const fetchAbortRef = useRef<AbortController | null>(null);
+
+  const [winnersOpen, setWinnersOpen] = useState(false);
+  const [winners, setWinners] = useState<WeeklyWinnerAnnouncement[]>([]);
+  const [winnersLoading, setWinnersLoading] = useState(false);
+
+  const loadWinners = useCallback(async () => {
+    try {
+      const res = await fetch(`/api/weekly-winners?t=${Date.now()}`, { cache: 'no-store' });
+      const json = await res.json();
+      setWinners(Array.isArray(json?.winners) ? (json.winners as WeeklyWinnerAnnouncement[]) : []);
+    } catch (err) {
+      console.error('Winners load error:', err);
+      setWinners([]);
+    }
+  }, []);
+
+  const openWinners = useCallback(async () => {
+    setWinnersOpen(true);
+    setWinnersLoading(true);
+    await loadWinners();
+    setWinnersLoading(false);
+  }, [loadWinners]);
+
+  useEffect(() => {
+    void loadWinners();
+  }, [loadWinners]);
+
+  const groupedWinners = useMemo(() => groupWinnersByWeek(winners), [winners]);
+
+  const lastAddedDate = useMemo(() => {
+    const stamps = winners.map((w) => w.created_at).filter(Boolean).sort();
+    return stamps.length > 0 ? stamps[stamps.length - 1] : null;
+  }, [winners]);
 
   const loadLeaderboard = useCallback(async (opts?: { soft?: boolean }) => {
     if (!opts?.soft) setLoading(true);
@@ -148,6 +187,25 @@ export default function LeaderboardClient() {
     }));
   }, [entries, onlineUserIds]);
 
+  const mostActiveDays = useMemo(
+    () => leaderboardData.reduce((max, entry) => Math.max(max, Number(entry.weeklyScore || 0)), 0),
+    [leaderboardData]
+  );
+
+  // Board is ordered by most recent activity; learners with no recorded date sink to the bottom.
+  const displayRows = useMemo(
+    () =>
+      [...leaderboardData].sort((a, b) => {
+        const aDate = a.lastPlayedDate || '';
+        const bDate = b.lastPlayedDate || '';
+        if (aDate === bDate) return 0;
+        if (!aDate) return 1;
+        if (!bDate) return -1;
+        return bDate.localeCompare(aDate);
+      }),
+    [leaderboardData]
+  );
+
   const myRankIndex = useMemo(() => {
     const uid = String(profile?.uid || '').trim();
     if (!uid) return -1;
@@ -206,6 +264,14 @@ export default function LeaderboardClient() {
     return `${dd} ${mon} ${y}`;
   };
 
+  const formatAddedDate = (value: string | null | undefined) => {
+    if (!value) return null;
+    const d = new Date(value);
+    if (Number.isNaN(d.getTime())) return null;
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    return `${d.getUTCDate()} ${months[d.getUTCMonth()]} ${d.getUTCFullYear()}`;
+  };
+
   const getRankIcon = (rank: number) => (
     <span className="font-bold text-sand-700">#{rank}</span>
   );
@@ -239,6 +305,22 @@ export default function LeaderboardClient() {
           </span>
           <Trophy size={22} className="shrink-0 text-amber-700" />
         </Link>
+
+        <button
+          type="button"
+          onClick={openWinners}
+          className="mx-auto flex w-full max-w-xl items-center justify-between gap-4 rounded-2xl border border-teal-200 bg-teal-50 px-5 py-4 text-left shadow-sm transition hover:bg-teal-100"
+        >
+          <span>
+            <span className="block text-sm font-black text-teal-950">Winners of the week</span>
+            <span className="mt-1 block text-xs text-teal-900">
+              {lastAddedDate
+                ? `Last added ${formatAddedDate(lastAddedDate)} · tap to see all winners.`
+                : 'Tap to see this week\u2019s winners by date.'}
+            </span>
+          </span>
+          <Trophy size={22} className="shrink-0 text-teal-700" />
+        </button>
 
         <div className="mx-auto flex max-w-xl rounded-2xl border border-teal-300/40 bg-white p-1 shadow-sm">
           <button
@@ -327,9 +409,9 @@ export default function LeaderboardClient() {
                 </p>
               </div>
               <div className="rounded-xl bg-white px-3 py-2 text-center ring-1 ring-violet-100">
-                <p className="text-xs font-bold uppercase text-violet-700">Last played</p>
-                <p className="text-sm font-black text-slate-900">
-                  {myRow?.lastPlayedDate ? formatPlayedDate(myRow.lastPlayedDate) : '—'}
+                <p className="text-xs font-bold uppercase text-violet-700">Days active</p>
+                <p className="text-xl font-black text-slate-900">
+                  {myRow ? `${myRow.weeklyScore}/${MAX_WEEKLY_SCORE}` : '—'}
                 </p>
               </div>
               <div className="rounded-xl bg-white px-3 py-2 text-center ring-1 ring-violet-100">
@@ -437,12 +519,6 @@ export default function LeaderboardClient() {
                   {leaderboardData[0].username} is leading {isLifetime ? 'overall' : isMonthly ? 'this month' : 'this week'}
                 </p>
               </div>
-              <div className="rounded-xl bg-teal-50 px-4 py-3 text-right ring-1 ring-violet-100">
-                <p className="text-xs font-bold uppercase text-violet-700">Last played</p>
-                <p className="text-sm font-black text-slate-900">
-                  {formatPlayedDate(leaderboardData[0].lastPlayedDate) || '—'}
-                </p>
-              </div>
             </div>
           </div>
         ) : null}
@@ -454,19 +530,15 @@ export default function LeaderboardClient() {
                 {isLifetime ? 'Lifetime Rankings' : isMonthly ? 'Monthly Rankings' : 'Weekly Rankings'}
               </h2>
               <p className="text-sm text-white/80">
-                {isLifetime
-                  ? 'Sorted by total points earned overall'
-                  : isMonthly
-                    ? 'Sorted by total points earned this month'
-                    : `Sorted by activity. Draw entry needs above ${WEEKLY_DRAW_MIN_POINTS} points — winners are random, not by rank.`}
+                Ordered by most recent activity. Learners who played most recently appear first.
               </p>
             </div>
 
             <div
               className={`hidden gap-3 border-b border-teal-300/20 bg-teal-50 px-4 py-3 text-xs font-bold uppercase tracking-wide text-teal-700 sm:grid ${
                 isMonthly || isLifetime
-                  ? 'grid-cols-[2rem_2.5rem_1fr_5rem_5.5rem_5rem]'
-                  : 'grid-cols-[2rem_2.5rem_1fr_4rem_4rem_4rem_4rem_5.5rem_5rem]'
+                  ? 'grid-cols-[2rem_2.5rem_1fr_5rem_5rem]'
+                  : 'grid-cols-[2rem_2.5rem_1fr_4rem_4rem_4rem_4rem_5rem]'
               }`}
             >
               <span>#</span>
@@ -482,12 +554,11 @@ export default function LeaderboardClient() {
               ) : (
                 <span className="text-right">{isLifetime ? 'Total pts' : 'Month pts'}</span>
               )}
-              <span className="text-right">Last played</span>
               <span className="text-right">Certificates</span>
             </div>
 
             <div className="divide-y divide-[#c4b5fd]/20">
-              {leaderboardData.map((entry) => {
+              {displayRows.map((entry, index) => {
                 const you = isYou(entry.uid);
                 return (
                   <div
@@ -495,7 +566,7 @@ export default function LeaderboardClient() {
                     className={`p-4 transition hover:bg-teal-100/50 ${you ? 'bg-violet-50/80 ring-1 ring-inset ring-violet-200' : ''}`}
                   >
                     <div className="flex items-center gap-3 sm:gap-4">
-                      <div className="w-8 shrink-0 text-center">{getRankIcon(entry.rank)}</div>
+                      <div className="w-8 shrink-0 text-center">{getRankIcon(index + 1)}</div>
                       <div className="relative shrink-0">
                         <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-[#fbbf24] to-[#f59e0b] text-xl">
                           🌍
@@ -520,7 +591,11 @@ export default function LeaderboardClient() {
                               online
                             </span>
                           ) : null}
-                          {entry.winnerTick ? <span className="text-emerald-600">✓</span> : null}
+                          {mostActiveDays > 0 && Number(entry.weeklyScore || 0) === mostActiveDays ? (
+                            <span className="rounded-full bg-orange-100 px-2 py-0.5 text-[10px] font-bold text-orange-700">
+                              🔥 Most active
+                            </span>
+                          ) : null}
                           {!isMonthly && !isLifetime && entry.weeklyChallengeDone ? (
                             <span className="text-amber-500">⭐</span>
                           ) : null}
@@ -551,11 +626,9 @@ export default function LeaderboardClient() {
                               </span>
                             ) : null}
                           </p>
-                        {formatPlayedDate(entry.lastPlayedDate) ? (
-                          <p className="mt-0.5 text-xs text-sand-600 sm:hidden">
-                            Last played: {formatPlayedDate(entry.lastPlayedDate)}
-                          </p>
-                        ) : null}
+                        <p className="mt-0.5 text-xs font-semibold text-sand-600">
+                          Last played: {formatPlayedDate(entry.lastPlayedDate) || '—'}
+                        </p>
                       </div>
 
                       {isLifetime ? (
@@ -588,11 +661,6 @@ export default function LeaderboardClient() {
                           <p className="text-lg font-black text-teal-600">{entry.monthlyPoints}</p>
                         </div>
                       )}
-                      <div className="hidden w-[5.5rem] shrink-0 text-right sm:block">
-                        <p className="text-xs font-semibold text-sand-700">
-                          {formatPlayedDate(entry.lastPlayedDate) || '—'}
-                        </p>
-                      </div>
                       <div className="hidden w-20 shrink-0 text-right sm:block">
                         {entry.certificateCount > 0 ? (
                           <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-1 text-xs font-bold text-amber-700">
@@ -710,10 +778,8 @@ export default function LeaderboardClient() {
               </p>
             </div>
             <div className="rounded-xl bg-white/10 p-4 text-center col-span-2 sm:col-span-1">
-              <p className="mb-1 text-sm text-white/80">Last played</p>
-              <p className="text-lg font-bold">
-                {myRow?.lastPlayedDate ? formatPlayedDate(myRow.lastPlayedDate) : '—'}
-              </p>
+              <p className="mb-1 text-sm text-white/80">Days active</p>
+              <p className="text-3xl font-bold">{myRow?.weeklyScore ?? 0}/{MAX_WEEKLY_SCORE}</p>
             </div>
           </div>
         </div>
@@ -752,6 +818,51 @@ export default function LeaderboardClient() {
             )}
           </ul>
         </div>
+
+        <Modal isOpen={winnersOpen} onClose={() => setWinnersOpen(false)} title="Winners of the week" size="lg">
+          {winnersLoading ? (
+            <p className="py-6 text-center text-sm text-sand-600">Loading winners…</p>
+          ) : groupedWinners.length === 0 ? (
+            <p className="py-6 text-center text-sm text-sand-600">No winners announced yet.</p>
+          ) : (
+            <div className="space-y-4 sm:space-y-5">
+              {groupedWinners.map(({ weekStartDate, winners: weekWinners }) => (
+                <section key={weekStartDate} className="overflow-hidden rounded-2xl border border-teal-200">
+                  <div className="bg-gradient-to-r from-teal-600 to-teal-700 px-3 py-2.5 text-white sm:px-4">
+                    <p className="text-[10px] font-bold uppercase tracking-wide text-white/80">Week of</p>
+                    <h3 className="text-sm font-bold">{formatWeekLabel(weekStartDate)}</h3>
+                  </div>
+                  <ul className="divide-y divide-teal-100">
+                    {weekWinners.map((winner) => (
+                      <li
+                        key={winner.id}
+                        className="flex flex-col gap-1.5 px-3 py-3.5 sm:flex-row sm:items-center sm:justify-between sm:gap-3 sm:px-4"
+                      >
+                        <div className="min-w-0">
+                          <p className="flex items-start gap-1.5 font-bold text-teal-900">
+                            <span aria-hidden className="shrink-0">🏆</span>
+                            <span className="break-words">{winner.winner_name}</span>
+                          </p>
+                          {winner.madrasah_name?.trim() ? (
+                            <p className="mt-0.5 break-words text-xs text-sand-600">{winner.madrasah_name}</p>
+                          ) : null}
+                          <p className="mt-0.5 text-xs text-sand-500">
+                            Added {formatAddedDate(winner.created_at) || '—'}
+                          </p>
+                        </div>
+                        <span className="inline-flex w-fit items-center rounded-full bg-teal-50 px-2.5 py-1 text-xs font-semibold text-teal-700 ring-1 ring-teal-100 sm:shrink-0">
+                          {winner.last_played
+                            ? `Last played ${formatPlayedDate(winner.last_played)}`
+                            : 'Last played —'}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </section>
+              ))}
+            </div>
+          )}
+        </Modal>
       </div>
     </div>
   );

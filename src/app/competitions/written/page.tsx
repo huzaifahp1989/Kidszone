@@ -2,8 +2,8 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Loader2, Trophy } from 'lucide-react';
-import { categoryLabel, DEFAULT_WRITTEN_SLUG, type WrittenCompetition } from '@/lib/written-competition';
+import { Loader2 } from 'lucide-react';
+import { categoryLabel, type WrittenCompetition } from '@/lib/written-competition';
 
 export default function WrittenCompetitionsListPage() {
   const [competitions, setCompetitions] = useState<Array<WrittenCompetition & { open?: boolean }>>([]);
@@ -43,12 +43,7 @@ export default function WrittenCompetitionsListPage() {
             </Link>
           ))}
           {!loading && competitions.length === 0 && (
-            <Link
-              href={`/competitions/written/${DEFAULT_WRITTEN_SLUG}`}
-              className="inline-flex items-center gap-2 font-bold text-emerald-800"
-            >
-              <Trophy size={16} /> Open Rabi ul Awwal Seerah Quiz
-            </Link>
+            <p className="text-slate-500">No written competitions are open right now. Please check back soon.</p>
           )}
         </div>
       </div>

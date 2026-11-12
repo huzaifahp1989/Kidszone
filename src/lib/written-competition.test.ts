@@ -8,11 +8,6 @@ import {
   toPublicQuestion,
   unknownErrorMessage,
 } from '@/lib/written-competition';
-import {
-  RABI_UL_AWWAL_SEED_COMPETITION,
-  RABI_UL_AWWAL_SEED_QUESTIONS,
-  rabiUlAwwalPublicFallbackPayload,
-} from '@/lib/written-competition-seed';
 
 describe('written competition helpers', () => {
   it('formats winner names as first name plus initial', () => {
@@ -43,30 +38,6 @@ describe('written competition helpers', () => {
       )
     ).toBe(false);
     expect(isWrittenCompetitionOpen({ active: false, startDate: null, closingDate: null }, now)).toBe(false);
-  });
-
-  it('keeps the Rabi ul Awwal competition open until 30 September 2026', () => {
-    expect(
-      isWrittenCompetitionOpen(
-        {
-          active: true,
-          startDate: '2026-08-21T00:00:00.000Z',
-          closingDate: '2026-09-30T23:59:59.999Z',
-        },
-        new Date('2026-09-30T22:00:00.000Z')
-      )
-    ).toBe(true);
-
-    expect(
-      isWrittenCompetitionOpen(
-        {
-          active: true,
-          startDate: '2026-08-21T00:00:00.000Z',
-          closingDate: '2026-09-30T23:59:59.999Z',
-        },
-        new Date('2026-10-01T00:00:00.000Z')
-      )
-    ).toBe(false);
   });
 
   it('never exposes marking fields on public questions', () => {
@@ -112,18 +83,5 @@ describe('written competition helpers', () => {
     expect(answerTextForQuestion({ 'uuid-3': 'By id' }, question)).toBe('By id');
     expect(answerTextForQuestion({ '3': 'By number' }, question)).toBe('By number');
     expect(answerTextForQuestion({ 'preview-q-3': 'By preview' }, question)).toBe('By preview');
-  });
-
-  it('serves ten Rabi ul Awwal questions in the public fallback payload', () => {
-    const payload = rabiUlAwwalPublicFallbackPayload();
-    expect(RABI_UL_AWWAL_SEED_QUESTIONS).toHaveLength(10);
-    expect(payload.questions).toHaveLength(10);
-    expect(payload.prizes).toHaveLength(2);
-    expect(
-      isWrittenCompetitionOpen(payload.competition, new Date('2026-08-22T10:00:00.000Z'))
-    ).toBe(true);
-    expect(payload.questions[0]?.questionText).toContain('first revelation');
-    expect(JSON.stringify(payload.questions)).not.toContain('expectedAnswer');
-    expect(RABI_UL_AWWAL_SEED_COMPETITION.maxAttempts).toBe(1);
   });
 });

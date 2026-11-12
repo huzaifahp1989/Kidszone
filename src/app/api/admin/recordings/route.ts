@@ -37,11 +37,11 @@ export async function GET(request: Request) {
       if (category) {
         if (category === 'story') {
           query = query.not('story_id', 'is', null);
-        } else if (category === 'hadith') {
-          query = query.eq('category', 'hadith');
-        } else {
-          // For studio recordings, we need to check if there's a category field or if story_id is null
+        } else if (category === 'quran' || category === 'nasheed') {
+          // Legacy studio rows predate the `category` column, so keep matching them.
           query = query.or(`category.eq.${category},and(story_id.is.null,category.is.null)`);
+        } else {
+          query = query.eq('category', category);
         }
       }
 

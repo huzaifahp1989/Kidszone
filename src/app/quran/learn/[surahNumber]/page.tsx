@@ -6,7 +6,9 @@ import { useParams } from 'next/navigation';
 import { ArrowLeft, ChevronLeft, ChevronRight, Loader2, Play, Volume2 } from 'lucide-react';
 import { Button, Modal } from '@/components';
 import { AyahHoverTooltip } from '@/components/AyahHoverTooltip';
+import { MemoriseMode } from '@/components/MemoriseMode';
 import { QuranReciterPanel } from '@/components/QuranReciterPanel';
+import { ReciterCompare } from '@/components/ReciterCompare';
 import { SurahRecorder } from '@/components/SurahRecorder';
 import { TajweedAyahText } from '@/components/TajweedAyahText';
 import { TajweedGuide } from '@/components/TajweedGuide';
@@ -38,6 +40,7 @@ export default function JuzAmmaSurahPage() {
   const [loadingAudio, setLoadingAudio] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showFullText, setShowFullText] = useState(false);
+  const [showMemorise, setShowMemorise] = useState(false);
   const [selectedAyah, setSelectedAyah] = useState<Ayah | null>(null);
 
   useEffect(() => {
@@ -256,6 +259,24 @@ export default function JuzAmmaSurahPage() {
               )}
             </div>
 
+            <div className="space-y-3 sm:space-y-4">
+              <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-3">
+                <h2 className="section-title mb-0 text-lg sm:text-xl">🧠 Memorise it</h2>
+                <Button size="sm" variant="outline" onClick={() => setShowMemorise((v) => !v)} className="w-full sm:w-auto">
+                  {showMemorise ? 'Close memorise mode' : 'Practise from memory'}
+                </Button>
+              </div>
+
+              {showMemorise && ayahs.length > 0 && (
+                <MemoriseMode
+                  surahNumber={meta.number}
+                  surahName={meta.englishName}
+                  ayahs={ayahs}
+                  reciterId={reciterId}
+                />
+              )}
+            </div>
+
             <div className="grid gap-3 sm:grid-cols-2 sm:gap-4">
               <div className="surface-card rounded-xl border-l-4 border-violet-500 bg-violet-50/60 p-4 sm:p-5">
                 <h3 className="font-bold text-violet-800">📌 Main lesson</h3>
@@ -372,6 +393,16 @@ export default function JuzAmmaSurahPage() {
                         : 'Audio finished — tap replay to listen again'}
                     </div>
                   )}
+
+                  <ReciterCompare
+                    surahNumber={meta.number}
+                    surahName={meta.englishName}
+                    ayahNumber={selectedAyah.numberInSurah}
+                    arabic={selectedAyah.arabic}
+                    english={selectedAyah.english}
+                    primaryReciterId={reciterId}
+                    primaryAudio={selectedAyah.audio}
+                  />
 
                   <div className="grid grid-cols-3 gap-2 border-t border-sand-200 pt-4 sm:flex sm:flex-wrap sm:items-center sm:justify-between sm:gap-3">
                     <Button

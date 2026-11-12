@@ -57,20 +57,6 @@ export default function AdminWrittenCompetitionsPage() {
     if (json.competitionId) router.push(`/admin/written-competitions/${json.competitionId}`);
   };
 
-  const seedRabi = async () => {
-    const res = await fetch('/api/admin/written-competitions', {
-      method: 'POST',
-      headers: adminHeaders,
-      body: JSON.stringify({ seedRabiUlAwwal: true }),
-    });
-    const json = await res.json();
-    if (!res.ok) {
-      setError(json.error || 'Could not create Rabi ul Awwal quiz');
-      return;
-    }
-    router.push(`/admin/written-competitions/${json.competitionId}`);
-  };
-
   const createCompetition = async () => {
     if (!name.trim()) return;
     const res = await fetch('/api/admin/written-competitions', {
@@ -130,9 +116,6 @@ export default function AdminWrittenCompetitionsPage() {
               <Plus size={16} /> Create
             </button>
           </div>
-          <button type="button" onClick={() => void seedRabi()} className="mt-4 text-sm font-bold text-emerald-800">
-            Create / restore Rabi ul Awwal Seerah Quiz
-          </button>
         </section>
 
         <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">

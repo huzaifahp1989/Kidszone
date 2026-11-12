@@ -3,9 +3,32 @@
 import React from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components';
+import {
+  MONTHLY_WINNER_AGE_BRACKETS,
+  formatMonthlyWinnerMonth,
+  type MonthlyWinnerAgeBracket,
+} from '@/lib/monthly-winners';
 import { formatWeekLabel, groupWinnersByWeek, type WeeklyWinnerAnnouncement } from '@/lib/weekly-winner-display';
 
 const adminHeaders = { 'x-admin-auth': 'true' };
+
+type LearnerResult = {
+  uid: string;
+  name: string;
+  email?: string | null;
+  cityNormalized?: string | null;
+  ageNormalized?: number | null;
+};
+
+const firstNameOf = (name: string) => name.trim().split(/\s+/)[0] || '';
+
+const bracketForAge = (age: number | null | undefined): MonthlyWinnerAgeBracket | null => {
+  if (age == null || !Number.isFinite(age)) return null;
+  if (age <= 7) return '5-7';
+  if (age <= 10) return '8-10';
+  if (age <= 12) return '11-12';
+  return '13-14';
+};
 
 function mondayOfWeek(input = new Date()): string {
   const d = new Date(Date.UTC(input.getUTCFullYear(), input.getUTCMonth(), input.getUTCDate()));
@@ -27,11 +50,64 @@ export default function AdminWeeklyWinnersPage() {
   const [madrasahName, setMadrasahName] = React.useState('');
   const [weekDate, setWeekDate] = React.useState(mondayOfWeek());
 
+  const [learnerQuery, setLearnerQuery] = React.useState('');
+  const [learnerResults, setLearnerResults] = React.useState<LearnerResult[]>([]);
+  const [learnerSearching, setLearnerSearching] = React.useState(false);
+  const [linkedLearner, setLinkedLearner] = React.useState<{ uid: string; name: string } | null>(null);
+  const [monthlyAgeBracket, setMonthlyAgeBracket] = React.useState<MonthlyWinnerAgeBracket>('8-10');
+  const [monthlyCity, setMonthlyCity] = React.useState('');
+  const [syncMonthly, setSyncMonthly] = React.useState(false);
+
+  React.useEffect(() => {
+    const trimmed = learnerQuery.trim();
+    if (trimmed.length < 2) {
+      setLearnerResults([]);
+      setLearnerSearching(false);
+      return;
+    }
+
+    const timer = window.setTimeout(async () => {
+      setLearnerSearching(true);
+      try {
+        const response = await fetch(`/api/admin/users?q=${encodeURIComponent(trimmed)}`, {
+          headers: adminHeaders,
+          cache: 'no-store',
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data?.error || 'Search failed');
+        const users = Array.isArray(data.users) ? data.users : [];
+        setLearnerResults(users.slice(0, 8) as LearnerResult[]);
+      } catch {
+        setLearnerResults([]);
+      } finally {
+        setLearnerSearching(false);
+      }
+    }, 300);
+
+    return () => window.clearTimeout(timer);
+  }, [learnerQuery]);
+
+  const selectLearner = (learner: LearnerResult) => {
+    setLinkedLearner({ uid: learner.uid, name: learner.name });
+    setWinnerName((previous) => previous || learner.name);
+    const bracket = bracketForAge(learner.ageNormalized);
+    if (bracket) setMonthlyAgeBracket(bracket);
+    const city = String(learner.cityNormalized || '').trim();
+    if (city) setMonthlyCity(city);
+    setLearnerQuery('');
+    setLearnerResults([]);
+  };
+
+  const clearLearner = () => {
+    setLinkedLearner(null);
+    setSyncMonthly(false);
+  };
+
   const load = React.useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const auth = sessionStorage.getItem('adminAuth');
+      const auth = sessionStorage.getItem('adminAuth') || localStorage.getItem('admin_auth');
       if (auth !== 'true') {
         router.push('/admin/login');
         return;
@@ -75,6 +151,15 @@ export default function AdminWeeklyWinnersPage() {
           winnerName: winnerName.trim(),
           madrasahName: madrasahName.trim(),
           weekStartDate: weekDate,
+          ...(linkedLearner && syncMonthly
+            ? {
+                userId: linkedLearner.uid,
+                syncMonthly: true,
+                firstName: firstNameOf(winnerName) || firstNameOf(linkedLearner.name),
+                ageBracket: monthlyAgeBracket,
+                city: monthlyCity.trim(),
+              }
+            : {}),
         }),
       });
       const data = await res.json();
@@ -88,7 +173,16 @@ export default function AdminWeeklyWinnersPage() {
       setWinners((prev) => [data.winner, ...prev]);
       setWinnerName('');
       setMadrasahName('');
-      setMessage(`Added ${data.winner.winner_name} for week of ${formatWeekLabel(data.winner.week_start_date)}`);
+      setLinkedLearner(null);
+      setSyncMonthly(false);
+      setMonthlyCity('');
+
+      let summary = `Added ${data.winner.winner_name} for week of ${formatWeekLabel(data.winner.week_start_date)}`;
+      if (data.monthlyWinner) {
+        summary += ` and added to the ${formatMonthlyWinnerMonth(String(data.monthlyWinner.month_key))} Monthly winners page (leaderboard tick enabled)`;
+      }
+      setMessage(summary);
+      if (data.monthlyError) setError(data.monthlyError);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Could not save winner');
     } finally {
@@ -191,6 +285,107 @@ export default function AdminWeeklyWinnersPage() {
                 Week shown as {weekDate ? formatWeekLabel(weekDate) : '—'}
               </span>
             </label>
+
+            <div className="md:col-span-2 rounded-xl border border-slate-200 bg-slate-50 p-4">
+              <span className="mb-1 block text-sm font-semibold text-slate-700">Link a learner (optional)</span>
+              <p className="text-xs text-slate-500">
+                Search by name, email or username. Linking lets the winner also appear on the Monthly winners page and show the ✓ tick on the leaderboard.
+              </p>
+
+              {linkedLearner ? (
+                <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2">
+                  <div>
+                    <p className="text-sm font-bold text-emerald-900">{linkedLearner.name}</p>
+                    <p className="text-xs text-emerald-700">Linked learner</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={clearLearner}
+                    className="text-sm font-semibold text-emerald-800 hover:text-emerald-900"
+                  >
+                    Remove
+                  </button>
+                </div>
+              ) : (
+                <div className="mt-3">
+                  <input
+                    value={learnerQuery}
+                    onChange={(e) => setLearnerQuery(e.target.value)}
+                    className="w-full rounded-lg border border-slate-300 px-3 py-2"
+                    placeholder="Search learners by name, email or username"
+                  />
+                  {learnerSearching && <p className="mt-2 text-xs text-slate-500">Searching…</p>}
+                  {learnerResults.length > 0 && (
+                    <ul className="mt-2 divide-y divide-slate-100 rounded-lg border border-slate-200 bg-white">
+                      {learnerResults.map((learner) => (
+                        <li key={learner.uid} className="flex items-center justify-between gap-2 px-3 py-2">
+                          <div className="min-w-0">
+                            <p className="truncate text-sm font-semibold text-slate-900">{learner.name}</p>
+                            <p className="truncate text-xs text-slate-500">
+                              {[learner.email, learner.cityNormalized].filter(Boolean).join(' · ') || 'Learner'}
+                            </p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => selectLearner(learner)}
+                            className="text-sm font-semibold text-sky-700 hover:text-sky-800"
+                          >
+                            Link
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                  {!learnerSearching && learnerQuery.trim().length >= 2 && learnerResults.length === 0 && (
+                    <p className="mt-2 text-xs text-slate-500">No learners found.</p>
+                  )}
+                </div>
+              )}
+
+              {linkedLearner && (
+                <div className="mt-3 space-y-3">
+                  <label className="flex items-start gap-2">
+                    <input
+                      type="checkbox"
+                      checked={syncMonthly}
+                      onChange={(e) => setSyncMonthly(e.target.checked)}
+                      className="mt-1"
+                    />
+                    <span className="text-sm text-slate-700">
+                      Also add to the Monthly winners page (adds the ✓ tick on the leaderboard)
+                    </span>
+                  </label>
+
+                  {syncMonthly && (
+                    <div className="grid gap-3 md:grid-cols-2">
+                      <label className="block">
+                        <span className="mb-1 block text-xs font-semibold text-slate-600">Age bracket</span>
+                        <select
+                          value={monthlyAgeBracket}
+                          onChange={(e) => setMonthlyAgeBracket(e.target.value as MonthlyWinnerAgeBracket)}
+                          className="w-full rounded-lg border border-slate-300 px-3 py-2"
+                        >
+                          {MONTHLY_WINNER_AGE_BRACKETS.map((bracket) => (
+                            <option key={bracket} value={bracket}>
+                              {bracket}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                      <label className="block">
+                        <span className="mb-1 block text-xs font-semibold text-slate-600">City</span>
+                        <input
+                          value={monthlyCity}
+                          onChange={(e) => setMonthlyCity(e.target.value)}
+                          className="w-full rounded-lg border border-slate-300 px-3 py-2"
+                          placeholder="e.g. Birmingham"
+                        />
+                      </label>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
 
             <div className="md:col-span-2 flex justify-end">
               <Button type="submit" disabled={saving || setupRequired}>

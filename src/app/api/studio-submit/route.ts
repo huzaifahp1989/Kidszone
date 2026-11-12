@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { buildStorageResponsePayload, deleteObject, uploadObject } from '@/lib/object-storage';
 import { getAuthenticatedRequestUser } from '@/lib/request-auth';
+import { isRecordingCategory, isRecordingStatus, isEditableStatus } from '@/lib/recording-categories';
+import { MAX_RECORDING_BYTES, isAllowedAudioExtension } from '@/lib/audio-trim';
 
 const OPTIONAL_RECORDING_COLUMNS = ['category', 'description', 'submitted_at', 'child_name'] as const;
 
@@ -71,9 +73,22 @@ export async function POST(request: NextRequest) {
     const duration = formData.get('duration') as string | null;
     const childName = formData.get('childName') as string | null;
     const message = formData.get('message') as string | null;
+    const requestedStatus = (formData.get('status') as string | null) || 'submitted';
 
     if (!(file instanceof Blob)) {
       return NextResponse.json({ error: 'Recording file is required' }, { status: 400 });
+    }
+
+    if (category && !isRecordingCategory(category)) {
+      return NextResponse.json({ error: 'Unknown recording category' }, { status: 400 });
+    }
+
+    if (!isRecordingStatus(requestedStatus) || !isEditableStatus(requestedStatus)) {
+      return NextResponse.json({ error: 'Invalid recording status' }, { status: 400 });
+    }
+
+    if (file.size > MAX_RECORDING_BYTES) {
+      return NextResponse.json({ error: 'Recording is too large. Please keep it under 25 MB.' }, { status: 413 });
     }
 
     const arrayBuffer = await file.arrayBuffer();
@@ -101,8 +116,17 @@ export async function POST(request: NextRequest) {
         ? 'mp3'
         : mimeType.includes('ogg')
           ? 'ogg'
-          : 'webm';
+          : mimeType.includes('wav')
+            ? 'wav'
+            : 'webm';
     const extension = extFromName || extFromMime || 'webm';
+
+    if (!isAllowedAudioExtension(extension)) {
+      return NextResponse.json(
+        { error: 'Unsupported audio format. Please use mp3, m4a, ogg, webm or wav.' },
+        { status: 415 }
+      );
+    }
 
     const filename = `studio/${authUser.id}_${timestamp}_${category || 'rec'}_${safeTitle.replace(/[^a-zA-Z0-9]/g, '-')}.${extension}`;
 
@@ -130,9 +154,9 @@ export async function POST(request: NextRequest) {
       description: message,
       audio_path: filename,
       duration: Number.isFinite(durationSeconds) ? durationSeconds : 0,
-      status: 'submitted',
+      status: requestedStatus,
       created_at: new Date().toISOString(),
-      submitted_at: new Date().toISOString(),
+      submitted_at: requestedStatus === 'submitted' ? new Date().toISOString() : null,
     };
 
     const { data: insertedRecord, error: dbError } = await insertRecordingCompat(insertPayload);
@@ -147,13 +171,18 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: dbError.message || 'Failed to save recording record' }, { status: 500 });
     }
 
+    // Drafts and locally-saved recordings are private to the child — no teacher email.
+    if (requestedStatus !== 'submitted') {
+      return NextResponse.json({ success: true, id: insertedRecord?.id, status: requestedStatus });
+    }
+
     // 3. Send Email
     const RESEND_API_KEY = process.env.RESEND_API_KEY;
 
     if (!RESEND_API_KEY) {
       console.error('RESEND_API_KEY not configured');
       // Return success because recording IS saved, just email failed
-      return NextResponse.json({ success: true, warning: 'Email service not configured' });
+      return NextResponse.json({ success: true, id: insertedRecord?.id, status: requestedStatus, warning: 'Email service not configured' });
     }
 
     const toEmail = 'imediac786@gmail.com';
@@ -221,13 +250,13 @@ export async function POST(request: NextRequest) {
       const errorText = await response.text();
       console.error('Resend API error (studio-submit):', errorText);
       // Don't fail the request since we saved the recording
-      return NextResponse.json({ success: true, warning: 'Failed to send email notification' });
+      return NextResponse.json({ success: true, id: insertedRecord?.id, status: requestedStatus, warning: 'Failed to send email notification' });
     }
 
     const data = await response.json();
     console.log('Studio recording email sent:', data);
 
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ success: true, id: insertedRecord?.id, status: requestedStatus });
   } catch (error) {
     console.error('Error in studio-submit API:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

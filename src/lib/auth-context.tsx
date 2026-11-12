@@ -22,6 +22,7 @@ type KidProfile = {
   todayPoints?: number;
   dailyLimit?: number;
   badges?: number;
+  avatarId?: string;
   level: string;
   streak?: number;
   lastStreakUpdate?: string;
@@ -110,6 +111,7 @@ const mapProfile = (userRow: any, pointsRow?: any): KidProfile => {
     todayPoints,
     dailyLimit: POINTS_DAILY_CAP,
     badges,
+    avatarId: userRow.avatar_id ?? userRow.avatarId ?? undefined,
     level,
     streak: userRow.streak || 0,
     lastStreakUpdate: userRow.last_streak_update,
@@ -174,6 +176,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               todayPoints: merged.todayPoints,
               dailyLimit: Number(apiProfile.dailyLimit ?? POINTS_DAILY_CAP),
               badges: Number(apiProfile.badges ?? prev?.badges ?? 0),
+              avatarId: prev?.avatarId,
               level: String(apiProfile.level || prev?.level || 'Beginner'),
               streak: Number(apiProfile.streak ?? prev?.streak ?? 0),
               lastStreakUpdate: prev?.lastStreakUpdate,

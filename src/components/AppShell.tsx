@@ -30,6 +30,10 @@ const PushOpenTracker = dynamic(
   () => import('@/components/PushOpenTracker').then(m => m.PushOpenTracker),
   { ssr: false }
 );
+const HomeChatPopup = dynamic(
+  () => import('@/components/HomeChatPopup').then(m => m.HomeChatPopup),
+  { ssr: false }
+);
 const RADIO_SRC = "https://a4.asurahosting.com:7820/radio.mp3";
 
 function GlobalRadioBanner() {
@@ -278,6 +282,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <PointsProgressPopup />
       {user && !pathname.startsWith('/admin') && <HadithQuizRetryPopup userId={user.id} />}
       {user && !pathname.startsWith('/admin') && <EnablePushPrompt />}
+      {!pathname.startsWith('/admin') && pathname !== '/chat' && <HomeChatPopup />}
       <main className="app-shell-main min-h-screen pb-24 sm:pb-20 pattern-islamic">
         <div className="app-shell-backdrop" aria-hidden="true" />
         <div className="app-shell-grid" aria-hidden="true" />

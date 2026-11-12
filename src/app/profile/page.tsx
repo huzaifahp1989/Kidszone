@@ -11,6 +11,8 @@ import { NotificationSettings } from '@/components/NotificationSettings';
 import { AchievementGrid } from '@/components/AchievementGrid';
 import { StreakCalendar } from '@/components/StreakCalendar';
 import { getKidLevelTitle } from '@/lib/level-names';
+import { levelProgress } from '@/lib/levels';
+import { DEFAULT_AVATAR_ID, getAvatar } from '@/data/avatars';
 import { POINTS_DAILY_CAP } from '@/lib/points-policy';
 import { useAgeMode } from '@/lib/age-mode';
 import { MAX_FAMILY_MEMBERS, normalizeUsername } from '@/lib/family-accounts';
@@ -319,6 +321,7 @@ export default function ProfilePage() {
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [userPoints, setUserPoints] = useState<any>(null);
+  const [avatarId, setAvatarId] = useState<string | null>(null);
   const [familyMembers, setFamilyMembers] = useState<FamilyMemberRow[]>([]);
   const [siblingName, setSiblingName] = useState('');
   const [siblingUsername, setSiblingUsername] = useState('');
@@ -353,6 +356,24 @@ export default function ProfilePage() {
     }
     fetchPoints();
   }, [user?.id, profile]);
+
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      if (!user?.id) return;
+      try {
+        const headers = await getAuthFetchHeaders();
+        const res = await fetch('/api/me/avatar', { cache: 'no-store', headers });
+        const data = await res.json().catch(() => ({}));
+        if (active && res.ok && data?.avatarId) setAvatarId(String(data.avatarId));
+      } catch {
+        // non-blocking: fall back to the default avatar
+      }
+    })();
+    return () => {
+      active = false;
+    };
+  }, [user?.id]);
 
   useEffect(() => {
     if (profile) {
@@ -715,11 +736,38 @@ export default function ProfilePage() {
     );
   }
 
+  const levelInfo = levelProgress(profile?.points ?? 0);
+  const avatarEmoji = (getAvatar(avatarId ?? profile?.avatarId) ?? getAvatar(DEFAULT_AVATAR_ID))!.emoji;
+
   return (
     <div className="min-h-[70vh] flex items-center justify-center">
       <div className="w-full max-w-xl bg-white shadow-lg rounded-xl p-6">
         <h1 className="text-2xl font-bold text-center mb-2">Your Profile</h1>
         <p className="text-center text-gray-600 mb-6">Manage your details and see your progress</p>
+
+        <Link
+          href="/avatar"
+          className="mb-6 flex items-center gap-3 rounded-2xl border border-teal-200 bg-gradient-to-r from-teal-50 to-violet-50 p-3 transition hover:border-teal-300"
+        >
+          <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-white text-4xl shadow-sm ring-1 ring-teal-100">
+            {avatarEmoji}
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block text-xs font-bold uppercase tracking-wider text-teal-700">
+              Level {levelInfo.level} · {levelInfo.title}
+            </span>
+            <span className="mt-1 block h-2 overflow-hidden rounded-full bg-white/80">
+              <span
+                className="block h-full rounded-full bg-gradient-to-r from-teal-400 to-violet-500"
+                style={{ width: `${Math.round(levelInfo.progressRatio * 100)}%` }}
+              />
+            </span>
+            <span className="mt-1 block text-[11px] text-gray-500">
+              {levelInfo.nextLevelXp - (profile?.points ?? 0)} XP to level {levelInfo.level + 1} · Tap to change your avatar
+            </span>
+          </span>
+          <span className="shrink-0 text-xs font-bold text-teal-700">Edit</span>
+        </Link>
 
         {error && <div className="mb-4 rounded-lg bg-red-50 text-red-700 px-4 py-3 text-sm">{error}</div>}
         {message && <div className="mb-4 rounded-lg bg-green-50 text-green-700 px-4 py-3 text-sm">{message}</div>}

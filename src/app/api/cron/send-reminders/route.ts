@@ -7,6 +7,9 @@ import { authorizeCron } from '@/lib/cron-auth';
 
 export const dynamic = 'force-dynamic';
 
+const REMINDER_FROM =
+  process.env.RESEND_FROM || process.env.CHAT_EMAIL_FROM || 'Islamic Kids Platform <onboarding@resend.dev>';
+
 type ReminderUser = {
   uid: string;
   name: string | null;
@@ -228,7 +231,7 @@ export async function GET(request: Request) {
             Authorization: `Bearer ${RESEND_API_KEY}`,
           },
           body: JSON.stringify({
-            from: 'Islamic Kids Platform <onboarding@resend.dev>',
+            from: REMINDER_FROM,
             to: [toEmail],
             subject: `Kids Zone: ${childName}'s quiz is waiting!`,
             html: `

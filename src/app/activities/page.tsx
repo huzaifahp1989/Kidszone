@@ -57,13 +57,6 @@ const EXTRA_POINT_ACTIVITIES: Array<{
     note: 'Listen for at least 3 minutes before claiming daily points.',
   },
   {
-    title: 'Rabi ul Awwal Seerah Quiz',
-    href: '/competitions/rabi-ul-awwal',
-    pointsLabel: 'Prize draw',
-    limitLabel: 'One written entry',
-    note: 'Type your own Seerah answers. Admin marks every question by hand.',
-  },
-  {
     title: 'Audio Quiz',
     href: '/audio-quiz',
     pointsLabel: `+${AUDIO_COMPETITION_APPROVED_POINTS} points`,

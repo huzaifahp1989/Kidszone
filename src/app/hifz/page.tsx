@@ -7,6 +7,7 @@ import { useAuth } from '@/lib/auth-context';
 import { supabase } from '@/lib/supabase';
 import { HIFZ_SURAH_LIST, type HifzSurah } from '@/data/hifz-surahs';
 import { SurahRecorder } from '@/components/SurahRecorder';
+import { HifzRevisionCard } from '@/components/HifzRevisionCard';
 
 type HifzRow = {
   surah_number: number;
@@ -154,6 +155,8 @@ export default function HifzPage() {
           Database setup needed: run the migration <code className="text-xs">20260611_hifz_and_push.sql</code> in Supabase.
         </div>
       )}
+
+      <HifzRevisionCard />
 
       <div className="flex flex-wrap gap-2">
         {(['all', 'beginner', 'intermediate', 'advanced'] as const).map((f) => (

@@ -30,6 +30,8 @@ import DailyMissions from '@/components/DailyMissions';
 import { DailyDuaCard } from '@/components/DailyDuaCard';
 import { SurahOfTheWeekCard } from '@/components/SurahOfTheWeekCard';
 import { ComeBackNudge } from '@/components/ComeBackNudge';
+import { DailyStreakCard } from '@/components/DailyStreakCard';
+import { WeeklyQuestBoard } from '@/components/WeeklyQuestBoard';
 import { WeeklyChallengeCard } from '@/components/WeeklyChallengeCard';
 import { RamadanModeCard } from '@/components/RamadanModeCard';
 import ReferralTokenHub from '@/components/ReferralTokenHub';
@@ -164,12 +166,6 @@ function CompetitionsBand() {
           >
             Written hub
           </Link>
-          <Link
-            href="/competitions/rabi-ul-awwal"
-            className="inline-flex items-center justify-center rounded-2xl border border-teal-200 bg-white px-5 py-3 text-sm font-bold text-teal-800 hover:bg-teal-50"
-          >
-            Seerah quiz
-          </Link>
         </div>
       </div>
     </section>
@@ -245,6 +241,7 @@ export default function Home() {
 
           <TodayRail />
           <PointsSummaryWidget />
+          <DailyStreakCard />
           <Link
             href="/points-calendar"
             className="feature-tile flex items-center justify-between gap-3 rounded-2xl border border-teal-200 bg-teal-50/70 p-4 transition hover:bg-teal-50"
@@ -261,6 +258,7 @@ export default function Home() {
           <div id="daily-missions">
             <DailyMissions />
           </div>
+          <WeeklyQuestBoard />
           <DailyDuaCard />
           <SurahOfTheWeekCard />
           <WeeklyChallengeCard />

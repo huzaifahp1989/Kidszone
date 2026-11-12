@@ -9,6 +9,27 @@ import {
   type MonthlyWinner,
 } from '@/lib/monthly-winners';
 
+function WinnerAvatar({ photoUrl, name }: { photoUrl: string | null; name: string }) {
+  const [failed, setFailed] = React.useState(false);
+
+  if (photoUrl && !failed) {
+    return (
+      <img
+        src={photoUrl}
+        alt={name}
+        onError={() => setFailed(true)}
+        className="h-14 w-14 shrink-0 rounded-2xl border border-amber-200 object-cover"
+      />
+    );
+  }
+
+  return (
+    <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-amber-100 text-amber-700">
+      <Trophy size={24} />
+    </span>
+  );
+}
+
 export default function MonthlyWinnersPage() {
   const [winners, setWinners] = React.useState<MonthlyWinner[]>([]);
   const [selectedMonth, setSelectedMonth] = React.useState(() => new Date().toISOString().slice(0, 7));
@@ -114,9 +135,7 @@ export default function MonthlyWinnersPage() {
               {monthWinners.map((winner) => (
                 <article key={winner.id} className="rounded-2xl border border-amber-200 bg-white p-5 shadow-sm">
                   <div className="flex items-start gap-4">
-                    <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-amber-100 text-amber-700">
-                      <Trophy size={24} />
-                    </span>
+                    <WinnerAvatar photoUrl={winner.photo_url} name={winner.first_name} />
                     <div>
                       <h3 className="text-xl font-black text-teal-950">{winner.first_name}</h3>
                       <p className="mt-1 text-sm font-semibold text-sand-700">Age {winner.age_bracket}</p>

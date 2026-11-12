@@ -28,7 +28,6 @@ export type WrittenSubmissionStatus = (typeof WRITTEN_SUBMISSION_STATUSES)[numbe
 export const WRITTEN_WINNER_STATUSES = ['awaiting_verification', 'confirmed', 'disqualified'] as const;
 export type WrittenWinnerStatus = (typeof WRITTEN_WINNER_STATUSES)[number];
 
-export const DEFAULT_WRITTEN_SLUG = 'rabi-ul-awwal-seerah-2026';
 export const DEFAULT_MAX_ANSWER_LENGTH = 2000;
 export const DEFAULT_QUESTION_COUNT = 10;
 export const DEFAULT_MAX_MARKS_PER_QUESTION = 10;

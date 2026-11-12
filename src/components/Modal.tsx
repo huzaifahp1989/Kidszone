@@ -1,4 +1,5 @@
 import React, { ReactNode } from 'react';
+import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 
@@ -24,6 +25,11 @@ export const Modal: React.FC<ModalProps> = ({
   size = 'md',
 }) => {
   const reduceMotion = useReducedMotion();
+  const [mounted, setMounted] = React.useState(false);
+
+  React.useEffect(() => {
+    setMounted(true);
+  }, []);
 
   React.useEffect(() => {
     if (!isOpen) return;
@@ -36,7 +42,9 @@ export const Modal: React.FC<ModalProps> = ({
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [isOpen, onClose]);
 
-  return (
+  if (!mounted) return null;
+
+  return createPortal(
     <AnimatePresence>
       {isOpen && (
       <motion.div
@@ -77,6 +85,7 @@ export const Modal: React.FC<ModalProps> = ({
         </motion.div>
       </motion.div>
     )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body
   );
 };

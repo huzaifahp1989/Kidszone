@@ -312,8 +312,10 @@ export default function AdminRecordingsList() {
             <option value="">All Categories</option>
             <option value="quran">Qur'an</option>
             <option value="nasheed">Nasheed</option>
+            <option value="islamic_reminder">Islamic Reminder</option>
             <option value="story">Story</option>
             <option value="hadith">Hadith</option>
+            <option value="general_audio">General Audio</option>
           </select>
 
           <div className="ml-auto flex items-center bg-gray-100 rounded-lg px-3 py-2 w-full md:w-auto">

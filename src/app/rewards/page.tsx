@@ -544,26 +544,6 @@ export default function RewardsPage() {
           </div>
         </section>
 
-        <section className="mb-6 rounded-3xl border border-emerald-200 bg-gradient-to-br from-emerald-50 via-white to-amber-50 p-6 shadow-sm">
-          <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
-            <div className="max-w-2xl">
-              <div className="inline-flex items-center gap-2 rounded-full bg-emerald-100 px-3 py-1 text-xs font-bold uppercase tracking-[0.18em] text-emerald-800">
-                <Sparkles size={14} /> Rabi ul Awwal
-              </div>
-              <p className="mt-3 font-extrabold text-emerald-950 text-base md:text-lg">Seerah Written Quiz</p>
-              <p className="mt-2 text-sm text-emerald-800">
-                Type your own answers about the Seerah. Admin marks every entry. Win An-Nasihah World yearly access or a stationery bundle.
-              </p>
-            </div>
-            <Link
-              href="/competitions/rabi-ul-awwal"
-              className="inline-flex items-center justify-center gap-2 rounded-2xl bg-emerald-700 px-5 py-3 text-sm font-bold text-white shadow-lg transition hover:bg-emerald-600"
-            >
-              <Trophy size={18} /> Enter Seerah Quiz
-            </Link>
-          </div>
-        </section>
-
         <section className="mb-6 rounded-3xl border border-amber-200 bg-gradient-to-br from-amber-50 via-white to-yellow-50 p-6 shadow-sm">
           <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
             <div className="max-w-2xl">

@@ -3,7 +3,6 @@ import { isMissingTableError } from '@/lib/challenge-quiz-server';
 import {
   calculatePercentage,
   DEFAULT_MAX_ANSWER_LENGTH,
-  DEFAULT_WRITTEN_SLUG,
   publicDisplayName,
   slugifyCompetitionName,
   toPublicQuestion,
@@ -15,14 +14,6 @@ import {
   type WrittenSubmissionStatus,
   type WrittenWinnerStatus,
 } from '@/lib/written-competition';
-import {
-  RABI_UL_AWWAL_CLOSING_DATE,
-  RABI_UL_AWWAL_SEED_COMPETITION,
-  RABI_UL_AWWAL_SEED_PRIZES,
-  RABI_UL_AWWAL_SEED_QUESTIONS,
-  RABI_UL_AWWAL_START_DATE,
-  RABI_UL_AWWAL_WINNER_ANNOUNCEMENT_DATE,
-} from '@/lib/written-competition-seed';
 
 export { isMissingTableError };
 
@@ -301,157 +292,6 @@ export function buildCompetitionPayload(body: Record<string, unknown>) {
   if (body.showWinnersPublicly != null) payload.show_winners_publicly = Boolean(body.showWinnersPublicly);
   if (body.active != null) payload.active = Boolean(body.active);
   return payload;
-}
-
-export async function seedRabiUlAwwalCompetition() {
-  const { data: existing, error: existingError } = await supabaseAdmin
-    .from(WRITTEN_COMPETITIONS_TABLE)
-    .select('id, slug, start_date, closing_date, winner_announcement_date, active, max_attempts')
-    .eq('slug', DEFAULT_WRITTEN_SLUG)
-    .maybeSingle();
-  if (existingError) {
-    if (isMissingTableError(existingError)) return { tableMissing: true as const, created: false, competitionId: null };
-    throw existingError;
-  }
-
-  const fixedStartDate = RABI_UL_AWWAL_START_DATE;
-  const fixedClosingDate = RABI_UL_AWWAL_CLOSING_DATE;
-  const fixedWinnerAnnouncementDate = RABI_UL_AWWAL_WINNER_ANNOUNCEMENT_DATE;
-
-  let competitionId = existing?.id ? str(existing.id) : '';
-  let created = false;
-
-  if (!competitionId) {
-    const { data, error } = await supabaseAdmin
-      .from(WRITTEN_COMPETITIONS_TABLE)
-      .insert({
-        slug: RABI_UL_AWWAL_SEED_COMPETITION.slug,
-        name: RABI_UL_AWWAL_SEED_COMPETITION.name,
-        description: RABI_UL_AWWAL_SEED_COMPETITION.description,
-        category: RABI_UL_AWWAL_SEED_COMPETITION.category,
-        rules: RABI_UL_AWWAL_SEED_COMPETITION.rules,
-        prize_information: RABI_UL_AWWAL_SEED_COMPETITION.prizeInformation,
-        start_date: fixedStartDate,
-        closing_date: fixedClosingDate,
-        winner_announcement_date: fixedWinnerAnnouncementDate,
-        question_count: RABI_UL_AWWAL_SEED_COMPETITION.questionCount,
-        max_answer_length: RABI_UL_AWWAL_SEED_COMPETITION.maxAnswerLength,
-        min_age: RABI_UL_AWWAL_SEED_COMPETITION.minAge,
-        max_attempts: RABI_UL_AWWAL_SEED_COMPETITION.maxAttempts,
-        min_score_required: RABI_UL_AWWAL_SEED_COMPETITION.minScoreRequired,
-        winners_count: RABI_UL_AWWAL_SEED_COMPETITION.winnersCount,
-        show_winners_publicly: RABI_UL_AWWAL_SEED_COMPETITION.showWinnersPublicly,
-        active: true,
-      })
-      .select('id')
-      .single();
-    if (error) throw error;
-    competitionId = str(data.id);
-    created = true;
-  } else if (existing) {
-    const needsDateFix =
-      String(existing.start_date ?? '') !== fixedStartDate ||
-      String(existing.closing_date ?? '') !== fixedClosingDate ||
-      String(existing.winner_announcement_date ?? '') !== fixedWinnerAnnouncementDate ||
-      Number(existing.max_attempts ?? 1) !== 1 ||
-      Boolean(existing.active) !== true;
-
-    if (needsDateFix) {
-      const { error: updateError } = await supabaseAdmin
-        .from(WRITTEN_COMPETITIONS_TABLE)
-        .update({
-          start_date: fixedStartDate,
-          closing_date: fixedClosingDate,
-          winner_announcement_date: fixedWinnerAnnouncementDate,
-          max_attempts: 1,
-          active: true,
-        })
-        .eq('id', competitionId);
-      if (updateError) throw updateError;
-    }
-  }
-
-  const { count: questionCount, error: questionCountError } = await supabaseAdmin
-    .from(WRITTEN_QUESTIONS_TABLE)
-    .select('id', { count: 'exact', head: true })
-    .eq('competition_id', competitionId);
-  if (questionCountError) {
-    if (isMissingTableError(questionCountError)) {
-      return { tableMissing: true as const, created, competitionId };
-    }
-    throw questionCountError;
-  }
-
-  if (!questionCount) {
-    await insertSeedQuestions(competitionId);
-  }
-
-  const { count: prizeCount, error: prizeCountError } = await supabaseAdmin
-    .from(WRITTEN_PRIZES_TABLE)
-    .select('id', { count: 'exact', head: true })
-    .eq('competition_id', competitionId);
-  if (prizeCountError) {
-    if (isMissingTableError(prizeCountError)) {
-      return { tableMissing: true as const, created, competitionId };
-    }
-    throw prizeCountError;
-  }
-
-  if (!prizeCount) {
-    const { error } = await supabaseAdmin.from(WRITTEN_PRIZES_TABLE).insert(
-      RABI_UL_AWWAL_SEED_PRIZES.map((prize) => ({
-        competition_id: competitionId,
-        prize_name: prize.prizeName,
-        prize_description: prize.prizeDescription,
-        prize_image_url: prize.prizeImageUrl,
-        sponsor: prize.sponsor,
-        sponsor_logo_url: prize.sponsorLogoUrl,
-        winners_count: prize.winnersCount,
-        prize_order: prize.prizeOrder,
-        active: true,
-      }))
-    );
-    if (error) throw error;
-  }
-
-  return { tableMissing: false as const, created, competitionId };
-}
-
-async function insertSeedQuestions(competitionId: string) {
-  const fullRows = RABI_UL_AWWAL_SEED_QUESTIONS.map((question) => ({
-    competition_id: competitionId,
-    question_number: question.questionNumber,
-    question_text: question.questionText,
-    difficulty: question.difficulty,
-    topic: question.topic,
-    expected_answer: question.expectedAnswer,
-    marking_guidance: question.markingGuidance,
-    max_marks: question.maxMarks,
-    min_required_points: question.minRequiredPoints,
-    source: question.source,
-    explanation: question.explanation,
-    active: true,
-  }));
-  const { error } = await supabaseAdmin.from(WRITTEN_QUESTIONS_TABLE).insert(fullRows);
-  if (!error) return;
-
-  const missingColumn =
-    error.code === 'PGRST204' || /schema cache|could not find the .* column/i.test(String(error.message || ''));
-  if (!missingColumn) throw error;
-
-  const minimalRows = RABI_UL_AWWAL_SEED_QUESTIONS.map((question) => ({
-    competition_id: competitionId,
-    question_number: question.questionNumber,
-    question_text: question.questionText,
-    difficulty: question.difficulty,
-    topic: question.topic,
-    expected_answer: question.expectedAnswer,
-    marking_guidance: question.markingGuidance,
-    max_marks: question.maxMarks,
-    active: true,
-  }));
-  const retry = await supabaseAdmin.from(WRITTEN_QUESTIONS_TABLE).insert(minimalRows);
-  if (retry.error) throw retry.error;
 }
 
 export function nextPrizeForWinner(

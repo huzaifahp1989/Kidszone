@@ -68,12 +68,6 @@ const EXTRA_ACTIVITIES: Array<{
     pointsLabel: `+${QURAN_LISTEN_POINTS} points`,
   },
   {
-    title: 'Rabi ul Awwal Seerah Quiz',
-    href: '/competitions/rabi-ul-awwal',
-    note: 'Write your own Seerah answers. Admin marks the entry for the prize draw.',
-    pointsLabel: 'Prize draw',
-  },
-  {
     title: 'Audio Quiz',
     href: '/audio-quiz',
     note: 'Record your answer. Points are added when approved.',

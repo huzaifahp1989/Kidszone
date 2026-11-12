@@ -20,6 +20,7 @@ import {
   type UserReminderSettings,
 } from '@/lib/reminder-types';
 import { isNativeApp, registerOneSignalPlayerId } from '@/lib/push-notifications';
+import { alarmsSupported, registerAlarmTapHandler, syncDailyAlarms } from '@/lib/local-alarms';
 
 export default function RemindersPage() {
   const { user, profile, loading: authLoading } = useAuth();
@@ -45,9 +46,13 @@ export default function RemindersPage() {
       if (!res.ok) {
         throw new Error(data.hint || data.error || 'Could not load your reminder settings.');
       }
-      if (data.settings) setSettings(data.settings);
+      const loaded = mergeReminderSettings(data.settings ?? null);
+      setSettings(loaded);
       setWebPushConfigured(Boolean(data.webPushConfigured));
       setNativePushConfigured(Boolean(data.nativePushConfigured));
+      // Re-apply saved alarms to this device — reinstalling or clearing iOS
+      // notifications drops locally scheduled alarms.
+      if (alarmsSupported()) void syncDailyAlarms(loaded);
     } catch (err) {
       console.error('[reminders] load error:', err);
       setMessage(err instanceof Error ? err.message : 'Could not load your reminder settings.');
@@ -102,6 +107,15 @@ export default function RemindersPage() {
     });
   }, [user?.id]);
 
+  // Tapping an offline alarm opens the matching task page inside the app.
+  useEffect(() => {
+    let remove: (() => void) | undefined;
+    registerAlarmTapHandler().then((fn) => {
+      remove = fn;
+    });
+    return () => remove?.();
+  }, []);
+
   const update = (key: ReminderKey, patch: Partial<{ enabled: boolean; time: string }>) => {
     setSettings((prev) => ({
       ...prev,
@@ -149,20 +163,34 @@ export default function RemindersPage() {
 
       setWebPushConfigured(Boolean(data.webPushConfigured));
       setNativePushConfigured(Boolean(data.nativePushConfigured));
+
+      // Schedule (or clear) the on-device alarms that ring even when offline.
+      let alarmNote = '';
+      if (alarmsSupported()) {
+        const { scheduled, granted } = await syncDailyAlarms(clean);
+        if (!granted) {
+          alarmNote = ' Allow notification access to switch on offline alarms.';
+        } else if (scheduled > 0) {
+          alarmNote = ` ${scheduled} offline alarm${scheduled === 1 ? '' : 's'} set on this device.`;
+        } else {
+          alarmNote = ' Offline alarms cleared.';
+        }
+      }
+
       const pushReady = isNativeApp() ? Boolean(data.nativePushConfigured) : Boolean(data.webPushConfigured);
       if (!anyEnabled) {
-        setMessage('Reminders saved and switched off.');
+        setMessage(`Reminders saved and switched off.${alarmNote}`);
       } else if (!pushReady) {
-        setMessage('Reminders saved, but background push is not configured on the server yet.');
+        setMessage(`Reminders saved, but background push is not configured on the server yet.${alarmNote}`);
       } else if (!playerId) {
         setMessage(
-          isNativeApp()
+          (isNativeApp()
             ? 'Reminders saved, but this device is not subscribed to OneSignal. Allow notifications in app settings and try again.'
-            : 'Reminders saved, but this browser is not subscribed to OneSignal. Check Web Push setup and allow notifications.'
+            : 'Reminders saved, but this browser is not subscribed to OneSignal. Check Web Push setup and allow notifications.') + alarmNote
         );
       } else {
         setPushStatus('This device is registered for push.');
-        setMessage('Reminders saved. OneSignal will send them at your local time, even when the app is closed.');
+        setMessage(`Reminders saved. OneSignal will send them at your local time, even when the app is closed.${alarmNote}`);
       }
     } catch (error) {
       setMessage(error instanceof Error ? error.message : 'Could not save reminders.');
@@ -225,6 +253,8 @@ export default function RemindersPage() {
             </p>
             <p className="rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-700">
               Reminder times use this device&apos;s timezone ({timeZone}).
+              {isNativeApp() &&
+                ' In the app these are also saved as offline alarms that ring at the chosen time, even with no internet.'}
               {((isNativeApp() && nativePushConfigured === false) ||
                 (!isNativeApp() && webPushConfigured === false)) &&
                 ' Background delivery needs the matching OneSignal App ID and REST API key configured on the server.'}

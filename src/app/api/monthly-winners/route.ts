@@ -11,7 +11,7 @@ export async function GET() {
 
   const { data, error } = await supabaseAdmin
     .from('monthly_public_winners')
-    .select('id, month_key, first_name, age_bracket, city')
+    .select('id, month_key, first_name, age_bracket, city, photo_url')
     .eq('parent_guardian_consent', true)
     .eq('is_published', true)
     .order('month_key', { ascending: false })

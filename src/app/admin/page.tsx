@@ -881,12 +881,12 @@ export default function AdminPanel() {
           className="mb-6 flex w-full flex-col gap-2 rounded-2xl border-2 border-emerald-300 bg-gradient-to-r from-emerald-50 to-amber-50 p-5 text-left shadow-sm transition hover:border-emerald-400 hover:shadow-md sm:flex-row sm:items-center sm:justify-between"
         >
           <div>
-            <p className="text-xs font-bold uppercase tracking-[0.16em] text-emerald-800">Rabi ul Awwal · Written competition</p>
-            <p className="mt-1 text-lg font-black text-emerald-950">Seerah Quiz · add questions · mark answers · pick winners</p>
+            <p className="text-xs font-bold uppercase tracking-[0.16em] text-emerald-800">Written competitions</p>
+            <p className="mt-1 text-lg font-black text-emerald-950">Add questions · mark answers · pick winners</p>
             <p className="mt-1 text-sm text-emerald-900/80">Kids type their own answers. You mark every submission by hand. No automatic scoring.</p>
           </div>
           <span className="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-5 py-3 text-sm font-bold text-white shadow hover:bg-emerald-700">
-            Open Seerah Quiz
+            Open written competitions
             <AdminNotificationBadge count={adminNotifyCounts.writtenCompetition} />
           </span>
         </button>
@@ -983,10 +983,22 @@ export default function AdminPanel() {
             DB Setup
           </button>
           <button
+            onClick={() => router.push('/admin/health')}
+            className="px-5 py-2.5 rounded-lg font-bold transition bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 hover:border-teal-300 flex items-center gap-2 whitespace-nowrap"
+          >
+            🩺 Health Check
+          </button>
+          <button
             onClick={() => router.push('/admin/weekly-winners')}
             className="px-5 py-2.5 rounded-lg font-bold transition bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 hover:border-sky-300 flex items-center gap-2 whitespace-nowrap"
           >
             Weekly Winners
+          </button>
+          <button
+            onClick={() => router.push('/admin/teams')}
+            className="px-5 py-2.5 rounded-lg font-bold transition bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 hover:border-teal-300 flex items-center gap-2 whitespace-nowrap"
+          >
+            👥 Teams
           </button>
           <button
             onClick={() => router.push('/admin/announcements')}

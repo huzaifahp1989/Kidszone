@@ -2,19 +2,35 @@ import { NextResponse } from 'next/server';
 import { isAdminRequest } from '@/lib/admin-auth';
 
 export const dynamic = 'force-dynamic';
+export const maxDuration = 30;
 
-type OpenverseResult = {
-  id?: string;
-  title?: string;
+type CommonsImageInfo = {
   url?: string;
-  thumbnail?: string;
-  foreign_landing_url?: string;
-  creator?: string | null;
-  license?: string;
+  thumburl?: string;
+  descriptionurl?: string;
+  extmetadata?: Record<string, { value?: string }>;
 };
 
+type CommonsPage = {
+  pageid?: number;
+  title?: string;
+  imageinfo?: CommonsImageInfo[];
+};
+
+function stripHtml(value?: string | null): string | null {
+  if (!value) return null;
+  const text = String(value)
+    .replace(/<[^>]*>/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+  return text || null;
+}
+
 /**
- * Free Creative Commons image search via Openverse (no API key required).
+ * Free Creative Commons image search.
+ *
+ * Uses Wikimedia Commons (no API key, stable) — the previous Openverse endpoint now
+ * requires credentials and left the request hanging until the route timed out.
  */
 export async function GET(request: Request) {
   if (!isAdminRequest(request)) {
@@ -28,14 +44,24 @@ export async function GET(request: Request) {
   }
 
   try {
-    const url = new URL('https://api.openverse.org/v1/images/');
-    url.searchParams.set('q', q);
-    url.searchParams.set('page_size', '16');
-    url.searchParams.set('license_type', 'commercial,modification');
+    const url = new URL('https://commons.wikimedia.org/w/api.php');
+    url.searchParams.set('action', 'query');
+    url.searchParams.set('format', 'json');
+    url.searchParams.set('generator', 'search');
+    url.searchParams.set('gsrsearch', `filetype:bitmap ${q}`);
+    url.searchParams.set('gsrnamespace', '6');
+    url.searchParams.set('gsrlimit', '16');
+    url.searchParams.set('prop', 'imageinfo');
+    url.searchParams.set('iiprop', 'url|extmetadata');
+    url.searchParams.set('iiurlwidth', '800');
 
     const res = await fetch(url.toString(), {
-      headers: { Accept: 'application/json', 'User-Agent': 'IslamicKidsLearningPlatform/1.0' },
-      next: { revalidate: 0 },
+      headers: {
+        Accept: 'application/json',
+        'User-Agent': 'IslamicKidsLearningPlatform/1.0 (admin push image search)',
+      },
+      signal: AbortSignal.timeout(12_000),
+      cache: 'no-store',
     });
 
     if (!res.ok) {
@@ -46,20 +72,25 @@ export async function GET(request: Request) {
       );
     }
 
-    const data = (await res.json()) as { results?: OpenverseResult[] };
-    const images = (data.results || [])
-      .map((row) => {
-        const full = String(row.url || '').trim();
-        const thumb = String(row.thumbnail || row.url || '').trim();
-        if (!full && !thumb) return null;
+    const data = (await res.json()) as { query?: { pages?: Record<string, CommonsPage> } };
+    const pages = Object.values(data.query?.pages || {});
+
+    const images = pages
+      .map((page) => {
+        const info = page.imageinfo?.[0];
+        const full = String(info?.url || '').trim();
+        const thumb = String(info?.thumburl || full).trim();
+        if (!thumb && !full) return null;
+        const meta = info?.extmetadata || {};
         return {
-          id: String(row.id || full),
-          title: String(row.title || 'Untitled').slice(0, 120),
-          url: full || thumb,
+          id: String(page.pageid ?? thumb),
+          title: String(page.title || 'Untitled').replace(/^File:/, '').slice(0, 120),
+          // 800px thumb keeps rich notifications light while staying sharp on mobile.
+          url: thumb || full,
           thumbnail: thumb || full,
-          creator: row.creator ? String(row.creator) : null,
-          license: row.license ? String(row.license) : null,
-          sourceUrl: row.foreign_landing_url ? String(row.foreign_landing_url) : null,
+          creator: stripHtml(meta.Artist?.value),
+          license: stripHtml(meta.LicenseShortName?.value),
+          sourceUrl: info?.descriptionurl ? String(info.descriptionurl) : null,
         };
       })
       .filter(Boolean);
@@ -67,6 +98,10 @@ export async function GET(request: Request) {
     return NextResponse.json({ q, images, count: images.length });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Image search failed';
-    return NextResponse.json({ error: message }, { status: 500 });
+    const timedOut = /abort|timeout/i.test(message);
+    return NextResponse.json(
+      { error: timedOut ? 'Image search timed out — try again.' : message },
+      { status: timedOut ? 504 : 500 }
+    );
   }
 }

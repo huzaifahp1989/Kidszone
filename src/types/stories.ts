@@ -1,3 +1,5 @@
+import type { RecordingCategory, RecordingStatus } from '@/lib/recording-categories';
+
 export interface Story {
   id: string;
   title: string;
@@ -13,17 +15,17 @@ export interface Recording {
   id: string;
   user_id: string | null;
   story_id: string | null;
-  category?: 'quran' | 'nasheed' | 'story' | 'hadith' | null;
+  category?: RecordingCategory | null;
   audio_path: string;
   audio_url?: string;
   duration?: number;
   duration_seconds?: number | null;
-  status: 'submitted' | 'approved' | 'rejected';
+  status: RecordingStatus;
   points_awarded?: number | null;
   admin_notes?: string | null;
   admin_feedback?: string | null;
   is_published: boolean;
-  submitted_at?: string;
+  submitted_at?: string | null;
   reviewed_at?: string | null;
   created_at?: string;
 
@@ -31,7 +33,7 @@ export interface Recording {
   title?: string;
   description?: string;
   child_name?: string;
-  
+
   // Joins
   story?: Story;
 }

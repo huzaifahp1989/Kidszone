@@ -18,11 +18,15 @@
     },
     {
       "path": "/api/cron/send-scheduled-pushes",
-      "schedule": "*/5 * * * *"
+      "schedule": "0 6 * * *"
     },
     {
       "path": "/api/cron/send-user-reminders",
-      "schedule": "*/5 * * * *"
+      "schedule": "30 6 * * *"
+    },
+    {
+      "path": "/api/cron/streak-risk-reminders",
+      "schedule": "0 7 * * *"
     }
   ]
 }

@@ -2,18 +2,23 @@ export const MONTHLY_WINNER_AGE_BRACKETS = ['5-7', '8-10', '11-12', '13-14'] as 
 
 export type MonthlyWinnerAgeBracket = (typeof MONTHLY_WINNER_AGE_BRACKETS)[number];
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
 export type MonthlyWinner = {
   id: string;
   month_key: string;
   first_name: string;
   age_bracket: MonthlyWinnerAgeBracket;
   city: string;
+  photo_url: string | null;
 };
 
 export type AdminMonthlyWinner = MonthlyWinner & {
+  user_id: string | null;
   parent_guardian_consent: boolean;
   is_published: boolean;
   created_at: string;
+  photo_path: string | null;
 };
 
 export type MonthlyWinnerInput = {
@@ -23,6 +28,11 @@ export type MonthlyWinnerInput = {
   city: string;
   parentGuardianConsent: true;
   isPublished: boolean;
+  /** Optional learner account to highlight on the leaderboard. */
+  userId?: string | null;
+  /** Optional photo shown next to the winner on the winners page. */
+  photoUrl?: string | null;
+  photoPath?: string | null;
 };
 
 type ValidationResult =
@@ -45,6 +55,28 @@ export function validateMonthlyWinnerInput(value: unknown): ValidationResult {
   const firstName = typeof input.firstName === 'string' ? input.firstName.trim().replace(/\s+/g, ' ') : '';
   const ageBracket = input.ageBracket;
   const city = typeof input.city === 'string' ? input.city.trim().replace(/\s+/g, ' ') : '';
+
+  let userId: string | null = null;
+  if (input.userId !== undefined && input.userId !== null && String(input.userId).trim() !== '') {
+    const candidate = String(input.userId).trim();
+    if (!UUID_RE.test(candidate)) {
+      return { ok: false, error: 'Choose a valid learner to link.' };
+    }
+    userId = candidate;
+  }
+
+  let photoUrl: string | null = null;
+  let photoPath: string | null = null;
+  if (input.photoUrl !== undefined && input.photoUrl !== null && String(input.photoUrl).trim() !== '') {
+    const candidate = String(input.photoUrl).trim();
+    if (candidate.length > 500 || /[\r\n]/.test(candidate)) {
+      return { ok: false, error: 'That photo link is not valid.' };
+    }
+    photoUrl = candidate;
+    if (input.photoPath !== undefined && input.photoPath !== null && String(input.photoPath).trim() !== '') {
+      photoPath = String(input.photoPath).trim().slice(0, 300);
+    }
+  }
 
   if (!isValidMonthKey(monthKey)) {
     return { ok: false, error: 'Choose a valid competition month.' };
@@ -74,6 +106,8 @@ export function validateMonthlyWinnerInput(value: unknown): ValidationResult {
       city,
       parentGuardianConsent: true,
       isPublished: input.isPublished === true,
+      ...(userId ? { userId } : {}),
+      ...(photoUrl ? { photoUrl, photoPath } : {}),
     },
   };
 }

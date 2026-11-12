@@ -6,6 +6,8 @@ export type WeeklyWinnerAnnouncement = {
   weekly_points?: number | null;
   monthly_points?: number | null;
   total_points?: number | null;
+  /** Best-effort last-played date (YYYY-MM-DD) when the winner matches a learner account. */
+  last_played?: string | null;
   created_at: string;
 };
 

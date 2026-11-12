@@ -3,7 +3,6 @@ import { requireMatchingUser } from '@/lib/request-auth';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import {
   answerTextForQuestion,
-  DEFAULT_WRITTEN_SLUG,
   isWrittenCompetitionOpen,
   unknownErrorMessage,
 } from '@/lib/written-competition';
@@ -12,7 +11,6 @@ import {
   getUserWrittenSubmission,
   listActiveQuestions,
   mapSubmission,
-  seedRabiUlAwwalCompetition,
   WRITTEN_SUBMISSION_ALREADY_EXISTS,
   WRITTEN_ANSWERS_TABLE,
   WRITTEN_SUBMISSIONS_TABLE,
@@ -47,11 +45,7 @@ export async function POST(request: Request, context: { params: Promise<{ slug: 
       .eq('uid', auth.userId)
       .maybeSingle();
 
-    let questions = await listActiveQuestions(result.competition.id);
-    if (questions.length === 0 && slug === DEFAULT_WRITTEN_SLUG) {
-      await seedRabiUlAwwalCompetition().catch(() => null);
-      questions = await listActiveQuestions(result.competition.id);
-    }
+    const questions = await listActiveQuestions(result.competition.id);
     if (questions.length === 0) {
       return NextResponse.json({ error: 'No active questions have been added yet.' }, { status: 400 });
     }

@@ -849,8 +849,13 @@ export async function runDuePushSchedules(now = new Date()): Promise<{
   let sent = 0;
   let skipped = 0;
 
-  /** Only deliver if the slot is recent — clear ancient backlog without spamming. */
-  const FRESH_WINDOW_MS = 4 * 60 * 60 * 1000; // 4 hours
+  /**
+   * A slot missed while the cron was down should still be delivered — dropping it
+   * outright means a schedule can silently never fire when the minute-level cron is
+   * unavailable (e.g. a daily-only Vercel cron, or a failed deploy). 26h covers a full
+   * day of downtime; anything older is cleared so a long backlog can't blast at once.
+   */
+  const FRESH_WINDOW_MS = 26 * 60 * 60 * 1000; // 26 hours
   /** Hard cap: multiple schedules per cron / Run due click (hourly cron → 10/hour is safe) */
   const MAX_SENDS_PER_RUN = 10;
 

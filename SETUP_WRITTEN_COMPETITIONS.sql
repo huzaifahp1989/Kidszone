@@ -1,7 +1,7 @@
 -- Run this in the Supabase SQL editor if automatic setup is unavailable.
--- Then open /admin/written-competitions and click "Create Rabi ul Awwal quiz" if needed.
+-- Then open /admin/written-competitions to create a competition.
 
--- Written-answer competitions (reusable: Rabi ul Awwal Seerah, Ramadan, Qur'an, Hadith, etc.)
+-- Written-answer competitions (reusable: Seerah, Ramadan, Qur'an, Hadith, etc.)
 -- Kids type their own answers. Admin marks by hand. No auto-grading.
 
 CREATE TABLE IF NOT EXISTS public.written_competitions (

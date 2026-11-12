@@ -5,7 +5,6 @@ import { isAdminRequest } from '@/lib/admin-auth';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import {
   isMissingTableError,
-  seedRabiUlAwwalCompetition,
   WRITTEN_COMPETITIONS_TABLE,
 } from '@/lib/written-competition-server';
 
@@ -48,19 +47,8 @@ export async function POST(request: Request) {
     );
   }
 
-  const seeded = await seedRabiUlAwwalCompetition().catch((error: unknown) => {
-    console.error('[written-competitions/setup] seed failed', error);
-    return null;
-  });
   return NextResponse.json({
     success: true,
-    message: seeded?.created
-      ? 'Written competition tables are ready. The Rabi ul Awwal Seerah Quiz was created for you to edit.'
-      : seeded?.competitionId
-        ? 'Written competition tables are ready. The Rabi ul Awwal Seerah Quiz was updated.'
-        : 'Written competition tables are ready.',
-    competitionId: seeded?.competitionId ?? null,
-    created: Boolean(seeded?.created),
-    seeded: Boolean(seeded?.competitionId),
+    message: 'Written competition tables are ready.',
   });
 }
