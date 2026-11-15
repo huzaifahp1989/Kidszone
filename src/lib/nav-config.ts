@@ -26,6 +26,7 @@ import {
   Tv,
   Headphones,
   Ticket,
+  Share2,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -41,6 +42,8 @@ export interface NavItem {
   description: string;
   icon: LucideIcon;
   group: NavGroupId;
+  /** Points to an outside site — render as a new-tab / system-browser link. */
+  external?: boolean;
 }
 
 export interface NavGroup {
@@ -67,6 +70,22 @@ export const CHAT_ITEM: NavItem = {
   description: 'Ask us a question',
   icon: MessageCircle,
   group: 'track',
+};
+
+/**
+ * Community platform. Learners join iMedia Connect to post their own feed,
+ * audio and reels. Marked `external` so every nav surface opens it in a new
+ * tab (and in the system browser on the native apps) rather than trying to
+ * route it inside the app.
+ */
+export const IMEDIA_CONNECT_ITEM: NavItem = {
+  href: 'https://imediaconnect.co.uk',
+  label: 'iMedia Connect',
+  shortLabel: 'Connect',
+  description: 'Join iMedia Connect to post your feed, audio and reels',
+  icon: Share2,
+  group: 'play',
+  external: true,
 };
 
 /**
@@ -420,6 +439,7 @@ export const NAV_GROUPS: NavGroup[] = [
 export const ALL_NAV_ITEMS: NavItem[] = [
   HOME_ITEM,
   ...NAV_GROUPS.flatMap((group) => group.items),
+  IMEDIA_CONNECT_ITEM,
   CHAT_ITEM,
 ];
 
@@ -459,4 +479,12 @@ export function isNavActive(pathname: string | null | undefined, href: string): 
 
 export function isGroupActive(pathname: string | null | undefined, group: NavGroup): boolean {
   return group.items.some((item) => isNavActive(pathname, item.href));
+}
+
+/**
+ * True when a nav item points outside the app. Such items must be rendered as
+ * a plain anchor (new tab / system browser), never a Next.js client route.
+ */
+export function isExternalNavItem(item: Pick<NavItem, 'href' | 'external'>): boolean {
+  return Boolean(item.external) || /^https?:\/\//i.test(item.href);
 }

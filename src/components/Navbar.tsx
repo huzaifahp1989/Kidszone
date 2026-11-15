@@ -8,6 +8,7 @@ import {
   ALL_NAV_ITEMS,
   CHAT_ITEM,
   HOME_ITEM,
+  IMEDIA_CONNECT_ITEM,
   NAV_GROUPS,
   type NavGroupId,
   isGroupActive,
@@ -187,6 +188,18 @@ export const Navbar: React.FC<NavbarProps> = ({ username, points, level, badges,
               );
             })}
 
+            <a
+              href={IMEDIA_CONNECT_ITEM.href}
+              target="_blank"
+              rel="noopener noreferrer"
+              title={IMEDIA_CONNECT_ITEM.description}
+              aria-label={IMEDIA_CONNECT_ITEM.label}
+              className="flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-xl bg-gradient-to-r from-amber-400 to-orange-500 px-3 py-2.5 text-sm font-bold text-white shadow-sm transition-all transition-bouncy hover:shadow-md interactive-focus touch-target xl:px-3.5"
+            >
+              <IMEDIA_CONNECT_ITEM.icon size={16} />
+              <span className="hidden xl:inline">{IMEDIA_CONNECT_ITEM.label}</span>
+            </a>
+
             <Link
               href={CHAT_ITEM.href}
               className={`flex items-center gap-1.5 rounded-xl px-4 py-2.5 text-sm font-semibold transition-all transition-bouncy interactive-focus touch-target ${
@@ -323,6 +336,22 @@ export const Navbar: React.FC<NavbarProps> = ({ username, points, level, badges,
             transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
           >
             <div className="flex flex-col gap-4">
+              <a
+                href={IMEDIA_CONNECT_ITEM.href}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => setIsMenuOpen(false)}
+                className="mx-4 flex items-center gap-3 rounded-2xl border-2 border-teal-300 bg-gradient-to-r from-teal-50 to-sky-50 px-4 py-3.5 shadow-sm interactive-focus"
+              >
+                <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-teal-500 text-xl text-white" aria-hidden>
+                  📱
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block text-base font-black text-teal-950">{IMEDIA_CONNECT_ITEM.label}</span>
+                  <span className="block text-xs font-semibold text-teal-800/80">Post your feed, audio &amp; reels</span>
+                </span>
+              </a>
+
               {NAV_GROUPS.map((group) => (
                 <div key={group.id}>
                   <p className="px-4 pb-1 text-xs font-bold uppercase tracking-[0.14em] text-sand-500">

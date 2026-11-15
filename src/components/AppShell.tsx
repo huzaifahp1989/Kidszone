@@ -20,6 +20,7 @@ import { HadithQuizRetryPopup } from '@/components/HadithQuizRetryPopup';
 import { EnablePushPrompt } from '@/components/EnablePushPrompt';
 import { FeatureSpotlightCarousel } from '@/components/FeatureSpotlightCarousel';
 import { LIVE_APP_URL } from '@/lib/app-url';
+import { IMEDIA_CONNECT_ITEM } from '@/lib/nav-config';
 
 const Navbar = dynamic(() => import('./Navbar').then(m => m.Navbar), { ssr: false });
 const OneSignalProvider = dynamic(
@@ -333,6 +334,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             >
               📝 Feedback
             </Link>
+            <a
+              href={IMEDIA_CONNECT_ITEM.href}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 rounded-xl border border-amber-300/40 bg-amber-400/20 px-4 py-2 text-sm font-bold text-white backdrop-blur-sm transition hover:bg-amber-400/30"
+            >
+              📱 {IMEDIA_CONNECT_ITEM.label}
+            </a>
           </div>
           <div className="mt-6 inline-flex items-center gap-2 rounded-2xl border border-white/15 bg-white/10 px-6 py-3 backdrop-blur-sm">
             <VisitorCounter />

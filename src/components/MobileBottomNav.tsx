@@ -8,6 +8,7 @@ import {
   BOTTOM_TABS,
   CHAT_ITEM,
   HOME_ITEM,
+  IMEDIA_CONNECT_ITEM,
   NAV_GROUPS,
   isNavActive,
 } from '@/lib/nav-config';
@@ -104,6 +105,22 @@ export const MobileBottomNav = () => {
                   <span className="block text-xs font-semibold text-amber-800/80">Record voice answers &amp; earn points</span>
                 </span>
               </Link>
+
+              <a
+                href={IMEDIA_CONNECT_ITEM.href}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => setIsSheetOpen(false)}
+                className="mb-4 flex items-center gap-3 rounded-2xl border-2 border-teal-300 bg-gradient-to-r from-teal-50 to-sky-50 px-4 py-3.5 shadow-sm interactive-focus"
+              >
+                <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-teal-500 text-xl text-white" aria-hidden>
+                  📱
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block text-base font-black text-teal-950">{IMEDIA_CONNECT_ITEM.label}</span>
+                  <span className="block text-xs font-semibold text-teal-800/80">Post your feed, audio &amp; reels</span>
+                </span>
+              </a>
 
               <div className="space-y-4">
                 {NAV_GROUPS.map((group) => (
@@ -209,7 +226,7 @@ export const MobileBottomNav = () => {
         aria-label="Primary"
         className="fixed inset-x-0 bottom-0 z-50 border-t border-sand-200/70 bg-white/95 backdrop-blur-xl sm:hidden"
       >
-        <div className="mobile-tabbar-inset mx-auto grid max-w-lg grid-cols-5">
+        <div className="mobile-tabbar-inset mx-auto grid max-w-lg grid-cols-6">
           {BOTTOM_TABS.map((item) => {
             const active = isNavActive(pathname, item.href);
             return (
@@ -232,6 +249,20 @@ export const MobileBottomNav = () => {
               </Link>
             );
           })}
+
+          <a
+            href={IMEDIA_CONNECT_ITEM.href}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label={IMEDIA_CONNECT_ITEM.label}
+            title={IMEDIA_CONNECT_ITEM.description}
+            className="flex flex-col items-center justify-center gap-1 px-1 py-2.5 text-[11px] font-bold text-amber-600 transition interactive-focus"
+          >
+            <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-gradient-to-br from-amber-400 to-orange-500 text-white shadow-sm">
+              <IMEDIA_CONNECT_ITEM.icon size={20} />
+            </span>
+            <span>{IMEDIA_CONNECT_ITEM.shortLabel}</span>
+          </a>
 
           <button
             type="button"
