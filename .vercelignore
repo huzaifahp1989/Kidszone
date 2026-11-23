@@ -6,3 +6,6 @@ dist
 .trae
 .log
 .figma
+.env
+.env.*
+tmp_*
