@@ -70,9 +70,14 @@ export default function AdminEmailsPage() {
   const [sending, setSending] = useState(false);
   const [result, setResult] = useState<{ ok: boolean; text: string } | null>(null);
 
-  const load = React.useCallback(async () => {
-    setLoading(true);
-    setLoadError('');
+  // `silent` refreshes run in the background without flashing the loading state,
+  // and without disturbing whatever the admin has typed in the compose form.
+  const load = React.useCallback(async (options?: { silent?: boolean }) => {
+    const silent = options?.silent === true;
+    if (!silent) {
+      setLoading(true);
+      setLoadError('');
+    }
     try {
       const response = await fetch('/api/admin/send-email', { headers: { 'x-admin-auth': 'true' } });
       const data = await response.json();
@@ -86,9 +91,11 @@ export default function AdminEmailsPage() {
       setTransport((data.transport as Transport) || 'none');
       setSender(data.sender || '');
     } catch (error) {
-      setLoadError(error instanceof Error ? error.message : 'Failed to load recipients');
+      if (!silent) {
+        setLoadError(error instanceof Error ? error.message : 'Failed to load recipients');
+      }
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   }, []);
 
@@ -99,6 +106,26 @@ export default function AdminEmailsPage() {
     }
     void load();
   }, [router, load]);
+
+  // Keep the signup list current: new signups load automatically every minute
+  // and whenever the admin returns to this tab, so nobody has to hit Refresh.
+  useEffect(() => {
+    const interval = window.setInterval(() => {
+      void load({ silent: true });
+    }, 60_000);
+
+    const refreshIfVisible = () => {
+      if (document.visibilityState === 'visible') void load({ silent: true });
+    };
+    document.addEventListener('visibilitychange', refreshIfVisible);
+    window.addEventListener('focus', refreshIfVisible);
+
+    return () => {
+      window.clearInterval(interval);
+      document.removeEventListener('visibilitychange', refreshIfVisible);
+      window.removeEventListener('focus', refreshIfVisible);
+    };
+  }, [load]);
 
   const audienceRecipients = useMemo(
     () => (audience === 'all' ? recipients : recipients.filter((r) => r.audience === audience)),
@@ -209,9 +236,12 @@ export default function AdminEmailsPage() {
             All signup emails from Supabase — send to everyone, a group, or pick individuals.
           </p>
         </div>
-        <Button variant="secondary" onClick={() => void load()} disabled={loading}>
-          <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} /> Refresh
-        </Button>
+        <div className="flex flex-col items-end gap-1">
+          <Button variant="secondary" onClick={() => void load()} disabled={loading}>
+            <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} /> Refresh
+          </Button>
+          <span className="text-xs text-slate-400">New signups load automatically</span>
+        </div>
       </div>
 
       {transport === 'none' && !loading && (
