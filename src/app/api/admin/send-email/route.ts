@@ -1,8 +1,10 @@
+import { randomUUID } from 'crypto';
 import { NextResponse } from 'next/server';
 import nodemailer from 'nodemailer';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { isAdminRequest } from '@/lib/admin-auth';
 import { isAdminSessionRequest } from '@/lib/admin-session';
+import { getAppUrl } from '@/lib/app-url';
 
 // GET  /api/admin/send-email  -> list every signup email (recipients for the admin mailer)
 // POST /api/admin/send-email  -> send an email to all signups, one audience, or a chosen set
@@ -31,6 +33,11 @@ import { isAdminSessionRequest } from '@/lib/admin-session';
 //   "text": "Email content",       // plain text (used when html is absent)
 //   "replyTo": "support@..."       // optional reply-to
 // }
+//
+// Response: { sent, recipientCount, failed: [{ email, error }], sendId, ... }.
+// Any recipient in `failed` was NOT delivered. A per-recipient 1x1 pixel is
+// appended to the HTML (see /api/track/open) and each send is recorded in
+// `email_sends` so opens can be counted for the admin dashboard.
 
 export const dynamic = 'force-dynamic';
 
@@ -196,14 +203,33 @@ type MailJob = {
   html?: string;
   text?: string;
   replyTo?: string;
+  /** When present, a per-recipient open-tracking pixel is appended to the HTML. */
+  track?: { sendId: string; appUrl: string };
 };
 
-type MailResult = { ok: boolean; sent: number; errors: string[] };
+/** A single recipient that could not be delivered to. */
+type MailFailure = { email: string; error: string };
+
+type MailResult = { ok: boolean; sent: number; failed: MailFailure[] };
+
+/**
+ * Appends a 1x1 tracking pixel unique to this send + recipient so opens can be
+ * counted. Falls back to appending at the end if there is no </body> tag.
+ */
+function withTrackingPixel(html: string, sendId: string, recipient: string, appUrl: string): string {
+  const src = `${appUrl}/api/track/open?s=${encodeURIComponent(sendId)}&e=${encodeURIComponent(recipient)}`;
+  const img = `<img src="${src}" width="1" height="1" alt="" style="display:block;width:1px;height:1px;border:0;outline:none;opacity:0;" />`;
+  return html.includes('</body>') ? html.replace('</body>', `${img}</body>`) : html + img;
+}
 
 async function sendViaGmail(job: MailJob): Promise<MailResult> {
   const gmail = getGmailCredentials();
   if (!gmail) {
-    return { ok: false, sent: 0, errors: ['Gmail not configured (set EMAIL_USER and EMAIL_PASS)'] };
+    return {
+      ok: false,
+      sent: 0,
+      failed: job.to.map((email) => ({ email, error: 'Gmail not configured (set EMAIL_USER and EMAIL_PASS)' })),
+    };
   }
 
   const transporter = nodemailer.createTransport({
@@ -213,40 +239,45 @@ async function sendViaGmail(job: MailJob): Promise<MailResult> {
 
   const from = getFromAddress(job.fromName);
   let sent = 0;
-  const errors: string[] = [];
+  const failed: MailFailure[] = [];
   for (const to of job.to) {
     try {
+      const html =
+        job.html && job.track
+          ? withTrackingPixel(job.html, job.track.sendId, to, job.track.appUrl)
+          : job.html;
       await transporter.sendMail({
         from,
         to,
         subject: job.subject,
-        ...(job.html ? { html: job.html } : {}),
+        ...(html ? { html } : {}),
         ...(job.text ? { text: job.text } : {}),
         ...(job.replyTo ? { replyTo: job.replyTo } : {}),
       });
       sent += 1;
     } catch (err) {
-      errors.push(`${to}: ${err instanceof Error ? err.message : 'Unknown error'}`);
+      failed.push({ email: to, error: err instanceof Error ? err.message : 'Unknown error' });
     }
   }
-  return { ok: sent > 0, sent, errors };
+  return { ok: sent > 0, sent, failed };
 }
 
 async function sendViaResend(job: MailJob): Promise<MailResult> {
   const apiKey = process.env.RESEND_API_KEY;
   if (!apiKey) {
-    return {
-      ok: false,
-      sent: 0,
-      errors: ['No email transport configured (set EMAIL_USER/EMAIL_PASS or RESEND_API_KEY)'],
-    };
+    const message = 'No email transport configured (set EMAIL_USER/EMAIL_PASS or RESEND_API_KEY)';
+    return { ok: false, sent: 0, failed: job.to.map((email) => ({ email, error: message })) };
   }
 
   const from = getFromAddress(job.fromName);
   let sent = 0;
-  const errors: string[] = [];
+  const failed: MailFailure[] = [];
   for (const to of job.to) {
     try {
+      const html =
+        job.html && job.track
+          ? withTrackingPixel(job.html, job.track.sendId, to, job.track.appUrl)
+          : job.html;
       const response = await fetch('https://api.resend.com/emails', {
         method: 'POST',
         headers: {
@@ -257,21 +288,48 @@ async function sendViaResend(job: MailJob): Promise<MailResult> {
           from,
           to,
           subject: job.subject,
-          ...(job.html ? { html: job.html } : {}),
-          ...(job.text && !job.html ? { text: job.text } : {}),
+          ...(html ? { html } : {}),
+          ...(job.text && !html ? { text: job.text } : {}),
           ...(job.replyTo ? { reply_to: job.replyTo } : {}),
         }),
       });
       if (response.ok) {
         sent += 1;
       } else {
-        errors.push(`${to}: ${await response.text()}`);
+        failed.push({ email: to, error: await response.text() });
       }
     } catch (err) {
-      errors.push(`${to}: ${err instanceof Error ? err.message : 'Unknown error'}`);
+      failed.push({ email: to, error: err instanceof Error ? err.message : 'Unknown error' });
     }
   }
-  return { ok: sent > 0, sent, errors };
+  return { ok: sent > 0, sent, failed };
+}
+
+/**
+ * Records a broadcast so opens can be reported against it. Best effort: a
+ * missing table (migration not applied) or a write error never fails the send.
+ */
+async function recordSend(entry: {
+  id: string;
+  subject: string;
+  fromName: string;
+  audience: string;
+  transport: string;
+  recipientCount: number;
+  sentCount: number;
+  failedCount: number;
+}): Promise<void> {
+  const { error } = await supabaseAdmin.from('email_sends').insert({
+    id: entry.id,
+    subject: entry.subject,
+    from_name: entry.fromName,
+    audience: entry.audience,
+    transport: entry.transport,
+    recipient_count: entry.recipientCount,
+    sent_count: entry.sentCount,
+    failed_count: entry.failedCount,
+  });
+  if (error) console.error('[send-email] could not record send:', error.message);
 }
 
 export async function GET(request: Request) {
@@ -359,23 +417,45 @@ export async function POST(req: Request) {
 
     const resolvedFromName = resolveFromName(fromName);
 
+    const sendId = randomUUID();
+    const transport = getGmailCredentials() ? 'gmail' : 'resend';
+
     const job: MailJob = {
       to: recipients,
       fromName: resolvedFromName,
       subject: subject.trim(),
       ...(safeHtml ? { html: safeHtml } : { html: textToHtml(safeText) }),
       ...(typeof replyTo === 'string' && replyTo.trim() ? { replyTo: replyTo.trim() } : {}),
+      track: { sendId, appUrl: getAppUrl() },
     };
 
-    const usingGmail = Boolean(getGmailCredentials());
+    const usingGmail = transport === 'gmail';
     const result = usingGmail ? await sendViaGmail(job) : await sendViaResend(job);
+
+    // Record the broadcast (best effort) so opens can be reported against it.
+    await recordSend({
+      id: sendId,
+      subject: subject.trim(),
+      fromName: resolvedFromName,
+      audience: audienceLabel,
+      transport,
+      recipientCount: recipients.length,
+      sentCount: result.sent,
+      failedCount: result.failed.length,
+    });
 
     if (!result.ok) {
       return NextResponse.json(
-        { error: `Failed to send to any recipients: ${result.errors.join('; ')}` },
+        {
+          error: `Failed to send to any recipients`,
+          failed: result.failed,
+          sendId,
+        },
         { status: 500 }
       );
     }
+
+    const failedEmails = result.failed.map((f) => f.email);
 
     return NextResponse.json({
       success: true,
@@ -383,9 +463,11 @@ export async function POST(req: Request) {
       recipientCount: recipients.length,
       audience: audienceLabel,
       fromName: resolvedFromName,
-      transport: usingGmail ? 'gmail' : 'resend',
+      transport,
+      sendId,
+      failed: result.failed,
       message: `Sent ${result.sent} of ${recipients.length} email(s) to ${audienceLabel} as ${resolvedFromName}`,
-      ...(result.errors.length > 0 ? { warning: `Failed for: ${result.errors.join('; ')}` } : {}),
+      ...(failedEmails.length > 0 ? { warning: `Not sent to: ${failedEmails.join(', ')}` } : {}),
     });
   } catch (error: any) {
     console.error('[send-email]', error);

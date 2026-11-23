@@ -2,7 +2,7 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { CheckCircle2, Mail, RefreshCw, Search, Send, Users } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, Eye, Mail, RefreshCw, Search, Send, Users } from 'lucide-react';
 import { Button } from '@/components';
 import { buildEmailTemplate } from '@/lib/admin-email';
 
@@ -14,6 +14,21 @@ type Recipient = {
   email: string;
   createdAt: string | null;
   audience: Audience;
+};
+
+type SendFailure = { email: string; error: string };
+
+type EmailStat = {
+  id: string;
+  subject: string;
+  fromName: string | null;
+  audience: string | null;
+  transport: string | null;
+  recipientCount: number;
+  sentCount: number;
+  failedCount: number;
+  createdAt: string | null;
+  opens: number;
 };
 
 type Transport = 'gmail' | 'resend' | 'none';
@@ -68,7 +83,12 @@ export default function AdminEmailsPage() {
   const [replyTo, setReplyTo] = useState('');
 
   const [sending, setSending] = useState(false);
-  const [result, setResult] = useState<{ ok: boolean; text: string } | null>(null);
+  const [result, setResult] = useState<{ ok: boolean; text: string; failed: SendFailure[] } | null>(
+    null
+  );
+
+  const [stats, setStats] = useState<EmailStat[]>([]);
+  const [trackingReady, setTrackingReady] = useState(true);
 
   // `silent` refreshes run in the background without flashing the loading state,
   // and without disturbing whatever the admin has typed in the compose form.
@@ -99,23 +119,43 @@ export default function AdminEmailsPage() {
     }
   }, []);
 
+  // Recent broadcasts + how many recipients opened each one (tracking pixel).
+  const loadStats = React.useCallback(async () => {
+    try {
+      const response = await fetch('/api/admin/email-stats', {
+        headers: { 'x-admin-auth': 'true' },
+      });
+      const data = await response.json();
+      if (!response.ok) return;
+      setStats(Array.isArray(data.sends) ? data.sends : []);
+      setTrackingReady(data.trackingReady !== false);
+    } catch {
+      // Stats are informational; ignore transient failures.
+    }
+  }, []);
+
   useEffect(() => {
     if (typeof window !== 'undefined' && localStorage.getItem('admin_auth') !== 'true') {
       router.push('/admin/login');
       return;
     }
     void load();
-  }, [router, load]);
+    void loadStats();
+  }, [router, load, loadStats]);
 
   // Keep the signup list current: new signups load automatically every minute
   // and whenever the admin returns to this tab, so nobody has to hit Refresh.
   useEffect(() => {
     const interval = window.setInterval(() => {
       void load({ silent: true });
+      void loadStats();
     }, 60_000);
 
     const refreshIfVisible = () => {
-      if (document.visibilityState === 'visible') void load({ silent: true });
+      if (document.visibilityState === 'visible') {
+        void load({ silent: true });
+        void loadStats();
+      }
     };
     document.addEventListener('visibilitychange', refreshIfVisible);
     window.addEventListener('focus', refreshIfVisible);
@@ -125,7 +165,7 @@ export default function AdminEmailsPage() {
       document.removeEventListener('visibilitychange', refreshIfVisible);
       window.removeEventListener('focus', refreshIfVisible);
     };
-  }, [load]);
+  }, [load, loadStats]);
 
   const audienceRecipients = useMemo(
     () => (audience === 'all' ? recipients : recipients.filter((r) => r.audience === audience)),
@@ -170,24 +210,24 @@ export default function AdminEmailsPage() {
     setResult(null);
 
     if (!subject.trim()) {
-      setResult({ ok: false, text: 'Add a subject before sending.' });
+      setResult({ ok: false, text: 'Add a subject before sending.', failed: [] });
       return;
     }
     if (!message.trim()) {
-      setResult({ ok: false, text: 'Write a message before sending.' });
+      setResult({ ok: false, text: 'Write a message before sending.', failed: [] });
       return;
     }
 
     const userIds = recipients.filter((r) => selected.has(r.uid)).map((r) => r.uid);
     if (mode === 'selected' && userIds.length === 0) {
-      setResult({ ok: false, text: 'Select at least one recipient.' });
+      setResult({ ok: false, text: 'Select at least one recipient.', failed: [] });
       return;
     }
 
     const targetCount = mode === 'audience' ? audienceRecipients.length : userIds.length;
     const targetLabel = mode === 'audience' ? `${audienceLabel} (${targetCount})` : `${targetCount} selected`;
     if (targetCount === 0) {
-      setResult({ ok: false, text: 'No recipients in this selection.' });
+      setResult({ ok: false, text: 'No recipients in this selection.', failed: [] });
       return;
     }
 
@@ -212,12 +252,20 @@ export default function AdminEmailsPage() {
         }),
       });
       const data = await response.json();
-      if (!response.ok) throw new Error(data.error || 'Failed to send emails');
+      const failed: SendFailure[] = Array.isArray(data.failed) ? data.failed : [];
+      if (!response.ok) {
+        setResult({ ok: false, text: data.error || 'Failed to send emails', failed });
+        return;
+      }
 
-      const warning = data.warning ? ` (${data.warning})` : '';
-      setResult({ ok: true, text: `${data.message || 'Emails sent'}${warning}` });
+      setResult({ ok: true, text: data.message || 'Emails sent', failed });
+      void loadStats();
     } catch (error) {
-      setResult({ ok: false, text: error instanceof Error ? error.message : 'Failed to send emails' });
+      setResult({
+        ok: false,
+        text: error instanceof Error ? error.message : 'Failed to send emails',
+        failed: [],
+      });
     } finally {
       setSending(false);
     }
@@ -326,15 +374,34 @@ export default function AdminEmailsPage() {
           </div>
 
           {result && (
-            <div
-              className={`mt-4 flex items-start gap-2 rounded-xl px-4 py-3 text-sm ${
-                result.ok
-                  ? 'bg-teal-50 text-teal-900 border border-teal-200'
-                  : 'bg-red-50 text-red-700 border border-red-200'
-              }`}
-            >
-              {result.ok && <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" />}
-              <span className="whitespace-pre-wrap">{result.text}</span>
+            <div className="mt-4 space-y-3">
+              <div
+                className={`flex items-start gap-2 rounded-xl px-4 py-3 text-sm ${
+                  result.ok
+                    ? 'bg-teal-50 text-teal-900 border border-teal-200'
+                    : 'bg-red-50 text-red-700 border border-red-200'
+                }`}
+              >
+                {result.ok && <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" />}
+                <span className="whitespace-pre-wrap">{result.text}</span>
+              </div>
+
+              {result.failed.length > 0 && (
+                <div className="rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+                  <p className="flex items-center gap-2 font-bold">
+                    <AlertTriangle className="h-4 w-4 shrink-0" />
+                    Email not sent ({result.failed.length})
+                  </p>
+                  <ul className="mt-2 max-h-40 space-y-1 overflow-y-auto">
+                    {result.failed.map((f) => (
+                      <li key={f.email} className="text-xs">
+                        <span className="font-semibold">{f.email}</span>
+                        <span className="text-amber-700"> — {f.error}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -434,6 +501,71 @@ export default function AdminEmailsPage() {
             </ul>
           )}
         </div>
+      </div>
+
+      {/* Recent sends + opens */}
+      <div className="mt-6 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <div className="mb-1 flex items-center gap-2">
+          <Eye className="h-5 w-5 text-violet-600" />
+          <h2 className="text-lg font-bold text-slate-800">Recent sends &amp; opens</h2>
+        </div>
+        <p className="mb-4 text-sm text-slate-500">
+          How many people opened each email (tracked with a hidden pixel; some mail apps block
+          images, so real opens can be higher).
+        </p>
+
+        {!trackingReady ? (
+          <p className="rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+            Open tracking is not enabled yet — apply the{' '}
+            <code className="font-mono">20261123_email_tracking.sql</code> migration in Supabase to
+            start counting opens.
+          </p>
+        ) : stats.length === 0 ? (
+          <p className="py-6 text-center text-sm text-slate-400">No emails sent yet.</p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-sm">
+              <thead>
+                <tr className="border-b border-slate-200 text-xs uppercase tracking-wide text-slate-400">
+                  <th className="py-2 pr-3 font-semibold">Subject</th>
+                  <th className="py-2 pr-3 font-semibold">Audience</th>
+                  <th className="py-2 pr-3 font-semibold">Sent</th>
+                  <th className="py-2 pr-3 font-semibold">Not sent</th>
+                  <th className="py-2 pr-3 font-semibold">Opened</th>
+                  <th className="py-2 font-semibold">When</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {stats.map((s) => {
+                  const rate = s.sentCount > 0 ? Math.round((s.opens / s.sentCount) * 100) : 0;
+                  return (
+                    <tr key={s.id}>
+                      <td className="max-w-[16rem] truncate py-2.5 pr-3 font-semibold text-slate-800">
+                        {s.subject}
+                      </td>
+                      <td className="py-2.5 pr-3 text-slate-600">{s.audience || '—'}</td>
+                      <td className="py-2.5 pr-3 text-slate-600">{s.sentCount}</td>
+                      <td
+                        className={`py-2.5 pr-3 font-semibold ${
+                          s.failedCount > 0 ? 'text-red-600' : 'text-slate-400'
+                        }`}
+                      >
+                        {s.failedCount}
+                      </td>
+                      <td className="py-2.5 pr-3">
+                        <span className="font-bold text-teal-700">{s.opens}</span>
+                        <span className="text-xs text-slate-400"> ({rate}%)</span>
+                      </td>
+                      <td className="py-2.5 text-xs text-slate-500">
+                        {s.createdAt ? new Date(s.createdAt).toLocaleString() : '—'}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
     </div>
   );
