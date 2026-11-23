@@ -5,19 +5,27 @@ import { isAdminRequest } from '@/lib/admin-auth';
 import { isAdminSessionRequest } from '@/lib/admin-session';
 
 // GET  /api/admin/send-email  -> list every signup email (recipients for the admin mailer)
-// POST /api/admin/send-email  -> send an email to all signups or a chosen set
+// POST /api/admin/send-email  -> send an email to all signups, one audience, or a chosen set
 //
 // The recipient list comes from Supabase Auth (auth.users), which is the
 // authoritative record of every signup. The public `users` table is only a
 // partial mirror, so it is used just to add display names.
 //
+// Signups are split into two audiences using the metadata fields written by
+// each signup form. Kids Zone signups carry the Kids Zone form fields; signups
+// from the other apps on this project carry a different field set. The two sets
+// do not overlap, so the split is unambiguous.
+//
 // Sending prefers the Gmail account configured with EMAIL_USER / EMAIL_PASS
-// (so mail appears to come from that inbox) and falls back to Resend.
+// (so mail appears to come from that inbox) and falls back to Resend. The
+// display name is configurable: Islam Media Central (default) or Kids Zone.
 //
 // POST body:
 // {
 //   "userIds": ["uid1", "uid2"],   // send to specific users (Supabase auth ids)
 //   "allUsers": true,              // send to every signup
+//   "audience": "kids" | "other", // or send to one audience (alternative to allUsers)
+//   "fromName": "kids",           // "central" (default) | "kids"
 //   "subject": "Email Subject",
 //   "html": "<p>Email content</p>",// HTML content
 //   "text": "Email content",       // plain text (used when html is absent)
@@ -26,10 +34,23 @@ import { isAdminSessionRequest } from '@/lib/admin-session';
 
 export const dynamic = 'force-dynamic';
 
-const FROM_NAME = 'Kids Zone';
-const RESEND_FROM_FALLBACK = 'Kids Zone <onboarding@resend.dev>';
 const AUTH_PAGE_SIZE = 1000;
 const MAX_AUTH_PAGES = 20;
+
+/** Display names a broadcast can be sent as. */
+const SEND_AS = {
+  central: 'Islam Media Central',
+  kids: 'Kids Zone',
+} as const;
+
+/**
+ * Metadata fields written by the Kids Zone signup form. Signups created by the
+ * other apps on this Supabase project never set these, so their presence marks
+ * a Kids Zone signup.
+ */
+const KIDS_ZONE_FIELDS = ['family_email', 'madrasahName', 'needsSignupForm', 'age', 'contactNumber'];
+
+type Audience = 'kids' | 'other';
 
 function isAuthorized(request: Request): boolean {
   return isAdminRequest(request) || isAdminSessionRequest(request);
@@ -42,18 +63,28 @@ function getGmailCredentials(): { user: string; pass: string } | null {
   return { user, pass };
 }
 
-function getFromAddress(): string {
+function resolveFromName(value: unknown): string {
+  const raw = String(value || '').trim().toLowerCase();
+  if (raw === 'kids' || raw === 'kids zone') return SEND_AS.kids;
+  return SEND_AS.central;
+}
+
+/** Builds the From header: the chosen display name plus the real sending address. */
+function getFromAddress(fromName: string): string {
+  const gmail = getGmailCredentials();
+  if (gmail) return `${fromName} <${gmail.user}>`;
+
   const configured = (
     process.env.EMAIL_FROM ||
     process.env.CHAT_EMAIL_FROM ||
     process.env.RESEND_FROM ||
     ''
   ).trim();
-  if (configured) return configured;
-
-  const gmail = getGmailCredentials();
-  if (gmail) return `${FROM_NAME} <${gmail.user}>`;
-  return RESEND_FROM_FALLBACK;
+  if (configured) {
+    const match = configured.match(/<([^>]+)>/);
+    return `${fromName} <${match ? match[1] : configured}>`;
+  }
+  return `${fromName} <onboarding@resend.dev>`;
 }
 
 function escapeHtml(text: string): string {
@@ -75,19 +106,27 @@ function sanitizeRecipient(value: unknown): string {
   if (!email.includes('@')) return '';
   if (email.endsWith('@local')) return '';
   if (email.endsWith('@example.com')) return '';
-  if (email.startsWith('user-') && /@local$/i.test(email)) return '';
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return '';
   return email;
 }
 
-type Recipient = { uid: string; name: string; email: string; createdAt: string | null };
+type Recipient = {
+  uid: string;
+  name: string;
+  email: string;
+  createdAt: string | null;
+  audience: Audience;
+};
 
 /**
  * Every signup, straight from Supabase Auth. Names are enriched from the
  * public `users` table when available, otherwise derived from user metadata.
  */
 async function listAllSignups(): Promise<Recipient[]> {
-  const byUid = new Map<string, { email: string; createdAt: string | null; metaName: string }>();
+  const byUid = new Map<
+    string,
+    { email: string; createdAt: string | null; metaName: string; audience: Audience }
+  >();
 
   for (let page = 1; page <= MAX_AUTH_PAGES; page += 1) {
     const { data, error } = await supabaseAdmin.auth.admin.listUsers({
@@ -100,11 +139,15 @@ async function listAllSignups(): Promise<Recipient[]> {
     for (const authUser of users) {
       const email = sanitizeRecipient(authUser.email);
       if (!email) continue;
+
       const meta = (authUser.user_metadata as Record<string, unknown>) || {};
+      const isKidsZone = KIDS_ZONE_FIELDS.some((field) => meta[field] !== undefined);
+
       byUid.set(authUser.id, {
         email,
         createdAt: authUser.created_at || null,
         metaName: String(meta.name || meta.full_name || meta.fullName || '').trim(),
+        audience: isKidsZone ? 'kids' : 'other',
       });
     }
 
@@ -133,6 +176,7 @@ async function listAllSignups(): Promise<Recipient[]> {
       name: nameByUid.get(uid) || info.metaName || info.email.split('@')[0],
       email: info.email,
       createdAt: info.createdAt,
+      audience: info.audience,
     });
   }
 
@@ -147,6 +191,7 @@ async function listAllSignups(): Promise<Recipient[]> {
 
 type MailJob = {
   to: string[];
+  fromName: string;
   subject: string;
   html?: string;
   text?: string;
@@ -166,12 +211,13 @@ async function sendViaGmail(job: MailJob): Promise<MailResult> {
     auth: { user: gmail.user, pass: gmail.pass },
   });
 
+  const from = getFromAddress(job.fromName);
   let sent = 0;
   const errors: string[] = [];
   for (const to of job.to) {
     try {
       await transporter.sendMail({
-        from: getFromAddress(),
+        from,
         to,
         subject: job.subject,
         ...(job.html ? { html: job.html } : {}),
@@ -189,9 +235,14 @@ async function sendViaGmail(job: MailJob): Promise<MailResult> {
 async function sendViaResend(job: MailJob): Promise<MailResult> {
   const apiKey = process.env.RESEND_API_KEY;
   if (!apiKey) {
-    return { ok: false, sent: 0, errors: ['No email transport configured (set EMAIL_USER/EMAIL_PASS or RESEND_API_KEY)'] };
+    return {
+      ok: false,
+      sent: 0,
+      errors: ['No email transport configured (set EMAIL_USER/EMAIL_PASS or RESEND_API_KEY)'],
+    };
   }
 
+  const from = getFromAddress(job.fromName);
   let sent = 0;
   const errors: string[] = [];
   for (const to of job.to) {
@@ -203,7 +254,7 @@ async function sendViaResend(job: MailJob): Promise<MailResult> {
           Authorization: `Bearer ${apiKey}`,
         },
         body: JSON.stringify({
-          from: getFromAddress(),
+          from,
           to,
           subject: job.subject,
           ...(job.html ? { html: job.html } : {}),
@@ -240,7 +291,17 @@ export async function GET(request: Request) {
     return NextResponse.json({
       recipients,
       total: recipients.length,
-      sender: getFromAddress(),
+      counts: {
+        all: recipients.length,
+        kids: recipients.filter((r) => r.audience === 'kids').length,
+        other: recipients.filter((r) => r.audience === 'other').length,
+      },
+      defaultFromName: SEND_AS.central,
+      sendAsOptions: [
+        { key: 'central', label: SEND_AS.central },
+        { key: 'kids', label: SEND_AS.kids },
+      ],
+      sender: getFromAddress(SEND_AS.central),
       transport,
       source: 'supabase-auth',
     });
@@ -257,7 +318,7 @@ export async function POST(req: Request) {
 
   try {
     const body = await req.json();
-    const { userIds, allUsers, subject, html, text, replyTo } = body;
+    const { userIds, allUsers, audience, fromName, subject, html, text, replyTo } = body;
 
     if (!subject || typeof subject !== 'string' || !subject.trim()) {
       return NextResponse.json({ error: 'subject is required' }, { status: 400 });
@@ -272,13 +333,22 @@ export async function POST(req: Request) {
     const all = await listAllSignups();
 
     let targets: Recipient[];
-    if (allUsers === true) {
+    let audienceLabel: string;
+    if (audience === 'kids' || audience === 'other') {
+      targets = all.filter((r) => r.audience === audience);
+      audienceLabel = audience === 'kids' ? 'Kids Zone' : 'Islam Media Central';
+    } else if (allUsers === true || audience === 'all') {
       targets = all;
+      audienceLabel = 'all signups';
     } else if (Array.isArray(userIds) && userIds.length > 0) {
       const wanted = new Set(userIds.map((id: unknown) => String(id)));
       targets = all.filter((r) => wanted.has(r.uid));
+      audienceLabel = 'selected recipients';
     } else {
-      return NextResponse.json({ error: 'userIds array or allUsers flag is required' }, { status: 400 });
+      return NextResponse.json(
+        { error: 'audience, allUsers flag, or userIds array is required' },
+        { status: 400 }
+      );
     }
 
     const recipients = [...new Set(targets.map((r) => r.email))];
@@ -287,8 +357,11 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'No valid recipients found' }, { status: 404 });
     }
 
+    const resolvedFromName = resolveFromName(fromName);
+
     const job: MailJob = {
       to: recipients,
+      fromName: resolvedFromName,
       subject: subject.trim(),
       ...(safeHtml ? { html: safeHtml } : { html: textToHtml(safeText) }),
       ...(typeof replyTo === 'string' && replyTo.trim() ? { replyTo: replyTo.trim() } : {}),
@@ -308,8 +381,10 @@ export async function POST(req: Request) {
       success: true,
       sent: result.sent,
       recipientCount: recipients.length,
+      audience: audienceLabel,
+      fromName: resolvedFromName,
       transport: usingGmail ? 'gmail' : 'resend',
-      message: `Sent ${result.sent} of ${recipients.length} email(s)`,
+      message: `Sent ${result.sent} of ${recipients.length} email(s) to ${audienceLabel} as ${resolvedFromName}`,
       ...(result.errors.length > 0 ? { warning: `Failed for: ${result.errors.join('; ')}` } : {}),
     });
   } catch (error: any) {

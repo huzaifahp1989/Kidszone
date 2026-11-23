@@ -6,14 +6,30 @@ import { CheckCircle2, Mail, RefreshCw, Search, Send, Users } from 'lucide-react
 import { Button } from '@/components';
 import { buildEmailTemplate } from '@/lib/admin-email';
 
+type Audience = 'kids' | 'other';
+
 type Recipient = {
   uid: string;
   name: string;
   email: string;
   createdAt: string | null;
+  audience: Audience;
 };
 
 type Transport = 'gmail' | 'resend' | 'none';
+
+type AudienceFilter = 'all' | Audience;
+
+const AUDIENCE_FILTERS: { key: AudienceFilter; label: string }[] = [
+  { key: 'all', label: 'All' },
+  { key: 'kids', label: 'Kids Zone' },
+  { key: 'other', label: 'Other' },
+];
+
+const SEND_AS_OPTIONS = [
+  { key: 'central', label: 'Islam Media Central' },
+  { key: 'kids', label: 'Kids Zone' },
+];
 
 const adminHeaders = { 'Content-Type': 'application/json', 'x-admin-auth': 'true' };
 
@@ -36,11 +52,14 @@ export default function AdminEmailsPage() {
   const router = useRouter();
 
   const [recipients, setRecipients] = useState<Recipient[]>([]);
+  const [counts, setCounts] = useState({ all: 0, kids: 0, other: 0 });
   const [transport, setTransport] = useState<Transport>('none');
   const [sender, setSender] = useState('');
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
 
+  const [audience, setAudience] = useState<AudienceFilter>('all');
+  const [sendAs, setSendAs] = useState('central');
   const [search, setSearch] = useState('');
   const [selected, setSelected] = useState<Set<string>>(new Set());
 
@@ -59,6 +78,11 @@ export default function AdminEmailsPage() {
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || 'Failed to load recipients');
       setRecipients(Array.isArray(data.recipients) ? data.recipients : []);
+      setCounts({
+        all: Number(data.counts?.all) || 0,
+        kids: Number(data.counts?.kids) || 0,
+        other: Number(data.counts?.other) || 0,
+      });
       setTransport((data.transport as Transport) || 'none');
       setSender(data.sender || '');
     } catch (error) {
@@ -76,13 +100,18 @@ export default function AdminEmailsPage() {
     void load();
   }, [router, load]);
 
+  const audienceRecipients = useMemo(
+    () => (audience === 'all' ? recipients : recipients.filter((r) => r.audience === audience)),
+    [recipients, audience]
+  );
+
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
-    if (!q) return recipients;
-    return recipients.filter(
+    if (!q) return audienceRecipients;
+    return audienceRecipients.filter(
       (r) => r.email.toLowerCase().includes(q) || r.name.toLowerCase().includes(q)
     );
-  }, [recipients, search]);
+  }, [audienceRecipients, search]);
 
   const toggle = (uid: string) => {
     setSelected((prev) => {
@@ -103,7 +132,14 @@ export default function AdminEmailsPage() {
     });
   };
 
-  const send = async (mode: 'selected' | 'all') => {
+  const selectAudience = () => {
+    setSelected(new Set(audienceRecipients.map((r) => r.uid)));
+  };
+
+  const audienceLabel = AUDIENCE_FILTERS.find((f) => f.key === audience)?.label || 'All';
+  const fromName = SEND_AS_OPTIONS.find((o) => o.key === sendAs)?.label || 'Islam Media Central';
+
+  const send = async (mode: 'selected' | 'audience') => {
     setResult(null);
 
     if (!subject.trim()) {
@@ -121,11 +157,16 @@ export default function AdminEmailsPage() {
       return;
     }
 
-    const targetCount = mode === 'all' ? recipients.length : userIds.length;
-    const confirmText =
-      mode === 'all'
-        ? `Send this email to ALL ${targetCount} signups from ${sender || transport}?`
-        : `Send this email to ${targetCount} selected recipient(s)?`;
+    const targetCount = mode === 'audience' ? audienceRecipients.length : userIds.length;
+    const targetLabel = mode === 'audience' ? `${audienceLabel} (${targetCount})` : `${targetCount} selected`;
+    if (targetCount === 0) {
+      setResult({ ok: false, text: 'No recipients in this selection.' });
+      return;
+    }
+
+    const confirmText = `Send this email to ${targetLabel} as "${fromName}" via ${
+      sender || transport
+    }?`;
     if (typeof window !== 'undefined' && !window.confirm(confirmText)) return;
 
     setSending(true);
@@ -134,8 +175,9 @@ export default function AdminEmailsPage() {
         method: 'POST',
         headers: adminHeaders,
         body: JSON.stringify({
-          allUsers: mode === 'all',
-          userIds: mode === 'all' ? undefined : userIds,
+          audience: mode === 'audience' ? audience : undefined,
+          userIds: mode === 'audience' ? undefined : userIds,
+          fromName: sendAs,
           subject: subject.trim(),
           html: buildEmailTemplate(messageToHtml(message)),
           text: message.trim(),
@@ -164,7 +206,7 @@ export default function AdminEmailsPage() {
             <Mail className="h-6 w-6 text-violet-600" /> Email Users
           </h1>
           <p className="mt-1 text-sm text-slate-500">
-            All signup emails from Supabase — send to everyone, or pick individuals.
+            All signup emails from Supabase — send to everyone, a group, or pick individuals.
           </p>
         </div>
         <Button variant="secondary" onClick={() => void load()} disabled={loading}>
@@ -182,8 +224,8 @@ export default function AdminEmailsPage() {
 
       {transport !== 'none' && !loading && (
         <div className="mb-4 rounded-xl border border-teal-200 bg-teal-50 px-4 py-3 text-sm text-teal-900">
-          Sending via <strong>{transport === 'gmail' ? 'Gmail' : 'Resend'}</strong> as{' '}
-          <strong>{sender}</strong>.
+          Sending via <strong>{transport === 'gmail' ? 'Gmail' : 'Resend'}</strong> from{' '}
+          <strong>imediac786@gmail.com</strong> — the name shown to recipients is chosen below.
         </div>
       )}
 
@@ -191,6 +233,19 @@ export default function AdminEmailsPage() {
         {/* Compose */}
         <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
           <h2 className="mb-4 text-lg font-bold text-slate-800">Compose</h2>
+
+          <label className="mb-1 block text-sm font-semibold text-slate-700">Send as</label>
+          <select
+            value={sendAs}
+            onChange={(e) => setSendAs(e.target.value)}
+            className="mb-4 w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-200"
+          >
+            {SEND_AS_OPTIONS.map((option) => (
+              <option key={option.key} value={option.key}>
+                {option.label}
+              </option>
+            ))}
+          </select>
 
           <label className="mb-1 block text-sm font-semibold text-slate-700">Subject</label>
           <input
@@ -223,11 +278,11 @@ export default function AdminEmailsPage() {
             <Button
               variant="primary"
               className="justify-center"
-              disabled={sending || recipients.length === 0}
-              onClick={() => void send('all')}
+              disabled={sending || audienceRecipients.length === 0}
+              onClick={() => void send('audience')}
             >
               <Users className="h-4 w-4" />
-              {sending ? 'Sending…' : `Send to ALL (${recipients.length})`}
+              {sending ? 'Sending…' : `Send to ${audienceLabel} (${audienceRecipients.length})`}
             </Button>
             <Button
               variant="secondary"
@@ -269,6 +324,33 @@ export default function AdminEmailsPage() {
             </button>
           </div>
 
+          <div className="mb-3 flex flex-wrap gap-2">
+            {AUDIENCE_FILTERS.map((filter) => {
+              const active = audience === filter.key;
+              return (
+                <button
+                  key={filter.key}
+                  type="button"
+                  onClick={() => setAudience(filter.key)}
+                  className={`rounded-full px-3 py-1.5 text-xs font-bold transition ${
+                    active
+                      ? 'bg-violet-600 text-white'
+                      : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                  }`}
+                >
+                  {filter.label} ({counts[filter.key]})
+                </button>
+              );
+            })}
+            <button
+              type="button"
+              onClick={selectAudience}
+              className="ml-auto rounded-full px-3 py-1.5 text-xs font-bold text-violet-600 hover:underline"
+            >
+              Select this group
+            </button>
+          </div>
+
           <div className="relative mb-3">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
             <input
@@ -299,8 +381,19 @@ export default function AdminEmailsPage() {
                         className="h-4 w-4 rounded border-slate-300 text-violet-600 focus:ring-violet-500"
                       />
                       <span className="min-w-0 flex-1">
-                        <span className="block truncate text-sm font-semibold text-slate-800">
-                          {r.name}
+                        <span className="flex items-center gap-2">
+                          <span className="truncate text-sm font-semibold text-slate-800">
+                            {r.name}
+                          </span>
+                          <span
+                            className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ${
+                              r.audience === 'kids'
+                                ? 'bg-amber-100 text-amber-800'
+                                : 'bg-sky-100 text-sky-800'
+                            }`}
+                          >
+                            {r.audience === 'kids' ? 'Kids Zone' : 'Other'}
+                          </span>
                         </span>
                         <span className="block truncate text-xs text-slate-500">{r.email}</span>
                       </span>
