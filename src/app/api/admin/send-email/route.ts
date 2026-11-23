@@ -7,12 +7,16 @@ import { isAdminSessionRequest } from '@/lib/admin-session';
 // GET  /api/admin/send-email  -> list every signup email (recipients for the admin mailer)
 // POST /api/admin/send-email  -> send an email to all signups or a chosen set
 //
+// The recipient list comes from Supabase Auth (auth.users), which is the
+// authoritative record of every signup. The public `users` table is only a
+// partial mirror, so it is used just to add display names.
+//
 // Sending prefers the Gmail account configured with EMAIL_USER / EMAIL_PASS
 // (so mail appears to come from that inbox) and falls back to Resend.
 //
 // POST body:
 // {
-//   "userIds": ["uid1", "uid2"],   // send to specific users
+//   "userIds": ["uid1", "uid2"],   // send to specific users (Supabase auth ids)
 //   "allUsers": true,              // send to every signup
 //   "subject": "Email Subject",
 //   "html": "<p>Email content</p>",// HTML content
@@ -24,6 +28,8 @@ export const dynamic = 'force-dynamic';
 
 const FROM_NAME = 'Kids Zone';
 const RESEND_FROM_FALLBACK = 'Kids Zone <onboarding@resend.dev>';
+const AUTH_PAGE_SIZE = 1000;
+const MAX_AUTH_PAGES = 20;
 
 function isAuthorized(request: Request): boolean {
   return isAdminRequest(request) || isAdminSessionRequest(request);
@@ -68,8 +74,75 @@ function sanitizeRecipient(value: unknown): string {
   const email = String(value || '').trim().toLowerCase();
   if (!email.includes('@')) return '';
   if (email.endsWith('@local')) return '';
+  if (email.endsWith('@example.com')) return '';
+  if (email.startsWith('user-') && /@local$/i.test(email)) return '';
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return '';
   return email;
+}
+
+type Recipient = { uid: string; name: string; email: string; createdAt: string | null };
+
+/**
+ * Every signup, straight from Supabase Auth. Names are enriched from the
+ * public `users` table when available, otherwise derived from user metadata.
+ */
+async function listAllSignups(): Promise<Recipient[]> {
+  const byUid = new Map<string, { email: string; createdAt: string | null; metaName: string }>();
+
+  for (let page = 1; page <= MAX_AUTH_PAGES; page += 1) {
+    const { data, error } = await supabaseAdmin.auth.admin.listUsers({
+      page,
+      perPage: AUTH_PAGE_SIZE,
+    });
+    if (error) throw error;
+
+    const users = data?.users || [];
+    for (const authUser of users) {
+      const email = sanitizeRecipient(authUser.email);
+      if (!email) continue;
+      const meta = (authUser.user_metadata as Record<string, unknown>) || {};
+      byUid.set(authUser.id, {
+        email,
+        createdAt: authUser.created_at || null,
+        metaName: String(meta.name || meta.full_name || meta.fullName || '').trim(),
+      });
+    }
+
+    if (users.length < AUTH_PAGE_SIZE) break;
+  }
+
+  // Prefer a real display name from the users table when one exists.
+  const nameByUid = new Map<string, string>();
+  if (byUid.size > 0) {
+    const { data: rows } = await supabaseAdmin.from('users').select('uid, name');
+    for (const row of rows || []) {
+      const uid = String((row as any).uid || '');
+      const name = String((row as any).name || '').trim();
+      if (uid && name && !/^learner\b/i.test(name)) nameByUid.set(uid, name);
+    }
+  }
+
+  const recipients: Recipient[] = [];
+  const seenEmails = new Set<string>();
+
+  for (const [uid, info] of byUid) {
+    if (seenEmails.has(info.email)) continue;
+    seenEmails.add(info.email);
+    recipients.push({
+      uid,
+      name: nameByUid.get(uid) || info.metaName || info.email.split('@')[0],
+      email: info.email,
+      createdAt: info.createdAt,
+    });
+  }
+
+  recipients.sort((a, b) => {
+    const aMs = a.createdAt ? Date.parse(a.createdAt) : 0;
+    const bMs = b.createdAt ? Date.parse(b.createdAt) : 0;
+    return bMs - aMs;
+  });
+
+  return recipients;
 }
 
 type MailJob = {
@@ -156,27 +229,7 @@ export async function GET(request: Request) {
   }
 
   try {
-    const { data, error } = await supabaseAdmin
-      .from('users')
-      .select('uid, name, email, created_at')
-      .order('created_at', { ascending: false });
-
-    if (error) throw error;
-
-    const seen = new Set<string>();
-    const recipients: { uid: string; name: string; email: string; createdAt: string | null }[] = [];
-
-    for (const row of data || []) {
-      const email = sanitizeRecipient((row as any).email);
-      if (!email || seen.has(email)) continue;
-      seen.add(email);
-      recipients.push({
-        uid: String((row as any).uid || ''),
-        name: String((row as any).name || '').trim() || email.split('@')[0],
-        email,
-        createdAt: (row as any).created_at || null,
-      });
-    }
+    const recipients = await listAllSignups();
 
     const transport = getGmailCredentials()
       ? 'gmail'
@@ -189,6 +242,7 @@ export async function GET(request: Request) {
       total: recipients.length,
       sender: getFromAddress(),
       transport,
+      source: 'supabase-auth',
     });
   } catch (error: any) {
     console.error('[send-email] GET', error);
@@ -215,24 +269,19 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'html or text content is required' }, { status: 400 });
     }
 
-    let recipients: string[] = [];
+    const all = await listAllSignups();
 
+    let targets: Recipient[];
     if (allUsers === true) {
-      const { data, error } = await supabaseAdmin.from('users').select('email');
-      if (error) throw error;
-      recipients = (data || []).map((u: any) => sanitizeRecipient(u.email));
+      targets = all;
     } else if (Array.isArray(userIds) && userIds.length > 0) {
-      const { data, error } = await supabaseAdmin
-        .from('users')
-        .select('email')
-        .in('uid', userIds);
-      if (error) throw error;
-      recipients = (data || []).map((u: any) => sanitizeRecipient(u.email));
+      const wanted = new Set(userIds.map((id: unknown) => String(id)));
+      targets = all.filter((r) => wanted.has(r.uid));
     } else {
       return NextResponse.json({ error: 'userIds array or allUsers flag is required' }, { status: 400 });
     }
 
-    recipients = [...new Set(recipients.filter(Boolean))];
+    const recipients = [...new Set(targets.map((r) => r.email))];
 
     if (recipients.length === 0) {
       return NextResponse.json({ error: 'No valid recipients found' }, { status: 404 });

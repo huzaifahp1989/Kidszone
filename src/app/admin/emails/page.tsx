@@ -164,7 +164,7 @@ export default function AdminEmailsPage() {
             <Mail className="h-6 w-6 text-violet-600" /> Email Users
           </h1>
           <p className="mt-1 text-sm text-slate-500">
-            Send an email to every signup, or pick individual people.
+            All signup emails from Supabase — send to everyone, or pick individuals.
           </p>
         </div>
         <Button variant="secondary" onClick={() => void load()} disabled={loading}>
