@@ -1031,6 +1031,12 @@ export default function AdminPanel() {
             Reminders
           </button>
           <button
+            onClick={() => router.push('/admin/emails')}
+            className="px-5 py-2.5 rounded-lg font-bold transition bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 hover:border-violet-300 flex items-center gap-2 whitespace-nowrap"
+          >
+            ✉️ Emails
+          </button>
+          <button
             onClick={() => router.push('/admin/seerah')}
             className="px-5 py-2.5 rounded-lg font-bold transition bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 hover:border-teal-300 flex items-center gap-2 whitespace-nowrap"
           >
