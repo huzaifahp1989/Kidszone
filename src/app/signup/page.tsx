@@ -3,7 +3,6 @@
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { supabase, supabaseConfigured } from '@/lib/supabase';
-import { ensureUserProfile } from '@/lib/user-profile';
 import { mobileAuthHelper } from '@/lib/mobile-auth';
 import { assertValidUsername, normalizeFamilyEmail, normalizeUsername } from '@/lib/family-accounts';
 import { authJsonFetch } from '@/lib/auth-headers';
@@ -40,9 +39,21 @@ export default function SignupPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
-  const [needsEmailConfirmation, setNeedsEmailConfirmation] = useState(false);
+  const [awaitingCode, setAwaitingCode] = useState(false);
+  const [pendingEmail, setPendingEmail] = useState('');
+  const [code, setCode] = useState('');
+  const [codeInfo, setCodeInfo] = useState<string | null>(null);
+  const [resendIn, setResendIn] = useState<number | null>(null);
   const [referralCode, setReferralCode] = useState('');
   const [usernameHint, setUsernameHint] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (resendIn === null || resendIn <= 0) return;
+    const id = window.setInterval(() => {
+      setResendIn((n) => (n === null || n <= 1 ? null : n - 1));
+    }, 1000);
+    return () => window.clearInterval(id);
+  }, [resendIn]);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -82,7 +93,6 @@ export default function SignupPage() {
     e.preventDefault();
     setError(null);
     setSuccess(false);
-    setNeedsEmailConfirmation(false);
 
     if (!supabaseConfigured) {
       setError('Sign up is temporarily unavailable. Please try again later.');
@@ -122,132 +132,81 @@ export default function SignupPage() {
       setLoading(true);
       const emailNormalized = normalizeFamilyEmail(email);
 
-      const availabilityRes = await fetch(`/api/auth/check-username?username=${encodeURIComponent(normalizedUsername)}`);
-      const availability = await availabilityRes.json().catch(() => ({}));
-      if (!availabilityRes.ok) {
-        setError(availability?.error || 'Could not check username.');
-        return;
-      }
-      if (!availability.available) {
-        setError('That username is already taken. Please choose another.');
-        return;
-      }
-
       const storageCheck = mobileAuthHelper.checkStorageAvailability();
       if (!storageCheck.localStorage && !storageCheck.sessionStorage) {
         setError('Your browser is blocking storage. Please enable cookies/local storage and try again.');
         return;
       }
 
-      const { data: signUpRes, error: signUpErr } = await supabase.auth.signUp({
-        email: emailNormalized,
-        password,
-        options: {
-          emailRedirectTo:
-            typeof window !== 'undefined'
-              ? `${window.location.origin}/signin?message=${encodeURIComponent('Please sign in after confirming your email.')}`
-              : undefined,
-          data: {
-            name: trimmedName,
-            username: normalizedUsername,
-            family_email: emailNormalized,
-            age: ageNumber,
-            city: trimmedCity || undefined,
-            madrasahName: trimmedMadrasah || undefined,
-            contactNumber: trimmedContact || undefined,
-            needsSignupForm: false,
-          },
-        },
+      const res = await fetch('/api/auth/signup-request', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          mode: 'single',
+          name: trimmedName,
+          username: normalizedUsername,
+          age: ageNumber,
+          city: trimmedCity,
+          madrasahName: trimmedMadrasah || null,
+          contactNumber: trimmedContact,
+          email: emailNormalized,
+          referralCode: referralCode || undefined,
+        }),
       });
 
-      if (signUpErr) throw signUpErr;
-
-      const sessionFromResponse = signUpRes.session ?? null;
-      const userFromResponse = signUpRes.user ?? null;
-      const { data: sessionData } = await supabase.auth.getSession();
-      const session = sessionData.session ?? sessionFromResponse;
-
-      if (!session?.user) {
-        // Email confirmation required — Auth user may already exist; profile is ensured on first sign-in.
-        if (!userFromResponse?.id) {
-          setError('Account could not be created. Please try again.');
-          return;
-        }
-        await requestWelcomeEmail(userFromResponse.id);
-        setNeedsEmailConfirmation(true);
-        setSuccess(true);
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setError(data?.error || 'Could not send your verification code. Please try again.');
+        if (typeof data?.retryAfterSeconds === 'number') setResendIn(data.retryAfterSeconds);
         return;
       }
 
-      const uid = session.user.id;
+      setPendingEmail(emailNormalized);
+      setCode('');
+      setCodeInfo(null);
+      setAwaitingCode(true);
+      setResendIn(45);
+    } catch (err: any) {
+      console.error('Signup error:', err);
+      setError(err?.message || 'Failed to start signup. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
-      await supabase.auth
-        .updateUser({
-          data: {
-            name: trimmedName,
-            username: normalizedUsername,
-            family_email: emailNormalized,
-            age: ageNumber,
-            city: trimmedCity || undefined,
-            madrasahName: trimmedMadrasah || undefined,
-            contactNumber: trimmedContact || undefined,
-          },
-        })
-        .catch(() => {});
+  const onVerifyCode = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
 
-      const baseProfile = {
-        uid,
-        role: 'kid',
-        name: trimmedName,
-        username: normalizedUsername,
-        family_email: emailNormalized,
-        age: ageNumber,
-        madrasahname: trimmedMadrasah || null,
-        email: emailNormalized,
-        points: 0,
-        weeklypoints: 0,
-        monthlypoints: 0,
-        level: 'Beginner',
-      };
+    const cleanCode = code.replace(/\D/g, '');
+    if (cleanCode.length !== 6) {
+      setError('Enter the 6-digit code we emailed you.');
+      return;
+    }
 
-      const contactValue = trimmedContact;
-      let profileRes = await supabase
-        .from('users')
-        .upsert(
-          { ...baseProfile, contactnumber: contactValue, contact_number: contactValue },
-          { onConflict: 'uid', ignoreDuplicates: false }
-        )
-        .select();
-
-      if (profileRes.error?.code === '42703') {
-        profileRes = await supabase
-          .from('users')
-          .upsert({ ...baseProfile, contact_number: contactValue }, { onConflict: 'uid', ignoreDuplicates: false })
-          .select();
-      }
-      if (profileRes.error?.code === '42703') {
-        // Older schema without username/family_email — retry without those columns.
-        const { username: _u, family_email: _f, ...legacyProfile } = baseProfile;
-        profileRes = await supabase
-          .from('users')
-          .upsert(legacyProfile, { onConflict: 'uid', ignoreDuplicates: false })
-          .select();
+    try {
+      setLoading(true);
+      const res = await fetch('/api/auth/signup-verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: pendingEmail, code: cleanCode, password }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setError(data?.error || 'Could not verify that code.');
+        return;
       }
 
-      // Auth account already exists — do not fail signup if client profile upsert hits RLS.
-      // Server ensureUserProfile uses the service role and will create/patch the row.
-      if (profileRes.error) {
-        console.warn('Client profile upsert failed (continuing with ensure):', profileRes.error);
-      } else {
-        for (const cityColumn of ['city', 'town', 'location']) {
-          if (!trimmedCity) break;
-          const { error: cityErr } = await supabase.from('users').update({ [cityColumn]: trimmedCity }).eq('uid', uid);
-          if (!cityErr) break;
-          if (cityErr.code !== '42703') break;
-        }
+      const uid: string | undefined = data?.users?.[0]?.uid;
+
+      // Sign the learner in so they land on the site already logged in.
+      try {
+        await supabase.auth.signInWithPassword({ email: pendingEmail, password });
+      } catch {
+        /* they can still sign in manually from the sign-in page */
       }
 
-      if (referralCode) {
+      if (referralCode && uid) {
         try {
           await authJsonFetch('/api/kids-zone/referrals/join', {
             method: 'POST',
@@ -258,41 +217,41 @@ export default function SignupPage() {
         }
       }
 
-      const ensured = await ensureUserProfile(uid).catch(() => false);
-      if (!ensured && profileRes.error) {
-        console.warn('ensureUserProfile also failed after signup');
-      }
+      if (uid) await requestWelcomeEmail(uid);
 
-      await requestWelcomeEmail(uid);
-
+      setAwaitingCode(false);
       setSuccess(true);
       window.location.href = '/?welcome=1';
     } catch (err: any) {
-      console.error('Signup error:', err);
-      let msg = err?.message || 'Failed to sign up. Please try again.';
+      console.error('Verification error:', err);
+      setError(err?.message || 'Could not verify that code. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
-      if (err?.code === '42501') {
-        msg = 'Database permission denied. Please contact support or WhatsApp 07404644610.';
-      } else if (err?.code === '42703') {
-        msg = 'Database column missing. Please run SETUP_FAMILY_USERNAMES.sql in Supabase, then try again.';
-      } else if (
-        err?.code === 'unexpected_failure' ||
-        (err?.message && err.message.includes('Database error saving new user'))
-      ) {
-        msg = 'Database error during signup. Please try again or WhatsApp 07404644610 for login details.';
-      } else if (typeof msg === 'string' && msg.toLowerCase().includes('duplicate key')) {
-        if (msg.toLowerCase().includes('username')) {
-          msg = 'That username is already taken. Please choose another.';
-        } else {
-          msg =
-            'That email is already registered. Sign in with your username, or add another child from Profile → Family after signing in.';
-        }
-      } else if (err?.code === 'email_exists' || err?.code === '23505' || /already registered|already been registered|user already exists/i.test(msg)) {
-        msg =
-          'That email is already registered. Sign in with your username, or add another child from Profile → Family after signing in.';
+  const onResendCode = async () => {
+    if (resendIn !== null) return;
+    setError(null);
+    setCodeInfo(null);
+    try {
+      setLoading(true);
+      const res = await fetch('/api/auth/signup-resend', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: pendingEmail }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setError(data?.error || 'Could not resend the code.');
+        if (typeof data?.retryAfterSeconds === 'number') setResendIn(data.retryAfterSeconds);
+        return;
       }
-
-      setError(msg);
+      setCode('');
+      setCodeInfo(`We sent a new code to ${pendingEmail}.`);
+      setResendIn(45);
+    } catch (err: any) {
+      setError(err?.message || 'Could not resend the code.');
     } finally {
       setLoading(false);
     }
@@ -375,26 +334,13 @@ export default function SignupPage() {
             </div>
           )}
 
-          {success && !needsEmailConfirmation && (
+          {success && (
             <div className="mb-4 rounded-xl bg-teal-50 text-teal-700 px-4 py-3 text-sm font-semibold text-center">
-              Successfully signed up! Redirecting…
+              Email verified — your account is ready! Redirecting…
             </div>
           )}
 
-          {success && needsEmailConfirmation && (
-            <div className="mb-4 rounded-xl bg-teal-50 text-teal-700 px-4 py-3 text-sm">
-              <p className="font-bold mb-1">Check your email!</p>
-              <p>
-                We sent a confirmation link to your email. Please click it, then{' '}
-                <Link href="/signin" className="font-bold underline">
-                  sign in
-                </Link>
-                .
-              </p>
-            </div>
-          )}
-
-          {!success && (
+          {!success && !awaitingCode && (
             <form onSubmit={onSubmit} className="space-y-4">
               <div>
                 <label className="block text-sm font-semibold text-teal-900 mb-1">Full name</label>
@@ -579,15 +525,67 @@ export default function SignupPage() {
             </form>
           )}
 
-          {success && needsEmailConfirmation && (
-            <div className="mt-4 text-center">
-              <Link
-                href="/signin"
-                className="inline-block px-6 py-3 bg-gradient-to-r from-teal-600 to-teal-700 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transition-all transition-bouncy interactive-focus touch-target"
+          {!success && awaitingCode && (
+            <form onSubmit={onVerifyCode} className="space-y-4">
+              <div className="rounded-xl border border-teal-300/30 bg-teal-100 px-4 py-3 text-sm text-teal-900">
+                <p className="font-bold mb-1">Check your email</p>
+                <p>
+                  We sent a 6-digit verification code to <strong>{pendingEmail}</strong>. Enter it
+                  below to finish creating your account.
+                </p>
+              </div>
+
+              {codeInfo && (
+                <div className="rounded-xl bg-teal-50 text-teal-700 px-4 py-3 text-sm font-semibold">
+                  {codeInfo}
+                </div>
+              )}
+
+              <div>
+                <label className="block text-sm font-semibold text-teal-900 mb-1">Verification code</label>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  autoComplete="one-time-code"
+                  maxLength={6}
+                  value={code}
+                  onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                  placeholder="123456"
+                  className="w-full rounded-xl border-2 border-teal-300/40 px-4 py-3 text-center text-2xl tracking-[0.4em] interactive-focus touch-target transition"
+                />
+              </div>
+
+              <button
+                type="submit"
+                disabled={loading || code.replace(/\D/g, '').length !== 6}
+                className="w-full py-3 rounded-xl font-bold text-white bg-gradient-to-r from-teal-600 to-teal-700 shadow-lg hover:shadow-xl transition-all transition-bouncy interactive-focus touch-target disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Go to Sign In
-              </Link>
-            </div>
+                {loading ? 'Verifying…' : 'Verify & Create Account'}
+              </button>
+
+              <div className="flex items-center justify-between text-sm">
+                <button
+                  type="button"
+                  onClick={onResendCode}
+                  disabled={loading || resendIn !== null}
+                  className="text-teal-600 font-semibold hover:underline disabled:opacity-50 disabled:no-underline"
+                >
+                  {resendIn !== null ? `Resend code in ${resendIn}s` : 'Resend code'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAwaitingCode(false);
+                    setCode('');
+                    setCodeInfo(null);
+                    setError(null);
+                  }}
+                  className="text-slate-600 hover:underline"
+                >
+                  Change details
+                </button>
+              </div>
+            </form>
           )}
         </motion.div>
       </div>

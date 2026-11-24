@@ -199,6 +199,49 @@ export async function emailUserChatReply(input: {
   });
 }
 
+/**
+ * Emails the 6-digit code that must be entered before a new account is created.
+ * The code is never stored in the email body anywhere else, and expires quickly.
+ */
+export async function emailSignupVerificationCode(input: {
+  to: string;
+  code: string;
+  learnerNames?: string[];
+  expiresInMinutes?: number;
+}): Promise<{ ok: boolean; error?: string }> {
+  const to = input.to.trim().toLowerCase();
+  if (!to.includes('@')) {
+    return { ok: false, error: 'Invalid email' };
+  }
+
+  const safeCode = escapeHtml(String(input.code || '').trim());
+  const names = (input.learnerNames || []).map((n) => n.trim()).filter(Boolean);
+  const namesLine = names.length
+    ? `<p style="color: #374151; line-height: 1.6;">Account${
+        names.length > 1 ? 's' : ''
+      } for <strong>${names.map(escapeHtml).join(', ')}</strong>.</p>`
+    : '';
+  const minutes = input.expiresInMinutes ?? 15;
+
+  const html = `
+    <div style="font-family: Arial, sans-serif; max-width: 640px; margin: 0 auto;">
+      <h2 style="color: #0369a1;">Confirm your email</h2>
+      <p style="color: #374151; line-height: 1.6;">Assalamu Alaikum, please enter this code to finish creating your account.</p>
+      ${namesLine}
+      <p style="margin: 20px 0;">
+        <span style="display: inline-block; font-size: 32px; letter-spacing: 8px; font-weight: bold; color: #0f172a; background: #f1f5f9; padding: 16px 24px; border-radius: 12px;">${safeCode}</span>
+      </p>
+      <p style="color: #374151; line-height: 1.6;">This code expires in ${minutes} minutes. If you did not sign up, you can ignore this email.</p>
+    </div>
+  `;
+
+  return sendViaResend({
+    to: [to],
+    subject: `Your Kids Zone code: ${input.code}`,
+    html,
+  });
+}
+
 export async function emailWelcomeSignup(input: {
   to: string;
   learnerNames?: string[];

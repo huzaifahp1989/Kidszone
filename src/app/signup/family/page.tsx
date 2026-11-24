@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Shield, Eye, EyeOff, Plus, Trash2 } from 'lucide-react';
 import { motion } from 'framer-motion';
@@ -26,6 +26,19 @@ export default function FamilySignupPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const [awaitingCode, setAwaitingCode] = useState(false);
+  const [pendingEmail, setPendingEmail] = useState('');
+  const [code, setCode] = useState('');
+  const [codeInfo, setCodeInfo] = useState<string | null>(null);
+  const [resendIn, setResendIn] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (resendIn === null || resendIn <= 0) return;
+    const id = window.setInterval(() => {
+      setResendIn((n) => (n === null || n <= 1 ? null : n - 1));
+    }, 1000);
+    return () => window.clearInterval(id);
+  }, [resendIn]);
 
   const addLearner = () => {
     const newId = String(Math.max(...learners.map(l => parseInt(l.id, 10)), 0) + 1);
@@ -107,12 +120,13 @@ export default function FamilySignupPage() {
 
     setLoading(true);
     try {
-      const res = await fetch('/api/auth/signup-family', {
+      const normalizedEmail = familyEmail.trim().toLowerCase();
+      const res = await fetch('/api/auth/signup-request', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          familyEmail: familyEmail.trim().toLowerCase(),
-          password,
+          mode: 'family',
+          familyEmail: normalizedEmail,
           learners: learners.map(l => ({
             name: l.name.trim(),
             username: l.username.trim().toLowerCase(),
@@ -126,15 +140,86 @@ export default function FamilySignupPage() {
       const data = await res.json();
 
       if (!res.ok) {
-        setError(data.error || 'Failed to create family accounts.');
+        setError(data.error || 'Could not send the verification code.');
+        if (typeof data?.retryAfterSeconds === 'number') setResendIn(data.retryAfterSeconds);
         return;
       }
 
+      setPendingEmail(normalizedEmail);
+      setCode('');
+      setCodeInfo(null);
+      setAwaitingCode(true);
+      setResendIn(45);
+    } catch (err: any) {
+      console.error('Family signup error:', err);
+      setError(err?.message || 'Could not send the verification code. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const onVerifyCode = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+
+    const cleanCode = code.replace(/\D/g, '');
+    if (cleanCode.length !== 6) {
+      setError('Enter the 6-digit code we emailed you.');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const res = await fetch('/api/auth/signup-verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: pendingEmail, code: cleanCode, password }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setError(data.error || 'Could not verify that code.');
+        return;
+      }
+
+      setAwaitingCode(false);
       setSuccess(true);
       window.location.href = '/?welcome=1&family=1';
     } catch (err: any) {
-      console.error('Family signup error:', err);
-      setError(err?.message || 'Failed to create family accounts. Please try again.');
+      console.error('Family verification error:', err);
+      setError(err?.message || 'Could not verify that code. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const onResendCode = async () => {
+    if (resendIn !== null) return;
+    setError(null);
+    setCodeInfo(null);
+
+    setLoading(true);
+    try {
+      const res = await fetch('/api/auth/signup-resend', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: pendingEmail }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setError(data.error || 'Could not resend the code.');
+        if (typeof data?.retryAfterSeconds === 'number') setResendIn(data.retryAfterSeconds);
+        return;
+      }
+
+      setCode('');
+      setCodeInfo(`We sent a new code to ${pendingEmail}.`);
+      setResendIn(45);
+    } catch (err: any) {
+      setError(err?.message || 'Could not resend the code.');
     } finally {
       setLoading(false);
     }
@@ -172,7 +257,9 @@ export default function FamilySignupPage() {
 
         {/* Right Panel - Form */}
         <div className="rounded-2xl p-8 bg-white shadow-lg">
-          <form onSubmit={onSubmit} className="space-y-6">
+          <form onSubmit={awaitingCode ? onVerifyCode : onSubmit} className="space-y-6">
+            {!awaitingCode && (
+              <>
             {/* Family Email */}
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">Family Email</label>
@@ -310,6 +397,72 @@ export default function FamilySignupPage() {
               )}
             </div>
 
+              </>
+            )}
+
+            {awaitingCode && (
+              <div className="space-y-4">
+                <div className="p-3 bg-teal-50 border border-teal-200 rounded-lg text-teal-800 text-sm">
+                  <p className="font-semibold mb-1">Check your email</p>
+                  <p>
+                    We sent a 6-digit verification code to <strong>{pendingEmail}</strong>. Enter it
+                    below to create the family accounts.
+                  </p>
+                </div>
+
+                {codeInfo && (
+                  <div className="p-3 bg-green-50 border border-green-200 rounded-lg text-green-700 text-sm">
+                    {codeInfo}
+                  </div>
+                )}
+
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">Verification code</label>
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    autoComplete="one-time-code"
+                    maxLength={6}
+                    value={code}
+                    onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                    placeholder="123456"
+                    className="w-full px-4 py-3 text-center text-2xl tracking-[0.4em] border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={loading || code.replace(/\D/g, '').length !== 6}
+                  className="w-full px-4 py-3 bg-gradient-to-r from-purple-600 to-purple-700 text-white font-semibold rounded-lg hover:shadow-lg disabled:opacity-50 transition-all"
+                >
+                  {loading ? 'Verifying...' : 'Verify & Create Accounts'}
+                </button>
+
+                <div className="flex items-center justify-between text-sm">
+                  <button
+                    type="button"
+                    onClick={onResendCode}
+                    disabled={loading || resendIn !== null}
+                    className="text-purple-600 font-semibold hover:underline disabled:opacity-50"
+                  >
+                    {resendIn !== null ? `Resend code in ${resendIn}s` : 'Resend code'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setAwaitingCode(false);
+                      setCode('');
+                      setCodeInfo(null);
+                      setError(null);
+                    }}
+                    className="text-gray-500 hover:underline"
+                  >
+                    Change details
+                  </button>
+                </div>
+              </div>
+            )}
+
             {/* Error */}
             {error && (
               <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
@@ -325,13 +478,15 @@ export default function FamilySignupPage() {
             )}
 
             {/* Submit */}
-            <button
-              type="submit"
-              disabled={loading || success}
-              className="w-full px-4 py-3 bg-gradient-to-r from-purple-600 to-purple-700 text-white font-semibold rounded-lg hover:shadow-lg disabled:opacity-50 transition-all"
-            >
-              {loading ? 'Creating Accounts...' : 'Create Family Accounts'}
-            </button>
+            {!awaitingCode && (
+              <button
+                type="submit"
+                disabled={loading || success}
+                className="w-full px-4 py-3 bg-gradient-to-r from-purple-600 to-purple-700 text-white font-semibold rounded-lg hover:shadow-lg disabled:opacity-50 transition-all"
+              >
+                {loading ? 'Sending code...' : 'Send Verification Code'}
+              </button>
+            )}
 
             {/* Links */}
             <p className="text-center text-sm text-gray-600">
