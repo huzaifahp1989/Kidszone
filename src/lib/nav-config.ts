@@ -89,6 +89,31 @@ export const IMEDIA_CONNECT_ITEM: NavItem = {
 };
 
 /**
+ * Special charity competition running until the end of Ramadhan. Lives on the
+ * external iMedia Kids site, so it is marked `external` and opens in a new tab.
+ * Shown on every page except the leaderboard (see `HIDE_NAV_ITEM_ROUTES`).
+ */
+export const RAMADHAN_COMPETITION_ITEM: NavItem = {
+  href: 'https://imediackids.com/competition',
+  label: 'Ramadhan Competition',
+  shortLabel: 'Ramadhan',
+  description:
+    'Special competition running until the end of Ramadhan. Sign up with the unique code imc-S2027 for a chance at big prizes — laptop, tablet, MP3 players, cash prizes and holiday trips. Raise £150.00 for charity and complete all the activities on the portal. Full rules on the competition link.',
+  icon: Trophy,
+  group: 'play',
+  external: true,
+};
+
+/** Routes where the Ramadhan competition tab is hidden. */
+export const HIDE_NAV_ITEM_ROUTES = ['/leaderboard'];
+
+/** True when the Ramadhan competition tab must be hidden on this route. */
+export function isRamadhanCompetitionHidden(pathname: string | null | undefined): boolean {
+  if (!pathname) return false;
+  return HIDE_NAV_ITEM_ROUTES.some((route) => pathname === route || pathname.startsWith(`${route}/`));
+}
+
+/**
  * Single source of truth for navigation. Both the desktop navbar and the
  * mobile bottom bar read from here so the two can never drift apart again.
  */
@@ -440,6 +465,7 @@ export const ALL_NAV_ITEMS: NavItem[] = [
   HOME_ITEM,
   ...NAV_GROUPS.flatMap((group) => group.items),
   IMEDIA_CONNECT_ITEM,
+  RAMADHAN_COMPETITION_ITEM,
   CHAT_ITEM,
 ];
 

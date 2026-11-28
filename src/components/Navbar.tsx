@@ -10,9 +10,11 @@ import {
   HOME_ITEM,
   IMEDIA_CONNECT_ITEM,
   NAV_GROUPS,
+  RAMADHAN_COMPETITION_ITEM,
   type NavGroupId,
   isGroupActive,
   isNavActive,
+  isRamadhanCompetitionHidden,
 } from '@/lib/nav-config';
 import { getKidRank } from '@/lib/level-names';
 
@@ -33,6 +35,111 @@ interface NavbarProps {
   loading?: boolean;
 }
 
+/**
+ * Ramadhan competition tab: a compact tab that reveals the full notice
+ * (code, prizes, fundraising target, rules link) in a popover on hover or tap.
+ */
+const RamadhanCompetitionTab: React.FC<{ className?: string }> = ({ className = '' }) => {
+  const [open, setOpen] = useState(false);
+  const [pinned, setPinned] = useState(false);
+  const wrapRef = useRef<HTMLDivElement>(null);
+  const reduceMotion = useReducedMotion();
+
+  useEffect(() => {
+    if (!open) return;
+    const onDown = (e: MouseEvent) => {
+      if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) {
+        setOpen(false);
+        setPinned(false);
+      }
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setOpen(false);
+        setPinned(false);
+      }
+    };
+    document.addEventListener('mousedown', onDown);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('mousedown', onDown);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [open]);
+
+  return (
+    <div
+      ref={wrapRef}
+      className={`relative shrink-0 ${className}`}
+      onMouseEnter={() => setOpen(true)}
+      onMouseLeave={() => {
+        if (!pinned) setOpen(false);
+      }}
+    >
+      <button
+        type="button"
+        aria-haspopup="dialog"
+        aria-expanded={open}
+        aria-label={RAMADHAN_COMPETITION_ITEM.label}
+        onClick={() => {
+          if (open && pinned) {
+            setOpen(false);
+            setPinned(false);
+          } else {
+            setOpen(true);
+            setPinned(true);
+          }
+        }}
+        className="flex items-center gap-1.5 whitespace-nowrap rounded-xl bg-gradient-to-r from-purple-600 to-fuchsia-600 px-2.5 py-2 text-xs font-bold text-white shadow-sm ring-1 ring-white/30 transition hover:brightness-110 interactive-focus touch-target sm:px-3 sm:text-sm"
+      >
+        <RAMADHAN_COMPETITION_ITEM.icon size={16} />
+        <span className="hidden sm:inline">Ramadhan Competition</span>
+        <span className="sm:hidden">Ramadhan</span>
+      </button>
+
+      <div className="fixed left-1/2 top-14 z-[60] w-72 max-w-[calc(100vw-2rem)] -translate-x-1/2 sm:top-[3.75rem]">
+        <AnimatePresence>
+          {open && (
+            <motion.div
+              role="dialog"
+              aria-label="Ramadhan Competition details"
+              className="overflow-hidden rounded-2xl border border-purple-200 bg-white p-4 text-left shadow-2xl"
+              initial={reduceMotion ? undefined : { opacity: 0, y: -6 }}
+              animate={reduceMotion ? undefined : { opacity: 1, y: 0 }}
+              exit={reduceMotion ? undefined : { opacity: 0, y: -6 }}
+              transition={{ duration: 0.16, ease: [0.22, 1, 0.36, 1] }}
+            >
+              <p className="text-sm font-black text-purple-950">🏆 Ramadhan Competition</p>
+              <p className="mt-2 text-xs font-semibold text-sand-700">
+                Sign up with the unique code{' '}
+                <span className="rounded-md bg-purple-100 px-1.5 py-0.5 font-black tracking-wide text-purple-800">
+                  imc-S2027
+                </span>
+              </p>
+              <p className="mt-2 text-xs text-sand-700">
+                Win big prizes: a laptop, tablet, MP3 players, cash prizes and holiday trips.
+              </p>
+              <p className="mt-2 text-xs text-sand-700">
+                Each participant must raise{' '}
+                <span className="font-black text-purple-800">£150.00 for charity</span> and complete all the
+                activities on the portal.
+              </p>
+              <a
+                href={RAMADHAN_COMPETITION_ITEM.href}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-3 inline-flex items-center gap-1 text-xs font-black text-purple-700 underline decoration-2 underline-offset-2"
+              >
+                Full rules on the competition page →
+              </a>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+    </div>
+  );
+};
+
 export const Navbar: React.FC<NavbarProps> = ({ username, points, level, badges, onLogout, user, loading }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [openGroup, setOpenGroup] = useState<NavGroupId | null>(null);
@@ -45,6 +152,7 @@ export const Navbar: React.FC<NavbarProps> = ({ username, points, level, badges,
   const displayPoints = points !== undefined ? points : user?.points;
   const displayBadges = badges !== undefined ? badges : user?.badges;
   const displayRank = getKidRank(displayPoints);
+  const showRamadhanCompetition = !isRamadhanCompetitionHidden(pathname);
 
   // Close any open menus when the route changes.
   useEffect(() => {
@@ -104,6 +212,9 @@ export const Navbar: React.FC<NavbarProps> = ({ username, points, level, badges,
               </p>
             </div>
           </Link>
+
+          {/* Ramadhan competition tab — shown below lg (the desktop tab lives in the nav cluster) */}
+          {showRamadhanCompetition && <RamadhanCompetitionTab className="lg:hidden" />}
 
           {/* Desktop Navigation - grouped dropdowns */}
           <div
@@ -187,6 +298,8 @@ export const Navbar: React.FC<NavbarProps> = ({ username, points, level, badges,
                 </div>
               );
             })}
+
+            {showRamadhanCompetition && <RamadhanCompetitionTab />}
 
             <a
               href={IMEDIA_CONNECT_ITEM.href}
@@ -336,6 +449,26 @@ export const Navbar: React.FC<NavbarProps> = ({ username, points, level, badges,
             transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
           >
             <div className="flex flex-col gap-4">
+              {showRamadhanCompetition && (
+                <a
+                  href={RAMADHAN_COMPETITION_ITEM.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={() => setIsMenuOpen(false)}
+                  className="mx-4 flex items-center gap-3 rounded-2xl border-2 border-fuchsia-300 bg-gradient-to-r from-purple-50 to-fuchsia-50 px-4 py-3.5 shadow-sm interactive-focus"
+                >
+                  <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-purple-600 to-fuchsia-600 text-white" aria-hidden>
+                    <RAMADHAN_COMPETITION_ITEM.icon size={20} />
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-base font-black text-purple-950">{RAMADHAN_COMPETITION_ITEM.label}</span>
+                    <span className="block text-xs font-semibold text-purple-800/80">
+                      Code imc-S2027 · win a laptop, tablet, MP3 players &amp; more
+                    </span>
+                  </span>
+                </a>
+              )}
+
               <a
                 href={IMEDIA_CONNECT_ITEM.href}
                 target="_blank"

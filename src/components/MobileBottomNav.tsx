@@ -10,7 +10,9 @@ import {
   HOME_ITEM,
   IMEDIA_CONNECT_ITEM,
   NAV_GROUPS,
+  RAMADHAN_COMPETITION_ITEM,
   isNavActive,
+  isRamadhanCompetitionHidden,
 } from '@/lib/nav-config';
 import { getKidRank } from '@/lib/level-names';
 
@@ -38,6 +40,7 @@ export const MobileBottomNav = () => {
 
   const displayName = profile?.name;
     const displayRank = getKidRank(profile?.points);
+  const showRamadhanCompetition = !isRamadhanCompetitionHidden(pathname);
   const menuActive = isSheetOpen || NAV_GROUPS.some((g) =>
     g.items.some((i) => !BOTTOM_TABS.includes(i) && isNavActive(pathname, i.href))
   ) || isNavActive(pathname, CHAT_ITEM.href);
@@ -93,6 +96,26 @@ export const MobileBottomNav = () => {
                   <X size={22} />
                 </button>
               </div>
+
+              {showRamadhanCompetition && (
+                <a
+                  href={RAMADHAN_COMPETITION_ITEM.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={() => setIsSheetOpen(false)}
+                  className="mb-4 flex items-center gap-3 rounded-2xl border-2 border-fuchsia-300 bg-gradient-to-r from-purple-50 to-fuchsia-50 px-4 py-3.5 shadow-sm interactive-focus"
+                >
+                  <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-purple-600 to-fuchsia-600 text-white" aria-hidden>
+                    <RAMADHAN_COMPETITION_ITEM.icon size={20} />
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-base font-black text-purple-950">{RAMADHAN_COMPETITION_ITEM.label}</span>
+                    <span className="block text-xs font-semibold text-purple-800/80">
+                      Code imc-S2027 · win a laptop, tablet, MP3 players &amp; more
+                    </span>
+                  </span>
+                </a>
+              )}
 
               <Link
                 href="/audio-quiz"
