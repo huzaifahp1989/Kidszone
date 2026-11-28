@@ -90,7 +90,11 @@ const RamadhanCompetitionTab: React.FC<{ className?: string }> = ({ className = 
             setPinned(true);
           }
         }}
-        className="flex items-center gap-1.5 whitespace-nowrap rounded-xl bg-gradient-to-r from-purple-600 to-fuchsia-600 px-2.5 py-2 text-xs font-bold text-white shadow-sm ring-1 ring-white/30 transition hover:brightness-110 interactive-focus touch-target sm:px-3 sm:text-sm"
+        className={`flex items-center gap-1.5 whitespace-nowrap rounded-xl px-2.5 py-2 text-xs font-semibold transition-all transition-bouncy interactive-focus touch-target sm:px-3 sm:text-sm ${
+          open
+            ? 'bg-gradient-to-r from-teal-50 to-teal-100/80 text-teal-800 shadow-sm ring-1 ring-teal-200/60'
+            : 'text-sand-800 hover:bg-teal-50/60 hover:text-teal-700'
+        }`}
       >
         <RAMADHAN_COMPETITION_ITEM.icon size={16} />
         <span className="hidden sm:inline">Ramadhan Competition</span>
